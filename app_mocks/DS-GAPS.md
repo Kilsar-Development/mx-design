@@ -16,6 +16,9 @@ one-off layout geometry, not spacing tokens:
 - **Control sizes**: avatar/medallion/icon-button sizes `28/30/32/36/40/44/48/56/64/72`,
   icon viewBox px, `7px`/`8px` status dots, `2px`/`6px`/`10px`/`14px`/`16px` gaps. Not on the
   spacing scale by design.
+- **Selection-border widths**: `1.5px`/`2px` borders on selectable cards (e.g. Control Tower
+  assign-type cards, matching the Written-Exams ModeCard selection spec). Border-width has no DS
+  token; off-scale by design, not a spacing value.
 
 ## Migrated feature bundles — source-faithful, accepted
 The unified shells (`web-app.jsx`, `mobile-app.jsx`) reuse the original projects' `.jsx` verbatim.

@@ -509,7 +509,7 @@ const CT_STATUS = {
   not_started: { label: "Not started", bg: "var(--kls-tertiary)",         fg: "var(--kls-on-surface-variant)", bar: "var(--kls-outline-variant)" },
   in_progress: { label: "In progress", bg: "var(--kls-info-container)",    fg: "var(--kls-info)",     bar: "var(--kls-info)" },
   overdue:     { label: "Overdue",     bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)", bar: "var(--kls-accent-4)" },
-  graded:      { label: "Graded",      bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
+  completed:   { label: "Completed",   bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
   passed:      { label: "Passed",      bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
   failed:      { label: "Failed",      bg: "var(--kls-error-container)",   fg: "var(--kls-error)",    bar: "var(--kls-error)" },
 };
@@ -573,7 +573,7 @@ const CT_EXAM_TITLES = {
 // ── Generate assignment instances (deterministic) ────────────────────────────
 const CT_DUE_PAST = ["Sep 28", "Oct 02", "Oct 09"];
 const CT_DUE_FUTURE = ["Nov 14", "Nov 21", "Dec 03", "Dec 12"];
-const CT_STATUS_CYCLE = ["graded", "in_progress", "not_started", "overdue", "passed", "failed", "in_progress", "graded"];
+const CT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "passed", "failed", "in_progress", "completed"];
 
 function ctBuildAssignments() {
   const out = [];
@@ -583,8 +583,8 @@ function ctBuildAssignments() {
     for (let k = 0; k < n; k++) {
       const type = ["task", "oral", "written"][(si + k) % 3];
       let status = CT_STATUS_CYCLE[(si * 2 + k) % CT_STATUS_CYCLE.length];
-      if (type === "task" && (status === "passed" || status === "failed")) status = "graded";
-      if (type !== "task" && status === "graded") status = "passed";
+      if (type === "task" && (status === "passed" || status === "failed")) status = "completed";
+      if (type !== "task" && status === "completed") status = "passed";
 
       let title, course, term;
       if (type === "task") {
@@ -614,12 +614,12 @@ function ctInitials(name) {
   const p = (name || "").trim().split(/\s+/);
   return ((p[0]?.[0] || "?") + (p[1]?.[0] || "")).toUpperCase();
 }
-const CT_DONE = ["graded", "passed"];
+const CT_DONE = ["completed", "passed"];
 function ctRollup(items) {
-  const by = { not_started: 0, in_progress: 0, overdue: 0, graded: 0, passed: 0, failed: 0 };
+  const by = { not_started: 0, in_progress: 0, overdue: 0, completed: 0, passed: 0, failed: 0 };
   items.forEach((a) => { by[a.status] = (by[a.status] || 0) + 1; });
   const total = items.length;
-  const done = by.graded + by.passed;
+  const done = by.completed + by.passed;
   return { by, total, done, overdue: by.overdue, inProgress: by.in_progress, failed: by.failed };
 }
 
@@ -652,7 +652,7 @@ function CTStatusPill({ status, size = "md" }) {
 
 // Stacked roll-up bar of an item set's statuses.
 function CTRollupBar({ items, height = 8 }) {
-  const order = ["overdue", "failed", "in_progress", "not_started", "graded", "passed"];
+  const order = ["overdue", "failed", "in_progress", "not_started", "completed", "passed"];
   const total = items.length || 1;
   const counts = {};
   items.forEach((a) => { counts[a.status] = (counts[a.status] || 0) + 1; });
@@ -1071,7 +1071,7 @@ function CTAssignmentRow({ a, last }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
-          <span>{T.short}</span>
+          <span>{a.type === "task" ? "Task" : a.type === "oral" ? "Oral Exam" : "Written Exam"}</span>
           <span>·</span>
           <span>{a.type === "task" ? a.course : a.term}</span>
         </div>
@@ -1079,7 +1079,7 @@ function CTAssignmentRow({ a, last }) {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
         <window.CT.StatusPill status={a.status} />
         <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
-          {a.score != null ? `Score ${a.score}%` : `Due ${a.due}`}
+          {a.score != null ? `Score ${a.score}%` : (a.due ? `Due ${a.due}` : "No due date")}
         </span>
       </div>
     </div>
@@ -1174,13 +1174,15 @@ function CTStudentDrawer({ student, assignments, onClose, onAssign }) {
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          <button onClick={() => onAssign && onAssign(student)} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: 8,
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
+            <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> Assign
+          </button>
           <button onClick={onClose} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
             background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
             fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Close</button>
-          <button onClick={() => onAssign && onAssign(student)} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
-            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
-            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Assign to {student.name.split(" ")[0]}</button>
         </div>
       </div>
     </div>
@@ -1254,20 +1256,195 @@ function CTToggleRow({ label, hint, checked, onChange }) {
   );
 }
 
-function CTTypeCard({ active, icon, label, onClick }) {
+function CTTypeCard({ active, icon, label, sub, accent, onClick }) {
   return (
     <button onClick={onClick} style={{
-      flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8,
-      padding: "var(--kls-space-small)", borderRadius: 12, cursor: "pointer",
-      background: active ? "var(--kls-tertiary-container)" : "var(--kls-surface)",
-      border: active ? "1.5px solid var(--kls-primary)" : "1px solid var(--kls-outline-variant)",
-      transition: "background 80ms var(--kls-ease-standard), border-color 80ms var(--kls-ease-standard)" }}>
-      <span style={{ width: 32, height: 32, borderRadius: 8, background: active ? "var(--kls-surface)" : "var(--kls-tertiary)",
-        display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-        <KlsIcon name={icon} size={16} color={active ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"} />
-      </span>
-      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 700, color: "var(--kls-on-surface)" }}>{label}</span>
+      flex: 1, display: "flex", flexDirection: "column", textAlign: "left", cursor: "pointer",
+      padding: "var(--kls-space-small)", borderRadius: 8,
+      border: active ? `2px solid ${accent}` : "1.5px solid var(--kls-outline-variant)",
+      background: active ? `color-mix(in srgb, ${accent} 8%, transparent)` : "var(--kls-surface)",
+      transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <span style={{ display: "inline-flex" }}>
+          <KlsIcon name={icon} size={18} color={active ? accent : "var(--kls-on-surface)"} />
+        </span>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-primary)" }}>{label}</span>
+      </div>
+      <div style={{ marginTop: "var(--kls-space-xsmall)", minHeight: "2.9em", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.45 }}>{sub}</div>
     </button>
+  );
+}
+
+function CTCheck({ checked, indeterminate, onClick }) {
+  const on = checked || indeterminate;
+  return (
+    <button onClick={(e) => { e.stopPropagation(); onClick && onClick(); }} aria-label="toggle" style={{
+      width: 18, height: 18, borderRadius: 4, flexShrink: 0, cursor: "pointer", padding: 0,
+      border: on ? "1.5px solid var(--kls-primary)" : "1.5px solid var(--kls-outline)",
+      background: on ? "var(--kls-primary)" : "transparent", color: "var(--kls-on-primary)",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {checked && <svg viewBox="0 0 24 24" style={{ width: 12, height: 12, stroke: "currentColor", fill: "none", strokeWidth: 3 }}><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+      {indeterminate && !checked && <span style={{ width: 8, height: 2, background: "currentColor", borderRadius: 1 }} />}
+    </button>
+  );
+}
+
+// Question-pool taxonomy for the Written exam assign flow: Term → Course → ACS code (leaf).
+// Each course is tagged with an FAA subject so the subject filter still applies.
+const CT_POOL = [
+  { id: "t-f24", name: "Fall 2024", courses: [
+    { id: "c-pp1", name: "Powerplant Systems", subject: "Powerplant", codes: [
+      { id: "pp1a", code: "PA.I.A",  desc: "Reciprocating engine theory & construction", count: 18, mastery: 0.74 },
+      { id: "pp1b", code: "PA.I.B",  desc: "Valves & valve mechanisms", count: 22, mastery: 0.81 },
+      { id: "pp3a", code: "PA.III.A", desc: "Magnetos & ignition timing", count: 26, mastery: 0.84 },
+    ]},
+    { id: "c-af1", name: "Airframe Structures", subject: "Airframe", codes: [
+      { id: "af1a", code: "AM.II.A.K1", desc: "Sheet metal layout & forming", count: 34, mastery: 0.72 },
+      { id: "af1b", code: "AM.II.A.K2", desc: "Riveting & fastener selection", count: 16, mastery: 0.59 },
+    ]},
+    { id: "c-gen1", name: "General & Regulations", subject: "General", codes: [
+      { id: "g1k1",  code: "AM.I.A.K1",  desc: "Electron theory (conventional flow vs. electron flow).", count: 3, mastery: 0.66 },
+      { id: "g1k10", code: "AM.I.A.K10", desc: "Current.", count: 5, mastery: 0.9 },
+      { id: "g1k11", code: "AM.I.A.K11", desc: "Resistance.", count: 7, mastery: 0.78 },
+      { id: "g1far", code: "GE.I.A",     desc: "FAR Part 43 — maintenance records", count: 12, mastery: 0.86 },
+    ]},
+  ]},
+  { id: "t-s25", name: "Spring 2025", courses: [
+    { id: "c-pp2", name: "Turbine Theory", subject: "Powerplant", codes: [
+      { id: "pp2a", code: "PA.IV.A", desc: "Compressor stages & airflow", count: 20, mastery: 0.71 },
+      { id: "pp2b", code: "PA.IV.B", desc: "EGT & engine instruments", count: 14, mastery: -1 },
+    ]},
+    { id: "c-af2", name: "Airframe Systems", subject: "Airframe", codes: [
+      { id: "af2a", code: "AM.II.B.K1", desc: "Hydraulics & pneumatics", count: 28, mastery: 0.64 },
+      { id: "af2b", code: "AM.II.B.K2", desc: "Landing gear systems", count: 24, mastery: 0.71 },
+    ]},
+    { id: "c-gen2", name: "Physics & Math", subject: "General", codes: [
+      { id: "g2a", code: "GE.II.A", desc: "Mathematics for aviation", count: 16, mastery: 0.72 },
+      { id: "g2b", code: "GE.II.B", desc: "Physics principles", count: 19, mastery: 0.68 },
+    ]},
+  ]},
+];
+
+// Study-mode question-pool picker (Term → Course → ACS code) for the Written exam assign flow.
+function WrittenTopicPicker({ selModules, setSelModules, count, setCount }) {
+  const [expanded, setExpanded] = useCtadState({});
+  const [subj, setSubj] = useCtadState("All");
+  const subjects = ["All", "Powerplant", "Airframe", "General"];
+  const allCodes = CT_POOL.flatMap((t) => t.courses.flatMap((c) => c.codes));
+  const pool = allCodes.reduce((a, c) => a + (selModules.has(c.id) ? c.count : 0), 0);
+  const n = Number(count) || 0;
+  const drawing = Math.min(n, pool);
+  const toggleOne = (id) => setSelModules((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  const toggleSet = (ids) => setSelModules((prev) => { const s = new Set(prev); const all = ids.every((id) => s.has(id)); ids.forEach((id) => all ? s.delete(id) : s.add(id)); return s; });
+  const toggleExpand = (id) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
+
+  const qStyle = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0 };
+  const stepBtn = { width: 36, height: 32, display: "grid", placeItems: "center", border: "none", background: "transparent", borderRadius: 8, padding: 0, fontSize: 20, lineHeight: 1 };
+  const chev = (open, onClick) => (
+    <button onClick={onClick} aria-label="expand" style={{ width: 20, height: 20, border: "none", background: "transparent", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0, flexShrink: 0 }}>
+      <KlsIcon name={open ? "chevronDown" : "chevronRight"} size={16} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+  const cfgRow = (label, value) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 0" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <>
+      <div>
+        <CTLabel>Topics</CTLabel>
+        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", flexWrap: "wrap", marginBottom: "var(--kls-space-small)" }}>
+          {subjects.map((s) => {
+            const active = subj === s;
+            return (
+              <button key={s} onClick={() => setSubj(s)} style={{
+                height: 32, padding: "0 var(--kls-space-small)", borderRadius: 999, cursor: "pointer",
+                fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600,
+                background: active ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+                border: `1px solid ${active ? "var(--kls-primary)" : "var(--kls-outline-variant)"}`,
+                color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)" }}>{s}</button>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          {CT_POOL.map((t) => {
+            const courses = subj === "All" ? t.courses : t.courses.filter((c) => c.subject === subj);
+            if (!courses.length) return null;
+            const tCodes = courses.flatMap((c) => c.codes);
+            const tIds = tCodes.map((c) => c.id);
+            const tAll = tIds.every((id) => selModules.has(id));
+            const tSome = tIds.some((id) => selModules.has(id));
+            const tTotal = tCodes.reduce((a, c) => a + c.count, 0);
+            const tOpen = !!expanded[t.id];
+            return (
+              <div key={t.id} style={{ borderRadius: 8, border: "1px solid var(--kls-outline-variant)", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", background: "var(--kls-surface-variant)" }}>
+                  {chev(tOpen, () => toggleExpand(t.id))}
+                  <CTCheck checked={tAll} indeterminate={tSome && !tAll} onClick={() => toggleSet(tIds)} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontWeight: 600, fontSize: 14, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>{t.name}</span>
+                  </div>
+                  <span style={qStyle}>{tTotal} Q</span>
+                </div>
+                {tOpen && courses.map((c) => {
+                  const cIds = c.codes.map((x) => x.id);
+                  const cAll = cIds.every((id) => selModules.has(id));
+                  const cSome = cIds.some((id) => selModules.has(id));
+                  const cTotal = c.codes.reduce((a, x) => a + x.count, 0);
+                  const cOpen = !!expanded[c.id];
+                  return (
+                    <React.Fragment key={c.id}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-large)", borderTop: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)" }}>
+                        {chev(cOpen, () => toggleExpand(c.id))}
+                        <CTCheck checked={cAll} indeterminate={cSome && !cAll} onClick={() => toggleSet(cIds)} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontFamily: "var(--kls-font-sans)", fontWeight: 600, fontSize: 14, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>{c.name}</span>
+                        </div>
+                        <span style={qStyle}>{cTotal} Q</span>
+                      </div>
+                      {cOpen && c.codes.map((x) => {
+                        const sel = selModules.has(x.id);
+                        return (
+                          <div key={x.id} onClick={() => toggleOne(x.id)} style={{
+                            display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+                            padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) calc(var(--kls-space-large) + var(--kls-space-med))",
+                            cursor: "pointer", borderTop: "1px solid var(--kls-outline-variant)",
+                            background: sel ? "color-mix(in srgb, var(--kls-info) 8%, transparent)" : "transparent" }}>
+                            <CTCheck checked={sel} onClick={() => toggleOne(x.id)} />
+                            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: 8 }}>
+                              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", flexShrink: 0 }}>{x.code}</span>
+                              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{x.desc}</span>
+                            </div>
+                            <span style={qStyle}>{x.count} Q</span>
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Question Count:</span>
+            {pool > 0 && <button onClick={() => setCount(String(pool))} style={{ border: "none", background: "transparent", padding: 0, color: "var(--kls-info)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>(All)</button>}
+          </div>
+          <button onClick={() => setCount(String(Math.max(1, n - 1)))} style={{ ...stepBtn, cursor: "pointer", color: "var(--kls-on-surface-variant)" }}>−</button>
+          <div style={{ width: 40, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{n}</div>
+          <button onClick={() => { if (n < pool) setCount(String(n + 1)); }} style={{ ...stepBtn, color: n >= pool ? "var(--kls-outline-variant)" : "var(--kls-on-surface-variant)", cursor: n >= pool ? "default" : "pointer" }}>+</button>
+        </div>
+        {cfgRow("Pool", `${pool} question${pool === 1 ? "" : "s"}`)}
+        {cfgRow("Drawing", `${drawing} question${drawing === 1 ? "" : "s"}`)}
+      </div>
+    </>
   );
 }
 
@@ -1285,6 +1462,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
   const [timeLimit, setTimeLimit] = useCtadState("60");
   const [passScore, setPassScore] = useCtadState("70");
   const [instructions, setInstructions] = useCtadState("");
+  const [selModules, setSelModules] = useCtadState(() => new Set());
   // shared
   const [assignees, setAssignees] = useCtadState(presetAssignees); // [{type,id}]
   const [due, setDue] = useCtadState("");
@@ -1301,6 +1479,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
 
   const CT = window.CT;
   const isExam = type !== "task";
+  const oralTopics = (window.KILSAR_DATA && window.KILSAR_DATA.blocks) ? window.KILSAR_DATA.blocks.map((b) => b.title) : [];
 
   const courses = term ? (CT.COURSES[term] || []) : [];
   const tasks = course ? (CT.TASK_LIBRARY[course] || []) : [];
@@ -1311,17 +1490,17 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
     const p = roster.people.find((x) => x.id === s.id); return { ...s, label: p?.name };
   }).filter((c) => c.label);
 
-  const valid = assignees.length > 0 && (type === "task" ? !!task : examTitle.trim().length > 0);
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (examTitle.trim().length > 0 && (studentDefined || selModules.size > 0)));
 
   function buildAndAssign() {
     if (!valid) return;
-    const dueLabel = due ? new Date(due + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit" }) : CT.DUE_FUTURE[0];
+    const dueLabel = due ? new Date(due + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit" }) : null;
     const expanded = assignees.flatMap((a) => {
       if (a.type === "group") { const g = (roster.groups || []).find((x) => x.id === a.id); return g ? g.memberIds : []; }
       return [a.id];
     });
     const studentIds = [...new Set(expanded)];
-    const title = type === "task" ? task : examTitle.trim();
+    const title = type === "task" ? task : type === "written" ? examTitle.trim() : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
     const created = studentIds.map((sid, i) => ({
       id: "n" + Date.now() + "_" + i, studentId: sid, type,
       title, course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || CT.TERMS[0]),
@@ -1366,9 +1545,9 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
           <div>
             <CTLabel>Type</CTLabel>
             <div style={{ display: "flex", gap: 8 }}>
-              <CTTypeCard active={type === "task"} icon="worklog" label="Task" onClick={() => setType("task")} />
-              <CTTypeCard active={type === "oral"} icon="chatBubbles" label="Oral exam" onClick={() => setType("oral")} />
-              <CTTypeCard active={type === "written"} icon="checkpoint" label="Written exam" onClick={() => setType("written")} />
+              <CTTypeCard active={type === "task"} icon="worklog" label="Task" sub="Hands-on procedures and tasks to perform." accent="var(--kls-success)" onClick={() => setType("task")} />
+              <CTTypeCard active={type === "oral"} icon="chatBubbles" label="Oral exam" sub="Practice dynamic questions on various topics." accent="var(--kls-accent-4)" onClick={() => setType("oral")} />
+              <CTTypeCard active={type === "written"} icon="checkpoint" label="Written exam" sub="Prepare for your FAA exam." accent="var(--kls-info)" onClick={() => setType("written")} />
             </div>
           </div>
 
@@ -1391,12 +1570,27 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
                   disabled={!course} onChange={setTask} />
               </div>
             </>
+          ) : type === "oral" ? (
+            <>
+              <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+                <CTToggleRow label="Let the student choose the topic"
+                  hint="Student picks the topic when they begin the oral exam."
+                  checked={studentDefined} onChange={setStudentDefined} />
+              </div>
+
+              {!studentDefined && (
+                <div>
+                  <CTLabel>Topic</CTLabel>
+                  <CTSelect value={topic} options={oralTopics} placeholder="Select a topic" onChange={setTopic} />
+                </div>
+              )}
+            </>
           ) : (
             <>
               <div>
-                <CTLabel>{type === "oral" ? "Oral exam title" : "Written exam title"}</CTLabel>
+                <CTLabel>Written exam title</CTLabel>
                 <input value={examTitle} onChange={(e) => setExamTitle(e.target.value)}
-                  placeholder={type === "oral" ? "e.g. Engine Run-Up Oral" : "e.g. FAA Regulations Written"} style={ctInput} />
+                  placeholder="e.g. FAA Regulations Written" style={ctInput} />
               </div>
 
               <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
@@ -1406,39 +1600,18 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
               </div>
 
               {!studentDefined && (
-                <>
-                  <div>
-                    <CTLabel>{type === "oral" ? "Scope / topics" : "Topic"}</CTLabel>
-                    <input value={topic} onChange={(e) => setTopic(e.target.value)}
-                      placeholder={type === "oral" ? "e.g. Powerplant run-up & magneto checks" : "e.g. Part 43 maintenance regs"} style={ctInput} />
-                  </div>
-                  <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
-                    {type === "written" && (
-                      <div style={{ flex: 1 }}>
-                        <CTLabel>Questions</CTLabel>
-                        <input type="number" value={qCount} onChange={(e) => setQCount(e.target.value)} style={num} />
-                      </div>
-                    )}
-                    <div style={{ flex: 1 }}>
-                      <CTLabel>{type === "oral" ? "Duration (min)" : "Time limit (min)"}</CTLabel>
-                      <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} style={num} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <CTLabel>Passing %</CTLabel>
-                      <input type="number" value={passScore} onChange={(e) => setPassScore(e.target.value)} style={num} />
-                    </div>
-                  </div>
-                </>
+                <WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} />
               )}
-
-              <div>
-                <CTLabel>Instructions</CTLabel>
-                <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3}
-                  placeholder="What should the student prepare or expect?"
-                  style={{ ...ctInput, height: "auto", padding: "var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
-              </div>
             </>
           )}
+
+          {/* Instructions — all types */}
+          <div>
+            <CTLabel>Instructions (optional)</CTLabel>
+            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3}
+              placeholder="What should students focus on or prepare?"
+              style={{ ...ctInput, height: "auto", padding: "var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
+          </div>
 
           {/* Assignees */}
           <div>
@@ -1479,7 +1652,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
 
           {/* Due + options */}
           <div>
-            <CTLabel>Due date</CTLabel>
+            <CTLabel>Due date (optional)</CTLabel>
             <input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={ctInput} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
@@ -3905,8 +4078,8 @@ const FAA_EXAMS = [
 
 const PracticeSetup = ({ tweaks, onStart }) => {
   const D = window.KILSAR_DATA;
-  const [expanded, setExpanded] = React.useState({ 'pp-recip': true });
-  const [selectedModules, setSelectedModules] = React.useState(new Set(['m-pist', 'm-theory']));
+  const [expanded, setExpanded] = React.useState({ 't-f24': true, 'c-pp1': true });
+  const [selectedModules, setSelectedModules] = React.useState(new Set(['pp1a', 'pp1b']));
   const [mode, setMode] = React.useState('study');
   const [count, setCount] = React.useState(25);
   const [random, setRandom] = React.useState(false);
@@ -3920,22 +4093,22 @@ const PracticeSetup = ({ tweaks, onStart }) => {
     next.has(id) ? next.delete(id) : next.add(id);
     setSelectedModules(next);
   };
-  const toggleBlock = (b) => {
-    const allMods = b.modules.map(m => m.id);
-    const allSelected = allMods.every(id => selectedModules.has(id));
+  const toggleCodes = (ids) => {
+    const allSelected = ids.every(id => selectedModules.has(id));
     const next = new Set(selectedModules);
-    if (allSelected) allMods.forEach(id => next.delete(id));
-    else allMods.forEach(id => next.add(id));
+    ids.forEach(id => allSelected ? next.delete(id) : next.add(id));
     setSelectedModules(next);
   };
 
   // Stats (study mode)
-  const totalAvailable = D.blocks.reduce((s, b) => s + b.modules.reduce((a, m) => a + (selectedModules.has(m.id) ? m.count : 0), 0), 0);
-  const selectedAcs = [...new Set([...selectedModules].map(id => {
-    for (const b of D.blocks) for (const m of b.modules) if (m.id === id) return m.acs;
-  }).filter(Boolean))];
+  const POOL_CODES = CT_POOL.flatMap(t => t.courses.flatMap(c => c.codes));
+  const rollupMastery = (codes) => {
+    const vals = codes.map(c => c.mastery).filter(v => v != null && v >= 0);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : -1;
+  };
+  const totalAvailable = POOL_CODES.reduce((s, c) => s + (selectedModules.has(c.id) ? c.count : 0), 0);
+  const selectedAcs = [...new Set(POOL_CODES.filter(c => selectedModules.has(c.id)).map(c => c.code))];
 
-  const filteredBlocks = filterSubject === 'All' ? D.blocks : D.blocks.filter(b => b.subject === filterSubject);
   const activeExam = FAA_EXAMS.find(e => e.id === examChoice) || FAA_EXAMS[0];
 
   const beginExam = () => onStart({
@@ -3958,10 +4131,10 @@ const PracticeSetup = ({ tweaks, onStart }) => {
             <div style={{display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0}}>
               <h3 style={{margin: 0, whiteSpace: 'nowrap'}}>Topics</h3>
               <div style={{display: 'flex', alignItems: 'center', gap: 10, fontSize: 11.5, color: 'var(--ink-3)', flexWrap: 'wrap'}} title="Mastery — your current accuracy on each module">
-                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--good)'}} />Expert</span>
-                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--accent)'}} />Proficient</span>
-                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--warn)'}} />Familiar</span>
-                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--ink-5)', border: '1px solid var(--line-2)'}} />Untested</span>
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--kls-accent-3)'}} />Expert</span>
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--kls-accent-9)'}} />Proficient</span>
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--kls-accent-4)'}} />Familiar</span>
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--kls-outline)'}} />Untested</span>
               </div>
             </div>
             <div style={{flex: 1, minWidth: 8}} />
@@ -3972,48 +4145,71 @@ const PracticeSetup = ({ tweaks, onStart }) => {
             </div>
           </div>
           <div style={{padding: 4}}>
-            {filteredBlocks.map(b => {
-              const isExpanded = expanded[b.id];
-              const allSelected = b.modules.every(m => selectedModules.has(m.id));
-              const someSelected = b.modules.some(m => selectedModules.has(m.id));
+            {CT_POOL.map(t => {
+              const courses = filterSubject === 'All' ? t.courses : t.courses.filter(c => c.subject === filterSubject);
+              if (!courses.length) return null;
+              const tCodes = courses.flatMap(c => c.codes);
+              const tIds = tCodes.map(c => c.id);
+              const tAll = tIds.every(id => selectedModules.has(id));
+              const tSome = tIds.some(id => selectedModules.has(id));
+              const tOpen = expanded[t.id];
               return (
-                <div key={b.id} style={{margin: 4, borderRadius: 8, border: '1px solid var(--line)', overflow: 'hidden'}}>
+                <div key={t.id} style={{margin: 4, borderRadius: 8, border: '1px solid var(--line)', overflow: 'hidden'}}>
                   <div style={{display: 'flex', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-inset)', gap: 10}}>
-                    <button className="btn btn--ghost btn--sm" style={{width: 24, padding: 0, flexShrink: 0}} onClick={() => setExpanded({...expanded, [b.id]: !isExpanded})}>
-                      <Icon name={isExpanded ? 'chev-d' : 'chev-r'} size={12} />
+                    <button className="btn btn--ghost btn--sm" style={{width: 24, padding: 0, flexShrink: 0}} onClick={() => setExpanded({...expanded, [t.id]: !tOpen})}>
+                      <Icon name={tOpen ? 'chev-d' : 'chev-r'} size={12} />
                     </button>
-                    <Checkbox checked={allSelected} indeterminate={someSelected && !allSelected} onChange={() => toggleBlock(b)} />
+                    <Checkbox checked={tAll} indeterminate={tSome && !tAll} onChange={() => toggleCodes(tIds)} />
                     <div style={{flex: 1, minWidth: 0}}>
-                      <div style={{display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap'}}>
-                        <span style={{fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap'}}>{b.title}</span>
-                        <span className="chip">{b.acs}</span>
-                        <span style={{fontSize: 12, color: 'var(--ink-3)'}}>{b.subject}</span>
-                      </div>
+                      <span style={{fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap'}}>{t.name}</span>
                     </div>
+                    <MasteryDot m={rollupMastery(tCodes)} />
                     <span style={{fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', flexShrink: 0}}>
-                      {b.modules.reduce((s, m) => s + m.count, 0)} Q
+                      {tCodes.reduce((s, c) => s + c.count, 0)} Q
                     </span>
                   </div>
-                  {isExpanded && (
-                    <div>
-                      {b.modules.map(m => {
-                        const selected = selectedModules.has(m.id);
-                        return (
-                          <div key={m.id} onClick={() => toggleModule(m.id)} style={{
-                            display: 'flex', alignItems: 'center', padding: '10px 14px 10px 48px',
-                            gap: 10, cursor: 'pointer',
-                            background: selected ? 'var(--accent-soft)' : 'transparent',
-                            borderTop: '1px solid var(--line)',
-                          }}>
-                            <Checkbox checked={selected} onChange={() => toggleModule(m.id)} />
-                            <span style={{flex: 1, minWidth: 0, fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{m.title}</span>
-                            <MasteryDot m={m.mastery} />
-                            <span style={{fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 32, textAlign: 'right'}}>{m.count} Q</span>
+                  {tOpen && courses.map(c => {
+                    const cIds = c.codes.map(x => x.id);
+                    const cAll = cIds.every(id => selectedModules.has(id));
+                    const cSome = cIds.some(id => selectedModules.has(id));
+                    const cOpen = expanded[c.id];
+                    return (
+                      <React.Fragment key={c.id}>
+                        <div style={{display: 'flex', alignItems: 'center', padding: '10px 14px 10px 36px', background: 'var(--bg-inset)', gap: 10, borderTop: '1px solid var(--line)'}}>
+                          <button className="btn btn--ghost btn--sm" style={{width: 24, padding: 0, flexShrink: 0}} onClick={() => setExpanded({...expanded, [c.id]: !cOpen})}>
+                            <Icon name={cOpen ? 'chev-d' : 'chev-r'} size={12} />
+                          </button>
+                          <Checkbox checked={cAll} indeterminate={cSome && !cAll} onChange={() => toggleCodes(cIds)} />
+                          <div style={{flex: 1, minWidth: 0}}>
+                            <span style={{fontWeight: 600, fontSize: 13.5, whiteSpace: 'nowrap'}}>{c.name}</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          <MasteryDot m={rollupMastery(c.codes)} />
+                          <span style={{fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', flexShrink: 0}}>
+                            {c.codes.reduce((s, x) => s + x.count, 0)} Q
+                          </span>
+                        </div>
+                        {cOpen && c.codes.map(x => {
+                          const selected = selectedModules.has(x.id);
+                          return (
+                            <div key={x.id} onClick={() => toggleModule(x.id)} style={{
+                              display: 'flex', alignItems: 'center', padding: '10px 14px 10px 60px',
+                              gap: 10, cursor: 'pointer',
+                              background: selected ? 'var(--accent-soft)' : 'transparent',
+                              borderTop: '1px solid var(--line)',
+                            }}>
+                              <Checkbox checked={selected} onChange={() => toggleModule(x.id)} />
+                              <div style={{flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 8}}>
+                                <span style={{fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0}}>{x.code}</span>
+                                <span style={{fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{x.desc}</span>
+                              </div>
+                              <MasteryDot m={x.mastery} />
+                              <span style={{fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 32, textAlign: 'right'}}>{x.count} Q</span>
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -4290,23 +4486,17 @@ const Stepper = ({ value, onChange, min = 1, max = 100, step = 1 }) => (
 );
 
 const MasteryDot = ({ m }) => {
-  if (m == null || m < 0) {
-    return (
-      <span title="Untested" style={{
-        width: 7, height: 7, borderRadius: '50%',
-        background: 'var(--bg-elev)', border: '1px solid var(--line-2)',
-        flexShrink: 0,
-      }} />
-    );
+  const tested = m != null && m >= 0;
+  let color = 'var(--kls-outline)';
+  let label = 'Untested';
+  if (tested) {
+    color = 'var(--kls-accent-4)'; label = 'Familiar';
+    if (m >= 0.85) { color = 'var(--kls-accent-3)'; label = 'Expert'; }
+    else if (m >= 0.7) { color = 'var(--kls-accent-9)'; label = 'Proficient'; }
   }
-  let color = 'var(--warn)';
-  let label = 'Familiar';
-  if (m >= 0.85) { color = 'var(--good)'; label = 'Expert'; }
-  else if (m >= 0.7) { color = 'var(--accent)'; label = 'Proficient'; }
   return (
-    <span title={`${label} — ${Math.round(m * 100)}% mastery`} style={{
-      width: 7, height: 7, borderRadius: '50%', background: color,
-      flexShrink: 0,
+    <span title={tested ? `${label} — ${Math.round(m * 100)}% mastery` : 'Untested'} style={{
+      width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0,
     }} />
   );
 };
