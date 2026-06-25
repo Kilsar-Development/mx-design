@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="destination-card" subtitle="DestinationCard / feature pill — from WorkspaceScreen._buildFeaturePill" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>DestinationCard — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--kls-space-small); align-items: flex-start; }
+
+  /* DestinationCard — verbatim from WorkspaceScreen._buildFeaturePill.
+     - gradient surface → surface-container-low, 135° (topLeft → bottomRight)
+     - radius med (12) · padding small (12)
+     - icon 28 onSurface, top-left · label bodyLarge (16/500), bottom
+     - column, space-between · est. 150×104 (Flutter _featurePillWidth/Height
+       not in snippet — measured from screenshot) */
+  .dcard {
+    width: 150px; height: 104px;
+    box-sizing: border-box;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: var(--kls-space-small);
+    border-radius: var(--kls-radius-med);
+    background: linear-gradient(135deg, var(--kls-surface), var(--kls-surface-container-low));
+    border: 1px solid var(--kls-outline-variant);
+    cursor: pointer; position: relative;
+  }
+  .dcard .icon { width: 28px; height: 28px; color: var(--kls-on-surface); }
+  .dcard .icon svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  .dcard .name { font-size: 16px; font-weight: 500; color: var(--kls-on-surface); }
+
+  /* Badges (top-right) — Coming Soon / Beta */
+  .badge {
+    position: absolute; top: var(--kls-space-small); right: var(--kls-space-small);
+    border-radius: var(--kls-radius-small);
+    padding: 2px var(--kls-space-xsmall);
+    font-size: 10px; font-weight: 600; letter-spacing: .02em;
+  }
+  .badge.soon { background: var(--kls-tertiary); color: var(--kls-on-tertiary); }
+  .badge.beta { background: var(--kls-accent-5); color: var(--kls-accent-4); }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">Destination cards — top-row workspace entries</div>
+    <div class="row">
+      <div class="dcard">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg></span>
+        <span class="name">Library</span>
+      </div>
+      <div class="dcard">
+        <span class="icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M14 19c0-2 2-3.5 4-3.5" stroke-linecap="round"/></svg></span>
+        <span class="name">Team</span>
+      </div>
+      <div class="dcard">
+        <span class="icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="name">Reports</span>
+        <span class="badge beta">Beta</span>
+      </div>
+    </div>
+
+    <div class="caption">With "Coming Soon" badge</div>
+    <div class="row">
+      <div class="dcard">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4" stroke-linecap="round"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <span class="name">Insights</span>
+        <span class="badge soon">Coming Soon</span>
+      </div>
+    </div>
+
+    <div class="caption">Spec — gradient surface→surface-container-low 135° · radius med (12) · pad small (12) · icon 28 onSurface top-left · label bodyLarge (16/500) bottom · column space-between · ~150×104 · badges r8: Coming Soon = tertiary bg / labelSmall · Beta = accent5 bg + accent4 text</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<!-- @dsCard group="Colors" name="Colors — Accents" subtitle="blue / green / red / orange / purple + transparent — from ColorPalette (Dart)" viewport="700x460" -->
+<html><head><meta charset="utf-8"><title>Colors — Accents</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:16px 20px;background:#fff;font-family:var(--kls-font-sans);color:#18181A;display:flex;flex-direction:column;gap:12px}
+  .head{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#838383;margin:0 0 6px}
+  .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+  .sw{display:flex;flex-direction:column;gap:4px}
+  .chip{height:40px;border-radius:7px;border:1px solid rgba(0,0,0,.06)}
+  .name{font-size:10.5px;font-weight:600;color:#18181A;line-height:1.1}
+  .hex{font-size:9.5px;font-weight:500;color:#838383;letter-spacing:.02em}
+</style></head>
+<body>
+  <div><p class="head">blue</p><div class="grid" id="blue"></div></div>
+  <div><p class="head">green</p><div class="grid" id="green"></div></div>
+  <div><p class="head">red</p><div class="grid" id="red"></div></div>
+  <div><p class="head">orange</p><div class="grid" id="orange"></div></div>
+  <div><p class="head">purple</p><div class="grid" id="purple"></div></div>
+  <div><p class="head">transparent (black @ alpha)</p><div class="grid" id="transp"></div></div>
+  <script>
+    const sets = {
+      blue: [
+        ['blue/50','#EAF4FF'],['blue/100','#ACCFEF'],['blue/200','#4187C6'],['blue/300','#2890FF'],
+        ['blue/400','#1275DE'],['blue/500','#2073CC'],['blue/600','#054A93'],['blue/700','#0B2846'],
+      ],
+      green: [
+        ['green/50','#DDF1DD'],['green/100','#76C677'],['green/200','#54B855'],['green/300','#46AD47'],
+        ['green/400','#319D33'],['green/500','#268A27'],['green/600','#326E33'],['green/700','#19371A'],
+      ],
+      red: [
+        ['red/50','#FEF2F2'],['red/100','#F87171'],['red/200','#EF4444'],['red/300','#DC2626'],
+        ['red/400','#D02525'],['red/500','#BF0707'],['red/600','#B30C0C'],['red/700','#450A0A'],
+      ],
+      orange: [
+        ['orange/50','#FFF7ED'],['orange/100','#FB923C'],['orange/200','#E38435'],['orange/300','#FC7A36'],
+        ['orange/400','#E26A2C'],['orange/500','#E76019'],['orange/600','#D65410'],['orange/700','#3A1F07'],
+      ],
+      purple: [
+        ['purple/50','#F5F3FF'],['purple/100','#C4B5FD'],['purple/200','#8B5CF6'],['purple/300','#7C3AED'],
+        ['purple/400','#6D28D9'],['purple/500','#5B21B6'],['purple/600','#4C1D95'],['purple/700','#2E1065'],
+      ],
+      transp: [
+        ['transparent/20','rgba(0,0,0,.20)'],
+        ['transparent/40','rgba(0,0,0,.40)'],
+        ['transparent/60','rgba(0,0,0,.60)'],
+        ['transparent/80','rgba(0,0,0,.80)'],
+      ],
+    };
+    Object.entries(sets).forEach(([id,list]) => {
+      const root = document.getElementById(id);
+      list.forEach(([n,h]) => {
+        const el = document.createElement('div');
+        el.className = 'sw';
+        const display = h.startsWith('rgba') ? h.replace(/rgba\(0,0,0,\./, 'a ').replace(')','') : h;
+        el.innerHTML = `<div class="chip" style="background:${h}"></div><div class="name">${n}</div><div class="hex">${display}</div>`;
+        root.appendChild(el);
+      });
+    });
+  </script>
+</body></html>

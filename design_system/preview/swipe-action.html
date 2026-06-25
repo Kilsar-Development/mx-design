@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- @dsCard group="Patterns" name="swipe-action" subtitle="Swipe-to-reveal row action (Slidable) — built to closest DS tokens (gap D6)" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>SwipeAction — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Swipe-to-reveal — no canonical Slidable in DS; built to closest tokens.
+     - action panel bg error · icon + label on-error · 88px panel
+     - 40% snap threshold · fade-animation / ease-standard motion */
+  .slidable { position: relative; border-radius: var(--kls-radius-med); overflow: hidden; max-width: 360px; background: var(--kls-error); }
+  .action {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 88px;
+    background: var(--kls-error); color: var(--kls-on-error);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--kls-space-tiny);
+    font-size: 12px; font-weight: 600;
+  }
+  .action svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .rowface {
+    position: relative;
+    background: var(--kls-surface);
+    border: 1px solid var(--kls-outline-variant);
+    border-radius: var(--kls-radius-med);
+    padding: var(--kls-space-small) var(--kls-space-med);
+    display: flex; align-items: center; gap: var(--kls-space-small);
+    transition: transform var(--kls-dur-fade-animation) var(--kls-ease-standard);
+  }
+  .slidable.open .rowface { transform: translateX(-88px); }
+  .rowface .avatar { width: 36px; height: 36px; border-radius: 999px; background: var(--kls-secondary-container); color: var(--kls-on-secondary-container); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .rowface .nm { font-size: 14px; font-weight: 600; color: var(--kls-on-surface); }
+  .toggle { margin-top: var(--kls-space-tiny); font-size: 12px; color: var(--kls-on-surface-variant); cursor: pointer; text-decoration: underline; max-width: 360px; }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">Resting</div>
+    <div class="slidable">
+      <div class="action"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V5h6v2M6 7l1 13h10l1-13" stroke-linecap="round" stroke-linejoin="round"/></svg>Delete</div>
+      <div class="rowface"><span class="avatar">AB</span><span class="nm">Group A · Block 1</span></div>
+    </div>
+
+    <div class="caption">Revealed (left swipe past 40% snap)</div>
+    <div class="slidable open">
+      <div class="action"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V5h6v2M6 7l1 13h10l1-13" stroke-linecap="round" stroke-linejoin="round"/></svg>Delete</div>
+      <div class="rowface"><span class="avatar">CD</span><span class="nm">Group B · Block 2</span></div>
+    </div>
+    <div class="toggle" onclick="this.previousElementSibling.previousElementSibling.classList.toggle('open')">toggle reveal</div>
+
+    <div class="caption">Spec — Flutter uses flutter_slidable; no DS card yet. Built to closest tokens: action panel bg error · icon + label on-error · 88px panel · 40% snap threshold · fade-animation (250) / ease-standard motion. Promote to a canonical Slidable spec (panel width, snap threshold, motion).</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

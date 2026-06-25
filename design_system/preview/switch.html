@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="switch" subtitle="Switch / Toggle — custom (no Flutter Switch); built to closest DS tokens" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Switch — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .opt { display: flex; align-items: center; justify-content: space-between; gap: var(--kls-space-med); max-width: 320px; }
+  .opt .t { font-size: 14px; font-weight: 500; color: var(--kls-on-surface); }
+
+  /* Switch / Toggle — no canonical Flutter Switch exists; built to closest DS tokens.
+     - track 44×26 · knob 22 · 2px inset (knob breathing room)
+     - on  = primary track · off = outline-variant track · knob always surface
+     - knob travel 18px (= track 44 − knob 22 − 2×inset). The 2 and 18 are
+       component internals, NOT spacing tokens. */
+  .sw {
+    width: 44px; height: 26px; border-radius: 999px;
+    background: var(--kls-outline-variant);
+    border: 0; padding: 2px; cursor: pointer; position: relative;
+    transition: background var(--kls-dur-fade-animation) var(--kls-ease-standard);
+    flex: none;
+  }
+  .sw .knob {
+    width: 22px; height: 22px; border-radius: 999px;
+    background: var(--kls-surface);
+    transition: transform var(--kls-dur-fade-animation) var(--kls-ease-standard);
+  }
+  .sw[aria-checked="true"] { background: var(--kls-primary); }
+  .sw[aria-checked="true"] .knob { transform: translateX(18px); }
+  .sw[disabled] { opacity: .4; cursor: not-allowed; }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">On / Off</div>
+    <div class="opt"><span class="t">Allow late submissions</span><button class="sw" aria-checked="true"><span class="knob"></span></button></div>
+    <div class="opt"><span class="t">Notify students</span><button class="sw" aria-checked="false"><span class="knob"></span></button></div>
+
+    <div class="caption">Disabled</div>
+    <div class="opt"><span class="t">Let the student choose parameters</span><button class="sw" aria-checked="true" disabled><span class="knob"></span></button></div>
+
+    <div class="caption">Spec — track 44×26 · knob 22 · 2px inset · on = primary, off = outline-variant, knob = surface · knob travel 18px · transition fade-animation (250) / ease-standard. (No canonical Flutter Switch — this is the proposed spec; promote alongside the Slider.)</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+    document.querySelectorAll('.sw:not([disabled])').forEach(s =>
+      s.addEventListener('click', () => s.setAttribute('aria-checked', s.getAttribute('aria-checked') === 'true' ? 'false' : 'true')));
+  </script>
+</div></body></html>

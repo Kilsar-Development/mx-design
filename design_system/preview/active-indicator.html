@@ -1,0 +1,164 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="active-indicator" subtitle="Currently-selected-resource banner: subtle · card · hero" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>ActiveIndicator — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* ActiveIndicator — banner that tells the user which member of a switchable
+     collection is currently in use (active Data Set, active workspace, active
+     persona, etc). Three presence levels:
+       subtle — single-line pill, inline next to tabs
+       card   — surface card with icon tile + metadata
+       hero   — bold inverted band when active selection is a hard prerequisite
+
+     All three: tap target opens the picker for switching. */
+
+  /* Subtle */
+  .subtle {
+    display: flex; align-items: center; gap: 6px;
+    height: 40px; padding: 0 14px;
+    max-width: 360px; box-sizing: border-box;
+    border-radius: 8px;
+    border: 1px solid var(--kls-outline-variant);
+    background: var(--kls-surface);
+    color: var(--kls-on-surface);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+  }
+  .subtle .muted { color: var(--kls-on-surface-variant); }
+  .subtle .name  { font-weight: 700; color: var(--kls-on-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .subtle svg.chev { width: 14px; height: 14px; stroke: var(--kls-on-surface-variant); fill: none; stroke-width: 1.8; margin-left: auto; flex-shrink: 0; }
+  .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--kls-success); flex-shrink: 0; }
+  .dot.muted-dot { background: var(--kls-on-surface-variant); }
+
+  /* Card */
+  .card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: 12px;
+    background: var(--kls-surface);
+    border: 1px solid var(--kls-outline-variant);
+    cursor: pointer;
+  }
+  .card.empty { border: 1px dashed var(--kls-outline-variant); }
+  .card .tile {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--kls-on-surface);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .card.empty .tile { background: var(--kls-tertiary); }
+  .card .tile svg { width: 20px; height: 20px; stroke: var(--kls-surface); fill: none; stroke-width: 1.6; }
+  .card.empty .tile svg { stroke: var(--kls-on-surface-variant); }
+  .card .body { flex: 1; min-width: 0; }
+  .card .eyebrow { font-size: 12px; font-weight: 600; color: var(--kls-on-surface-variant); }
+  .card .heading { font-size: 15px; font-weight: 700; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; font-size: 12px; color: var(--kls-on-surface-variant); }
+  svg.chev-lg { width: 18px; height: 18px; stroke: var(--kls-on-surface-variant); fill: none; stroke-width: 1.7; flex-shrink: 0; }
+
+  /* Hero */
+  .hero {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; border-radius: 16px;
+    background: var(--kls-on-surface);
+    color: var(--kls-surface);
+    cursor: pointer;
+  }
+  .hero .tile {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .hero .tile svg { width: 22px; height: 22px; stroke: var(--kls-surface); fill: none; stroke-width: 1.6; }
+  .hero .body { flex: 1; min-width: 0; }
+  .hero .eyebrow { font-size: 12px; font-weight: 600; opacity: .65; }
+  .hero .heading { font-size: 18px; font-weight: 700; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hero .meta { font-size: 12px; opacity: .7; margin-top: 4px; }
+  .hero .switch {
+    padding: 8px 14px; border-radius: 999px;
+    background: var(--kls-surface);
+    color: var(--kls-on-surface);
+    font-size: 13px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .hero .switch svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+</style></head>
+<body><div class="grid">
+
+  <template id="card-tpl">
+    <div class="caption">Variation: subtle — single-line pill (default, inline next to tabs)</div>
+    <button class="subtle">
+      <span class="dot"></span>
+      <span class="muted">Active:</span>
+      <span class="name">Turbine Engines</span>
+      <span class="muted">· v3</span>
+      <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="caption">Subtle — empty state</div>
+    <button class="subtle" style="background:transparent">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--kls-on-surface-variant)" stroke-width="1.6"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/></svg>
+      <span class="muted">No Data Set active —</span>
+      <span class="name">pick one</span>
+      <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="caption">Variation: card — medium presence with icon + metadata</div>
+    <div class="card">
+      <div class="tile">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+      </div>
+      <div class="body">
+        <div class="eyebrow">Active Data Set</div>
+        <div class="heading">Turbine Engines</div>
+        <div class="meta">
+          <span class="dot"></span> Available · 24 docs · v3
+        </div>
+      </div>
+      <svg class="chev-lg" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="caption">Card — empty state (dashed border)</div>
+    <div class="card empty">
+      <div class="tile">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/></svg>
+      </div>
+      <div class="body">
+        <div class="heading" style="color:var(--kls-on-surface)">No Data Set active</div>
+        <div class="eyebrow" style="margin-top:2px">Pick one to use Orion offline</div>
+      </div>
+      <svg class="chev-lg" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div class="caption">Variation: hero — inverted band for hard prerequisites</div>
+    <div class="hero">
+      <div class="tile">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+      </div>
+      <div class="body">
+        <div class="eyebrow">Active Data Set</div>
+        <div class="heading">Turbine Engines</div>
+        <div class="meta">24 docs · Version 3</div>
+      </div>
+      <div class="switch">Switch <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </div>
+
+    <div class="caption">Spec — subtle: h40 · radius 8 · max-w 360 · 13/500. card: pad 12×16 · radius 12 · tile 36 radius 8 bg on-surface (filled) / tertiary (empty, dashed border). hero: pad 16×18 · radius 16 · bg on-surface fg surface · tile 44 radius 12 bg white@12% · switch pill bg surface fg on-surface.</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card-tpl').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="empty-state" subtitle="Icon medallion + title + body + optional CTA" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>EmptyState — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .mock { background: var(--kls-surface); border: 1px solid var(--kls-outline-variant); border-radius: 12px; }
+
+  /* EmptyState — centered icon medallion + h-stack of title / body / CTA.
+     Used in tab bodies, sheets, list panes when there's nothing to show. */
+  .empty {
+    padding: 48px 24px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: 12px;
+    color: var(--kls-on-surface-variant);
+    font-family: 'Plus Jakarta Sans';
+  }
+  .medallion {
+    width: 56px; height: 56px; border-radius: 16px;
+    background: var(--kls-tertiary);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .medallion svg { width: 28px; height: 28px; stroke: var(--kls-on-surface-variant); fill: none; stroke-width: 1.6; }
+  .title {
+    font-size: 16px; font-weight: 700;
+    color: var(--kls-on-surface);
+  }
+  .body { font-size: 13px; max-width: 320px; line-height: 1.4; }
+
+  /* PrimaryButton mirror (preview/buttons-primary.html) */
+  .btn {
+    height: 40px; padding: 0 20px;
+    border-radius: 8px; border: 0;
+    background: var(--kls-tertiary-container);
+    color: var(--kls-on-tertiary-container);
+    font-family: 'Plus Jakarta Sans';
+    font-size: 14px; font-weight: 700; line-height: 20px;
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: pointer; margin-top: 4px;
+  }
+  .btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">With CTA — user can take an action</div>
+    <div class="mock">
+      <div class="empty">
+        <div class="medallion">
+          <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+        </div>
+        <div class="title">Create your first Data Set</div>
+        <div class="body">Pick a subset of your library that Orion can answer from when you're offline.</div>
+        <button class="btn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>New Data Set</button>
+      </div>
+    </div>
+
+    <div class="caption">No CTA — user can't act (e.g. admin-only resource)</div>
+    <div class="mock">
+      <div class="empty">
+        <div class="medallion">
+          <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+        </div>
+        <div class="title">No Data Sets yet</div>
+        <div class="body">No Data Sets are available yet. Ask an admin to share one.</div>
+      </div>
+    </div>
+
+    <div class="caption">Spec — center column · gap 12 · medallion 56×56 radius 16 bg tertiary, icon 28 on-surface-variant · title bodyLargeBold (16/700) on-surface · body bodySmall (13/500) on-surface-variant · max-width 320 · optional PrimaryButton 4px below</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

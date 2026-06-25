@@ -1,0 +1,67 @@
+<!doctype html>
+<!-- @dsCard group="Colors" name="Colors — Accent Tokens" subtitle="accent1–16 — Flutter AccentColors ThemeExtension (light + dark)" viewport="700x280" -->
+<html><head><meta charset="utf-8"><title>Colors — Accent Tokens</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:18px 20px;background:#fff;font-family:var(--kls-font-sans);color:#18181A;display:flex;flex-direction:column;gap:14px}
+  .col{display:flex;flex-direction:column;gap:8px}
+  .head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#838383;margin:0}
+  .grid{display:grid;grid-template-columns:repeat(14,1fr);gap:7px}
+  .cell{display:flex;flex-direction:column;gap:3px}
+  .swatch{height:32px;border-radius:6px;border:1px solid rgba(0,0,0,.06)}
+  .num{font-size:9.5px;font-weight:700;color:#18181A;line-height:1}
+  .hex{font-size:8.5px;font-weight:500;color:#838383;font-variant-numeric:tabular-nums;line-height:1}
+  .modeChip{font-size:9px;font-weight:600;color:#fff;background:#18181A;padding:3px 8px;border-radius:999px;letter-spacing:.04em}
+  .modeChip.alt{background:#fff;color:#18181A;border:1px solid #E2E2E2}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:10px;color:#838383;margin-top:2px}
+  .legend b{color:#18181A;font-weight:600}
+</style></head>
+<body>
+  <div class="col">
+    <p class="head">AccentColors · Light <span class="modeChip">DEFAULT</span></p>
+    <div class="grid" id="light"></div>
+  </div>
+  <div class="col">
+    <p class="head">AccentColors · Dark <span class="modeChip alt">[data-theme="dark"]</span></p>
+    <div class="grid" id="dark"></div>
+  </div>
+  <div class="legend">
+    <span><b>1·2·3</b> green family</span>
+    <span><b>4·5·6</b> orange family</span>
+    <span><b>7·8·9</b> blue family</span>
+    <span><b>10·11</b> reserved (water / mistyRose — not yet defined)</span>
+    <span><b>12·13</b> purple family</span>
+    <span><b>14·15·16</b> red family</span>
+  </div>
+  <script>
+    // [num, lightHex, darkHex]
+    const accents = [
+      [1, '54B855','46AD47'],
+      [2, 'DDF1DD','19371A'],
+      [3, '326E33','76C677'],
+      [4, 'FC7A36','E26A2C'],
+      [5, 'FFF7ED','3A1F07'],
+      [6, 'FB923C','E38435'],
+      [7, '2890FF','2073CC'],
+      [8, 'EAF4FF','2073CC'],
+      [9, '4187C6','ACCFEF'],
+      [12,'8B5CF6','7C3AED'],
+      [13,'F5F3FF','2E1065'],
+      [14,'FEF2F2','450A0A'],
+      [15,'B30C0C','F87171'],
+      [16,'EF4444','EF4444'],
+    ];
+    const fill = (id, col) => {
+      const root = document.getElementById(id);
+      accents.forEach(a => {
+        const hex = a[col];
+        const el = document.createElement('div');
+        el.className = 'cell';
+        el.innerHTML = `<div class="swatch" style="background:#${hex}"></div><div class="num">${a[0]}</div><div class="hex">#${hex}</div>`;
+        root.appendChild(el);
+      });
+    };
+    fill('light', 1);
+    fill('dark', 2);
+  </script>
+</body></html>

@@ -1,0 +1,278 @@
+<!doctype html>
+<!-- @dsCard group="UI Kit — Mobile" name="Mobile UI Kit" subtitle="Click-through Kilsar shell — 4 screens" viewport="1700x900" -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kilsar Mobile UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  /* The outer page sits in a token-aware deep grey gutter. Each themed pane
+     (light / dark) lives inside a wrapper that applies data-theme locally
+     so the kit shows correctly even on a system whose preference differs. */
+  html, body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Plus Jakarta Sans'; }
+  html { background: var(--kls-color-neutral-700); }
+
+  #root {
+    min-height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  /* Stacked / split layouts. Each theme-pane gets its own data-theme
+     so all child token vars resolve to that mode. */
+  .theme-pane {
+    background: var(--kls-scaffold-bg);
+    color: var(--kls-on-surface);
+    padding: 32px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px;
+    flex: 1 0 auto;
+  }
+  .theme-pane[data-theme="dark"] { color-scheme: dark; }
+  .theme-pane[data-theme="light"] { color-scheme: light; }
+
+  /* When split, the two panes sit side by side at desktop widths,
+     stacked on narrow screens. */
+  #root.split { flex-direction: row; flex-wrap: wrap; }
+  #root.split .theme-pane { flex: 1 1 50%; min-width: 720px; }
+
+  /* Pane label */
+  .pane-label {
+    width: 100%;
+    text-align: center;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--kls-on-surface-variant);
+    margin-bottom: 4px;
+  }
+
+  /* Section label spans full row inside a pane */
+  .section-label {
+    width: 100%;
+    text-align: center;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--kls-on-surface-variant);
+    margin: 20px 0 4px;
+  }
+  .frame-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .frame-label {
+    font-family: 'Plus Jakarta Sans'; font-size: 11px;
+    color: var(--kls-on-surface-variant);
+  }
+  button:focus { outline: none; }
+
+  /* Floating theme toggle (bottom-right) */
+  .theme-toggle {
+    position: fixed; bottom: 16px; right: 16px;
+    display: inline-flex; gap: 4px;
+    padding: 4px;
+    background: #fff;
+    color: #18181A;
+    border: 1px solid #E2E2E2;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    font-family: "Plus Jakarta Sans"; font-size: 12px;
+    z-index: 1000;
+  }
+  .theme-toggle button {
+    background: transparent; border: none; padding: 6px 12px;
+    border-radius: 999px; cursor: pointer; color: inherit;
+    font: inherit; font-weight: 600;
+  }
+  .theme-toggle button.active {
+    background: #18181A; color: #fff;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script>window.KLS_ICON_BASE = "../../assets/icons";</script>
+<script type="text/babel" src="../shared/kls-icon.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="home-screens.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel">
+  const { useState, useEffect } = React;
+
+  // ---- Theme controller ----
+  const params = new URLSearchParams(location.search);
+  const initial = (params.get('theme') || localStorage.getItem('kls.kit.theme.mobile') || 'split').toLowerCase();
+  const validThemes = ['light', 'dark', 'auto', 'split'];
+  const initialTheme = validThemes.includes(initial) ? initial : 'split';
+
+  function Phone({ initial = "home", children }) {
+    const [screen, setScreen] = useState(initial);
+    const [tab, setTab] = useState(initial === "calibration" ? "home" : (["home","workspace","orion","notifications"].includes(initial) ? initial : "home"));
+    const { BottomNav } = window.KLS;
+    const { HomeScreen, ExamListScreen, CalibrationScreen, ProfileScreen } = window.KLS_SCREENS;
+
+    if (children) {
+      return (
+        <IOSDevice width={390} height={780}>
+          {children}
+        </IOSDevice>
+      );
+    }
+
+    const go = (s) => {
+      setScreen(s);
+      if (["home","workspace","orion","notifications"].includes(s)) setTab(s);
+    };
+
+    let body;
+    if (screen === "home" || tab === "home") body = <HomeScreen go={go} />;
+    if (screen === "workspace" || tab === "workspace") body = <ExamListScreen go={go} />;
+    if (screen === "orion" || tab === "orion") body = <CalibrationScreen go={go} />;
+    if (screen === "notifications" || tab === "notifications") body = <ProfileScreen go={go} />;
+    if (screen === "calibration") body = <CalibrationScreen go={go} />;
+    if (screen === "profile") body = <ProfileScreen go={go} />;
+    if (screen === "exams") body = <ExamListScreen go={go} />;
+    if (!body) body = <HomeScreen go={go} />;
+
+    return (
+      <IOSDevice width={390} height={780}>
+        <div data-screen-label={screen} style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>{body}</div>
+          <BottomNav active={tab} unread={2} onChange={(t) => go(t)} />
+        </div>
+      </IOSDevice>
+    );
+  }
+
+  function PhoneWithChrome({ children, label, activeTab = "home" }) {
+    const { BottomNav } = window.KLS;
+    return (
+      <IOSDevice width={390} height={780}>
+        <div data-screen-label={label} style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>{children}</div>
+          <BottomNav active={activeTab} unread={2} onChange={() => {}} />
+        </div>
+      </IOSDevice>
+    );
+  }
+
+  function FlavorSection({ flavor, label }) {
+    const { SplashScreen, HomeScreenEmpty, HomeScreenPopulated } = window.KLS_HOME;
+    return (
+      <>
+        <div className="section-label">{label}</div>
+        <div className="frame-wrap">
+          <Phone>
+            <div data-screen-label={`${flavor}-splash`} style={{ width: "100%", height: "100%" }}>
+              <SplashScreen />
+            </div>
+          </Phone>
+          <div className="frame-label">Splash · {flavor}</div>
+        </div>
+        <div className="frame-wrap">
+          <PhoneWithChrome label={`${flavor}-home-empty`} activeTab="home">
+            <HomeScreenEmpty flavor={flavor} userName="Claire" />
+          </PhoneWithChrome>
+          <div className="frame-label">Home · empty · {flavor}</div>
+        </div>
+        <div className="frame-wrap">
+          <PhoneWithChrome label={`${flavor}-home-populated`} activeTab="home">
+            <HomeScreenPopulated flavor={flavor} isStudent={flavor === "education"} />
+          </PhoneWithChrome>
+          <div className="frame-label">Home · populated · {flavor}</div>
+        </div>
+      </>
+    );
+  }
+
+  function KitContent() {
+    return (
+      <>
+        <FlavorSection flavor="education" label="Education flavor — Acme Aviation Co." />
+        <FlavorSection flavor="commercial" label="Commercial flavor — Acme Operations" />
+        <div className="section-label">Other tabs (legacy demo screens)</div>
+        <div className="frame-wrap"><Phone initial="workspace" /><div className="frame-label">Workspace tab</div></div>
+        <div className="frame-wrap"><Phone initial="orion" /><div className="frame-label">Orion tab</div></div>
+        <div className="frame-wrap"><Phone initial="notifications" /><div className="frame-label">Notifications tab</div></div>
+      </>
+    );
+  }
+
+  function applyTheme(t) {
+    const html = document.documentElement;
+    const root = document.getElementById('root');
+    if (t === 'split') {
+      html.removeAttribute('data-theme');
+      root.classList.add('split');
+    } else if (t === 'auto') {
+      html.removeAttribute('data-theme');
+      root.classList.remove('split');
+    } else {
+      html.setAttribute('data-theme', t);
+      root.classList.remove('split');
+    }
+    localStorage.setItem('kls.kit.theme.mobile', t);
+  }
+
+  function ThemeToggle({ value, onChange }) {
+    const opts = [
+      { id: 'light', label: 'Light' },
+      { id: 'dark',  label: 'Dark' },
+      { id: 'auto',  label: 'Auto' },
+      { id: 'split', label: 'Split' },
+    ];
+    return (
+      <div className="theme-toggle">
+        {opts.map(o => (
+          <button key={o.id}
+            className={value === o.id ? 'active' : ''}
+            onClick={() => onChange(o.id)}>{o.label}</button>
+        ))}
+      </div>
+    );
+  }
+
+  function Mounted() {
+    const [t, setT] = useState(initialTheme);
+    useEffect(() => { applyTheme(t); }, [t]);
+
+    if (t === 'split') {
+      return (
+        <>
+          <div className="theme-pane" data-theme="light">
+            <div className="pane-label">Light theme</div>
+            <KitContent />
+          </div>
+          <div className="theme-pane" data-theme="dark">
+            <div className="pane-label">Dark theme</div>
+            <KitContent />
+          </div>
+          <ThemeToggle value={t} onChange={setT} />
+        </>
+      );
+    }
+    return (
+      <>
+        <div className="theme-pane">
+          <KitContent />
+        </div>
+        <ThemeToggle value={t} onChange={setT} />
+      </>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(<Mounted />);
+</script>
+</body>
+</html>

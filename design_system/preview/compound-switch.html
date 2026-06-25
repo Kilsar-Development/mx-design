@@ -1,0 +1,84 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="CompoundSwitch (canonical)" subtitle="Animated segmented control — label + icon modes · light + dark" viewport="1200x340" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>CompoundSwitch — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Canonical CompoundSwitch
+     - track: tertiary bg + outlineVariant 1px border + smBorderRadius (8)
+     - height 40, 2px inset margin, 4px gap between options
+     - active tile: surface bg + smBorderRadius
+     - active label: labelMediumSemiBold
+     - inactive label: labelMediumSemiBold · onTertiary */
+  .cs {
+    height: 40px;
+    padding: 2px;
+    background: var(--kls-tertiary);
+    border: 1px solid var(--kls-outline-variant);
+    border-radius: 8px;
+    display: inline-flex;
+    gap: 4px;
+  }
+  .cs button {
+    height: 36px;
+    padding: 0 18px;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--kls-on-tertiary);
+  }
+  .cs button.active {
+    background: var(--kls-surface);
+    color: var(--kls-on-surface);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .cs.icons button { padding: 0; width: 40px; display: inline-flex; align-items: center; justify-content: center; }
+  .cs.icons svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+</style></head>
+<body><div class="grid">
+  <div class="pane" data-theme="light"><div class="label">Light</div>
+    <div class="caption">Label mode</div>
+    <div class="cs">
+      <button class="active">Today</button>
+      <button>Week</button>
+      <button>Month</button>
+      <button>All</button>
+    </div>
+    <div class="caption">Icon mode (4 options)</div>
+    <div class="cs icons">
+      <button class="active"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
+      <button><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="3" rx="1"/><rect x="4" y="11" width="16" height="3" rx="1"/><rect x="4" y="16" width="16" height="3" rx="1"/></svg></button>
+      <button><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><rect x="11" y="5" width="9" height="3" rx="1"/><circle cx="6" cy="12" r="2"/><rect x="11" y="11" width="9" height="3" rx="1"/></svg></button>
+      <button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button>
+    </div>
+    <div class="caption">Spec — height 40 · padding 2 · gap 4 · radius 8 · track tertiary · active surface · labelMediumSemiBold (12/600)</div>
+  </div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div>
+    <div class="caption">Label mode</div>
+    <div class="cs">
+      <button class="active">Today</button>
+      <button>Week</button>
+      <button>Month</button>
+      <button>All</button>
+    </div>
+    <div class="caption">Icon mode</div>
+    <div class="cs icons">
+      <button class="active"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
+      <button><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="3" rx="1"/><rect x="4" y="11" width="16" height="3" rx="1"/><rect x="4" y="16" width="16" height="3" rx="1"/></svg></button>
+      <button><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><rect x="11" y="5" width="9" height="3" rx="1"/><circle cx="6" cy="12" r="2"/><rect x="11" y="11" width="9" height="3" rx="1"/></svg></button>
+      <button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button>
+    </div>
+  </div>
+</div></body></html>

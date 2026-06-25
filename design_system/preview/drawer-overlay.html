@@ -1,0 +1,136 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="DrawerOverlay" subtitle="DrawerOverlay — left + right · canonical 426px collapsed · light + dark" viewport="1200x880" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>DrawerOverlay</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-surface-variant); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 24px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Stage simulating an app behind a drawer: just a darkened workspace */
+  .stage {
+    position: relative;
+    height: 360px;
+    border-radius: 12px;
+    background: var(--kls-surface-variant);
+    border: 1px solid var(--kls-outline-variant);
+    overflow: hidden;
+  }
+  .stage .app {
+    position: absolute; inset: 0;
+    background: var(--kls-surface);
+    color: var(--kls-on-surface);
+    padding: 20px;
+    font-size: 13px;
+  }
+
+  /* DrawerOverlay drawer (right) — slides from right.
+     - 426px wide collapsed (DrawerOverlay.COLLAPSED_WIDTH)
+     - 50% wide expanded
+     - inset Sizing.small (12) from edges
+     - rounded smBorderRadius (8) with dropShadow */
+  .drawer {
+    position: absolute;
+    top: 12px; bottom: 12px; right: 12px;
+    width: 380px;
+    background: var(--kls-surface);
+    border-radius: 8px;
+    box-shadow: var(--kls-drop-shadow);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .drawer.left { right: auto; left: 12px; }
+
+  /* Drawer content sample — a profile-like row */
+  .drawer-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--kls-outline-variant);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .drawer-head .title {
+    font-family: 'Plus Jakarta Sans';
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--kls-on-surface);
+    flex: 1;
+  }
+  .drawer-head .close {
+    background: transparent; border: 0; cursor: pointer;
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--kls-on-surface);
+  }
+  .drawer-head .close svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .drawer-body { padding: 20px; flex: 1; }
+
+  /* Scrim covering the rest of the app */
+  .scrim {
+    position: absolute; inset: 0;
+    background: var(--kls-scrim);
+  }
+</style></head>
+<body><div class="grid">
+  <div class="pane" data-theme="light"><div class="label">Light</div>
+
+    <div class="caption">Right drawer — collapsed (426px in app, scaled down here)</div>
+    <div class="stage">
+      <div class="app">Workspace content behind drawer</div>
+      <div class="scrim"></div>
+      <div class="drawer">
+        <div class="drawer-head">
+          <span class="title">Your Profile</span>
+          <button class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="drawer-body">Drawer body content goes here — name, avatar, settings, etc.</div>
+      </div>
+    </div>
+
+    <div class="caption">Left drawer variant (slides in from left)</div>
+    <div class="stage">
+      <div class="app">Workspace content</div>
+      <div class="scrim"></div>
+      <div class="drawer left">
+        <div class="drawer-head">
+          <span class="title">Filters</span>
+          <button class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="drawer-body">Filter controls go here.</div>
+      </div>
+    </div>
+
+    <div class="caption">Spec — 426px collapsed / 50% expanded · 12px inset · smBorderRadius · dropShadow · slides in over scrim · tap scrim or close button to dismiss</div>
+  </div>
+
+  <div class="pane" data-theme="dark"><div class="label">Dark</div>
+    <div class="caption">Right drawer</div>
+    <div class="stage">
+      <div class="app">Workspace content behind drawer</div>
+      <div class="scrim"></div>
+      <div class="drawer">
+        <div class="drawer-head">
+          <span class="title">Your Profile</span>
+          <button class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="drawer-body">Drawer body content goes here.</div>
+      </div>
+    </div>
+
+    <div class="caption">Left drawer</div>
+    <div class="stage">
+      <div class="app">Workspace content</div>
+      <div class="scrim"></div>
+      <div class="drawer left">
+        <div class="drawer-head">
+          <span class="title">Filters</span>
+          <button class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="drawer-body">Filter controls go here.</div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

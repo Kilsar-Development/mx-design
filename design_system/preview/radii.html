@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- @dsCard group="Spacing" name="Corner radii" subtitle="xs → pill · 16px is default" viewport="700x160" -->
+<html><head><meta charset="utf-8"><title>Radii — Scale</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:22px 24px;background:#fff;font-family:var(--kls-font-sans);color:#18181A}
+  .head{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#838383;margin:0 0 16px}
+  .row{display:flex;gap:18px;align-items:flex-end}
+  .item{display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex:1;min-width:0}
+  .swatch{width:80px;height:80px;background:#18181A;border:1px solid #18181A}
+  .meta{display:flex;flex-direction:column;gap:2px}
+  .tok{font-size:13px;font-weight:600;color:#18181A}
+  .px{font-size:11px;color:#838383;font-variant-numeric:tabular-nums}
+  /* bottom-modal — show top corners only on a wider rectangle */
+  .modal{width:160px;height:60px;background:#18181A;border-radius:24px 24px 0 0}
+</style></head>
+<body>
+  <p class="head">radius · named tokens from app source (Dart)</p>
+  <div class="row">
+    <div class="item"><div class="swatch" style="border-radius:4px"></div><div class="meta"><span class="tok">xSmall</span><span class="px">4 px</span></div></div>
+    <div class="item"><div class="swatch" style="border-radius:8px"></div><div class="meta"><span class="tok">small</span><span class="px">8 px</span></div></div>
+    <div class="item"><div class="swatch" style="border-radius:12px"></div><div class="meta"><span class="tok">med</span><span class="px">12 px</span></div></div>
+    <div class="item"><div class="swatch" style="border-radius:24px"></div><div class="meta"><span class="tok">large</span><span class="px">24 px</span></div></div>
+    <div class="item" style="flex:2"><div class="modal"></div><div class="meta"><span class="tok">bottomModal</span><span class="px">24 px · top corners only</span></div></div>
+  </div>
+</body></html>

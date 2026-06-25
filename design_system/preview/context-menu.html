@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Context Menu" subtitle="showContextMenu — light + dark variants, destructive, disabled · both schemes" viewport="1200x720" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Context Menu</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 24px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Trigger button just so the menu has a place to anchor to */
+  .trigger {
+    width: 36px; height: 36px;
+    background: transparent; border: 0;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--kls-on-surface);
+    cursor: pointer;
+  }
+  .trigger:hover { background: var(--kls-tertiary); }
+  .trigger svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  /* showContextMenu spec:
+     - bg: light variant = onPrimary, dark variant = onSecondary
+     - shape: smBorderRadius (8)
+     - shadow: onSecondary
+     - item: 52 tall · horizontal small (12) padding
+     - icon: 6 (xSmall) gap to label
+     - label: labelMediumSemiBold (12/600)
+     - destructive → error · disabled → tertiaryFixed (legacy) */
+  .ctx-anchor { position: relative; display: inline-block; }
+  .ctx {
+    position: absolute; top: calc(100% + 6px); left: 0;
+    min-width: 220px;
+    background: var(--kls-on-primary);
+    border-radius: 8px;
+    box-shadow: var(--kls-drop-shadow);
+    padding: 4px;
+    display: flex; flex-direction: column;
+  }
+  .ctx.variant-dark { background: var(--kls-on-secondary); }
+  .ctx-item {
+    height: 52px;
+    padding: 0 12px;
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px; font-weight: 600;
+    color: var(--kls-on-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .ctx-item:hover { background: var(--kls-tertiary-container); }
+  .ctx-item svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; flex: none; }
+  .ctx-item.destructive { color: var(--kls-error); }
+  .ctx-item.disabled { color: var(--kls-on-surface-variant); cursor: not-allowed; }
+  .ctx-item.disabled:hover { background: transparent; }
+
+  /* Dark menu variant — text color inverts */
+  .ctx.variant-dark .ctx-item { color: var(--kls-on-primary); }
+  .ctx.variant-dark .ctx-item:hover { background: color-mix(in oklab, var(--kls-on-primary) 8%, transparent); }
+</style></head>
+<body><div class="grid">
+  <div class="pane" data-theme="light"><div class="label">Light</div>
+
+    <div class="caption">Default — light variant (bg: onPrimary)</div>
+    <div class="ctx-anchor">
+      <button class="trigger"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></button>
+      <div class="ctx">
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg><span>Add to library</span></div>
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M4 9h5"/></svg><span>Duplicate</span></div>
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke-linejoin="round"/></svg><span>Archive</span></div>
+        <div class="ctx-item destructive"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke-linejoin="round"/></svg><span>Delete</span></div>
+      </div>
+    </div>
+
+    <div style="height: 80px"></div>
+
+    <div class="caption">Dark variant (light=false) — used when anchored over inverted surfaces</div>
+    <div class="ctx-anchor">
+      <button class="trigger" style="background:var(--kls-on-surface);color:var(--kls-surface)"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></button>
+      <div class="ctx variant-dark">
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><path d="M3 12l4 4L21 4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Mark complete</span></div>
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg><span>View details</span></div>
+        <div class="ctx-item disabled"><svg viewBox="0 0 24 24"><path d="M5 12h14M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Move (unavailable)</span></div>
+      </div>
+    </div>
+
+    <div class="caption">Spec — bg <code>onPrimary</code> · radius <code>smBorderRadius</code> (8) · item 52 high · padding 12 · label <code>labelMediumSemiBold</code> · destructive uses <code>error</code></div>
+  </div>
+
+  <div class="pane" data-theme="dark"><div class="label">Dark</div>
+
+    <div class="caption">Light variant in dark scheme — bg onPrimary inverts</div>
+    <div class="ctx-anchor">
+      <button class="trigger"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></button>
+      <div class="ctx">
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg><span>Add to library</span></div>
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16M4 9h5"/></svg><span>Duplicate</span></div>
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke-linejoin="round"/></svg><span>Archive</span></div>
+        <div class="ctx-item destructive"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" stroke-linejoin="round"/></svg><span>Delete</span></div>
+      </div>
+    </div>
+
+    <div style="height: 80px"></div>
+
+    <div class="caption">Dark variant in dark scheme</div>
+    <div class="ctx-anchor">
+      <button class="trigger"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></button>
+      <div class="ctx variant-dark">
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><path d="M3 12l4 4L21 4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Mark complete</span></div>
+        <div class="ctx-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg><span>View details</span></div>
+        <div class="ctx-item disabled"><svg viewBox="0 0 24 24"><path d="M5 12h14M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Move (unavailable)</span></div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

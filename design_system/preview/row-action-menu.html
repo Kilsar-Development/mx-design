@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="row-action-menu" subtitle="Per-row ⋯ trigger + overflow menu (DS proposal G1)" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>RowActionMenu — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Trigger — 32×32 · radius 8 · dots 16 on-surface-variant ·
+     idle transparent · hover/open bg tertiary-container · no ripple */
+  .trigger {
+    width: 32px; height: 32px; border-radius: var(--kls-radius-small);
+    background: transparent; border: 0; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--kls-on-surface-variant);
+  }
+  .trigger:hover, .trigger.open { background: var(--kls-tertiary-container); }
+  .trigger svg { width: 16px; height: 16px; }
+
+  /* Menu — bg on-primary · radius 8 · drop-shadow · pad 6 */
+  .menu {
+    width: 200px;
+    background: var(--kls-on-primary);
+    border-radius: var(--kls-radius-small);
+    box-shadow: var(--kls-drop-shadow);
+    padding: var(--kls-space-xsmall);
+    display: flex; flex-direction: column;
+  }
+  .item {
+    display: flex; align-items: center; gap: var(--kls-space-small);
+    padding: 10px var(--kls-space-small);
+    border-radius: var(--kls-radius-xsmall);
+    font-size: 14px; font-weight: 500; color: var(--kls-on-surface);
+    cursor: pointer;
+  }
+  .item:hover { background: var(--kls-tertiary-container); }
+  .item.selected { background: var(--kls-tertiary); }
+  .item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  .item.danger { color: var(--kls-error); border-top: 1px solid var(--kls-outline-variant); margin-top: var(--kls-space-tiny); padding-top: 10px; }
+
+  .demorow { display: flex; align-items: center; gap: var(--kls-space-small); }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">Trigger states — idle · hover/open</div>
+    <div class="demorow">
+      <button class="trigger"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg></button>
+      <button class="trigger open"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg></button>
+    </div>
+
+    <div class="caption">Open menu — items, selected, destructive</div>
+    <div class="menu">
+      <div class="item"><svg viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16v4z" stroke-linejoin="round"/></svg>Edit</div>
+      <div class="item selected"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5a7 7 0 0 0 .1-1z" stroke-linejoin="round"/></svg>Configure</div>
+      <div class="item danger"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V5h6v2M6 7l1 13h10l1-13" stroke-linecap="round" stroke-linejoin="round"/></svg>Remove</div>
+    </div>
+
+    <div class="caption">Spec — trigger 32×32 · radius 8 · dots 16 on-surface-variant · idle transparent / hover-open tertiary-container · no ripple. Menu bg on-primary · radius 8 · drop-shadow · pad 6 · items pad 10×12 r6 labelLarge (14/500) · hover tertiary-container · selected tertiary · destructive fg error + 1px outline-variant divider above. Anchored below trigger, right-aligned · closes on outside-click / Esc / scroll.</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

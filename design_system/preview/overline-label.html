@@ -1,0 +1,61 @@
+<!-- @dsCard group="Type" -->
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><title>Section Label (all-caps) — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 20px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .mock { background: var(--kls-scaffold-bg); border: 1px solid var(--kls-outline-variant); border-radius: 12px; overflow: hidden; padding: 20px 22px; }
+
+  /* Section label / eyebrow — DS CHANGE (approved, design phase): ALL CAPS.
+     Renders via .kls-text-section-label:
+       base  = labelMediumSemiBold (12/16, weight 600)
+       tracking  = 0.08em        ← --kls-section-label-tracking
+       transform = uppercase     ← --kls-section-label-transform
+       color = onSurfaceVariant
+     App equivalent: textTheme.labelMediumSemiBold.copyWith(color: onSurfaceVariant) + uppercase. */
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field + .field { margin-top: 14px; }
+  .field .val { font-size: 15px; font-weight: 600; color: var(--kls-on-surface); }
+  .field .val.mono { font-family: var(--kls-font-mono); font-weight: 500; }
+  .divider { height: 1px; background: var(--kls-outline-variant); margin: 18px 0; }
+  .row { display: flex; align-items: baseline; justify-content: space-between; }
+  .count { font-size: 13px; color: var(--kls-on-surface-variant); }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">Section header (used above step lists, reference lists)</div>
+    <div class="mock">
+      <div class="row">
+        <span class="kls-text-section-label">Procedure Steps</span>
+        <span class="count">6 steps</span>
+      </div>
+      <div class="divider"></div>
+      <span class="kls-text-section-label">Reference Documents</span>
+    </div>
+
+    <div class="caption">Field labels (metadata grid)</div>
+    <div class="mock">
+      <div class="field"><span class="kls-text-section-label">Module ID</span><span class="val mono">MOD-MLG-600</span></div>
+      <div class="field"><span class="kls-text-section-label">Version</span><span class="val">v3.0</span></div>
+      <div class="field"><span class="kls-text-section-label">Applicable Systems</span><span class="val">Landing Gear · Hydraulic Power</span></div>
+    </div>
+
+    <div class="caption">Spec — section label: base labelMediumSemiBold (12/600) · tracking 0.08em · text-transform UPPERCASE · color onSurfaceVariant. DS CHANGE (approved): section title labels are ALL CAPS; tokens --kls-section-label-*. Class: .kls-text-section-label. App: textTheme.labelMediumSemiBold.copyWith(color: onSurfaceVariant) + uppercase.</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

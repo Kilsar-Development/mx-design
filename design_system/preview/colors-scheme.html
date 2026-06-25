@@ -1,0 +1,89 @@
+<!doctype html>
+<!-- @dsCard group="Colors" name="Colors — M3 Scheme" subtitle="Full Material 3 ColorScheme — light & dark, every Flutter role" viewport="700x580" -->
+<html><head><meta charset="utf-8"><title>Colors — M3 Scheme (Light & Dark)</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:18px 20px;background:#fff;font-family:var(--kls-font-sans);color:#18181A;display:flex;flex-direction:column;gap:18px}
+  .col{display:flex;flex-direction:column;gap:10px}
+  .head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#838383;margin:0}
+  .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+  .role{display:flex;flex-direction:column;gap:3px}
+  .swatch{height:34px;border-radius:6px;border:1px solid rgba(0,0,0,.06)}
+  .name{font-size:9.5px;font-weight:600;line-height:1.15;color:#18181A}
+  .hex{font-size:8.5px;font-weight:500;color:#838383;font-variant-numeric:tabular-nums}
+  .modeChip{font-size:9px;font-weight:600;color:#fff;background:#18181A;padding:3px 8px;border-radius:999px;letter-spacing:.04em}
+  .modeChip.alt{background:#fff;color:#18181A;border:1px solid #E2E2E2}
+</style></head>
+<body>
+  <div class="col">
+    <p class="head">Light scheme <span class="modeChip">DEFAULT</span></p>
+    <div class="grid" id="light"></div>
+  </div>
+  <div class="col">
+    <p class="head">Dark scheme <span class="modeChip alt">[data-theme="dark"]</span></p>
+    <div class="grid" id="dark"></div>
+  </div>
+  <script>
+    // [name, light hex, dark hex] — direct from Flutter ColorScheme
+    const roles = [
+      ['primary','000000','FFFFFF'],
+      ['onPrimary','F3F3F3','141414'],
+      ['primaryContainer','F8F8F8','1F1F21'],
+      ['onPrimaryContainer','1F1F21','F8F8F8'],
+      ['secondary','E2E2E2','272727'],
+      ['onSecondary','141414','F8F8F8'],
+      ['secondaryContainer','F8F8F8','1F1F21'],
+      ['onSecondaryContainer','141414','F8F8F8'],
+      ['tertiary','F3F3F3','272727'],
+      ['onTertiary','838383','838383'],
+      ['tertiaryContainer','E2E2E2','343434'],
+      ['onTertiaryContainer','141414','F8F8F8'],
+      ['error','DC2626','D02525'],
+      ['onError','F8F8F8','F8F8F8'],
+      ['errorContainer','FEF2F2','450A0A'],
+      ['onErrorContainer','F87171','EF4444'],
+      ['surface','FFFFFF','1F1F21'],
+      ['onSurface','18181A','F8F8F8'],
+      ['onSurfaceVariant','838383','838383'],
+      ['surfaceVariant','F8F8F8','141414'],
+      ['outline','E2E2E2','4B4B4B'],
+      ['outlineVariant','F3F3F3','272727'],
+      ['inverseSurface','1F1F21','F8F8F8'],
+      ['onInverseSurface','F8F8F8','141414'],
+      ['surfaceContainerLowest','F8F8F8','272727'],
+      ['surfaceContainerLow','E2E2E2','4B4B4B'],
+      ['surfaceContainer','B4B4B4','838383'],
+      ['surfaceContainerHigh','838383','B4B4B4'],
+      ['surfaceContainerHighest','272727','D5D5D5'],
+      ['scrim','rgba(0,0,0,.40)','rgba(0,0,0,.60)'],
+      // App-specific extension roles:
+      ['success','54B855','46AD47'],
+      ['onSuccess','F8F8F8','F8F8F8'],
+      ['successContainer','DDF1DD','19371A'],
+      ['onSuccessContainer','326E33','76C677'],
+      ['progress','FC7A36','E26A2C'],
+      ['onProgress','F8F8F8','F8F8F8'],
+      ['progressContainer','FFF7ED','3A1F07'],
+      ['onProgressContainer','FB923C','E38435'],
+      ['info','2890FF','2073CC'],
+      ['onInfo','F8F8F8','F8F8F8'],
+      ['infoContainer','EAF4FF','0B2846'],
+      ['onInfoContainer','4187C6','ACCFEF'],
+    ];
+    const fill = (id, col) => {
+      const root = document.getElementById(id);
+      roles.forEach(r => {
+        const v = r[col];
+        const isRgba = v.startsWith('rgba');
+        const bg = isRgba ? v : `#${v}`;
+        const lbl = isRgba ? v.replace('rgba(0,0,0,.','a/').replace(')','') : `#${v}`;
+        const el = document.createElement('div');
+        el.className = 'role';
+        el.innerHTML = `<div class="swatch" style="background:${bg}"></div><div class="name">${r[0]}</div><div class="hex">${lbl}</div>`;
+        root.appendChild(el);
+      });
+    };
+    fill('light', 1);
+    fill('dark', 2);
+  </script>
+</body></html>

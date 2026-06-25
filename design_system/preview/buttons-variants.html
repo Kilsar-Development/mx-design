@@ -1,0 +1,105 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Buttons — Variants" subtitle="Secondary / tertiary / destructive / disabled" viewport="700x240" -->
+<html><head><meta charset="utf-8"><title>SecondaryActionButton & Pair</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:0;font-family:var(--kls-font-sans);display:grid;grid-template-columns:1fr 1fr;min-height:520px}
+  .pane{padding:22px 24px 26px;display:flex;flex-direction:column;gap:14px}
+  .pane.light{background:var(--kls-color-base-white);color:#141414}
+  .pane.dark {background:var(--kls-color-neutral-900);color:#F8F8F8}
+  .head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0}
+  .head .mode{font-weight:600;letter-spacing:.04em;opacity:.55}
+  .label{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.5;margin:6px 0 0}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+  /* Shared button base — both buttons share height/radius/font */
+  .btn{
+    height:40px;
+    border-radius:var(--kls-radius-med);
+    font-family:var(--kls-font-sans);
+    font-size:var(--kls-label-large-bold-size);
+    line-height:var(--kls-label-large-bold-line);
+    font-weight:var(--kls-label-large-bold-weight);
+    display:inline-flex;align-items:center;gap:var(--kls-space-xsmall);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn svg{ width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6; }
+
+  /* PRIMARY — included for the pair example */
+  .pa{ background:var(--kls-tertiary-container); color:var(--kls-on-tertiary-container);
+       border:1px solid transparent; padding:0 var(--kls-space-med); }
+
+  /* SECONDARY — canonical from secondary_action_button.dart */
+  .sa{
+    background:var(--kls-surface);
+    color:var(--kls-on-surface);
+    border:1px solid var(--kls-outline-variant);
+    /* Padding asymmetric: left small (12) when icon, med (20) without; right always med (20) */
+    padding:0 var(--kls-space-med);
+  }
+  .sa[data-has-icon="true"]{ padding-left:var(--kls-space-small); }   /* small = 12 */
+  .sa[data-disabled="true"]{ color:var(--kls-on-surface-variant); cursor:default; }
+  .sa[data-disabled="true"] svg{ stroke:var(--kls-on-surface-variant); }
+  .full{ width:100%; justify-content:center; }
+
+  .meta{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;opacity:.55;margin-top:auto;line-height:1.45}
+  .meta b{font-weight:600;opacity:.85}
+</style></head>
+<body>
+  <div class="pane light">
+    <p class="head"><span>SecondaryActionButton</span><span class="mode">LIGHT</span></p>
+
+    <p class="label">Default</p>
+    <div class="row"><button class="btn sa">Maybe later</button></div>
+
+    <p class="label">With icon (left padding shrinks to 12)</p>
+    <div class="row"><button class="btn sa" data-has-icon="true">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+      Add to plan
+    </button></div>
+
+    <p class="label">Disabled</p>
+    <div class="row"><button class="btn sa" data-disabled="true">Maybe later</button></div>
+
+    <p class="label">Action pair — primary + secondary, full-width</p>
+    <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%">
+      <button class="btn sa full">Cancel</button>
+      <button class="btn pa full">Confirm</button>
+    </div>
+
+    <p class="meta">
+      bg <b>surface</b> · text <b>onSurface · labelLargeBold</b><br>
+      border <b>outlineVariant</b> · radius <b>12</b> mobile / <b>8</b> web<br>
+      padding-x <b>20</b> · with icon: left <b>12</b>, right <b>20</b>, gap <b>6</b><br>
+      disabled → text <b>onSurfaceVariant</b> · border unchanged
+    </p>
+  </div>
+
+  <div class="pane dark" data-theme="dark">
+    <p class="head"><span>SecondaryActionButton</span><span class="mode">DARK</span></p>
+
+    <p class="label">Default</p>
+    <div class="row"><button class="btn sa">Maybe later</button></div>
+
+    <p class="label">With icon</p>
+    <div class="row"><button class="btn sa" data-has-icon="true">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+      Add to plan
+    </button></div>
+
+    <p class="label">Disabled</p>
+    <div class="row"><button class="btn sa" data-disabled="true">Maybe later</button></div>
+
+    <p class="label">Action pair</p>
+    <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%">
+      <button class="btn sa full">Cancel</button>
+      <button class="btn pa full">Confirm</button>
+    </div>
+
+    <p class="meta">
+      Same recipe — surface + outlineVariant track the dark scheme automatically.<br>
+      bg light <b>#FFF</b> → dark <b>#141414</b> · border light <b>#E2E2E2</b> → dark <b>#4B4B4B</b>
+    </p>
+  </div>
+</body></html>

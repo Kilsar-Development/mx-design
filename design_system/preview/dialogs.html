@@ -1,0 +1,170 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="AlertPrompt & DialogOverlay" subtitle="AlertPrompt + DialogOverlay — on scrim · light + dark" viewport="1200x1000" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>AlertPrompt & DialogOverlay</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 24px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Scrim — backdrop blur 4 + 80% surface (per dialog_overlay.dart) */
+  .scrim {
+    position: relative;
+    height: 440px;
+    border-radius: 12px;
+    background:
+      linear-gradient(rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.0) 100%),
+      var(--kls-tertiary);
+    overflow: hidden;
+  }
+  .scrim::before {
+    content: ""; position: absolute; inset: 0;
+    backdrop-filter: blur(4px);
+    background: color-mix(in oklab, var(--kls-surface) 80%, transparent);
+  }
+
+  /* AlertPrompt — Material AlertDialog
+     title h4 · message + body labelLarge · color onSecondary
+     actions labelLargeBold (error if destructive) · smBorderRadius */
+  .alert {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 360px;
+    background: var(--kls-surface);
+    border-radius: 8px;
+    box-shadow: var(--kls-drop-shadow);
+    padding: 20px 20px 12px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .alert .title {
+    font-family: 'Plus Jakarta Sans';
+    font-size: var(--kls-h4-size);
+    font-weight: var(--kls-h4-weight);
+    line-height: var(--kls-h4-line);
+    color: var(--kls-on-secondary);
+  }
+  .alert .msg {
+    font-family: 'Plus Jakarta Sans';
+    font-size: 14px; font-weight: 500; line-height: 20px;
+    color: var(--kls-on-secondary);
+  }
+  .alert .actions {
+    display: flex; justify-content: flex-end; gap: 4px;
+    margin-top: 4px;
+  }
+  .alert .actions button {
+    background: transparent; border: 0;
+    padding: 8px 12px;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 14px; font-weight: 700;
+    color: var(--kls-on-secondary);
+    cursor: pointer;
+    border-radius: 6px;
+  }
+  .alert .actions button.destructive { color: var(--kls-error); }
+  .alert .actions button.disabled { color: var(--kls-on-surface-variant); cursor: not-allowed; }
+
+  /* DialogOverlay — has a header row + divider, then body
+     header: optional icon (primary) + subtitleSmall title + close (×) */
+  .dialog {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 420px;
+    background: var(--kls-surface);
+    border-radius: 8px;
+    box-shadow: var(--kls-drop-shadow);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .dialog .head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 20px 12px;
+  }
+  .dialog .head .icon { width: 24px; height: 24px; color: var(--kls-primary); display: inline-flex; }
+  .dialog .head .icon svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .dialog .head .title {
+    flex: 1;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 16px; font-weight: 500; /* subtitleSmall mobile */
+    color: var(--kls-on-surface);
+  }
+  .dialog .head .close {
+    background: transparent; border: 0; cursor: pointer;
+    width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+    color: var(--kls-on-surface);
+  }
+  .dialog .head .close svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .dialog .divider { height: 1px; background: var(--kls-tertiary); }
+  .dialog .body {
+    padding: 20px;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 14px; line-height: 20px;
+    color: var(--kls-on-surface-variant);
+  }
+</style></head>
+<body><div class="grid">
+  <div class="pane" data-theme="light"><div class="label">Light</div>
+
+    <div>
+      <div class="caption" style="margin-bottom:8px">AlertPrompt — destructive confirmation</div>
+      <div class="scrim">
+        <div class="alert">
+          <div class="title">Delete this course?</div>
+          <div class="msg">All 12 enrolled students will lose access. This can't be undone.</div>
+          <div class="actions">
+            <button>Cancel</button>
+            <button class="destructive">Yes, delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="caption" style="margin-bottom:8px">DialogOverlay — header + body</div>
+      <div class="scrim">
+        <div class="dialog">
+          <div class="head">
+            <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01" stroke-linecap="round"/></svg></span>
+            <span class="title">Message of the Day</span>
+            <button class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="divider"></div>
+          <div class="body">Maintenance window scheduled for Saturday 2–4 AM ET. All workspaces will be read-only during this period. We'll restore full access automatically.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane" data-theme="dark"><div class="label">Dark</div>
+    <div>
+      <div class="caption" style="margin-bottom:8px">AlertPrompt — destructive</div>
+      <div class="scrim">
+        <div class="alert">
+          <div class="title">Delete this course?</div>
+          <div class="msg">All 12 enrolled students will lose access. This can't be undone.</div>
+          <div class="actions">
+            <button>Cancel</button>
+            <button class="destructive">Yes, delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="caption" style="margin-bottom:8px">DialogOverlay — header + body</div>
+      <div class="scrim">
+        <div class="dialog">
+          <div class="head">
+            <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01" stroke-linecap="round"/></svg></span>
+            <span class="title">Message of the Day</span>
+            <button class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="divider"></div>
+          <div class="body">Maintenance window scheduled for Saturday 2–4 AM ET. All workspaces will be read-only during this period. We'll restore full access automatically.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

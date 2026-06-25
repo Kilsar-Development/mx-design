@@ -1,0 +1,216 @@
+<!doctype html>
+<!-- @dsCard group="UI Kit — Web" name="web-ui-kit" subtitle="Web app shell — header + collapsible nav sidebar + sample Library" viewport="1360x880" -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=2640" />
+  <title>MX · Web UI Kit</title>
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <style>
+    /* Page-level styles. The kit chrome (sidebar, browser frame) lives below;
+       this stylesheet controls the OUTER stage that hosts each themed pane. */
+    html, body { margin: 0; min-height: 100%; font-family: "Plus Jakarta Sans", sans-serif; }
+    html { background: var(--kls-color-neutral-700); }   /* deep grey gutter — visible only between panes */
+
+    /* When data-theme is set on <html>, the whole stage uses that theme. */
+
+    #stage {
+      min-height: 100vh;
+      box-sizing: border-box;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 28px;
+    }
+
+    /* Side-by-side layout: two themed panes sit beside each other.
+       Each pane is its own scope with data-theme="..." applied locally;
+       the pane's own surface variables paint the background, so light shows
+       on the left, dark on the right, regardless of system preference. */
+    #stage.side-by-side {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 0;                /* panes butt up; gap is the gutter handled by html bg */
+    }
+    .theme-pane {
+      flex: 1 1 50%;
+      min-width: 600px;
+      padding: 28px;
+      box-sizing: border-box;
+      background: var(--kls-scaffold-bg);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .theme-pane[data-theme="dark"] { color-scheme: dark; }
+    .theme-pane[data-theme="light"] { color-scheme: light; }
+
+    .pane-label {
+      font-family: 'Plus Jakarta Sans';
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--kls-on-surface-variant);
+      padding: 4px 0;
+    }
+    .flavor-label {
+      width: 100%;
+      max-width: 1280px;
+      font-family: 'Plus Jakarta Sans';
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--kls-on-surface-variant);
+    }
+
+    /* Floating theme toggle (bottom-right). Lets reviewers flip the
+       active theme without changing system preferences.
+       Hidden when ?theme=side-by-side. */
+    .theme-toggle {
+      position: fixed; bottom: 16px; right: 16px;
+      display: inline-flex; gap: 4px;
+      padding: 4px;
+      background: var(--kls-surface);
+      color: var(--kls-on-surface);
+      border: 1px solid var(--kls-outline);
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      font-family: "Plus Jakarta Sans"; font-size: 12px;
+      z-index: 1000;
+    }
+    .theme-toggle button {
+      background: transparent; border: none; padding: 6px 12px;
+      border-radius: 999px; cursor: pointer; color: inherit;
+      font: inherit; font-weight: 600;
+    }
+    .theme-toggle button.active {
+      background: var(--kls-on-surface);
+      color: var(--kls-surface);
+    }
+  </style>
+</head>
+<body class="desktop">
+  <div id="stage"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="browser-window.jsx"></script>
+  <script>window.KLS_ICON_BASE = "../../assets/icons";</script>
+  <script type="text/babel" src="../shared/kls-icon.jsx"></script>
+  <script type="text/babel" src="chrome.jsx"></script>
+  <script type="text/babel" src="home-dashboard.jsx"></script>
+  <script type="text/babel" src="screens.jsx"></script>
+
+  <script type="text/babel">
+    // Theme controller — three modes:
+    //   ?theme=light  → force light only
+    //   ?theme=dark   → force dark only
+    //   ?theme=auto   → follow system pref (default)
+    //   ?theme=split  → side-by-side (light pane + dark pane)
+    const params = new URLSearchParams(location.search);
+    const initial = (params.get('theme') || localStorage.getItem('kls.kit.theme') || 'split').toLowerCase();
+    const validThemes = ['light', 'dark', 'auto', 'split'];
+    const theme = validThemes.includes(initial) ? initial : 'split';
+
+    function applyTheme(t) {
+      const html = document.documentElement;
+      if (t === 'split') {
+        html.removeAttribute('data-theme');
+        document.getElementById('stage').classList.add('side-by-side');
+      } else if (t === 'auto') {
+        html.removeAttribute('data-theme');
+        document.getElementById('stage').classList.remove('side-by-side');
+      } else {
+        html.setAttribute('data-theme', t);
+        document.getElementById('stage').classList.remove('side-by-side');
+      }
+      localStorage.setItem('kls.kit.theme', t);
+    }
+    applyTheme(theme);
+
+    function KitContent() {
+      // The actual UI: two flavor browser windows. Used in each themed pane.
+      return (
+        <>
+          <div className="flavor-label">Education flavor — Acme Aviation Co. (terms = "Courses", viewer = "Student")</div>
+          <ChromeWindow
+            width={1280}
+            height={820}
+            tabs={[{ title: "Acme Aviation — Home" }, { title: "Anatomy of an Engine" }]}
+            activeIndex={0}
+            url="app.kilsar.io/courses"
+          >
+            <WebApp flavor="education" />
+          </ChromeWindow>
+
+          <div className="flavor-label">Commercial flavor — Acme Operations (terms = "Cases", viewer = "Operator")</div>
+          <ChromeWindow
+            width={1280}
+            height={820}
+            tabs={[{ title: "Acme Ops — Home" }]}
+            activeIndex={0}
+            url="ops.kilsar.io/cases"
+          >
+            <WebApp flavor="commercial" />
+          </ChromeWindow>
+        </>
+      );
+    }
+
+    function Mounted() {
+      const [t, setT] = React.useState(theme);
+
+      React.useEffect(() => { applyTheme(t); }, [t]);
+
+      // Render: split mode places two themed panes side by side.
+      // Other modes apply data-theme to <html> directly via applyTheme().
+      if (t === 'split') {
+        return (
+          <>
+            <div className="theme-pane" data-theme="light">
+              <div className="pane-label">Light theme</div>
+              <KitContent />
+            </div>
+            <div className="theme-pane" data-theme="dark">
+              <div className="pane-label">Dark theme</div>
+              <KitContent />
+            </div>
+            <ThemeToggle value={t} onChange={setT} />
+          </>
+        );
+      }
+      return (
+        <>
+          <KitContent />
+          <ThemeToggle value={t} onChange={setT} />
+        </>
+      );
+    }
+
+    function ThemeToggle({ value, onChange }) {
+      const opts = [
+        { id: 'light', label: 'Light' },
+        { id: 'dark',  label: 'Dark' },
+        { id: 'auto',  label: 'Auto' },
+        { id: 'split', label: 'Split' },
+      ];
+      return (
+        <div className="theme-toggle">
+          {opts.map(o => (
+            <button key={o.id}
+              className={value === o.id ? 'active' : ''}
+              onClick={() => onChange(o.id)}>{o.label}</button>
+          ))}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("stage")).render(<Mounted />);
+  </script>
+</body>
+</html>

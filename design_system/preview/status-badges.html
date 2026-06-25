@@ -1,0 +1,122 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="status-badges" subtitle="6 statuses × 3 styles (plain · icon · dot)" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Status badges — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .section { display: flex; flex-direction: column; gap: 10px; }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+
+  /* ── Variation A — plain pill ────────────────────────────────────── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px; font-weight: 600; line-height: 16px;
+    white-space: nowrap;
+  }
+  .badge.with-icon { padding-left: 8px; }
+
+  /* ── Variation C — inline dot + text ─────────────────────────────── */
+  .dot-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px; font-weight: 600; line-height: 16px;
+    color: var(--kls-on-surface);
+    white-space: nowrap;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+  .dot.active-ring { box-shadow: 0 0 0 3px var(--kls-success-container); }
+
+  /* Status → token bindings.
+     pending     → tertiary (no semantic color)
+     building    → info (blue)
+     ready       → success (green)
+     active      → on-surface (inverted, max emphasis)
+     failed      → error
+     deprecated  → progress (orange / warning) */
+  .s-pending     { background: var(--kls-tertiary);            color: var(--kls-on-surface-variant); }
+  .s-building    { background: var(--kls-info-container);      color: var(--kls-on-info-container); }
+  .s-ready       { background: var(--kls-success-container);   color: var(--kls-on-success-container); }
+  .s-active      { background: var(--kls-on-surface);          color: var(--kls-surface); }
+  .s-failed      { background: var(--kls-error-container);     color: var(--kls-on-error-container); }
+  .s-deprecated  { background: var(--kls-progress-container);  color: var(--kls-on-progress-container); }
+
+  .d-pending    { background: var(--kls-on-surface-variant); }
+  .d-building   { background: var(--kls-info); }
+  .d-ready      { background: var(--kls-success); }
+  .d-active     { background: var(--kls-success); }
+  .d-failed     { background: var(--kls-error); }
+  .d-deprecated { background: var(--kls-progress); }
+
+  svg.glyph { width: 13px; height: 13px; flex-shrink: 0; }
+  @keyframes kls-spin { to { transform: rotate(360deg); } }
+  .spin { animation: kls-spin 900ms linear infinite; }
+</style></head>
+<body><div class="grid">
+
+  <!-- prettier glyph defs reused in both panes -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="g-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4.5 4.5L20 6"/></symbol>
+      <symbol id="g-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01" stroke-linecap="round"/></symbol>
+      <symbol id="g-warn"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l10 17H2L12 3z" stroke-linejoin="round"/><path d="M12 10v5M12 17.5h.01" stroke-linecap="round"/></symbol>
+      <symbol id="g-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2" fill="currentColor"/></symbol>
+      <symbol id="g-active" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></symbol>
+      <symbol id="g-spin"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9" stroke-opacity=".3"/><path d="M21 12a9 9 0 00-9-9" stroke-linecap="round"/></symbol>
+    </defs>
+  </svg>
+
+  <template id="card">
+    <div class="section">
+      <div class="caption">Variation A — pill (text only)</div>
+      <div class="row">
+        <span class="badge s-pending">Pending</span>
+        <span class="badge s-building">Building</span>
+        <span class="badge s-ready">Available</span>
+        <span class="badge s-active">Active</span>
+        <span class="badge s-failed">Failed</span>
+        <span class="badge s-deprecated">Deprecated</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="caption">Variation B — pill + leading icon (default)</div>
+      <div class="row">
+        <span class="badge with-icon s-pending"><svg class="glyph"><use href="#g-spark"/></svg>Pending</span>
+        <span class="badge with-icon s-building"><svg class="glyph spin"><use href="#g-spin"/></svg>Building</span>
+        <span class="badge with-icon s-ready"><svg class="glyph"><use href="#g-check"/></svg>Available</span>
+        <span class="badge with-icon s-active"><svg class="glyph"><use href="#g-active"/></svg>Active</span>
+        <span class="badge with-icon s-failed"><svg class="glyph"><use href="#g-alert"/></svg>Failed</span>
+        <span class="badge with-icon s-deprecated"><svg class="glyph"><use href="#g-warn"/></svg>Deprecated</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="caption">Variation C — inline dot (lightest, sits in metadata rows)</div>
+      <div class="row">
+        <span class="dot-badge"><span class="dot d-pending"></span>Pending</span>
+        <span class="dot-badge"><svg class="glyph spin" style="color:var(--kls-info)"><use href="#g-spin"/></svg>Building</span>
+        <span class="dot-badge"><span class="dot d-ready"></span>Available</span>
+        <span class="dot-badge"><span class="dot d-active active-ring"></span>Active</span>
+        <span class="dot-badge"><span class="dot d-failed"></span>Failed</span>
+        <span class="dot-badge"><span class="dot d-deprecated"></span>Deprecated</span>
+      </div>
+    </div>
+    <div class="caption">Spec — 4×10 pad · radius 8 · labelMediumSemiBold (12/600) · icon 13. Active = inverted on-surface. Building = info-container + spinner. Deprecated = progress (warning orange). Dot ring on Active = success-container 3px.</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

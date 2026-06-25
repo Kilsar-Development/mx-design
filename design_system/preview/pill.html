@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Pill (canonical)" subtitle="Canonical Pill — labelMediumMedium · 4/12 padding · 8px radius · light + dark" viewport="1200x360" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Pill — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .section { display: flex; flex-direction: column; gap: 8px; }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Canonical Pill — labelMediumMedium (12/500),
+     padding small(12)/tiny(4), smBorderRadius (8). Caller passes bg + fg. */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+</style></head>
+<body><div class="grid">
+  <div class="pane" data-theme="light"><div class="label">Light</div>
+    <div class="section"><div class="caption">Status — using --kls-*-container tokens</div>
+      <div class="row">
+        <span class="pill" style="background:var(--kls-success-container);color:var(--kls-on-success-container)">Active</span>
+        <span class="pill" style="background:var(--kls-progress-container);color:var(--kls-on-progress-container)">In review</span>
+        <span class="pill" style="background:var(--kls-info-container);color:var(--kls-on-info-container)">Info</span>
+        <span class="pill" style="background:var(--kls-error-container);color:var(--kls-on-error-container)">Error</span>
+        <span class="pill" style="background:var(--kls-tertiary);color:var(--kls-on-surface-variant)">Draft</span>
+      </div>
+    </div>
+    <div class="section"><div class="caption">Accent variants — using --kls-accent-*</div>
+      <div class="row">
+        <span class="pill" style="background:var(--kls-accent-2);color:var(--kls-accent-3)">Green</span>
+        <span class="pill" style="background:var(--kls-accent-5);color:var(--kls-accent-4)">Orange</span>
+        <span class="pill" style="background:var(--kls-accent-8);color:var(--kls-accent-9)">Blue</span>
+        <span class="pill" style="background:var(--kls-accent-13);color:var(--kls-accent-12)">Purple</span>
+        <span class="pill" style="background:var(--kls-accent-14);color:var(--kls-accent-15)">Red</span>
+      </div>
+    </div>
+    <div class="section"><div class="caption">Padding & spec — 4px vertical · 12px horizontal · 8px radius · labelMediumMedium (12/500)</div></div>
+  </div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div>
+    <div class="section"><div class="caption">Status</div>
+      <div class="row">
+        <span class="pill" style="background:var(--kls-success-container);color:var(--kls-on-success-container)">Active</span>
+        <span class="pill" style="background:var(--kls-progress-container);color:var(--kls-on-progress-container)">In review</span>
+        <span class="pill" style="background:var(--kls-info-container);color:var(--kls-on-info-container)">Info</span>
+        <span class="pill" style="background:var(--kls-error-container);color:var(--kls-on-error-container)">Error</span>
+        <span class="pill" style="background:var(--kls-tertiary);color:var(--kls-on-surface-variant)">Draft</span>
+      </div>
+    </div>
+    <div class="section"><div class="caption">Accent</div>
+      <div class="row">
+        <span class="pill" style="background:var(--kls-accent-2);color:var(--kls-accent-3)">Green</span>
+        <span class="pill" style="background:var(--kls-accent-5);color:var(--kls-accent-4)">Orange</span>
+        <span class="pill" style="background:var(--kls-accent-8);color:var(--kls-accent-9)">Blue</span>
+        <span class="pill" style="background:var(--kls-accent-13);color:var(--kls-accent-12)">Purple</span>
+        <span class="pill" style="background:var(--kls-accent-14);color:var(--kls-accent-15)">Red</span>
+      </div>
+    </div>
+  </div>
+</div></body></html>

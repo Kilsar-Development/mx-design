@@ -1,0 +1,106 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Buttons — Primary" subtitle="Primary, sizes lg/md/sm" viewport="700x220" -->
+<html><head><meta charset="utf-8"><title>PrimaryActionButton</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:0;font-family:var(--kls-font-sans);display:grid;grid-template-columns:1fr 1fr;min-height:520px}
+  .pane{padding:22px 24px 26px;display:flex;flex-direction:column;gap:14px}
+  .pane.light{background:var(--kls-color-base-white);color:#141414}
+  .pane.dark {background:var(--kls-color-neutral-900);color:#F8F8F8}
+  .head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0}
+  .head .mode{font-weight:600;letter-spacing:.04em;opacity:.55}
+  .label{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.5;margin:6px 0 0}
+  .stack{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+  /* Canonical PrimaryActionButton from primary_action_button.dart */
+  .pa-btn{
+    height:40px;
+    padding:0 var(--kls-space-med);             /* Sizing.med = 20 */
+    border-radius:var(--kls-radius-med);         /* med = 12 (mobile); sm=8 on web */
+    border:1px solid transparent;
+    background:var(--kls-tertiary-container);
+    color:var(--kls-on-tertiary-container);
+    font-family:var(--kls-font-sans);
+    font-size:var(--kls-label-large-bold-size);  /* labelLargeBold = 14 / 700 */
+    line-height:var(--kls-label-large-bold-line);
+    font-weight:var(--kls-label-large-bold-weight);
+    display:inline-flex;align-items:center;gap:var(--kls-space-xsmall); /* xSmall = 6 */
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .pa-btn[data-disabled="true"]{
+    color:var(--kls-on-surface-variant);
+    cursor:default;
+  }
+  .pa-btn[data-disabled="true"] svg{ stroke:var(--kls-on-surface-variant); }
+  .pa-btn[data-web]{ border-radius:var(--kls-radius-small); }   /* sm = 8 on web */
+  .pa-btn--full{ width:100%; justify-content:center; }
+  .pa-btn svg{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.6; }
+
+  .meta{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;opacity:.55;margin-top:auto;line-height:1.45}
+  .meta b{font-weight:600;opacity:.85}
+</style></head>
+<body>
+  <div class="pane light">
+    <p class="head"><span>PrimaryActionButton</span><span class="mode">LIGHT</span></p>
+
+    <p class="label">Default</p>
+    <div class="row"><button class="pa-btn">Continue</button></div>
+
+    <p class="label">With leading icon</p>
+    <div class="row"><button class="pa-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+      Add to library
+    </button></div>
+
+    <p class="label">With trailing icon</p>
+    <div class="row"><button class="pa-btn">
+      Next
+      <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button></div>
+
+    <p class="label">Disabled</p>
+    <div class="row"><button class="pa-btn" data-disabled="true">Continue</button></div>
+
+    <p class="label">Full-width</p>
+    <button class="pa-btn pa-btn--full">Save changes</button>
+
+    <p class="meta">
+      height <b>40</b> · radius <b>12</b> (mobile) / <b>8</b> (web) · padding-x <b>20</b><br>
+      bg <b>tertiaryContainer</b> · text <b>onTertiaryContainer · labelLargeBold</b><br>
+      icon <b>20px</b> · gap <b>6</b> · border <b>transparent</b><br>
+      disabled → text <b>onSurfaceVariant</b> · bg unchanged
+    </p>
+  </div>
+
+  <div class="pane dark" data-theme="dark">
+    <p class="head"><span>PrimaryActionButton</span><span class="mode">DARK</span></p>
+
+    <p class="label">Default</p>
+    <div class="row"><button class="pa-btn">Continue</button></div>
+
+    <p class="label">With leading icon</p>
+    <div class="row"><button class="pa-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+      Add to library
+    </button></div>
+
+    <p class="label">With trailing icon</p>
+    <div class="row"><button class="pa-btn">
+      Next
+      <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button></div>
+
+    <p class="label">Disabled</p>
+    <div class="row"><button class="pa-btn" data-disabled="true">Continue</button></div>
+
+    <p class="label">Full-width</p>
+    <button class="pa-btn pa-btn--full">Save changes</button>
+
+    <p class="meta">
+      Same recipe — every value tracks the M3 scheme.<br>
+      bg light <b>#E2E2E2</b> → dark <b>#4B4B4B</b> · text light <b>#141414</b> → dark <b>#F8F8F8</b>
+    </p>
+  </div>
+</body></html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- @dsCard group="Colors" name="Colors — Neutrals" subtitle="Base + 13-step neutral scale (color.tokens.json · Mode 1)" viewport="700x220" -->
+<html><head><meta charset="utf-8"><title>Colors — Neutrals</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:18px 20px;background:#fff;font-family:var(--kls-font-sans);color:#18181A}
+  .head{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#838383;margin:0 0 10px}
+  .row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+  .row + .row{margin-top:12px}
+  .sw{display:flex;flex-direction:column;gap:5px}
+  .chip{height:54px;border-radius:8px;border:1px solid rgba(0,0,0,.06)}
+  .name{font-size:11px;font-weight:600;color:#18181A;line-height:1.1}
+  .hex{font-size:10px;font-weight:500;color:#838383;letter-spacing:.02em}
+</style></head>
+<body>
+  <p class="head">color · base &amp; neutral · from Figma variables (Mode 1)</p>
+  <div class="row" id="r1"></div>
+  <div class="row" id="r2"></div>
+  <script>
+    const r1 = [
+      ['base/white',  '#FFFFFF'],
+      ['base/black',  '#000000'],
+      ['neutral/50',  '#F8F8F8'],
+      ['neutral/100', '#F3F3F3'],
+      ['neutral/200', '#E2E2E2'],
+      ['neutral/300', '#D5D5D5'],
+      ['neutral/400', '#B4B4B4'],
+    ];
+    const r2 = [
+      ['neutral/500', '#838383'],
+      ['neutral/600', '#4B4B4B'],
+      ['neutral/650', '#343434'],
+      ['neutral/700', '#272727'],
+      ['neutral/800', '#1F1F21'],
+      ['neutral/900', '#18181A'],
+      ['neutral/950', '#141414'],
+    ];
+    const fill = (id, list) => {
+      const root = document.getElementById(id);
+      list.forEach(([n, h]) => {
+        const el = document.createElement('div');
+        el.className = 'sw';
+        el.innerHTML = `<div class="chip" style="background:${h}"></div><div class="name">${n}</div><div class="hex">${h}</div>`;
+        root.appendChild(el);
+      });
+    };
+    fill('r1', r1); fill('r2', r2);
+  </script>
+</body></html>

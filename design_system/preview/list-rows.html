@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="List rows" subtitle="Avatar + meta row pattern" viewport="700x280" -->
+<html><head><meta charset="utf-8"><title>List Rows</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+
+<style>
+  body{margin:0;padding:0;background:#fff;font-family:'Plus Jakarta Sans'}
+  .list{display:flex;flex-direction:column}
+  .row{display:grid;grid-template-columns:36px 1fr 20px;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid rgba(0,0,0,.05)}
+  .av{width:32px;height:32px;border-radius:999px;background:#E2E2E2;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#4B4B4B}
+  .av.dark{background:#18181A;color:#fff}
+  .title{font-size:14px;font-weight:600;color:#18181A;line-height:20px}
+  .sub{font-size:12px;font-weight:500;color:#838383;line-height:16px}
+  .chev{color:#B4B4B4;font-size:18px;line-height:1}
+  .badge{font-size:10px;font-weight:700;color:#fff;background:#DC2626;border-radius:999px;padding:1px 6px}
+</style></head>
+<body>
+  <div class="list">
+    <div class="row"><div class="av dark">CR</div><div><div class="title">Claire Renault</div><div class="sub">Calibration · 14:32</div></div><div class="chev">›</div></div>
+    <div class="row"><div class="av">JM</div><div><div class="title">Jamal Morris <span class="badge">3</span></div><div class="sub">Exam logs · 12:08</div></div><div class="chev">›</div></div>
+    <div class="row"><div class="av">SK</div><div><div class="title">Sana Kapoor</div><div class="sub">Awaiting review</div></div><div class="chev">›</div></div>
+    <div class="row" style="border:none"><div class="av">MO</div><div><div class="title">Mateo Oliveira</div><div class="sub">Onboarding · step 3 of 4</div></div><div class="chev">›</div></div>
+  </div>
+</body></html>

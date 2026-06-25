@@ -1,0 +1,126 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Snackbar & LoadingOverlay" subtitle="Snackbar (success/error, web + mobile widths) + LoadingOverlay · light + dark" viewport="1200x900" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Snackbar & LoadingOverlay</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 22px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Snackbar — floating
+     - bg: tertiaryFixed
+     - width: 540 web · 90% mobile
+     - radius: smBorderRadius web · medBorderRadius mobile
+     - icon 32 (left): check/error · accent1 success, error red
+     - title + message in labelLarge */
+  .snack {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    padding: 12px;
+    background: var(--kls-tertiary-container);
+    border-radius: 8px;
+    width: 540px;
+    box-sizing: border-box;
+    box-shadow: var(--kls-drop-shadow);
+    color: var(--kls-on-surface);
+  }
+  .snack .ico {
+    width: 32px; height: 32px; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .snack .ico svg { width: 32px; height: 32px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .snack.success .ico { color: var(--kls-accent-1); }
+  .snack.error .ico { color: var(--kls-error); }
+  .snack .body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .snack .title { font-family: 'Plus Jakarta Sans'; font-size: 14px; font-weight: 500; }
+  .snack .msg { font-family: 'Plus Jakarta Sans'; font-size: 14px; font-weight: 500; color: var(--kls-on-surface-variant); overflow: hidden; text-overflow: ellipsis; }
+/* Mobile variant — medBorderRadius (12) */
+  .snack.mobile { border-radius: 12px; width: 360px; }
+
+  /* LoadingOverlay — circular spinner in secondaryFixed, optional % below */
+  .loader-scrim {
+    height: 280px;
+    border-radius: 12px;
+    background: color-mix(in oklab, var(--kls-primary-container) 80%, transparent);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--kls-outline-variant);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid color-mix(in oklab, var(--kls-secondary-container) 30%, transparent);
+    border-top-color: var(--kls-secondary-container);
+    border-radius: 50%;
+    animation: spin 700ms linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress-text {
+    font-family: 'Plus Jakarta Sans'; font-size: 14px; font-weight: 700;
+    color: var(--kls-on-surface);
+  }
+</style></head>
+<body><div class="grid">
+  <div class="pane" data-theme="light"><div class="label">Light</div>
+
+    <div class="caption">Snackbar — success (web, 540 wide, smBorderRadius)</div>
+    <div class="snack success">
+      <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div class="body"><div class="title">Saved</div><div class="msg">Your changes were synced to the workspace.</div></div>
+      </div>
+
+    <div class="caption">Snackbar — error</div>
+    <div class="snack error">
+      <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01" stroke-linecap="round"/></svg></span>
+      <div class="body"><div class="title">Couldn't save</div><div class="msg">Check your connection and try again.</div></div>
+      </div>
+
+    <div class="caption">Snackbar — mobile (360, medBorderRadius)</div>
+    <div class="snack success mobile">
+      <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div class="body"><div class="title">Saved</div></div>
+    </div>
+
+    <div class="caption">LoadingOverlay — full-screen blur + spinner</div>
+    <div class="loader-scrim">
+      <div class="spinner"></div>
+      <div class="progress-text">42%</div>
+    </div>
+  </div>
+
+  <div class="pane" data-theme="dark"><div class="label">Dark</div>
+
+    <div class="caption">Snackbar — success</div>
+    <div class="snack success">
+      <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div class="body"><div class="title">Saved</div><div class="msg">Your changes were synced to the workspace.</div></div>
+      </div>
+
+    <div class="caption">Snackbar — error</div>
+    <div class="snack error">
+      <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01" stroke-linecap="round"/></svg></span>
+      <div class="body"><div class="title">Couldn't save</div><div class="msg">Check your connection and try again.</div></div>
+      </div>
+
+    <div class="caption">Snackbar — mobile</div>
+    <div class="snack success mobile">
+      <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div class="body"><div class="title">Saved</div></div>
+    </div>
+
+    <div class="caption">LoadingOverlay</div>
+    <div class="loader-scrim">
+      <div class="spinner"></div>
+      <div class="progress-text">42%</div>
+    </div>
+  </div>
+</div></body></html>

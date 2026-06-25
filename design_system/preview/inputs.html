@@ -1,0 +1,154 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Inputs" subtitle="Default / focus / error" viewport="700x280" -->
+<html><head><meta charset="utf-8"><title>IconTextField</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:0;font-family:var(--kls-font-sans);display:grid;grid-template-columns:1fr 1fr;min-height:620px}
+  .pane{padding:22px 24px 26px;display:flex;flex-direction:column;gap:14px}
+  .pane.light{background:var(--kls-color-base-white);color:#141414}
+  .pane.dark {background:var(--kls-color-neutral-900);color:#F8F8F8}
+  .head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0}
+  .head .mode{font-weight:600;letter-spacing:.04em;opacity:.55}
+  .label{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.5;margin:6px 0 0}
+  .stack{display:flex;flex-direction:column;gap:8px}
+
+  /* Canonical IconTextField from icon_text_field.dart */
+  .itf{
+    display:flex;align-items:center;
+    height:48px;                                    /* default */
+    background:var(--kls-surface);                  /* fillColor */
+    border:1px solid var(--kls-outline-variant);    /* enabled / focused */
+    border-radius:var(--kls-radius-small);          /* smallBorderRadius = 8 */
+    padding:0;                                       /* InkWell wraps; content padding lives on input */
+    overflow:hidden;
+    transition:border-color 120ms;
+  }
+  .itf .icon-slot{
+    display:flex;align-items:center;justify-content:center;
+    padding-left:var(--kls-space-small);             /* small = 12 */
+    color:var(--kls-on-surface);
+    flex:none;
+  }
+  .itf .icon-slot[data-asset="true"]{
+    padding-right:var(--kls-space-xsmall);           /* xSmall = 6 right when asset */
+  }
+  .itf .icon-slot svg{ width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.6; }
+  .itf input{
+    border:0;outline:0;background:transparent;
+    flex:1;min-width:0;
+    padding:var(--kls-space-small);                  /* contentPadding default = small = 12 all sides */
+    font-family:var(--kls-font-sans);
+    font-size:var(--kls-label-large-size);           /* labelLarge = 14 / 500 */
+    line-height:var(--kls-label-large-line);
+    font-weight:var(--kls-label-large-weight);
+    color:var(--kls-on-surface);
+  }
+  .itf input::placeholder{
+    color:var(--kls-on-surface-variant);             /* hint = labelLarge · onSurfaceVariant */
+    opacity:1;
+  }
+  /* States */
+  .itf[data-error="true"]{ border-color:var(--kls-error); }
+  .itf[data-borderless="true"]{ border-color:transparent; }
+  .itf[data-readonly="true"] input{ cursor:default; }
+  .itf:focus-within{ /* same border treatment per code — no focus accent unless error */
+    border-color:var(--kls-outline-variant);
+  }
+  .itf[data-error="true"]:focus-within{ border-color:var(--kls-error); }
+  .err-msg{
+    font-family:var(--kls-font-sans);
+    font-size:12px;line-height:1.3;font-weight:500;
+    color:var(--kls-error);
+    padding-left:2px;
+  }
+
+  .meta{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;opacity:.55;margin-top:auto;line-height:1.45}
+  .meta b{font-weight:600;opacity:.85}
+</style></head>
+<body>
+  <div class="pane light">
+    <p class="head"><span>IconTextField</span><span class="mode">LIGHT</span></p>
+
+    <p class="label">Default · empty · with hint</p>
+    <div class="itf">
+      <div class="icon-slot"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-linecap="round"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg></div>
+      <input type="text" placeholder="Search recipes" />
+    </div>
+
+    <p class="label">Filled</p>
+    <div class="itf">
+      <div class="icon-slot"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg></div>
+      <input type="text" value="Roast chicken with lemon" />
+    </div>
+
+    <p class="label">No icon</p>
+    <div class="itf">
+      <input type="text" placeholder="What's the recipe name?" />
+    </div>
+
+    <p class="label">Error</p>
+    <div class="stack">
+      <div class="itf" data-error="true">
+        <div class="icon-slot"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/></svg></div>
+        <input type="text" value="not-an-email" />
+      </div>
+      <p class="err-msg">Enter a valid email address</p>
+    </div>
+
+    <p class="label">Borderless · showBorder=false</p>
+    <div class="itf" data-borderless="true">
+      <div class="icon-slot"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-linecap="round"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg></div>
+      <input type="text" placeholder="Inline search" />
+    </div>
+
+    <p class="meta">
+      height <b>48</b> · radius <b>8</b> (small) · padding <b>12</b> all<br>
+      bg <b>surface</b> · border <b>outlineVariant</b> 1px · radius from <code>smallBorderRadius</code><br>
+      icon <b>24px · onSurface</b> · padding-left <b>12</b><br>
+      text <b>labelLarge · onSurface</b> · hint <b>labelLarge · onSurfaceVariant</b><br>
+      <b>focus = same border</b> (no accent) · <b>error = error border</b>
+    </p>
+  </div>
+
+  <div class="pane dark" data-theme="dark">
+    <p class="head"><span>IconTextField</span><span class="mode">DARK</span></p>
+
+    <p class="label">Default · empty</p>
+    <div class="itf">
+      <div class="icon-slot"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-linecap="round"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg></div>
+      <input type="text" placeholder="Search recipes" />
+    </div>
+
+    <p class="label">Filled</p>
+    <div class="itf">
+      <div class="icon-slot"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg></div>
+      <input type="text" value="Roast chicken with lemon" />
+    </div>
+
+    <p class="label">No icon</p>
+    <div class="itf">
+      <input type="text" placeholder="What's the recipe name?" />
+    </div>
+
+    <p class="label">Error</p>
+    <div class="stack">
+      <div class="itf" data-error="true">
+        <div class="icon-slot"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/></svg></div>
+        <input type="text" value="not-an-email" />
+      </div>
+      <p class="err-msg">Enter a valid email address</p>
+    </div>
+
+    <p class="label">Borderless</p>
+    <div class="itf" data-borderless="true">
+      <div class="icon-slot"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke-linecap="round"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg></div>
+      <input type="text" placeholder="Inline search" />
+    </div>
+
+    <p class="meta">
+      Same recipe, scheme-driven.<br>
+      bg light <b>#FFF</b> → dark <b>#141414</b> · border light <b>#E2E2E2</b> → dark <b>#4B4B4B</b><br>
+      hint light <b>#838383</b> → dark <b>#9C9C9C</b>
+    </p>
+  </div>
+</body></html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="stat-chip" subtitle="StatChip / InfoPill — from _buildInfoPill" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>StatChip — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--kls-space-small); align-items: center; }
+
+  /* StatChip / InfoPill — verbatim from _buildInfoPill.
+     - FILLED tertiary (NOT outlined / transparent)
+     - radius small (8) · 16px leading icon + label · on-surface-variant
+     - labels are flavor-driven (assignmentKey / courseKey / viewerKey | editorKey,
+       singular / plural) */
+  .stat {
+    display: inline-flex; align-items: center; gap: var(--kls-space-tiny);
+    background: var(--kls-tertiary);
+    color: var(--kls-on-surface-variant);
+    border-radius: var(--kls-radius-small);
+    padding: var(--kls-space-tiny) var(--kls-space-xsmall);
+    font-size: 12px; font-weight: 600;
+  }
+  .stat svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">Education flavor — Tasks / Modules / Students</div>
+    <div class="row">
+      <span class="stat"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg>8 Tasks</span>
+      <span class="stat"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke-linejoin="round"/></svg>1 Module</span>
+      <span class="stat"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5" stroke-linecap="round"/></svg>1 Student</span>
+    </div>
+
+    <div class="caption">Singular / plural &amp; commercial flavor</div>
+    <div class="row">
+      <span class="stat"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg>12 Tasks</span>
+      <span class="stat"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5" stroke-linecap="round"/></svg>3 Operators</span>
+    </div>
+
+    <div class="caption">Spec — FILLED tertiary (NOT outlined / transparent) · radius small (8) · 16px leading icon + label · on-surface-variant · pad tiny×xsmall · labelMediumSemiBold (12/600). Labels flavor-driven, singular/plural. (Supersedes MOBILE_DRIFT #5 "outlined / outline-variant 1px / transparent" — that was wrong.)</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

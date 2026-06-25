@@ -1,0 +1,88 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="block-card" subtitle="BlockCard — from WorkspaceScreen._buildBlockCard" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>BlockCard — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* BlockCard — verbatim from WorkspaceScreen._buildBlockCard.
+     - container surface · radius med (12) · padding small (12)
+     - status pill: bg accent2 · text accent3 · radius small (8) ·
+       labelMediumSemiBold (12/600) · pad small×tiny (NOT a full pill)
+     - title bodyLarge (16/500), maxLines 2 ellipsis
+     - subtitle: ACS-codes label, on-surface-variant (labelLarge 14/500)
+     - gaps: pill→title xSmall(6) · title→subtitle xSmall(6) ·
+       subtitle→pill-row small(12) · pill-row gap small(12) */
+  .block {
+    width: 280px; box-sizing: border-box;
+    background: var(--kls-surface);
+    border: 1px solid var(--kls-outline-variant);
+    border-radius: var(--kls-radius-med);
+    padding: var(--kls-space-small);
+    display: flex; flex-direction: column;
+    cursor: pointer;
+  }
+  .status {
+    align-self: flex-start;
+    background: var(--kls-accent-2);
+    color: var(--kls-accent-3);
+    border-radius: var(--kls-radius-small);
+    padding: var(--kls-space-tiny) var(--kls-space-small);
+    font-size: 12px; font-weight: 600;
+    margin-bottom: var(--kls-space-xsmall);
+  }
+  .title {
+    font-size: 16px; font-weight: 500; color: var(--kls-on-surface);
+    margin-bottom: var(--kls-space-xsmall);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .subtitle {
+    font-size: 14px; font-weight: 500; color: var(--kls-on-surface-variant);
+    margin-bottom: var(--kls-space-small);
+  }
+  .pillrow { display: flex; flex-wrap: wrap; gap: var(--kls-space-small); }
+
+  /* StatChip / InfoPill — filled tertiary · radius small (8) · 16px icon + label */
+  .stat {
+    display: inline-flex; align-items: center; gap: var(--kls-space-tiny);
+    background: var(--kls-tertiary);
+    color: var(--kls-on-surface-variant);
+    border-radius: var(--kls-radius-small);
+    padding: var(--kls-space-tiny) var(--kls-space-xsmall);
+    font-size: 12px; font-weight: 600;
+  }
+  .stat svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">BlockCard — In Progress term</div>
+    <div class="block">
+      <span class="status">In Progress</span>
+      <div class="title">Turbine Engine Fundamentals &amp; Inspection</div>
+      <div class="subtitle">ACS 12.A.1 · 12.A.2 · 12.B.4</div>
+      <div class="pillrow">
+        <span class="stat"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg>8 Tasks</span>
+        <span class="stat"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke-linejoin="round"/></svg>1 Module</span>
+        <span class="stat"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5" stroke-linecap="round"/></svg>1 Student</span>
+      </div>
+    </div>
+
+    <div class="caption">Spec — container surface · 1px outline-variant · radius med (12) · pad small (12). Status pill: bg accent2 + text accent3 · radius small (8) · labelMediumSemiBold (12/600) · pad small×tiny — NOT a full-radius pill, NOT success-container, NOT KLS.Pill. Title bodyLarge (16/500) maxLines 2 · subtitle labelLarge on-surface-variant. Gaps: pill→title 6 · title→subtitle 6 · subtitle→row 12 · row gap 12.</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

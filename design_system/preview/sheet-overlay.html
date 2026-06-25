@@ -1,0 +1,191 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="sheet-overlay" subtitle="SheetOverlay — bottom sheet shell · canonical from Dart · light + dark" viewport="880x780" -->
+<html><head><meta charset="utf-8"><title>SheetOverlay (Bottom sheet)</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:0;font-family:var(--kls-font-sans);display:grid;grid-template-columns:1fr 1fr;min-height:760px}
+  .pane{padding:22px 24px 26px;display:flex;flex-direction:column;gap:14px}
+  .pane.light{background:var(--kls-color-neutral-100);color:#141414}
+  .pane.dark {background:var(--kls-color-neutral-900);color:#F8F8F8}
+  .head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0}
+  .head .mode{font-weight:600;letter-spacing:.04em;opacity:.55}
+  .label{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.5;margin:6px 0 0}
+
+  /* Bottom-sheet shell — bg primaryContainer, radius 24 top-only */
+  .sheet{
+    background:var(--kls-primary-container);            /* per BottomSheetThemeData */
+    border-radius:var(--kls-radius-bottom-modal);
+    box-shadow:var(--kls-drop-shadow);
+    overflow:hidden;
+    padding:var(--kls-space-med);                       /* Sizing.med = 20 all sides */
+    color:var(--kls-on-surface);
+  }
+  .sheet-row{
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .lead{
+    display:flex;align-items:center;gap:var(--kls-space-small);   /* small = 12 */
+  }
+  .title{
+    font-size:var(--kls-h2-size);                       /* h2 = 28 */
+    line-height:var(--kls-h2-line);
+    font-weight:var(--kls-h2-weight);
+    letter-spacing:var(--kls-h2-tracking);
+    margin:0;
+    color:inherit;
+  }
+  .trail{
+    display:flex;align-items:center;gap:var(--kls-space-small);
+  }
+  /* CircleButton size:40 — close. Sits on primaryContainer, so its surface is primaryContainer too. */
+  .cb40{
+    width:40px;height:40px;border-radius:9999px;
+    background:transparent;
+    border:1px solid var(--kls-outline);
+    display:inline-flex;align-items:center;justify-content:center;
+    color:var(--kls-on-surface);cursor:pointer;flex:none;
+  }
+  .cb40 svg{ width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6; }
+  /* Trailing pill action */
+  .tw{
+    height:32px;padding:0 12px;
+    background:var(--kls-tertiary-container);color:var(--kls-on-tertiary-container);
+    border:1px solid transparent;border-radius:var(--kls-radius-small);
+    font:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .gap{ height:var(--kls-space-med); }                  /* med = 20 between header and body */
+  .body{ display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.4;color:var(--kls-on-surface-variant); }
+
+  /* Realistic body content — list rows */
+  .row-item{display:flex;align-items:center;gap:12px;padding:10px 0}
+  .row-item .ico{width:24px;height:24px;color:var(--kls-on-surface);flex:none}
+  .row-item svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.6}
+  .row-item .name{font-size:15px;font-weight:600;color:var(--kls-on-surface);margin:0}
+  .row-item .meta{font-size:12px;color:var(--kls-on-surface-variant);margin:0}
+
+  /* Form body */
+  .field-label{font-size:12px;font-weight:600;color:var(--kls-on-surface-variant);text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px}
+  .input{
+    height:48px;background:var(--kls-surface);
+    border:1px solid var(--kls-outline-variant);
+    border-radius:var(--kls-radius-small);
+    padding:0 12px;display:flex;align-items:center;
+    font-size:14px;color:var(--kls-on-surface);
+  }
+  .input.placeholder{color:var(--kls-on-surface-variant)}
+
+  .meta-block{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;opacity:.55;margin-top:auto;line-height:1.45}
+  .meta-block b{font-weight:600;opacity:.85}
+</style></head>
+<body>
+  <div class="pane light">
+    <p class="head"><span>SheetOverlay</span><span class="mode">LIGHT</span></p>
+
+    <p class="label">Title only · close</p>
+    <div class="sheet">
+      <div class="sheet-row">
+        <div class="lead"><h2 class="title">Filters</h2></div>
+        <div class="trail"><button class="cb40" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button></div>
+      </div>
+      <div class="gap"></div>
+      <div class="body">
+        <div class="row-item"><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round"/></svg></span>
+          <div><p class="name">Sort by</p><p class="meta">Most recent</p></div>
+        </div>
+        <div class="row-item"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg></span>
+          <div><p class="name">Time to make</p><p class="meta">Any</p></div>
+        </div>
+        <div class="row-item"><span class="ico"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" stroke-linecap="round"/></svg></span>
+          <div><p class="name">Add filter</p><p class="meta">Diet, ingredients, source…</p></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="label">Leading icon · trailing action · close</p>
+    <div class="sheet">
+      <div class="sheet-row">
+        <div class="lead">
+          <span class="cb40" style="cursor:default"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" stroke-linejoin="round"/></svg></span>
+          <h2 class="title">New collection</h2>
+        </div>
+        <div class="trail">
+          <button class="tw">Save</button>
+          <button class="cb40" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+        </div>
+      </div>
+      <div class="gap"></div>
+      <div class="body">
+        <div>
+          <p class="field-label">Name</p>
+          <div class="input">Weeknight dinners</div>
+        </div>
+        <div>
+          <p class="field-label">Description</p>
+          <div class="input placeholder">Optional</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="meta-block">
+      bg <b>primaryContainer</b> · radius <b>24</b> top only · padding <b>20</b><br>
+      title <b>h2</b> (24 / SemiBold) · close <b>CircleButton size 40</b><br>
+      header→body gap <b>20</b> · close button <b>always present</b><br>
+      drag handle off by default (theme); opt-in per route<br>
+      adds <b>MediaQuery.viewInsets.bottom</b> for keyboard avoidance
+    </p>
+  </div>
+
+  <div class="pane dark" data-theme="dark">
+    <p class="head"><span>SheetOverlay</span><span class="mode">DARK</span></p>
+
+    <p class="label">Title only</p>
+    <div class="sheet">
+      <div class="sheet-row">
+        <div class="lead"><h2 class="title">Filters</h2></div>
+        <div class="trail"><button class="cb40" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button></div>
+      </div>
+      <div class="gap"></div>
+      <div class="body">
+        <div class="row-item"><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4" stroke-linecap="round"/></svg></span>
+          <div><p class="name">Sort by</p><p class="meta">Most recent</p></div>
+        </div>
+        <div class="row-item"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg></span>
+          <div><p class="name">Time to make</p><p class="meta">Any</p></div>
+        </div>
+        <div class="row-item"><span class="ico"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" stroke-linecap="round"/></svg></span>
+          <div><p class="name">Add filter</p><p class="meta">Diet, ingredients, source…</p></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="label">Leading icon · trailing action · close</p>
+    <div class="sheet">
+      <div class="sheet-row">
+        <div class="lead">
+          <span class="cb40" style="cursor:default"><svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z" stroke-linejoin="round"/></svg></span>
+          <h2 class="title">New collection</h2>
+        </div>
+        <div class="trail">
+          <button class="tw">Save</button>
+          <button class="cb40" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+        </div>
+      </div>
+      <div class="gap"></div>
+      <div class="body">
+        <div>
+          <p class="field-label">Name</p>
+          <div class="input">Weeknight dinners</div>
+        </div>
+        <div>
+          <p class="field-label">Description</p>
+          <div class="input placeholder">Optional</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="meta-block">
+      Same recipe, scheme-driven. Sheet sits on the <b>scrim</b> (transparent40 light · transparent60 dark).<br>
+      primaryContainer light <b>#F8F8F8</b> → dark <b>#3F3F3F</b>
+    </p>
+  </div>
+</body></html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Dropdown (canonical)" subtitle="Dropdown — closed / placeholder / error / open · light + dark" viewport="1200x600" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Dropdown — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+
+  /* Closed state: 40h · paddingLeft small (12) · paddingRight xSmall (6) ·
+     smBorderRadius (8) · 1px outlineVariant border (or error). */
+  .dd {
+    height: 40px;
+    padding: 0 6px 0 12px;
+    border-radius: 8px;
+    border: 1px solid var(--kls-outline-variant);
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 240px;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--kls-on-surface);
+  }
+  .dd.err { border-color: var(--kls-error); }
+  .dd svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; margin-left: auto; }
+  .placeholder { color: var(--kls-on-surface-variant); }
+
+  /* Open menu — dropdownColor: onPrimary in Dart, which resolves to
+     neutral-100 light / neutral-950 dark via the M3 mapping. */
+  .menu {
+    margin-top: 6px;
+    width: 240px;
+    background: var(--kls-on-primary);
+    border-radius: 8px;
+    box-shadow: var(--kls-drop-shadow);
+    padding: 6px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .menu-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 14px;
+    color: var(--kls-on-surface);
+    cursor: pointer;
+  }
+  .menu-item:hover { background: var(--kls-tertiary-container); }
+  .menu-item.selected { background: var(--kls-tertiary); }
+</style></head>
+<body><div class="grid">
+  <div class="pane" data-theme="light"><div class="label">Light</div>
+    <div class="caption">Default — closed, value selected</div>
+    <button class="dd">Spring 2025<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="caption">Placeholder (no selection)</div>
+    <button class="dd"><span class="placeholder">Choose a term</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="caption">Error state</div>
+    <button class="dd err"><span class="placeholder">Required</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="caption">Open — menu uses onPrimary bg</div>
+    <div style="position:relative; width:240px">
+      <button class="dd" style="width:100%">Spring 2025<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="menu">
+        <div class="menu-item selected">Spring 2025</div>
+        <div class="menu-item">Fall 2024</div>
+        <div class="menu-item">Spring 2024</div>
+        <div class="menu-item">Fall 2023</div>
+      </div>
+    </div>
+  </div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div>
+    <div class="caption">Default — closed</div>
+    <button class="dd">Spring 2025<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="caption">Placeholder</div>
+    <button class="dd"><span class="placeholder">Choose a term</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="caption">Error</div>
+    <button class="dd err"><span class="placeholder">Required</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="caption">Open</div>
+    <div style="position:relative; width:240px">
+      <button class="dd" style="width:100%">Spring 2025<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="menu">
+        <div class="menu-item selected">Spring 2025</div>
+        <div class="menu-item">Fall 2024</div>
+        <div class="menu-item">Spring 2024</div>
+        <div class="menu-item">Fall 2023</div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

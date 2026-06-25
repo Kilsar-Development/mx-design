@@ -1,0 +1,1413 @@
+/* =============================================================
+   Kilsar Mobile — Foundations
+   Tokens distilled from the Figma library
+   "Kilsar - MobileApp - Design System Library.fig"
+   ============================================================= */
+
+/* ---------- Fonts ---------- */
+/* Plus Jakarta Sans is the only family — bundled locally from /fonts
+   (brand-uploaded TTFs, 200–800 + italics). No Google Fonts, no preconnect:
+   consumers just <link> this stylesheet. See fonts/README.md. */
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-ExtraLight.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: italic;
+  font-weight: 200;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-ExtraLightItalic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-Light.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: italic;
+  font-weight: 300;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-LightItalic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-Italic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-Medium.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-MediumItalic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-SemiBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-SemiBoldItalic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-Bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-BoldItalic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-ExtraBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url("fonts/PlusJakartaSans-ExtraBoldItalic.ttf") format("truetype");
+}
+
+:root {
+  /* Tell the browser the kit supports both schemes. With this, form
+     controls, scrollbars and SVG `currentColor` defaults follow the
+     active scheme automatically. The actual token swap is driven by
+     `[data-theme="dark"]` (manual override) and the
+     `prefers-color-scheme: dark` media query at the bottom of the file. */
+  color-scheme: light dark;
+
+  /* ============ COLOR TOKENS ============
+     Canonical values from Figma variables ("Mode 1" — color.tokens.json).
+     Token names mirror the Figma collection (color/<group>/<step>).
+     Aliases (--kls-surface-*, --kls-content-*, etc.) reference the
+     primitives — change the alias, not the primitive.
+  */
+
+  /* ---- Primitives — base ---- */
+  --kls-color-base-white:   #FFFFFF;
+  --kls-color-base-black:   #000000;
+
+  /* ---- Primitives — neutral (13 steps) ---- */
+  --kls-color-neutral-50:   #F8F8F8;
+  --kls-color-neutral-100:  #F3F3F3;
+  --kls-color-neutral-200:  #E2E2E2;
+  --kls-color-neutral-300:  #D5D5D5;
+  --kls-color-neutral-400:  #B4B4B4;
+  --kls-color-neutral-500:  #838383;
+  --kls-color-neutral-600:  #4B4B4B;
+  --kls-color-neutral-650:  #343434;
+  --kls-color-neutral-700:  #272727;
+  --kls-color-neutral-800:  #1F1F21;
+  --kls-color-neutral-900:  #18181A;
+  --kls-color-neutral-950:  #141414;
+
+  /* ---- Primitives — blue ---- */
+  --kls-color-blue-50:   #EAF4FF;
+  --kls-color-blue-100:  #ACCFEF;
+  --kls-color-blue-200:  #4187C6;
+  --kls-color-blue-300:  #2890FF;
+  --kls-color-blue-400:  #1275DE;
+  --kls-color-blue-500:  #2073CC;
+  --kls-color-blue-600:  #054A93;
+  --kls-color-blue-700:  #0B2846;
+
+  /* ---- Primitives — green ---- */
+  --kls-color-green-50:   #DDF1DD;
+  --kls-color-green-100:  #76C677;
+  --kls-color-green-200:  #54B855;
+  --kls-color-green-300:  #46AD47;
+  --kls-color-green-400:  #319D33;
+  --kls-color-green-500:  #268A27;
+  --kls-color-green-600:  #326E33;
+  --kls-color-green-700:  #19371A;
+
+  /* ---- Primitives — red ---- */
+  --kls-color-red-50:   #FEF2F2;
+  --kls-color-red-100:  #F87171;
+  --kls-color-red-200:  #EF4444;
+  --kls-color-red-300:  #DC2626;
+  --kls-color-red-400:  #D02525;
+  --kls-color-red-500:  #BF0707;
+  --kls-color-red-600:  #B30C0C;
+  --kls-color-red-700:  #450A0A;
+
+  /* ---- Primitives — orange ---- */
+  --kls-color-orange-50:   #FFF7ED;
+  --kls-color-orange-100:  #FB923C;
+  --kls-color-orange-200:  #E38435;
+  --kls-color-orange-300:  #FC7A36;
+  --kls-color-orange-400:  #E26A2C;
+  --kls-color-orange-500:  #E76019;
+  --kls-color-orange-600:  #D65410;
+  --kls-color-orange-700:  #3A1F07;
+
+  /* ---- Primitives — purple ---- */
+  --kls-color-purple-50:   #F5F3FF;
+  --kls-color-purple-100:  #C4B5FD;
+  --kls-color-purple-200:  #8B5CF6;
+  --kls-color-purple-300:  #7C3AED;
+  --kls-color-purple-400:  #6D28D9;
+  --kls-color-purple-500:  #5B21B6;
+  --kls-color-purple-600:  #4C1D95;
+  --kls-color-purple-700:  #2E1065;
+
+  /* ---- Primitives — transparent (black @ alpha) ---- */
+  --kls-color-transparent-20: rgba(0,0,0,0.20);
+  --kls-color-transparent-40: rgba(0,0,0,0.40);
+  --kls-color-transparent-60: rgba(0,0,0,0.60);
+  --kls-color-transparent-80: rgba(0,0,0,0.80);
+
+  /* ---- Aliases (semantic) — used everywhere in CSS / JSX ----
+     These are LEGACY shortcuts. Prefer the M3 scheme tokens
+     (--kls-on-surface, --kls-outline, --kls-primary, etc.).
+     Each alias resolves through a Material 3 role so it tracks
+     light/dark automatically. */
+
+  /* Surface / Background — alias to M3 surface + container ladder */
+  --kls-surface-page:        var(--kls-surface);                  /* canonical canvas */
+  --kls-surface-raised:      var(--kls-surface);
+  --kls-surface-sunken:      var(--kls-surface-container-lowest);
+  --kls-surface-muted:       var(--kls-surface-variant);
+  --kls-surface-soft:        var(--kls-surface-container-low);
+  --kls-surface-inverse:     var(--kls-inverse-surface);
+  --kls-surface-inverse-2:   var(--kls-color-neutral-800);
+  --kls-surface-black:       var(--kls-color-base-black);
+
+  /* Content / Text — alias to M3 on-surface family */
+  --kls-content-primary:     var(--kls-on-surface);
+  --kls-content-secondary:   var(--kls-color-neutral-600);
+  --kls-content-tertiary:    var(--kls-on-surface-variant);
+  --kls-content-quaternary:  var(--kls-color-neutral-400);
+  --kls-content-disabled:    var(--kls-color-neutral-300);
+  --kls-content-on-inverse:  var(--kls-on-inverse-surface);
+  --kls-content-on-muted:    var(--kls-on-surface);
+
+  /* Stroke / Border — alias to M3 outline */
+  --kls-stroke-default:      var(--kls-outline);
+  --kls-stroke-strong:       var(--kls-color-neutral-300);
+  --kls-stroke-subtle:       var(--kls-outline-variant);
+  --kls-stroke-inverse:      var(--kls-inverse-surface);
+
+  /* Action / Brand — alias to M3 primary */
+  --kls-action-primary:        var(--kls-primary);
+  --kls-action-primary-hover:  var(--kls-color-neutral-800);
+  --kls-action-blue:           var(--kls-info);
+  --kls-action-blue-deep:      var(--kls-color-blue-500);
+
+  /* Status / Feedback — kept as legacy aliases; new code should use the
+     M3-style scheme (--kls-success / --kls-on-success / --kls-success-container). */
+  --kls-success-soft:        var(--kls-color-green-50);
+  --kls-warning:             var(--kls-color-orange-300);
+  --kls-warning-deep:        var(--kls-color-orange-500);
+  --kls-warning-soft:        var(--kls-color-orange-50);
+  --kls-danger:              var(--kls-color-red-300);
+  --kls-danger-deep:         var(--kls-color-red-500);
+  --kls-danger-soft:         var(--kls-color-red-50);
+  --kls-info-deep:           var(--kls-color-blue-500);
+  --kls-info-soft:           var(--kls-color-blue-50);
+
+  /* Overlays */
+  --kls-overlay-light:       var(--kls-color-transparent-20);
+  --kls-overlay:             var(--kls-color-transparent-40);
+  --kls-overlay-strong:      var(--kls-color-transparent-60);
+  --kls-overlay-dense:       var(--kls-color-transparent-80);
+
+  /* ============ MATERIAL 3 COLOR SCHEME (LIGHT — default) ============
+     Canonical from app source — `lightColorScheme` in the Flutter theme.
+     Token names match Flutter's ColorScheme members 1:1, mapped to our
+     palette primitives. Switch to dark via `[data-theme="dark"]` on <html>.
+  */
+  /* Primary */
+  --kls-primary:                  var(--kls-color-base-black);    /* black */
+  --kls-on-primary:               var(--kls-color-neutral-100);   /* #F3F3F3 */
+  --kls-primary-container:        var(--kls-color-neutral-50);    /* #F8F8F8 */
+  --kls-on-primary-container:     var(--kls-color-neutral-800);   /* #1F1F21 */
+
+  /* Secondary */
+  --kls-secondary:                var(--kls-color-neutral-200);   /* #E2E2E2 */
+  --kls-on-secondary:             var(--kls-color-neutral-950);   /* #141414 */
+  --kls-on-secondary-rgb:         20, 20, 20;                      /* @kind color */ /* neutral-950 as RGB triplet */
+  --kls-secondary-container:      var(--kls-color-neutral-50);    /* #F8F8F8 */
+  --kls-on-secondary-container:   var(--kls-color-neutral-950);
+  --kls-secondary-fixed:          var(--kls-color-neutral-100);   /* M3 fixed variant — ProfileWidget bg, LoadingOverlay spinner */
+
+  /* Tertiary */
+  --kls-tertiary:                 var(--kls-color-neutral-100);   /* #F3F3F3 */
+  --kls-on-tertiary:              var(--kls-color-neutral-500);   /* #838383 */
+  --kls-tertiary-container:       var(--kls-color-neutral-200);   /* #E2E2E2 */
+  --kls-on-tertiary-container:    var(--kls-color-neutral-950);
+  --kls-tertiary-fixed:           var(--kls-color-neutral-200); /* LEGACY — prefer --kls-tertiary-container or --kls-outline-variant */
+
+  /* Error */
+  --kls-error:                    var(--kls-color-red-300);       /* #DC2626 */
+  --kls-on-error:                 var(--kls-color-neutral-50);
+  --kls-error-container:          var(--kls-color-red-50);        /* #FEF2F2 */
+  --kls-on-error-container:       var(--kls-color-red-100);       /* #F87171 */
+
+  /* Surface (canvas + on-surface text) */
+  --kls-surface:                  var(--kls-color-base-white);
+  --kls-on-surface:               var(--kls-color-neutral-900);
+  --kls-on-surface-variant:       var(--kls-color-neutral-500);
+  --kls-surface-variant:          var(--kls-color-neutral-50);
+
+  /* Outline / Stroke (M3 names) */
+  --kls-outline:                  var(--kls-color-neutral-200);
+  --kls-outline-variant:          var(--kls-color-neutral-100);
+
+  /* Effects */
+  --kls-shadow-color:             var(--kls-color-base-black);
+  --kls-scrim:                    var(--kls-color-transparent-40);
+
+  /* Inverse pair — for snackbar/tooltip surfaces over normal canvas */
+  --kls-inverse-surface:          var(--kls-color-neutral-800);
+  --kls-on-inverse-surface:       var(--kls-color-neutral-50);
+
+  /* Surface container ladder (M3) — five elevations of tinted surface */
+  --kls-surface-container-lowest:  var(--kls-color-neutral-50);   /* #F8F8F8 */
+  --kls-surface-container-low:     var(--kls-color-neutral-200);  /* #E2E2E2 */
+  --kls-surface-container:         var(--kls-color-neutral-400);  /* #B4B4B4 */
+  --kls-surface-container-high:    var(--kls-color-neutral-500);  /* #838383 */
+  --kls-surface-container-highest: var(--kls-color-neutral-700);  /* #272727 */
+
+  /* App-specific extension roles (not in M3, but defined in the codebase). */
+  --kls-success:                  var(--kls-color-green-200);     /* #54B855 */
+  --kls-on-success:               var(--kls-color-neutral-50);
+  --kls-success-container:        var(--kls-color-green-50);      /* #DDF1DD */
+  --kls-on-success-container:     var(--kls-color-green-600);     /* #326E33 */
+
+  --kls-progress:                 var(--kls-color-orange-300);    /* #FC7A36 — "in-progress / warning" */
+  --kls-on-progress:              var(--kls-color-neutral-50);
+  --kls-progress-container:       var(--kls-color-orange-50);     /* #FFF7ED */
+  --kls-on-progress-container:    var(--kls-color-orange-100);    /* #FB923C */
+
+  --kls-info:                     var(--kls-color-blue-300);      /* #2890FF */
+  --kls-on-info:                  var(--kls-color-neutral-50);
+  --kls-info-container:           var(--kls-color-blue-50);       /* #EAF4FF */
+  --kls-on-info-container:        var(--kls-color-blue-200);      /* #4187C6 */
+
+  /* ============ ACCENTS (numbered) ============
+     Mirrors Flutter's `AccentColors` ThemeExtension exactly.
+     Use --kls-accent-N where N matches the Flutter member (1-16).
+     Numbered tokens are deliberately untyped — see README for groupings.
+     accent10/11 (water / mistyRose) are not yet defined in source. */
+  --kls-accent-1:   var(--kls-color-green-200);
+  --kls-accent-2:   var(--kls-color-green-50);
+  --kls-accent-3:   var(--kls-color-green-600);
+  --kls-accent-4:   var(--kls-color-orange-300);
+  --kls-accent-5:   var(--kls-color-orange-50);
+  --kls-accent-6:   var(--kls-color-orange-100);
+  --kls-accent-7:   var(--kls-color-blue-300);
+  --kls-accent-8:   var(--kls-color-blue-50);
+  --kls-accent-9:   var(--kls-color-blue-200);
+  --kls-accent-12:  var(--kls-color-purple-200);
+  --kls-accent-13:  var(--kls-color-purple-50);
+  --kls-accent-14:  var(--kls-color-red-50);
+  --kls-accent-15:  var(--kls-color-red-600);
+  --kls-accent-16:  var(--kls-color-red-200);
+
+  /* ============ TEXT THEME ============
+     `TextThemeExt(defaultColor: …)` — the catch-all "default text color"
+     used by widgets that don't read --kls-on-surface directly. */
+  --kls-text-default: var(--kls-color-neutral-900);
+}
+
+/* ============ DARK SCHEME ============ */
+[data-theme="dark"] {
+  /* Primary */
+  --kls-primary:                  var(--kls-color-base-white);
+  --kls-on-primary:               var(--kls-color-neutral-950);
+  --kls-primary-container:        var(--kls-color-neutral-800);
+  --kls-on-primary-container:     var(--kls-color-neutral-50);
+
+  /* Secondary */
+  --kls-secondary:                var(--kls-color-neutral-700);
+  --kls-on-secondary:             var(--kls-color-neutral-50);
+  --kls-on-secondary-rgb:         248, 248, 248;                   /* @kind color */ /* neutral-50 as RGB triplet */
+  --kls-secondary-container:      var(--kls-color-neutral-800);
+  --kls-on-secondary-container:   var(--kls-color-neutral-50);
+  --kls-secondary-fixed:          var(--kls-color-neutral-800);
+
+  /* Tertiary */
+  --kls-tertiary:                 var(--kls-color-neutral-700);
+  --kls-on-tertiary:              var(--kls-color-neutral-500);
+  --kls-tertiary-container:       var(--kls-color-neutral-650);
+  --kls-on-tertiary-container:    var(--kls-color-neutral-50);
+  --kls-tertiary-fixed:           var(--kls-color-neutral-650); /* LEGACY — prefer --kls-tertiary-container or --kls-outline-variant */
+
+  /* Error */
+  --kls-error:                    var(--kls-color-red-400);       /* #D02525 */
+  --kls-on-error:                 var(--kls-color-neutral-50);
+  --kls-error-container:          var(--kls-color-red-700);       /* #450A0A */
+  --kls-on-error-container:       var(--kls-color-red-200);       /* #EF4444 */
+
+  /* Surface */
+  --kls-surface:                  var(--kls-color-neutral-800);
+  --kls-on-surface:               var(--kls-color-neutral-50);
+  --kls-on-surface-variant:       var(--kls-color-neutral-500);
+  --kls-surface-variant:          var(--kls-color-neutral-950);
+
+  /* Outline */
+  --kls-outline:                  var(--kls-color-neutral-600);
+  --kls-outline-variant:          var(--kls-color-neutral-700);
+
+  /* Effects */
+  --kls-shadow-color:             var(--kls-color-base-black);
+  --kls-scrim:                    var(--kls-color-transparent-60);
+
+  /* Inverse pair */
+  --kls-inverse-surface:          var(--kls-color-neutral-50);
+  --kls-on-inverse-surface:       var(--kls-color-neutral-950);
+
+  /* Surface container ladder — inverted */
+  --kls-surface-container-lowest:  var(--kls-color-neutral-700);
+  --kls-surface-container-low:     var(--kls-color-neutral-600);
+  --kls-surface-container:         var(--kls-color-neutral-500);
+  --kls-surface-container-high:    var(--kls-color-neutral-400);
+  --kls-surface-container-highest: var(--kls-color-neutral-300);
+
+  /* Status (extension) — dark variants */
+  --kls-success:                  var(--kls-color-green-300);     /* #46AD47 */
+  --kls-on-success:               var(--kls-color-neutral-50);
+  --kls-success-container:        var(--kls-color-green-700);     /* #19371A */
+  --kls-on-success-container:     var(--kls-color-green-100);     /* #76C677 */
+
+  --kls-progress:                 var(--kls-color-orange-400);    /* #E26A2C */
+  --kls-on-progress:              var(--kls-color-neutral-50);
+  --kls-progress-container:       var(--kls-color-orange-700);    /* #3A1F07 */
+  --kls-on-progress-container:    var(--kls-color-orange-200);    /* #E38435 */
+
+  --kls-info:                     var(--kls-color-blue-500);      /* #2073CC */
+  --kls-on-info:                  var(--kls-color-neutral-50);
+  --kls-info-container:           var(--kls-color-blue-700);      /* #0B2846 */
+  --kls-on-info-container:        var(--kls-color-blue-100);      /* #ACCFEF */
+
+  /* AccentColors — dark */
+  --kls-accent-1:   var(--kls-color-green-300);
+  --kls-accent-2:   var(--kls-color-green-700);
+  --kls-accent-3:   var(--kls-color-green-100);
+  --kls-accent-4:   var(--kls-color-orange-400);
+  --kls-accent-5:   var(--kls-color-orange-700);
+  --kls-accent-6:   var(--kls-color-orange-200);
+  --kls-accent-7:   var(--kls-color-blue-500);
+  --kls-accent-8:   var(--kls-color-blue-500);
+  --kls-accent-9:   var(--kls-color-blue-100);
+  --kls-accent-12:  var(--kls-color-purple-300);
+  --kls-accent-13:  var(--kls-color-purple-700);
+  --kls-accent-14:  var(--kls-color-red-700);
+  --kls-accent-15:  var(--kls-color-red-100);
+  --kls-accent-16:  var(--kls-color-red-200);
+
+  /* TextThemeExt — dark */
+  --kls-text-default: var(--kls-color-neutral-50);
+
+  /* Theme-level overrides for dark mode — only the values that differ. */
+  --kls-checkbox-check:  var(--kls-color-green-300);
+  --kls-focus:           transparent;
+
+  /* All --kls-surface-*, --kls-content-*, --kls-stroke-* and --kls-action-*
+     aliases automatically track this dark scheme because they reference
+     M3 roles (--kls-on-surface, --kls-outline, --kls-primary, etc.)
+     which are themselves redefined above. No alias overrides needed. */
+
+  /* Two specific alias values that don't have direct M3 mappings: */
+  --kls-content-secondary:   var(--kls-color-neutral-400);
+  --kls-content-quaternary:  var(--kls-color-neutral-600);
+  --kls-content-disabled:    var(--kls-color-neutral-650);
+  --kls-stroke-strong:       var(--kls-color-neutral-600);
+  --kls-action-primary-hover: var(--kls-color-base-white);
+  --kls-action-blue-deep:    var(--kls-color-blue-300);
+
+  /* ============ ALIAS RE-RESOLUTION ============
+     These aliases are also declared in :root, but var() references resolve
+     in the declaring scope. Re-declaring here forces resolution in this
+     scope so per-pane data-theme overrides work. */
+  --kls-scaffold-bg: var(--kls-surface-variant);
+  --kls-appbar-bg: var(--kls-surface-variant);
+  --kls-appbar-fg: var(--kls-on-surface);
+  --kls-sheet-bg: var(--kls-primary-container);
+  --kls-sheet-modal-bg: var(--kls-primary-container);
+  --kls-sheet-tint: var(--kls-primary-container);
+  --kls-sheet-handle-color: var(--kls-on-surface-variant);
+  --kls-slider-track-active: var(--kls-primary);
+  --kls-slider-track-inactive: var(--kls-tertiary);
+  --kls-slider-thumb: var(--kls-primary);
+  --kls-header-bg: var(--kls-surface);
+  --kls-header-fg: var(--kls-on-surface);
+  --kls-sidebar-bg: var(--kls-surface);
+  --kls-sidebar-tab-bg-active: var(--kls-surface-container-lowest);
+  --kls-sidebar-tab-icon-color: var(--kls-primary);
+  --kls-sidebar-tab-label-color: var(--kls-on-surface);
+  --kls-search-pill-bg: var(--kls-tertiary);
+  --kls-search-suggestion-bg: var(--kls-surface);
+  --kls-search-suggestion-hover: var(--kls-tertiary-container);
+  --kls-bell-badge-bg: var(--kls-error);
+  --kls-bell-badge-fg: var(--kls-on-error);
+  --kls-checkbox-side: var(--kls-on-surface-variant);
+  --kls-menu-tint: var(--kls-surface);
+  --kls-menu-shadow-color: var(--kls-on-secondary);
+  --kls-surface-page: var(--kls-surface);
+  --kls-surface-raised: var(--kls-surface);
+  --kls-surface-sunken: var(--kls-surface-container-lowest);
+  --kls-surface-muted: var(--kls-surface-variant);
+  --kls-surface-soft: var(--kls-surface-container-low);
+  --kls-surface-inverse: var(--kls-inverse-surface);
+  --kls-content-primary: var(--kls-on-surface);
+  --kls-content-tertiary: var(--kls-on-surface-variant);
+  --kls-content-on-inverse: var(--kls-on-inverse-surface);
+  --kls-content-on-muted: var(--kls-on-surface);
+  --kls-stroke-default: var(--kls-outline);
+  --kls-stroke-subtle: var(--kls-outline-variant);
+  --kls-stroke-inverse: var(--kls-inverse-surface);
+  --kls-action-primary: var(--kls-primary);
+  --kls-action-blue: var(--kls-info);
+
+}
+
+/* ============ DARK SCHEME (auto — when system prefers dark and no manual override) ============ */
+@media (prefers-color-scheme: dark) {
+  :root {
+  /* Primary */
+  --kls-primary:                  var(--kls-color-base-white);
+  --kls-on-primary:               var(--kls-color-neutral-950);
+  --kls-primary-container:        var(--kls-color-neutral-800);
+  --kls-on-primary-container:     var(--kls-color-neutral-50);
+
+  /* Secondary */
+  --kls-secondary:                var(--kls-color-neutral-700);
+  --kls-on-secondary:             var(--kls-color-neutral-50);
+  --kls-on-secondary-rgb:         248, 248, 248;                   /* @kind color */ /* neutral-50 as RGB triplet */
+  --kls-secondary-container:      var(--kls-color-neutral-800);
+  --kls-on-secondary-container:   var(--kls-color-neutral-50);
+  --kls-secondary-fixed:          var(--kls-color-neutral-800);
+
+  /* Tertiary */
+  --kls-tertiary:                 var(--kls-color-neutral-700);
+  --kls-on-tertiary:              var(--kls-color-neutral-500);
+  --kls-tertiary-container:       var(--kls-color-neutral-650);
+  --kls-on-tertiary-container:    var(--kls-color-neutral-50);
+  --kls-tertiary-fixed:           var(--kls-color-neutral-650); /* LEGACY — prefer --kls-tertiary-container or --kls-outline-variant */
+
+  /* Error */
+  --kls-error:                    var(--kls-color-red-400);       /* #D02525 */
+  --kls-on-error:                 var(--kls-color-neutral-50);
+  --kls-error-container:          var(--kls-color-red-700);       /* #450A0A */
+  --kls-on-error-container:       var(--kls-color-red-200);       /* #EF4444 */
+
+  /* Surface */
+  --kls-surface:                  var(--kls-color-neutral-800);
+  --kls-on-surface:               var(--kls-color-neutral-50);
+  --kls-on-surface-variant:       var(--kls-color-neutral-500);
+  --kls-surface-variant:          var(--kls-color-neutral-950);
+
+  /* Outline */
+  --kls-outline:                  var(--kls-color-neutral-600);
+  --kls-outline-variant:          var(--kls-color-neutral-700);
+
+  /* Effects */
+  --kls-shadow-color:             var(--kls-color-base-black);
+  --kls-scrim:                    var(--kls-color-transparent-60);
+
+  /* Inverse pair */
+  --kls-inverse-surface:          var(--kls-color-neutral-50);
+  --kls-on-inverse-surface:       var(--kls-color-neutral-950);
+
+  /* Surface container ladder — inverted */
+  --kls-surface-container-lowest:  var(--kls-color-neutral-700);
+  --kls-surface-container-low:     var(--kls-color-neutral-600);
+  --kls-surface-container:         var(--kls-color-neutral-500);
+  --kls-surface-container-high:    var(--kls-color-neutral-400);
+  --kls-surface-container-highest: var(--kls-color-neutral-300);
+
+  /* Status (extension) — dark variants */
+  --kls-success:                  var(--kls-color-green-300);     /* #46AD47 */
+  --kls-on-success:               var(--kls-color-neutral-50);
+  --kls-success-container:        var(--kls-color-green-700);     /* #19371A */
+  --kls-on-success-container:     var(--kls-color-green-100);     /* #76C677 */
+
+  --kls-progress:                 var(--kls-color-orange-400);    /* #E26A2C */
+  --kls-on-progress:              var(--kls-color-neutral-50);
+  --kls-progress-container:       var(--kls-color-orange-700);    /* #3A1F07 */
+  --kls-on-progress-container:    var(--kls-color-orange-200);    /* #E38435 */
+
+  --kls-info:                     var(--kls-color-blue-500);      /* #2073CC */
+  --kls-on-info:                  var(--kls-color-neutral-50);
+  --kls-info-container:           var(--kls-color-blue-700);      /* #0B2846 */
+  --kls-on-info-container:        var(--kls-color-blue-100);      /* #ACCFEF */
+
+  /* AccentColors — dark */
+  --kls-accent-1:   var(--kls-color-green-300);
+  --kls-accent-2:   var(--kls-color-green-700);
+  --kls-accent-3:   var(--kls-color-green-100);
+  --kls-accent-4:   var(--kls-color-orange-400);
+  --kls-accent-5:   var(--kls-color-orange-700);
+  --kls-accent-6:   var(--kls-color-orange-200);
+  --kls-accent-7:   var(--kls-color-blue-500);
+  --kls-accent-8:   var(--kls-color-blue-500);
+  --kls-accent-9:   var(--kls-color-blue-100);
+  --kls-accent-12:  var(--kls-color-purple-300);
+  --kls-accent-13:  var(--kls-color-purple-700);
+  --kls-accent-14:  var(--kls-color-red-700);
+  --kls-accent-15:  var(--kls-color-red-100);
+  --kls-accent-16:  var(--kls-color-red-200);
+
+  /* TextThemeExt — dark */
+  --kls-text-default: var(--kls-color-neutral-50);
+
+  /* Theme-level overrides for dark mode — only the values that differ. */
+  --kls-checkbox-check:  var(--kls-color-green-300);
+  --kls-focus:           transparent;
+
+  /* All --kls-surface-*, --kls-content-*, --kls-stroke-* and --kls-action-*
+     aliases automatically track this dark scheme because they reference
+     M3 roles (--kls-on-surface, --kls-outline, --kls-primary, etc.)
+     which are themselves redefined above. No alias overrides needed. */
+
+  /* Two specific alias values that don't have direct M3 mappings: */
+  --kls-content-secondary:   var(--kls-color-neutral-400);
+  --kls-content-quaternary:  var(--kls-color-neutral-600);
+  --kls-content-disabled:    var(--kls-color-neutral-650);
+  --kls-stroke-strong:       var(--kls-color-neutral-600);
+  --kls-action-primary-hover: var(--kls-color-base-white);
+  --kls-action-blue-deep:    var(--kls-color-blue-300);
+
+  /* ============ ALIAS RE-RESOLUTION ============
+     These aliases are also declared in :root, but var() references resolve
+     in the declaring scope. Re-declaring here forces resolution in this
+     scope so per-pane data-theme overrides work. */
+  --kls-scaffold-bg: var(--kls-surface-variant);
+  --kls-appbar-bg: var(--kls-surface-variant);
+  --kls-appbar-fg: var(--kls-on-surface);
+  --kls-sheet-bg: var(--kls-primary-container);
+  --kls-sheet-modal-bg: var(--kls-primary-container);
+  --kls-sheet-tint: var(--kls-primary-container);
+  --kls-sheet-handle-color: var(--kls-on-surface-variant);
+  --kls-slider-track-active: var(--kls-primary);
+  --kls-slider-track-inactive: var(--kls-tertiary);
+  --kls-slider-thumb: var(--kls-primary);
+  --kls-header-bg: var(--kls-surface);
+  --kls-header-fg: var(--kls-on-surface);
+  --kls-sidebar-bg: var(--kls-surface);
+  --kls-sidebar-tab-bg-active: var(--kls-surface-container-lowest);
+  --kls-sidebar-tab-icon-color: var(--kls-primary);
+  --kls-sidebar-tab-label-color: var(--kls-on-surface);
+  --kls-search-pill-bg: var(--kls-tertiary);
+  --kls-search-suggestion-bg: var(--kls-surface);
+  --kls-search-suggestion-hover: var(--kls-tertiary-container);
+  --kls-bell-badge-bg: var(--kls-error);
+  --kls-bell-badge-fg: var(--kls-on-error);
+  --kls-checkbox-side: var(--kls-on-surface-variant);
+  --kls-menu-tint: var(--kls-surface);
+  --kls-menu-shadow-color: var(--kls-on-secondary);
+  --kls-surface-page: var(--kls-surface);
+  --kls-surface-raised: var(--kls-surface);
+  --kls-surface-sunken: var(--kls-surface-container-lowest);
+  --kls-surface-muted: var(--kls-surface-variant);
+  --kls-surface-soft: var(--kls-surface-container-low);
+  --kls-surface-inverse: var(--kls-inverse-surface);
+  --kls-content-primary: var(--kls-on-surface);
+  --kls-content-tertiary: var(--kls-on-surface-variant);
+  --kls-content-on-inverse: var(--kls-on-inverse-surface);
+  --kls-content-on-muted: var(--kls-on-surface);
+  --kls-stroke-default: var(--kls-outline);
+  --kls-stroke-subtle: var(--kls-outline-variant);
+  --kls-stroke-inverse: var(--kls-inverse-surface);
+  --kls-action-primary: var(--kls-primary);
+  --kls-action-blue: var(--kls-info);
+
+}
+}
+
+
+:root {
+
+  /* Font families — Plus Jakarta Sans is the ONLY brand font (bundled locally). */
+  --kls-font-display:  "Plus Jakarta Sans", system-ui, sans-serif;
+  --kls-font-sans:     "Plus Jakarta Sans", system-ui, sans-serif;
+  --kls-font-ui:       "Plus Jakarta Sans", system-ui, sans-serif;
+  --kls-font-mono:     ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ============ TYPE SCALE ============
+     Canonical from app source: lib/theme/text_theme_ext.dart
+     All sizes use Plus Jakarta Sans. Each style has mobile/tablet defaults
+     and (where they differ) desktop sizes/weights via responsive overrides.
+
+     Naming mirrors the Dart getters exactly:
+       h1, h2, h3, h4, h5
+       subtitleLarge, subtitleLargeBold, subtitleSmall
+       navigation
+       bodyLarge, bodyLargeSemiBold, bodyLargeBold, bodySmall
+       labelLarge, labelLargeBold, labelLargeRegular, labelLargeSemiBold
+       labelMediumRegular, labelMediumMedium, labelMediumSemiBold
+       labelSmall, labelTiny
+       filters
+  */
+
+  /* Weights (one source of truth) */
+  --kls-fw-regular:  400; /* @kind font */
+  --kls-fw-medium:   500; /* @kind font */
+  --kls-fw-semibold: 600; /* @kind font */
+  --kls-fw-bold:     700; /* @kind font */
+
+  /* —— Headings —— */
+  /* h1 — mobile/tablet 28·Bold, desktop 32·Regular */
+  --kls-h1-size: 28px;          --kls-h1-line: 36px;        --kls-h1-weight: 700;
+  --kls-h1-size-desktop: 32px;  --kls-h1-weight-desktop: 400;
+
+  /* h2 — mobile/tablet 24·SemiBold, desktop 28·Medium */
+  --kls-h2-size: 24px;          --kls-h2-line: 32px;        --kls-h2-weight: 600;
+  --kls-h2-size-desktop: 28px;  --kls-h2-weight-desktop: 500;
+
+  /* h3 — 20 mobile/tablet, 25 desktop, SemiBold throughout */
+  --kls-h3-size: 20px;          --kls-h3-line: 28px;        --kls-h3-weight: 600;
+  --kls-h3-size-desktop: 25px;
+
+  /* h4 — 18 mobile/tablet, 22 desktop, SemiBold */
+  --kls-h4-size: 18px;          --kls-h4-line: 26px;        --kls-h4-weight: 600;
+  --kls-h4-size-desktop: 22px;
+
+  /* h5 — 16·SemiBold mobile/tablet, 20·Regular desktop */
+  --kls-h5-size: 16px;          --kls-h5-line: 24px;        --kls-h5-weight: 600;
+  --kls-h5-size-desktop: 20px;  --kls-h5-weight-desktop: 400;
+
+  /* —— Subtitles —— */
+  /* subtitleLarge — 18, mobile/tablet SemiBold(600), desktop Regular(400) */
+  --kls-subtitle-large-size: 18px;            --kls-subtitle-large-line: 26px;
+  --kls-subtitle-large-weight: 600;           --kls-subtitle-large-weight-desktop: 400;
+
+  /* subtitleLargeBold — 18·Bold(700) all sizes */
+  --kls-subtitle-large-bold-size: 18px;       --kls-subtitle-large-bold-line: 26px;
+  --kls-subtitle-large-bold-weight: 700;
+
+  /* subtitleSmall — 16, mobile/tablet Medium(500), desktop SemiBold(600) */
+  --kls-subtitle-small-size: 16px;            --kls-subtitle-small-line: 24px;
+  --kls-subtitle-small-weight: 500;           --kls-subtitle-small-weight-desktop: 600;
+
+  /* —— Navigation —— */
+  /* navigation — 10·Medium(500) mobile/tablet, 14·SemiBold(600) desktop */
+  --kls-navigation-size: 10px;                --kls-navigation-line: 14px;
+  --kls-navigation-weight: 500;
+  --kls-navigation-size-desktop: 14px;        --kls-navigation-weight-desktop: 600;
+
+  /* —— Body —— */
+  /* bodyLarge — 16·Medium(500) all sizes */
+  --kls-body-large-size: 16px;                --kls-body-large-line: 24px;
+  --kls-body-large-weight: 500;
+
+  /* bodyLargeSemiBold — 16·SemiBold(600) all sizes */
+  --kls-body-large-semibold-size: 16px;       --kls-body-large-semibold-line: 24px;
+  --kls-body-large-semibold-weight: 600;
+
+  /* bodyLargeBold — 16·Bold(700) all sizes */
+  --kls-body-large-bold-size: 16px;           --kls-body-large-bold-line: 24px;
+  --kls-body-large-bold-weight: 700;
+
+  /* bodySmall — 14 mobile/tablet, 16 desktop, Medium(500) all */
+  --kls-body-small-size: 14px;                --kls-body-small-line: 20px;
+  --kls-body-small-weight: 500;
+  --kls-body-small-size-desktop: 16px;
+
+  /* —— Labels — Large (14px) —— */
+  /* labelLarge — 14·Medium(500) all */
+  --kls-label-large-size: 14px;               --kls-label-large-line: 20px;
+  --kls-label-large-weight: 500;
+
+  /* labelLargeBold — 14·Bold(700) all */
+  --kls-label-large-bold-size: 14px;          --kls-label-large-bold-line: 20px;
+  --kls-label-large-bold-weight: 700;
+
+  /* labelLargeRegular — 14, mobile/tablet Regular(400), desktop Medium(500) */
+  --kls-label-large-regular-size: 14px;       --kls-label-large-regular-line: 20px;
+  --kls-label-large-regular-weight: 400;      --kls-label-large-regular-weight-desktop: 500;
+
+  /* labelLargeSemiBold — 14, mobile/tablet SemiBold(600), desktop Medium(500) */
+  --kls-label-large-semibold-size: 14px;      --kls-label-large-semibold-line: 20px;
+  --kls-label-large-semibold-weight: 600;     --kls-label-large-semibold-weight-desktop: 500;
+
+  /* filters — 14·SemiBold(600) all */
+  --kls-filters-size: 14px;                   --kls-filters-line: 20px;
+  --kls-filters-weight: 600;
+
+  /* —— Labels — Medium (12px) —— */
+  /* labelMediumRegular — 12, mobile/tablet Regular(400), desktop SemiBold(600) */
+  --kls-label-medium-regular-size: 12px;      --kls-label-medium-regular-line: 16px;
+  --kls-label-medium-regular-weight: 400;     --kls-label-medium-regular-weight-desktop: 600;
+
+  /* labelMediumMedium — 12, mobile/tablet Medium(500), desktop SemiBold(600) */
+  --kls-label-medium-medium-size: 12px;       --kls-label-medium-medium-line: 16px;
+  --kls-label-medium-medium-weight: 500;      --kls-label-medium-medium-weight-desktop: 600;
+
+  /* labelMediumSemiBold — 12·SemiBold(600) all */
+  --kls-label-medium-semibold-size: 12px;     --kls-label-medium-semibold-line: 16px;
+  --kls-label-medium-semibold-weight: 600;
+
+  /* —— Labels — Small / Tiny —— */
+  /* labelSmall — 10·SemiBold(600) all */
+  --kls-label-small-size: 10px;               --kls-label-small-line: 14px;
+  --kls-label-small-weight: 600;
+
+  /* labelTiny — 8·Medium(500) all */
+  --kls-label-tiny-size: 8px;                 --kls-label-tiny-line: 12px;
+  --kls-label-tiny-weight: 500;
+
+  /* —— Legacy aliases (kept for back-compat with existing cards) —— */
+  --kls-highlight-size: var(--kls-subtitle-large-size);
+  --kls-highlight-line: var(--kls-subtitle-large-line);
+  --kls-highlight-medium-weight:   500;
+  --kls-highlight-semibold-weight: 600;
+  --kls-highlight-bold-weight:     700;
+
+  --kls-body-size: var(--kls-body-large-size);
+  --kls-body-line: var(--kls-body-large-line);
+  --kls-body-medium-weight:   500;
+  --kls-body-semibold-weight: 600;
+  --kls-body-bold-weight:     700;
+
+  --kls-note-size: var(--kls-label-large-size);
+  --kls-note-line: var(--kls-label-large-line);
+  --kls-note-regular-weight:  400;
+  --kls-note-medium-weight:   500;
+  --kls-note-semibold-weight: 600;
+  --kls-note-bold-weight:     700;
+
+  --kls-caption-size: var(--kls-label-medium-medium-size);
+  --kls-caption-line: var(--kls-label-medium-medium-line);
+  --kls-caption-medium-weight:   500;
+  --kls-caption-semibold-weight: 600;
+
+  --kls-overline-size: var(--kls-label-small-size);
+  --kls-overline-line: var(--kls-label-small-line);
+  --kls-overline-medium-weight:   500;
+  --kls-overline-semibold-weight: 600;
+
+  /* —— Section label / eyebrow (DS CHANGE, approved 2026-06 — Module Summary) ——
+     Small section headers + metadata field labels render ALL CAPS with tracking.
+     Base = labelMediumSemiBold (12/16/600); color = onSurfaceVariant.
+     App: textTheme.labelMediumSemiBold.copyWith(color: onSurfaceVariant) + uppercase. */
+  --kls-section-label-size:      var(--kls-label-medium-semibold-size);
+  --kls-section-label-line:      var(--kls-label-medium-semibold-line);
+  --kls-section-label-weight:    var(--kls-label-medium-semibold-weight);
+  --kls-section-label-tracking:  0.08em;
+  --kls-section-label-transform: uppercase; /* @kind other */
+
+  /* ============ SPACING ============
+     Canonical from app source (Dart `Sizing` constants). These SIX values are
+     the ONLY spacing values permitted anywhere — every padding / margin / gap
+     must resolve to one of them. No off-grid pixel values, ever.
+       tiny=4 · xSmall=6 · small=12 · med=20 · large=32 · xLarge=64
+  */
+  --kls-space-tiny:    4px;
+  --kls-space-xsmall:  6px;
+  --kls-space-small:   12px;
+  --kls-space-med:     20px;
+  --kls-space-large:   32px;
+  --kls-space-xlarge:  64px;
+
+  /* ============ RADII ============
+     Canonical from app source (Dart):
+       xSmall=4 · small=8 · med=12 · large=24
+     Plus a fixed 24-px top-corner radius for bottom-sheet modals.
+  */
+  --kls-radius-xsmall:  4px;
+  --kls-radius-small:   8px;
+  --kls-radius-med:     12px;
+  --kls-radius-large:   24px;
+  --kls-radius-pill:    999px;
+
+  /* Bottom-sheet modal: 24px top corners only, square at the bottom */
+  --kls-radius-bottom-modal: 24px 24px 0 0;
+
+  /* Legacy aliases — kept so older preview cards still render */
+  --kls-radius-xs:  var(--kls-radius-xsmall);
+  --kls-radius-sm:  var(--kls-radius-small);
+  --kls-radius-md:  var(--kls-radius-med);
+  --kls-radius-lg:  var(--kls-radius-large);  /* was 16; canonical is 24 */
+  --kls-radius-xl:  var(--kls-radius-large);
+
+  /* ============ SHADOWS / ELEVATION ============
+     Canonical from app source: theme/shadows.dart
+       BoxShadow(
+         color: onSecondary.withValues(alpha: 0.2),
+         blurRadius: 10, spreadRadius: 2,
+       )
+     onSecondary resolves through the M3 scheme:
+       light: neutral950 (#141414) → near-black drop shadow
+       dark : neutral50  (#F8F8F8) → near-white outer glow
+     We expose --kls-on-secondary-rgb so the same shadow recipe works in both modes. */
+
+  /* The canonical drop shadow. Use this for elevated cards/sheets/menus. */
+  --kls-drop-shadow: 0 0 10px 2px rgba(var(--kls-on-secondary-rgb), 0.2);
+
+  /* Variants for older cards / tighter elevations */
+  --kls-shadow-hard: 4px 4px 0 0 rgb(0, 0, 0);   /* "neo-brutal" hard offset */
+  --kls-shadow-soft: var(--kls-drop-shadow);     /* alias — same recipe */
+  --kls-shadow-md:   var(--kls-drop-shadow);     /* alias — same recipe */
+
+  /* ============ THEME-LEVEL COMPONENT TOKENS ============
+     Sourced from app_theme.dart — values that ThemeData applies to
+     specific Material widgets app-wide. These are cross-platform
+     (mobile + web) unless noted. */
+
+  /* Scaffold / page background — surfaceVariant, NOT surface.
+     Light: #F8F8F8 · Dark: #141414 */
+  --kls-scaffold-bg:               var(--kls-surface-variant);
+
+  /* App bar — uses surfaceVariant background (matches scaffold), no shadow,
+     foreground onSurface, title style h5. */
+  --kls-appbar-bg:                 var(--kls-surface-variant);
+  --kls-appbar-fg:                 var(--kls-on-surface);
+  --kls-appbar-elevation:          0;
+  /* App-bar title style — equivalent to h5 (16/SemiBold mobile, 20/Regular desktop) */
+
+  /* Bottom sheet — bg + scrim + drag handle */
+  --kls-sheet-bg:                  var(--kls-primary-container);
+  --kls-sheet-modal-bg:            var(--kls-primary-container);
+  --kls-sheet-tint:                var(--kls-primary-container);
+  --kls-sheet-handle-color:        var(--kls-on-surface-variant);
+  /* showDragHandle: false (theme default) — opt in per route. */
+
+  /* Slider */
+  --kls-slider-track-height:       3px;
+  --kls-slider-track-active:       var(--kls-primary);
+  --kls-slider-track-inactive:     var(--kls-tertiary);
+  --kls-slider-thumb:              var(--kls-primary);
+  --kls-slider-thumb-radius:       4px;
+  --kls-slider-overlay-radius:     12px;       /* Sizing.small */
+
+  /* Checkbox — transparent fill, side onSurfaceVariant, check green */
+  --kls-checkbox-fill:             transparent;
+  --kls-checkbox-side:             var(--kls-on-surface-variant);
+  --kls-checkbox-check:            var(--kls-color-green-200);   /* dark mode swaps to green-300 */
+
+  /* Menu (dropdown) */
+  --kls-menu-tint:                 var(--kls-surface);
+  --kls-menu-shadow-color:         var(--kls-on-secondary);
+  --kls-menu-padding-y:            12px;        /* Sizing.small */
+  --kls-menu-padding-x:            6px;         /* Sizing.xSmall */
+
+  /* Splash / ripple — disabled app-wide.
+     Don't draw Material ink in prototypes; tap states are
+     opacity changes or background swaps only. */
+  --kls-splash:                    transparent;
+  --kls-highlight:                 transparent;
+  --kls-hover:                     transparent;
+  --kls-focus:                     var(--kls-tertiary);   /* light only — dark = transparent */
+
+  /* ============ WEB CHROME ============
+     Top header (height 64) + collapsible left sidebar (224 / 90).
+     Both sit on surface (NOT surfaceVariant — they frame the scaffold). */
+
+  /* Header */
+  --kls-header-height:             64px;
+  --kls-header-bg:                 var(--kls-surface);
+  --kls-header-fg:                 var(--kls-on-surface);
+  --kls-header-padding-x:          var(--kls-space-med);   /* 20 — Sizing.med */
+  --kls-header-border:             1px solid var(--kls-outline-variant);
+  --kls-header-title-style:        var(--kls-subtitle-small);   /* (used as label, see type) */
+
+  /* Sidebar */
+  --kls-sidebar-width-expanded:    224px;
+  --kls-sidebar-width-collapsed:   90px;
+  --kls-sidebar-bg:                var(--kls-surface);
+  --kls-sidebar-padding:           var(--kls-space-med);   /* 20 — Sizing.med */
+  --kls-sidebar-border:            1px solid var(--kls-outline-variant);
+  --kls-sidebar-tab-height:        56px;
+  --kls-sidebar-tab-radius:        4px;                          /* smallBorderRadius */
+  --kls-sidebar-tab-bg-active:     var(--kls-surface-container-lowest);
+  --kls-sidebar-tab-bg-idle:       transparent;
+  --kls-sidebar-tab-icon-color:    var(--kls-primary);           /* image masks rendered in primary */
+  --kls-sidebar-tab-label-color:   var(--kls-on-surface);
+  --kls-sidebar-logo-size:         36px;
+
+  /* Search input (header) */
+  --kls-search-pill-bg:            var(--kls-tertiary);
+  --kls-search-pill-radius:        16px;
+  --kls-search-pill-height:        32px;
+  --kls-search-pill-width:         300px;
+  --kls-search-button-size:        32px;
+  --kls-search-suggestion-bg:      var(--kls-surface);
+  --kls-search-suggestion-hover:   var(--kls-tertiary-fixed);
+  --kls-search-suggestion-radius:  8px;                          /* smBorderRadius */
+  --kls-search-suggestion-elevation: 0 4px 12px rgba(0,0,0,0.08);
+
+  /* Notification bell */
+  --kls-bell-size:                 40px;
+  --kls-bell-icon-size:            24px;
+  --kls-bell-badge-size:           18px;
+  --kls-bell-badge-bg:             var(--kls-error);
+  --kls-bell-badge-fg:             var(--kls-on-error);
+
+  /* Avatar (in header) */
+  --kls-header-avatar-size:        32px;                         /* radius 16 */
+
+  /* ============ MOTION ============
+     Kilsar uses ease-in-out almost universally for animations.
+     The standard token is ease-in-out; specific in/out curves available
+     for one-way enter/exit transitions where appropriate. */
+  --kls-ease-standard: cubic-bezier(0.42, 0, 0.58, 1);  /* @kind other */ /* ease-in-out — DEFAULT */
+  --kls-ease-in:       cubic-bezier(0.42, 0, 1, 1);     /* @kind other */ /* ease-in only */
+  --kls-ease-out:      cubic-bezier(0, 0, 0.58, 1);     /* @kind other */ /* ease-out only */
+  --kls-ease-emph:     cubic-bezier(0.42, 0, 0.58, 1);  /* @kind other */ /* alias of standard */
+
+  /* Durations — sourced from app/constants/durations.dart
+     Use these literal token names where possible. */
+  --kls-dur-fast-animation:        80ms;   /* @kind other */ /* fastAnimationDuration */
+  --kls-dur-split-fade-animation: 125ms;   /* @kind other */ /* splitFadeAnimationDuration */
+  --kls-dur-fade-animation:       250ms;   /* @kind other */ /* fadeAnimationDuration */
+  --kls-dur-slow-animation:       500ms;   /* @kind other */ /* slowAnimationDuration */
+  --kls-dur-snack-bar:           2000ms;   /* @kind other */ /* snackBarDuration */
+  --kls-dur-splash-screen:       2000ms;   /* @kind other */ /* splashScreenDuration */
+
+  /* Convenience aliases (legacy names — alias to canonical) */
+  --kls-dur-fast:  var(--kls-dur-fast-animation);
+  --kls-dur-base:  var(--kls-dur-fade-animation);
+  --kls-dur-slow:  var(--kls-dur-slow-animation);
+}
+
+/* ============ SEMANTIC ROLE STYLES ============ */
+
+.kls-h1, h1.kls {
+  font-family: var(--kls-font-sans);
+  font-weight: var(--kls-h1-weight);
+  font-size: var(--kls-h1-size);
+  line-height: var(--kls-h1-line);
+  letter-spacing: -0.01em;
+  color: var(--kls-content-primary);
+}
+
+.kls-h2, h2.kls {
+  font-family: var(--kls-font-sans);
+  font-weight: var(--kls-h2-weight);
+  font-size: var(--kls-h2-size);
+  line-height: var(--kls-h2-line);
+  color: var(--kls-content-primary);
+}
+
+.kls-h3, h3.kls {
+  font-family: var(--kls-font-sans);
+  font-weight: var(--kls-h3-weight);
+  font-size: var(--kls-h3-size);
+  line-height: var(--kls-h3-line);
+  color: var(--kls-content-primary);
+}
+
+.kls-highlight {
+  font-family: var(--kls-font-sans);
+  font-weight: var(--kls-highlight-medium-weight);
+  font-size: var(--kls-highlight-size);
+  line-height: var(--kls-highlight-line);
+  color: var(--kls-content-primary);
+}
+.kls-highlight--semibold { font-weight: var(--kls-highlight-semibold-weight); }
+.kls-highlight--bold     { font-weight: var(--kls-highlight-bold-weight); }
+
+.kls-body, p.kls {
+  font-family: var(--kls-font-sans);
+  font-weight: var(--kls-body-medium-weight);
+  font-size: var(--kls-body-size);
+  line-height: var(--kls-body-line);
+  color: var(--kls-content-primary);
+}
+.kls-body--semibold { font-weight: var(--kls-body-semibold-weight); }
+.kls-body--bold     { font-weight: var(--kls-body-bold-weight); }
+
+.kls-note {
+  font-family: var(--kls-font-sans);
+  font-weight: var(--kls-note-regular-weight);
+  font-size: var(--kls-note-size);
+  line-height: var(--kls-note-line);
+  color: var(--kls-content-secondary);
+}
+.kls-note--medium   { font-weight: var(--kls-note-medium-weight); }
+.kls-note--semibold { font-weight: var(--kls-note-semibold-weight); }
+.kls-note--bold     { font-weight: var(--kls-note-bold-weight); }
+
+.kls-caption {
+  font-family: var(--kls-font-sans);
+  font-weight: var(--kls-caption-medium-weight);
+  font-size: var(--kls-caption-size);
+  line-height: var(--kls-caption-line);
+  color: var(--kls-content-tertiary);
+}
+.kls-caption--semibold { font-weight: var(--kls-caption-semibold-weight); }
+
+.kls-overline {
+  font-family: var(--kls-font-sans);
+  font-weight: var(--kls-overline-medium-weight);
+  font-size: var(--kls-overline-size);
+  line-height: var(--kls-overline-line);
+  color: var(--kls-content-tertiary);
+}
+.kls-overline--semibold { font-weight: var(--kls-overline-semibold-weight); }
+
+/* Section label / eyebrow — DS CHANGE (approved): ALL CAPS section headers +
+   metadata field labels. base labelMediumSemiBold · tracking 0.08em · uppercase
+   · color onSurfaceVariant. Use above step/reference lists and on field labels. */
+.kls-text-section-label {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-section-label-size);
+  line-height: var(--kls-section-label-line);
+  font-weight: var(--kls-section-label-weight);
+  letter-spacing: var(--kls-section-label-tracking);
+  text-transform: var(--kls-section-label-transform);
+  color: var(--kls-on-surface-variant);
+}
+
+/* Plus Jakarta Sans is the system's only family — no separate mono / display.
+   Use .kls-body or .kls-h1 with utility classes below for monospace / display moods. */
+.kls-mono, code.kls {
+  font-family: var(--kls-font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ CANONICAL TEXT STYLES (mirrors TextThemeExt) ============
+   Each class corresponds to a Dart getter on TextThemeExt.
+   Default values are mobile/tablet; desktop overrides below.
+   Color comes from --kls-text-default (light/dark aware). */
+
+/* Headings */
+.kls-text-h1 {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-h1-size); line-height: var(--kls-h1-line); font-weight: var(--kls-h1-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-h2 {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-h2-size); line-height: var(--kls-h2-line); font-weight: var(--kls-h2-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-h3 {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-h3-size); line-height: var(--kls-h3-line); font-weight: var(--kls-h3-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-h4 {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-h4-size); line-height: var(--kls-h4-line); font-weight: var(--kls-h4-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-h5 {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-h5-size); line-height: var(--kls-h5-line); font-weight: var(--kls-h5-weight);
+  color: var(--kls-text-default);
+}
+
+/* Subtitles */
+.kls-text-subtitle-large {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-subtitle-large-size); line-height: var(--kls-subtitle-large-line);
+  font-weight: var(--kls-subtitle-large-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-subtitle-large-bold {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-subtitle-large-bold-size); line-height: var(--kls-subtitle-large-bold-line);
+  font-weight: var(--kls-subtitle-large-bold-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-subtitle-small {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-subtitle-small-size); line-height: var(--kls-subtitle-small-line);
+  font-weight: var(--kls-subtitle-small-weight);
+  color: var(--kls-text-default);
+}
+
+/* Navigation */
+.kls-text-navigation {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-navigation-size); line-height: var(--kls-navigation-line);
+  font-weight: var(--kls-navigation-weight);
+  color: var(--kls-text-default);
+}
+
+/* Body */
+.kls-text-body-large {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-body-large-size); line-height: var(--kls-body-large-line);
+  font-weight: var(--kls-body-large-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-body-large-semibold {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-body-large-semibold-size); line-height: var(--kls-body-large-semibold-line);
+  font-weight: var(--kls-body-large-semibold-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-body-large-bold {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-body-large-bold-size); line-height: var(--kls-body-large-bold-line);
+  font-weight: var(--kls-body-large-bold-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-body-small {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-body-small-size); line-height: var(--kls-body-small-line);
+  font-weight: var(--kls-body-small-weight);
+  color: var(--kls-text-default);
+}
+
+/* Labels — large (14px) */
+.kls-text-label-large {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-large-size); line-height: var(--kls-label-large-line);
+  font-weight: var(--kls-label-large-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-label-large-bold {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-large-bold-size); line-height: var(--kls-label-large-bold-line);
+  font-weight: var(--kls-label-large-bold-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-label-large-regular {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-large-regular-size); line-height: var(--kls-label-large-regular-line);
+  font-weight: var(--kls-label-large-regular-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-label-large-semibold {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-large-semibold-size); line-height: var(--kls-label-large-semibold-line);
+  font-weight: var(--kls-label-large-semibold-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-filters {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-filters-size); line-height: var(--kls-filters-line);
+  font-weight: var(--kls-filters-weight);
+  color: var(--kls-text-default);
+}
+
+/* Labels — medium (12px) */
+.kls-text-label-medium-regular {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-medium-regular-size); line-height: var(--kls-label-medium-regular-line);
+  font-weight: var(--kls-label-medium-regular-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-label-medium-medium {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-medium-medium-size); line-height: var(--kls-label-medium-medium-line);
+  font-weight: var(--kls-label-medium-medium-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-label-medium-semibold {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-medium-semibold-size); line-height: var(--kls-label-medium-semibold-line);
+  font-weight: var(--kls-label-medium-semibold-weight);
+  color: var(--kls-text-default);
+}
+
+/* Labels — small / tiny */
+.kls-text-label-small {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-small-size); line-height: var(--kls-label-small-line);
+  font-weight: var(--kls-label-small-weight);
+  color: var(--kls-text-default);
+}
+.kls-text-label-tiny {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-label-tiny-size); line-height: var(--kls-label-tiny-line);
+  font-weight: var(--kls-label-tiny-weight);
+  color: var(--kls-text-default);
+}
+
+/* Desktop overrides (≥1024px) — mirrors SizeClass.desktop / desktopXL in Dart */
+@media (min-width: 1024px) {
+  .kls-text-h1 { font-size: var(--kls-h1-size-desktop); font-weight: var(--kls-h1-weight-desktop); }
+  .kls-text-h2 { font-size: var(--kls-h2-size-desktop); font-weight: var(--kls-h2-weight-desktop); }
+  .kls-text-h3 { font-size: var(--kls-h3-size-desktop); }
+  .kls-text-h4 { font-size: var(--kls-h4-size-desktop); }
+  .kls-text-h5 { font-size: var(--kls-h5-size-desktop); font-weight: var(--kls-h5-weight-desktop); }
+  .kls-text-subtitle-large    { font-weight: var(--kls-subtitle-large-weight-desktop); }
+  .kls-text-subtitle-small    { font-weight: var(--kls-subtitle-small-weight-desktop); }
+  .kls-text-navigation        { font-size: var(--kls-navigation-size-desktop); font-weight: var(--kls-navigation-weight-desktop); }
+  .kls-text-body-small        { font-size: var(--kls-body-small-size-desktop); }
+  .kls-text-label-large-regular  { font-weight: var(--kls-label-large-regular-weight-desktop); }
+  .kls-text-label-large-semibold { font-weight: var(--kls-label-large-semibold-weight-desktop); }
+  .kls-text-label-medium-regular { font-weight: var(--kls-label-medium-regular-weight-desktop); }
+  .kls-text-label-medium-medium  { font-weight: var(--kls-label-medium-medium-weight-desktop); }
+}
+
+/* ============ LIGHT SCHEME (manual override) ============
+   Re-applies light values when the user explicitly sets data-theme="light"
+   on a device whose system prefers dark — wins over the media-query block above. */
+[data-theme="light"] {
+  /* Primary */
+  --kls-primary:                  var(--kls-color-base-black);    /* black */
+  --kls-on-primary:               var(--kls-color-neutral-100);   /* #F3F3F3 */
+  --kls-primary-container:        var(--kls-color-neutral-50);    /* #F8F8F8 */
+  --kls-on-primary-container:     var(--kls-color-neutral-800);   /* #1F1F21 */
+
+  /* Secondary */
+  --kls-secondary:                var(--kls-color-neutral-200);   /* #E2E2E2 */
+  --kls-on-secondary:             var(--kls-color-neutral-950);   /* #141414 */
+  --kls-on-secondary-rgb:         20, 20, 20;                      /* @kind color */ /* neutral-950 as RGB triplet */
+  --kls-secondary-container:      var(--kls-color-neutral-50);    /* #F8F8F8 */
+  --kls-on-secondary-container:   var(--kls-color-neutral-950);
+  --kls-secondary-fixed:          var(--kls-color-neutral-100);   /* M3 fixed variant — ProfileWidget bg, LoadingOverlay spinner */
+
+  /* Tertiary */
+  --kls-tertiary:                 var(--kls-color-neutral-100);   /* #F3F3F3 */
+  --kls-on-tertiary:              var(--kls-color-neutral-500);   /* #838383 */
+  --kls-tertiary-container:       var(--kls-color-neutral-200);   /* #E2E2E2 */
+  --kls-on-tertiary-container:    var(--kls-color-neutral-950);
+  --kls-tertiary-fixed:           var(--kls-color-neutral-200); /* LEGACY — prefer --kls-tertiary-container or --kls-outline-variant */
+
+  /* Error */
+  --kls-error:                    var(--kls-color-red-300);       /* #DC2626 */
+  --kls-on-error:                 var(--kls-color-neutral-50);
+  --kls-error-container:          var(--kls-color-red-50);        /* #FEF2F2 */
+  --kls-on-error-container:       var(--kls-color-red-100);       /* #F87171 */
+
+  /* Surface (canvas + on-surface text) */
+  --kls-surface:                  var(--kls-color-base-white);
+  --kls-on-surface:               var(--kls-color-neutral-900);
+  --kls-on-surface-variant:       var(--kls-color-neutral-500);
+  --kls-surface-variant:          var(--kls-color-neutral-50);
+
+  /* Outline / Stroke (M3 names) */
+  --kls-outline:                  var(--kls-color-neutral-200);
+  --kls-outline-variant:          var(--kls-color-neutral-100);
+
+  /* Effects */
+  --kls-shadow-color:             var(--kls-color-base-black);
+  --kls-scrim:                    var(--kls-color-transparent-40);
+
+  /* Inverse pair — for snackbar/tooltip surfaces over normal canvas */
+  --kls-inverse-surface:          var(--kls-color-neutral-800);
+  --kls-on-inverse-surface:       var(--kls-color-neutral-50);
+
+  /* Surface container ladder (M3) — five elevations of tinted surface */
+  --kls-surface-container-lowest:  var(--kls-color-neutral-50);   /* #F8F8F8 */
+  --kls-surface-container-low:     var(--kls-color-neutral-200);  /* #E2E2E2 */
+  --kls-surface-container:         var(--kls-color-neutral-400);  /* #B4B4B4 */
+  --kls-surface-container-high:    var(--kls-color-neutral-500);  /* #838383 */
+  --kls-surface-container-highest: var(--kls-color-neutral-700);  /* #272727 */
+
+  /* App-specific extension roles (not in M3, but defined in the codebase). */
+  --kls-success:                  var(--kls-color-green-200);     /* #54B855 */
+  --kls-on-success:               var(--kls-color-neutral-50);
+  --kls-success-container:        var(--kls-color-green-50);      /* #DDF1DD */
+  --kls-on-success-container:     var(--kls-color-green-600);     /* #326E33 */
+
+  --kls-progress:                 var(--kls-color-orange-300);    /* #FC7A36 — "in-progress / warning" */
+  --kls-on-progress:              var(--kls-color-neutral-50);
+  --kls-progress-container:       var(--kls-color-orange-50);     /* #FFF7ED */
+  --kls-on-progress-container:    var(--kls-color-orange-100);    /* #FB923C */
+
+  --kls-info:                     var(--kls-color-blue-300);      /* #2890FF */
+  --kls-on-info:                  var(--kls-color-neutral-50);
+  --kls-info-container:           var(--kls-color-blue-50);       /* #EAF4FF */
+  --kls-on-info-container:        var(--kls-color-blue-200);      /* #4187C6 */
+
+  /* ============ ACCENTS (numbered) ============
+     Mirrors Flutter's `AccentColors` ThemeExtension exactly.
+     Use --kls-accent-N where N matches the Flutter member (1-16).
+     Numbered tokens are deliberately untyped — see README for groupings.
+     accent10/11 (water / mistyRose) are not yet defined in source. */
+  --kls-accent-1:   var(--kls-color-green-200);
+  --kls-accent-2:   var(--kls-color-green-50);
+  --kls-accent-3:   var(--kls-color-green-600);
+  --kls-accent-4:   var(--kls-color-orange-300);
+  --kls-accent-5:   var(--kls-color-orange-50);
+  --kls-accent-6:   var(--kls-color-orange-100);
+  --kls-accent-7:   var(--kls-color-blue-300);
+  --kls-accent-8:   var(--kls-color-blue-50);
+  --kls-accent-9:   var(--kls-color-blue-200);
+  --kls-accent-12:  var(--kls-color-purple-200);
+  --kls-accent-13:  var(--kls-color-purple-50);
+  --kls-accent-14:  var(--kls-color-red-50);
+  --kls-accent-15:  var(--kls-color-red-600);
+  --kls-accent-16:  var(--kls-color-red-200);
+
+  /* ============ TEXT THEME ============
+     `TextThemeExt(defaultColor: …)` — the catch-all "default text color"
+     used by widgets that don't read --kls-on-surface directly. */
+  --kls-text-default: var(--kls-color-neutral-900);
+  /* ============ ALIAS RE-RESOLUTION ============
+     These aliases are also declared in :root, but var() references resolve
+     in the declaring scope. Re-declaring here forces resolution in this
+     scope so per-pane data-theme overrides work. */
+  --kls-scaffold-bg: var(--kls-surface-variant);
+  --kls-appbar-bg: var(--kls-surface-variant);
+  --kls-appbar-fg: var(--kls-on-surface);
+  --kls-sheet-bg: var(--kls-primary-container);
+  --kls-sheet-modal-bg: var(--kls-primary-container);
+  --kls-sheet-tint: var(--kls-primary-container);
+  --kls-sheet-handle-color: var(--kls-on-surface-variant);
+  --kls-slider-track-active: var(--kls-primary);
+  --kls-slider-track-inactive: var(--kls-tertiary);
+  --kls-slider-thumb: var(--kls-primary);
+  --kls-header-bg: var(--kls-surface);
+  --kls-header-fg: var(--kls-on-surface);
+  --kls-sidebar-bg: var(--kls-surface);
+  --kls-sidebar-tab-bg-active: var(--kls-surface-container-lowest);
+  --kls-sidebar-tab-icon-color: var(--kls-primary);
+  --kls-sidebar-tab-label-color: var(--kls-on-surface);
+  --kls-search-pill-bg: var(--kls-tertiary);
+  --kls-search-suggestion-bg: var(--kls-surface);
+  --kls-search-suggestion-hover: var(--kls-tertiary-container);
+  --kls-bell-badge-bg: var(--kls-error);
+  --kls-bell-badge-fg: var(--kls-on-error);
+  --kls-checkbox-side: var(--kls-on-surface-variant);
+  --kls-menu-tint: var(--kls-surface);
+  --kls-menu-shadow-color: var(--kls-on-secondary);
+  --kls-surface-page: var(--kls-surface);
+  --kls-surface-raised: var(--kls-surface);
+  --kls-surface-sunken: var(--kls-surface-container-lowest);
+  --kls-surface-muted: var(--kls-surface-variant);
+  --kls-surface-soft: var(--kls-surface-container-low);
+  --kls-surface-inverse: var(--kls-inverse-surface);
+  --kls-content-primary: var(--kls-on-surface);
+  --kls-content-tertiary: var(--kls-on-surface-variant);
+  --kls-content-on-inverse: var(--kls-on-inverse-surface);
+  --kls-content-on-muted: var(--kls-on-surface);
+  --kls-stroke-default: var(--kls-outline);
+  --kls-stroke-subtle: var(--kls-outline-variant);
+  --kls-stroke-inverse: var(--kls-inverse-surface);
+  --kls-action-primary: var(--kls-primary);
+  --kls-action-blue: var(--kls-info);
+
+}
+

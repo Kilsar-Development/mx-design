@@ -1,0 +1,318 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Mobile Composed Patterns" subtitle="5 composed mobile patterns — PageHeader · DestinationCard · FilterChipRow · StatChip · BlockCard · light + dark" viewport="1400x1300" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Mobile Composed Patterns</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: var(--kls-space-large); background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: var(--kls-space-large); }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .pane-label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .section { display: flex; flex-direction: column; gap: var(--kls-space-small); }
+  .section h3 {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--kls-on-surface-variant);
+  }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); margin-top: 4px; }
+
+  /* ─────────────── 1. PageHeader ─────────────── */
+  /* Mobile non-home screen header: big title + optional trailing circle button(s).
+     No bar bg, no border. Uses scaffold-bg + on-surface. */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--kls-space-med) var(--kls-space-small);
+    background: var(--kls-scaffold-bg);
+  }
+  .page-header .title {
+    font-family: 'Plus Jakarta Sans';
+    font-size: var(--kls-h2-size); font-weight: var(--kls-h2-weight); line-height: var(--kls-h2-line);
+    color: var(--kls-on-surface);
+  }
+  .page-header .actions { display: flex; gap: var(--kls-space-small); }
+  .header-cb {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--kls-outline);
+    background: var(--kls-surface);
+    color: var(--kls-on-surface);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .header-cb svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  /* ─────────────── 2. DestinationCard ─────────────── */
+  .destinations {
+    display: flex; gap: var(--kls-space-small);
+    overflow-x: auto; padding-bottom: 4px;
+  }
+  .dest-card {
+    flex: none;
+    width: 150px; height: 150px;
+    background: var(--kls-surface-container-low);
+    border-radius: var(--kls-radius-med);
+    padding: var(--kls-space-med);
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    color: var(--kls-on-surface);
+  }
+  .dest-card .ico { width: 32px; height: 32px; color: var(--kls-on-surface); }
+  .dest-card .ico svg { width: 32px; height: 32px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .dest-card .label {
+    font-family: 'Plus Jakarta Sans';
+    font-size: var(--kls-subtitle-small-size); font-weight: 600;
+    color: var(--kls-on-surface);
+  }
+
+  /* ─────────────── 3. FilterChipRow ─────────────── */
+  .filter-row {
+    display: flex; align-items: center; gap: var(--kls-space-small);
+  }
+  .filter-row .chips { display: flex; gap: var(--kls-space-small); flex: 1; overflow-x: auto; }
+  .filter-chip {
+    padding: var(--kls-space-small) var(--kls-space-med);
+    border-radius: var(--kls-radius-pill);
+    background: transparent;
+    color: var(--kls-on-surface-variant);
+    font-family: 'Plus Jakarta Sans';
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .filter-chip:hover { background: var(--kls-tertiary-container); }
+  .filter-chip.active {
+    background: var(--kls-tertiary);
+    color: var(--kls-on-surface);
+  }
+  .filter-button {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--kls-outline);
+    background: var(--kls-surface);
+    color: var(--kls-on-surface);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+  }
+  .filter-button svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  /* ─────────────── 4. StatChip (outlined) ─────────────── */
+  .stat-chip {
+    display: inline-flex; align-items: center; gap: var(--kls-space-xsmall);
+    padding: var(--kls-space-tiny) var(--kls-space-small);
+    border-radius: var(--kls-radius-pill);
+    border: 1px solid var(--kls-outline-variant);
+    background: transparent;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px; font-weight: 500;
+    color: var(--kls-on-surface-variant);
+  }
+  .stat-chip svg {
+    width: 16px; height: 16px;
+    stroke: currentColor; fill: none; stroke-width: 1.6;
+  }
+
+  /* ─────────────── 5. BlockCard ─────────────── */
+  .block-card {
+    background: var(--kls-surface);
+    border-radius: var(--kls-radius-med);
+    padding: var(--kls-space-med);
+    display: flex; flex-direction: column; gap: var(--kls-space-small);
+    cursor: pointer;
+  }
+  .block-card .pill {
+    align-self: flex-start;
+    padding: var(--kls-space-tiny) var(--kls-space-small);
+    border-radius: var(--kls-radius-small);
+    font-family: 'Plus Jakarta Sans';
+    font-size: 12px; font-weight: 500;
+    /* Caller supplies bg + fg via inline style */
+  }
+  .block-card .title {
+    font-family: 'Plus Jakarta Sans';
+    font-size: var(--kls-subtitle-large-bold-size);
+    line-height: var(--kls-subtitle-large-bold-line);
+    font-weight: var(--kls-subtitle-large-bold-weight);
+    color: var(--kls-on-surface);
+  }
+  .block-card .subtitle {
+    font-family: 'Plus Jakarta Sans';
+    font-size: var(--kls-body-small-size); font-weight: 500;
+    color: var(--kls-on-surface-variant);
+  }
+  .block-card .stats {
+    display: flex; gap: var(--kls-space-xsmall);
+    flex-wrap: wrap;
+    margin-top: var(--kls-space-xsmall);
+  }
+
+  /* showcase row helper */
+  .row { display: flex; gap: var(--kls-space-small); align-items: center; }
+</style></head>
+<body><div class="grid">
+
+  <!-- LIGHT pane -->
+  <div class="pane" data-theme="light"><div class="pane-label">Light</div>
+
+    <div class="section">
+      <h3>1. PageHeader</h3>
+      <div class="caption">Mobile non-home screens. Big <code>h2</code> title + optional trailing icon button(s). No bg, no border.</div>
+      <div class="page-header">
+        <div class="title">Workspace</div>
+        <div class="actions">
+          <button class="header-cb"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>2. DestinationCard</h3>
+      <div class="caption">Horizontal scroller of square (~150) cards. Icon top-left + label bottom-left. Bg <code>surface-container-low</code>, radius <code>med</code>.</div>
+      <div class="destinations">
+        <div class="dest-card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 4v5"/></svg></div>
+          <div class="label">Library</div>
+        </div>
+        <div class="dest-card">
+          <div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="6" r="3" fill="none"/></svg></div>
+          <div class="label">Oral Exam</div>
+        </div>
+        <div class="dest-card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-.9L4 21l1.9-4.5a8.5 8.5 0 1 1 15.1-5z"/></svg></div>
+          <div class="label">Chat</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>3. FilterChipRow</h3>
+      <div class="caption">Individual pill chips (no shared track) + trailing funnel CircleButton. <em>Distinct from CompoundSwitch.</em> Use for screen-level entity filters.</div>
+      <div class="filter-row">
+        <div class="chips">
+          <button class="filter-chip active">Blocks</button>
+          <button class="filter-chip">Modules</button>
+          <button class="filter-chip">Tasks</button>
+        </div>
+        <button class="filter-button"><svg viewBox="0 0 24 24"><path d="M4 5h16l-6 9v6l-4-2v-4z" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>4. StatChip (outlined)</h3>
+      <div class="caption">Pill with leading icon + label. <code>outline-variant</code> border, transparent bg. Used inside <code>BlockCard</code>.</div>
+      <div class="row">
+        <span class="stat-chip"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>8 Tasks</span>
+        <span class="stat-chip"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>1 Module</span>
+        <span class="stat-chip"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="7" r="3"/></svg>1 Student</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>5. BlockCard</h3>
+      <div class="caption">Status pill + title (<code>subtitleLargeBold</code>) + subtitle (<code>bodySmall</code>) + <code>StatChip</code> row. Used on Home "Active blocks" + Workspace list.</div>
+      <div class="block-card">
+        <span class="pill" style="background:var(--kls-success-container);color:var(--kls-on-success-container)">In Progress</span>
+        <div class="title">124498.3938</div>
+        <div class="subtitle">AM.I.A.K10</div>
+        <div class="stats">
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>8 Tasks</span>
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>1 Module</span>
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="7" r="3"/></svg>1 Student</span>
+        </div>
+      </div>
+      <div class="block-card">
+        <div class="title">Assignment Sub-Task Block</div>
+        <div class="subtitle">AM.I.A.K1, AM.I.A.K10, AM.I.A.K11b, AM.I.A.K11d, AM.I.A.K13</div>
+        <div class="stats">
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>28 Tasks</span>
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>5 Modules</span>
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="7" r="3"/></svg>0 Students</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DARK pane -->
+  <div class="pane" data-theme="dark"><div class="pane-label">Dark</div>
+
+    <div class="section">
+      <h3>1. PageHeader</h3>
+      <div class="page-header">
+        <div class="title">Notifications</div>
+        <div class="actions">
+          <button class="header-cb"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>2. DestinationCard</h3>
+      <div class="destinations">
+        <div class="dest-card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 4v5"/></svg></div>
+          <div class="label">Library</div>
+        </div>
+        <div class="dest-card">
+          <div class="ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="6" r="3" fill="none"/></svg></div>
+          <div class="label">Oral Exam</div>
+        </div>
+        <div class="dest-card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-.9L4 21l1.9-4.5a8.5 8.5 0 1 1 15.1-5z"/></svg></div>
+          <div class="label">Chat</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>3. FilterChipRow</h3>
+      <div class="filter-row">
+        <div class="chips">
+          <button class="filter-chip active">All</button>
+          <button class="filter-chip">Alerts</button>
+          <button class="filter-chip">Requests (12)</button>
+        </div>
+        <button class="filter-button"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>4. StatChip (outlined)</h3>
+      <div class="row">
+        <span class="stat-chip"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>8 Tasks</span>
+        <span class="stat-chip"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>1 Module</span>
+        <span class="stat-chip"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="7" r="3"/></svg>1 Student</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>5. BlockCard</h3>
+      <div class="block-card">
+        <span class="pill" style="background:var(--kls-success-container);color:var(--kls-on-success-container)">In Progress</span>
+        <div class="title">124498.3938</div>
+        <div class="subtitle">AM.I.A.K10</div>
+        <div class="stats">
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>8 Tasks</span>
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>1 Module</span>
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="7" r="3"/></svg>1 Student</span>
+        </div>
+      </div>
+      <div class="block-card">
+        <span class="pill" style="background:var(--kls-progress-container);color:var(--kls-on-progress-container)">Needs Assistance</span>
+        <div class="title">Engine Block Test end-to-end</div>
+        <div class="subtitle">AM.I.A.K1, AM.I.A.K10</div>
+        <div class="stats">
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>12 Tasks</span>
+          <span class="stat-chip"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>2 Modules</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div></body></html>

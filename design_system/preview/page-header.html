@@ -1,0 +1,110 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="page-header" subtitle="Large-title screen header (resolves MOBILE_DRIFT #1)" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>PageHeader — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 20px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .mock { background: var(--kls-scaffold-bg); border: 1px solid var(--kls-outline-variant); border-radius: 12px; overflow: hidden; }
+
+  /* PageHeader — large title pattern used by mobile & tablet screens.
+     - title: h2 mobile (24/600), bumps to 28 on tablet/web (matches live WorkspaceScreen)
+     - row: 12px gap, padding 12/20 mobile · 20/32 tablet
+     - no background fill, no border-bottom — sits on scaffold bg
+     - leading slot (back / avatar), trailing slot (1–2 circle buttons)
+     - NOTE: the DESKTOP content-pane page header (see content-pane.html / G2)
+       uses h1 (32/700) and sits directly on the scaffold; this card is the
+       mobile/tablet screen header. */
+  .ph {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px 8px;
+  }
+  .ph.pad { padding: 20px 32px 8px; }
+  .ph .title {
+    flex: 1; min-width: 0;
+    font-family: 'Plus Jakarta Sans';
+    font-size: 24px; font-weight: 600; line-height: 1.15;
+    color: var(--kls-on-surface);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ph.pad .title { font-size: 28px; }
+  .ph .trailing { display: flex; gap: 8px; }
+
+  /* Filler so the header reads as a screen header, not a floating row */
+  .body-stub {
+    padding: 16px 20px 24px;
+    color: var(--kls-on-surface-variant);
+    font-size: 13px;
+    border-top: 1px solid var(--kls-outline-variant);
+  }
+  .pad + .body-stub { padding: 16px 32px 24px; }
+
+  /* Circle button reused (matches preview/circle-button.html web default) */
+  .cb {
+    width: 36px; height: 36px; border-radius: 18px;
+    background: var(--kls-tertiary);
+    border: 1px solid var(--kls-outline-variant);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--kls-on-surface);
+  }
+  .cb svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+
+  /* Avatar (preview/profile-widget.html, secondary-container bg) */
+  .avatar {
+    width: 36px; height: 36px; border-radius: 18px;
+    background: var(--kls-secondary-container);
+    color: var(--kls-on-secondary-container);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+  }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">Default — title only</div>
+    <div class="mock">
+      <div class="ph"><div class="title">Library</div></div>
+      <div class="body-stub">Files · Data Sets</div>
+    </div>
+
+    <div class="caption">With trailing actions (search + avatar)</div>
+    <div class="mock">
+      <div class="ph">
+        <div class="title">Workspace</div>
+        <div class="trailing">
+          <button class="cb" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg></button>
+          <span class="avatar">JR</span>
+        </div>
+      </div>
+      <div class="body-stub">Blocks · Modules · Tasks</div>
+    </div>
+
+    <div class="caption">Tablet variant — h2 28 / 600, padding 32×20</div>
+    <div class="mock">
+      <div class="ph pad">
+        <button class="cb" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="title">Turbine Engines</div>
+        <div class="trailing">
+          <button class="cb" aria-label="More"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg></button>
+        </div>
+      </div>
+      <div class="body-stub">12 files · v3 · updated 2 days ago</div>
+    </div>
+
+    <div class="caption">Spec — title h2 (24/600 mobile · 28/600 tablet) · gap 12 · pad 12×20 mobile · 20×32 tablet · NO fill, NO border-bottom · trailing: 1–2 CircleButton(36) on the right · leading: optional back / avatar. Desktop content-pane header uses h1 (32/700) — see content-pane.html.</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

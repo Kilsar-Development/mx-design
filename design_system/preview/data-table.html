@@ -1,0 +1,196 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Data Table / List" subtitle="Data table / list — CompoundSwitch + Refresh + sortable rows + participant stack + per-row menu chevron" viewport="1400x700" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Data Table / List</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 16px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+
+  /* ─────────────── Toolbar (CompoundSwitch + Refresh) ─────────────── */
+  .toolbar { display: flex; align-items: center; gap: var(--kls-space-small); }
+  .cs {
+    height: 40px;
+    padding: 2px;
+    background: var(--kls-tertiary);
+    border: 1px solid var(--kls-outline-variant);
+    border-radius: 8px;
+    display: inline-flex;
+    gap: 4px;
+  }
+  .cs button {
+    height: 36px; padding: 0 18px;
+    background: transparent; border: 0; border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans'; font-size: 12px; font-weight: 600;
+    color: var(--kls-on-tertiary);
+  }
+  .cs button.active {
+    background: var(--kls-surface);
+    color: var(--kls-on-surface);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .refresh {
+    width: 36px; height: 36px;
+    background: transparent;
+    border: 0; border-radius: 8px;
+    cursor: pointer;
+    color: var(--kls-on-surface);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .refresh:hover { background: var(--kls-tertiary); }
+  .refresh svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  /* ─────────────── Data table ─────────────── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Plus Jakarta Sans';
+  }
+  .data-table thead th {
+    text-align: left;
+    padding: var(--kls-space-small) var(--kls-space-med);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--kls-on-surface-variant);
+    border-bottom: 1px solid var(--kls-outline-variant);
+    background: transparent;
+  }
+  .data-table thead th.sortable { cursor: pointer; }
+  .data-table thead th .caret {
+    display: inline-block;
+    margin-left: var(--kls-space-xsmall);
+    color: var(--kls-on-surface-variant);
+  }
+  .data-table tbody tr {
+    border-bottom: 1px solid var(--kls-outline-variant);
+  }
+  .data-table tbody tr:hover {
+    background: var(--kls-tertiary);
+  }
+  .data-table tbody td {
+    padding: var(--kls-space-med) var(--kls-space-med);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--kls-on-surface);
+    vertical-align: middle;
+  }
+  .data-table .col-action { width: 32px; text-align: right; }
+  .data-table .col-action button {
+    background: transparent; border: 0;
+    width: 32px; height: 32px; border-radius: 8px;
+    cursor: pointer;
+    color: var(--kls-on-surface-variant);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .data-table .col-action button:hover { background: var(--kls-tertiary-container); }
+  .data-table .col-action svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  /* ─────────────── Participants column ─────────────── */
+  .participants {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+  }
+  .participants .count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--kls-on-surface);
+    color: var(--kls-surface);
+    font-size: 12px;
+    font-weight: 700;
+    border: 2px solid var(--kls-scaffold-bg);
+    z-index: 3;
+  }
+  .participants .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--kls-scaffold-bg);
+    margin-left: -10px;
+    background-size: cover;
+    background-position: center;
+  }
+  .participants .avatar:nth-child(2) { z-index: 2; background: linear-gradient(135deg, #C2A578, #6E5230); }
+  .participants .avatar:nth-child(3) { z-index: 1; background: linear-gradient(135deg, #A8BDA3, #4A6B45); }
+
+  /* N/A token — dimmer text */
+  .na { color: var(--kls-on-surface-variant); }
+</style></head>
+<body><div class="grid">
+
+  <!-- LIGHT -->
+  <div class="pane" data-theme="light">
+    <div class="label">Light</div>
+
+    <div class="toolbar">
+      <div class="cs">
+        <button class="active">Blocks</button>
+        <button>Block Templates</button>
+        <button>Modules</button>
+        <button>Tasks</button>
+      </div>
+      <button class="refresh"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="sortable">Block <span class="caret">▾</span></th>
+          <th style="text-align:center">Participants</th>
+          <th>Start date</th>
+          <th>End date</th>
+          <th class="col-action"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>124498.3938</td>      <td style="text-align:center"><span class="participants"><span class="count">3</span><span class="avatar"></span><span class="avatar"></span></span></td><td>07/18/2025</td><td>11/28/2025</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+        <tr><td>Assignment Sub-Task Block</td><td style="text-align:center"><span class="participants"><span class="count">2</span><span class="avatar"></span></span></td><td class="na">N/A</td><td class="na">N/A</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+        <tr><td>edit test</td>           <td style="text-align:center"><span class="participants"><span class="count">2</span><span class="avatar"></span></span></td><td>08/01/2025</td><td>08/05/2025</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+        <tr><td>Engine Block Test end-to-end</td><td style="text-align:center"><span class="participants"><span class="count">2</span><span class="avatar"></span></span></td><td>11/14/2025</td><td>11/16/2025</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+        <tr><td>Engine test end-to-end</td>     <td style="text-align:center"><span class="participants"><span class="count">1</span></span></td><td class="na">N/A</td><td>08/07/2025</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DARK -->
+  <div class="pane" data-theme="dark">
+    <div class="label">Dark · matches the screenshot</div>
+
+    <div class="toolbar">
+      <div class="cs">
+        <button class="active">Blocks</button>
+        <button>Block Templates</button>
+        <button>Modules</button>
+        <button>Tasks</button>
+      </div>
+      <button class="refresh"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="sortable">Block <span class="caret">▾</span></th>
+          <th style="text-align:center">Participants</th>
+          <th>Start date</th>
+          <th>End date</th>
+          <th class="col-action"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>124498.3938</td>      <td style="text-align:center"><span class="participants"><span class="count">3</span><span class="avatar"></span><span class="avatar"></span></span></td><td>07/18/2025</td><td>11/28/2025</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+        <tr><td>Assignment Sub-Task Block</td><td style="text-align:center"><span class="participants"><span class="count">2</span><span class="avatar"></span></span></td><td class="na">N/A</td><td class="na">N/A</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+        <tr><td>edit test</td>           <td style="text-align:center"><span class="participants"><span class="count">2</span><span class="avatar"></span></span></td><td>08/01/2025</td><td>08/05/2025</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+        <tr><td>Engine Block Test end-to-end</td><td style="text-align:center"><span class="participants"><span class="count">2</span><span class="avatar"></span></span></td><td>11/14/2025</td><td>11/16/2025</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+        <tr><td>Engine test end-to-end</td>     <td style="text-align:center"><span class="participants"><span class="count">1</span></span></td><td class="na">N/A</td><td>08/07/2025</td><td class="col-action"><button><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg></button></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div></body></html>

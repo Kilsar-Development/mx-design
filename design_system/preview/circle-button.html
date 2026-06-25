@@ -1,0 +1,190 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="circle-button" subtitle="CircleButton — canonical from Dart · sizes + badge · light + dark" viewport="880x580" -->
+<html><head><meta charset="utf-8"><title>CircleButton</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:0;font-family:var(--kls-font-sans);display:grid;grid-template-columns:1fr 1fr;min-height:560px}
+  .pane{padding:22px 24px 26px;display:flex;flex-direction:column;gap:14px}
+  .pane.light{background:var(--kls-color-base-white);color:#141414}
+  .pane.dark {background:var(--kls-color-neutral-900);color:#F8F8F8}
+  .head{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0}
+  .head .mode{font-weight:600;letter-spacing:.04em;opacity:.55}
+  .label{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.5;margin:6px 0 0}
+  .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .col{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .col span{font-size:10px;opacity:.5;font-variant-numeric:tabular-nums}
+
+  /* Canonical CircleButton from circle_button.dart */
+  .cb{
+    display:inline-flex;align-items:center;justify-content:center;
+    background:var(--kls-surface);
+    border:1px solid var(--kls-outline);          /* note: outline, not outlineVariant */
+    border-radius:9999px;
+    color:var(--kls-on-surface);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    flex:none;
+    position:relative;
+  }
+  .cb svg{ stroke:currentColor; fill:none; stroke-width:1.6; }
+  /* Default mobile size = 48; icon = size/2 = 24 */
+  .cb[data-size="48"]{ width:48px; height:48px; }
+  .cb[data-size="48"] svg{ width:24px; height:24px; }
+  .cb[data-size="40"]{ width:40px; height:40px; }
+  .cb[data-size="40"] svg{ width:20px; height:20px; }
+  .cb[data-size="36"]{ width:36px; height:36px; }
+  .cb[data-size="36"] svg{ width:18px; height:18px; }
+  .cb[data-size="32"]{ width:32px; height:32px; }
+  .cb[data-size="32"] svg{ width:16px; height:16px; }
+  .cb[data-size="64"]{ width:64px; height:64px; }
+  .cb[data-size="64"] svg{ width:32px; height:32px; }
+  .cb[data-disabled="true"]{ cursor:not-allowed; }
+  .cb[data-disabled="true"] svg{ opacity:.1; }   /* alpha 0.1 — per Dart */
+
+  /* Badge overhang per code: -size/4 on top & right */
+  .cb .badge{
+    position:absolute;
+    width:18px;height:18px;
+    top:-4.5px;right:-4.5px;     /* -18/4 = 4.5 */
+    border-radius:9999px;
+    background:var(--kls-error);
+    color:var(--kls-color-base-white);
+    font-size:10px;font-weight:700;line-height:18px;
+    text-align:center;
+    border:2px solid var(--kls-surface);
+    box-sizing:content-box;
+  }
+  .cb .badge.dot{ width:10px;height:10px;top:-2.5px;right:-2.5px; }
+
+  /* Image-mode (asset variant) */
+  .cb[data-image="true"]{ overflow:hidden; }
+  .cb[data-image="true"] .img{
+    width:60%;height:60%;border-radius:9999px;background:var(--kls-color-orange-200);
+    display:flex;align-items:center;justify-content:center;color:var(--kls-on-surface);
+    font-weight:700;font-size:11px;
+  }
+
+  .meta{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;opacity:.55;margin-top:auto;line-height:1.45}
+  .meta b{font-weight:600;opacity:.85}
+</style></head>
+<body>
+  <div class="pane light">
+    <p class="head"><span>CircleButton</span><span class="mode">LIGHT</span></p>
+
+    <p class="label">Common usage — toolbar / nav</p>
+    <div class="row">
+      <div class="col">
+        <button class="cb" data-size="48" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span>Back</span>
+      </div>
+      <div class="col">
+        <button class="cb" data-size="48" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+        <span>Close</span>
+      </div>
+      <div class="col">
+        <button class="cb" data-size="48" aria-label="More"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg></button>
+        <span>More</span>
+      </div>
+      <div class="col">
+        <button class="cb" data-size="48" aria-label="Share"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11l7.6-4M8.2 13l7.6 4" stroke-linecap="round"/></svg></button>
+        <span>Share</span>
+      </div>
+    </div>
+
+    <p class="label">With badge — count + dot</p>
+    <div class="row">
+      <div class="col">
+        <button class="cb" data-size="48" aria-label="Notifications">
+          <svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7Z" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0" stroke-linecap="round"/></svg>
+          <span class="badge">3</span>
+        </button>
+        <span>Bell · count</span>
+      </div>
+      <div class="col">
+        <button class="cb" data-size="48" aria-label="Inbox">
+          <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10l9 5 9-5" stroke-linejoin="round"/></svg>
+          <span class="badge dot"></span>
+        </button>
+        <span>Inbox · dot</span>
+      </div>
+    </div>
+
+    <p class="label">Image-mode (asset)</p>
+    <div class="row">
+      <div class="col">
+        <button class="cb" data-size="48" data-image="true" aria-label="Avatar"><span class="img">JD</span></button>
+        <span>Avatar slot</span>
+      </div>
+    </div>
+
+    <p class="label">Disabled · icon at 10% opacity</p>
+    <div class="row">
+      <button class="cb" data-size="48" data-disabled="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+    </div>
+
+    <p class="label">Size scale</p>
+    <div class="row">
+      <div class="col"><button class="cb" data-size="32"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>32 · web</span></div>
+      <div class="col"><button class="cb" data-size="36"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>36 · header</span></div>
+      <div class="col"><button class="cb" data-size="40"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>40</span></div>
+      <div class="col"><button class="cb" data-size="48"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>48 · mobile</span></div>
+      <div class="col"><button class="cb" data-size="64"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>64</span></div>
+    </div>
+
+    <p class="meta">
+      size <b>48</b> mobile · <b>36</b> header/toolbar · <b>32</b> web · radius = <b>size/2</b><br>
+      bg <b>surface</b> · border <b>outline</b> 1px · icon = <b>size/2</b> · color <b>onSurface</b><br>
+      disabled → icon <b>opacity 0.1</b> · bg + border unchanged<br>
+      badge overhangs <b>-size/4</b> top &amp; right
+    </p>
+  </div>
+
+  <div class="pane dark" data-theme="dark">
+    <p class="head"><span>CircleButton</span><span class="mode">DARK</span></p>
+
+    <p class="label">Common usage</p>
+    <div class="row">
+      <div class="col"><button class="cb" data-size="48"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span>Back</span></div>
+      <div class="col"><button class="cb" data-size="48"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button><span>Close</span></div>
+      <div class="col"><button class="cb" data-size="48"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg></button><span>More</span></div>
+      <div class="col"><button class="cb" data-size="48"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11l7.6-4M8.2 13l7.6 4" stroke-linecap="round"/></svg></button><span>Share</span></div>
+    </div>
+
+    <p class="label">With badge</p>
+    <div class="row">
+      <div class="col">
+        <button class="cb" data-size="48">
+          <svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7Z" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0" stroke-linecap="round"/></svg>
+          <span class="badge">3</span>
+        </button>
+        <span>Bell · count</span>
+      </div>
+      <div class="col">
+        <button class="cb" data-size="48">
+          <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10l9 5 9-5" stroke-linejoin="round"/></svg>
+          <span class="badge dot"></span>
+        </button>
+        <span>Inbox · dot</span>
+      </div>
+    </div>
+
+    <p class="label">Disabled</p>
+    <div class="row">
+      <button class="cb" data-size="48" data-disabled="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+    </div>
+
+    <p class="label">Size scale</p>
+    <div class="row">
+      <div class="col"><button class="cb" data-size="32"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>32 · web</span></div>
+      <div class="col"><button class="cb" data-size="36"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>36 · header</span></div>
+      <div class="col"><button class="cb" data-size="40"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>40</span></div>
+      <div class="col"><button class="cb" data-size="48"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>48 · mobile</span></div>
+      <div class="col"><button class="cb" data-size="64"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button><span>64</span></div>
+    </div>
+
+    <p class="meta">
+      Same recipe — surface + outline track the dark scheme.<br>
+      bg light <b>#FFF</b> → dark <b>#141414</b> · border light <b>#838383</b> → dark <b>#9C9C9C</b>
+    </p>
+  </div>
+</body></html>

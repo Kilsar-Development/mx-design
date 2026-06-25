@@ -1,0 +1,93 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="spinner" subtitle="Indeterminate spinner at 12 / 16 / 24 / 40" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Spinner — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .row { display: flex; gap: 24px; align-items: center; }
+  .cell { display: inline-flex; flex-direction: column; align-items: center; gap: 8px; min-width: 64px; }
+  .cell small { font-size: 11px; color: var(--kls-on-surface-variant); }
+
+  /* Spinner — indeterminate circular progress.
+     Default duration 900ms linear infinite. Stroke 1.5–2× for size scaling.
+     - 12: inline with text (status badges, toasts)
+     - 16: inline with button labels
+     - 24: standalone (input affordances)
+     - 40: LoadingOverlay center spinner */
+  @keyframes kls-spin { to { transform: rotate(360deg); } }
+  .sp { animation: kls-spin 900ms linear infinite; flex-shrink: 0; }
+  .sp circle { stroke: currentColor; stroke-opacity: .25; }
+  .sp path   { stroke: currentColor; stroke-linecap: round; }
+
+  /* In-context demos */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px 4px 8px;
+    border-radius: 8px;
+    background: var(--kls-info-container);
+    color: var(--kls-on-info-container);
+    font-size: 12px; font-weight: 600;
+  }
+  .toast {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: var(--kls-tertiary-container);
+    color: var(--kls-on-tertiary-container);
+    box-shadow: var(--kls-drop-shadow);
+    font-size: 14px; font-weight: 600;
+  }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">Sizes — 12 · 16 · 24 · 40</div>
+    <div class="row">
+      <div class="cell">
+        <svg class="sp" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M21 12a9 9 0 00-9-9"/></svg>
+        <small>12</small>
+      </div>
+      <div class="cell">
+        <svg class="sp" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M21 12a9 9 0 00-9-9"/></svg>
+        <small>16</small>
+      </div>
+      <div class="cell">
+        <svg class="sp" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M21 12a9 9 0 00-9-9"/></svg>
+        <small>24</small>
+      </div>
+      <div class="cell">
+        <svg class="sp" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M21 12a9 9 0 00-9-9"/></svg>
+        <small>40</small>
+      </div>
+    </div>
+
+    <div class="caption">Inline — Building badge</div>
+    <span class="badge">
+      <svg class="sp" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M21 12a9 9 0 00-9-9"/></svg>
+      Building
+    </span>
+
+    <div class="caption">Inline — Loading toast</div>
+    <span class="toast">
+      <svg class="sp" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M21 12a9 9 0 00-9-9"/></svg>
+      Building data set…
+    </span>
+
+    <div class="caption">Spec — duration 900ms linear infinite · stroke-opacity .25 on track · color = currentColor (inherits the slot it sits in) · sizes 12 / 16 / 24 / 40 with stroke-width 2.4 / 2.4 / 2 / 1.6</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

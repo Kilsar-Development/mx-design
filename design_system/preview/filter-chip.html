@@ -1,0 +1,93 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="filter-chip" subtitle="Individual pill chip (resolves MOBILE_DRIFT #3)" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>FilterChip — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* FilterChip — verbatim port of _buildTabPill from the live mobile app.
+     - padding: xSmall(6) × med(20)
+     - radius: large(24)
+     - active   bg tertiary-container · text primary
+     - inactive bg tertiary           · text on-tertiary
+     - typography: labelLargeSemiBold (14/600)
+     Distinct from CompoundSwitch: chips have NO shared track — each is its own
+     button. Use FilterChipRow for screen-level filtering of a heterogeneous
+     list; use CompoundSwitch when picking between sub-views of the same entity. */
+  .chip {
+    padding: 6px 20px;
+    border-radius: 24px;
+    border: 0;
+    background: var(--kls-tertiary);
+    color: var(--kls-on-tertiary);
+    font-family: 'Plus Jakarta Sans';
+    font-size: 14px; font-weight: 600; line-height: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip.active {
+    background: var(--kls-tertiary-container);
+    color: var(--kls-primary);
+  }
+
+  /* Trailing FilterButton — circle with funnel icon, right-aligned at end of row */
+  .funnel {
+    width: 32px; height: 32px; border-radius: 16px;
+    background: var(--kls-tertiary);
+    border: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--kls-on-tertiary);
+    margin-left: auto;
+  }
+  /* Funnel outline is noticeably bold in the live app — ~2.4 stroke (was 1.8) */
+  .funnel svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.4; }
+
+  .chiprow { display: flex; align-items: center; gap: 8px; }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">Single-select chip group</div>
+    <div class="row">
+      <button class="chip active">All</button>
+      <button class="chip">Blocks</button>
+      <button class="chip">Modules</button>
+      <button class="chip">Tasks</button>
+    </div>
+
+    <div class="caption">FilterChipRow — chips + trailing funnel button</div>
+    <div class="chiprow">
+      <button class="chip active">Blocks</button>
+      <button class="chip">Modules</button>
+      <button class="chip">Tasks</button>
+      <button class="funnel" aria-label="Filter">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16l-6 8v6l-4-2v-4L4 5z" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="caption">Two-state — owner filter</div>
+    <div class="row">
+      <button class="chip active">Everything</button>
+      <button class="chip">Mine</button>
+    </div>
+
+    <div class="caption">Spec — pad 6×20 · radius 24 (large) · labelLargeSemiBold (14/600) · active tertiary-container + primary · inactive tertiary + on-tertiary · funnel CircleButton(32) with bold (≈2.4) funnel icon at row end</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

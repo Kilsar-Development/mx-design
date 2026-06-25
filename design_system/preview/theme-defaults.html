@@ -1,0 +1,144 @@
+<!doctype html>
+<!-- @dsCard group="Spacing" name="theme-defaults" subtitle="App-wide ThemeData defaults — scaffold, app bar, slider, checkbox, menu, splash policy" viewport="880x760" -->
+<html><head><meta charset="utf-8"><title>Theme defaults</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:0;font-family:var(--kls-font-sans);background:var(--kls-color-base-white);color:#141414;display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--kls-color-neutral-200)}
+  .cell{background:var(--kls-color-base-white);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+  .cell.dark{background:var(--kls-color-neutral-900);color:#F8F8F8}
+  h3{margin:0;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.55}
+  h4{margin:0;font-size:14px;font-weight:600}
+  .row{display:flex;align-items:center;gap:10px;font-size:12px;font-variant-numeric:tabular-nums}
+  .swatch{width:36px;height:24px;border-radius:4px;border:1px solid var(--kls-color-neutral-200);flex:none}
+  .meta{font-size:11px;opacity:.6;font-family:ui-monospace,Menlo,monospace;line-height:1.5;margin:4px 0 0}
+
+  /* App-bar demo */
+  .appbar{
+    height:56px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;
+    background:var(--kls-appbar-bg);color:var(--kls-appbar-fg);
+    border-radius:8px;
+  }
+  .appbar .title{font-size:var(--kls-h5-size);font-weight:var(--kls-h5-weight);font-family:var(--kls-font-sans);}
+  .appbar .ico{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+  .appbar svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+
+  /* Slider demo */
+  .slider{display:flex;align-items:center;gap:12px;padding:6px 0}
+  .track{position:relative;flex:1;height:3px;background:var(--kls-slider-track-inactive);border-radius:2px}
+  .track .fill{position:absolute;left:0;top:0;bottom:0;width:60%;background:var(--kls-slider-track-active);border-radius:2px}
+  .track .thumb{position:absolute;top:50%;left:60%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:var(--kls-slider-thumb)}
+
+  /* Checkbox demo */
+  .check{display:flex;align-items:center;gap:10px;font-size:14px}
+  .cb-square{
+    width:18px;height:18px;border-radius:3px;
+    border:1.5px solid var(--kls-checkbox-side);
+    background:var(--kls-checkbox-fill);
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+  }
+  .cb-square svg{width:14px;height:14px;stroke:var(--kls-checkbox-check);fill:none;stroke-width:2.2}
+
+  /* Menu demo */
+  .menu{
+    display:inline-flex;flex-direction:column;
+    background:var(--kls-menu-tint);
+    box-shadow:0 0 10px 2px rgba(var(--kls-on-secondary-rgb), 0.2);
+    padding:var(--kls-menu-padding-y) var(--kls-menu-padding-x);
+    border-radius:6px;min-width:160px;
+  }
+  .menu .item{padding:8px 12px;border-radius:4px;font-size:13px;color:var(--kls-on-surface)}
+  .menu .item.sel{background:var(--kls-tertiary-container);color:var(--kls-on-tertiary-container);font-weight:600}
+</style></head>
+<body>
+
+  <!-- Scaffold/AppBar light -->
+  <div class="cell">
+    <h3>Scaffold + AppBar · Light</h3>
+    <h4>Page background = surfaceVariant</h4>
+    <div style="height:120px;background:var(--kls-scaffold-bg);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px">
+      <div class="appbar">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="title">Today</span>
+        <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5" stroke-linecap="round"/></svg></span>
+      </div>
+      <div style="flex:1;background:var(--kls-surface);border-radius:6px"></div>
+    </div>
+    <p class="meta">scaffold-bg <b>surfaceVariant</b> · appbar-bg <b>surfaceVariant</b><br>title <b>h5</b> · elevation <b>0</b> · no border</p>
+  </div>
+
+  <!-- Scaffold/AppBar dark -->
+  <div class="cell dark" data-theme="dark">
+    <h3>Scaffold + AppBar · Dark</h3>
+    <h4>Page background = surfaceVariant</h4>
+    <div style="height:120px;background:var(--kls-scaffold-bg);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px">
+      <div class="appbar">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="title">Today</span>
+        <span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5" stroke-linecap="round"/></svg></span>
+      </div>
+      <div style="flex:1;background:var(--kls-surface);border-radius:6px"></div>
+    </div>
+    <p class="meta">surface-variant light <b>#F8F8F8</b> → dark <b>#141414</b></p>
+  </div>
+
+  <!-- Slider light -->
+  <div class="cell">
+    <h3>Slider</h3>
+    <h4>Track 3px · thumb r=4 · overlay r=12</h4>
+    <div class="slider"><div class="track"><div class="fill"></div><div class="thumb"></div></div><span style="font-size:12px;font-weight:600">60%</span></div>
+    <p class="meta">active <b>primary</b> · inactive <b>tertiary</b> · thumb <b>primary</b><br>splash radius <b>0</b> (no ripple)</p>
+  </div>
+
+  <!-- Slider dark -->
+  <div class="cell dark" data-theme="dark">
+    <h3>Slider · Dark</h3>
+    <h4>Inverts via theme</h4>
+    <div class="slider"><div class="track"><div class="fill"></div><div class="thumb"></div></div><span style="font-size:12px;font-weight:600">60%</span></div>
+    <p class="meta">primary light <b>#000</b> → dark <b>#FFF</b><br>tertiary light <b>#F3F3F3</b> → dark <b>#272727</b></p>
+  </div>
+
+  <!-- Checkbox light -->
+  <div class="cell">
+    <h3>Checkbox</h3>
+    <h4>Transparent fill · green check</h4>
+    <div class="check"><span class="cb-square"></span><span>Off</span></div>
+    <div class="check"><span class="cb-square"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-11" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>On</span></div>
+    <p class="meta">side <b>onSurfaceVariant</b> · check <b>green200</b> (light) / <b>green300</b> (dark)<br>fill <b>transparent</b> · density <b>compact</b> · splash <b>0</b></p>
+  </div>
+
+  <!-- Checkbox dark -->
+  <div class="cell dark" data-theme="dark">
+    <h3>Checkbox · Dark</h3>
+    <h4>Same recipe — green-300</h4>
+    <div class="check"><span class="cb-square"></span><span>Off</span></div>
+    <div class="check"><span class="cb-square"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-11" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>On</span></div>
+    <p class="meta">side <b>#838383</b> in both modes (onSurfaceVariant is mode-stable)</p>
+  </div>
+
+  <!-- Menu light -->
+  <div class="cell">
+    <h3>Menu (dropdown)</h3>
+    <h4>Padding 12·6·12·6 · soft shadow</h4>
+    <div class="menu">
+      <div class="item">All recipes</div>
+      <div class="item sel">My library</div>
+      <div class="item">Recently viewed</div>
+      <div class="item">Shared with me</div>
+    </div>
+    <p class="meta">surface-tint <b>surface</b> · shadow <b>onSecondary @ 20%</b><br>padding-y <b>12</b> · padding-x <b>6</b></p>
+  </div>
+
+  <!-- Splash policy -->
+  <div class="cell dark" data-theme="dark">
+    <h3>Splash / ripple</h3>
+    <h4>Disabled app-wide</h4>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+      <div>splashFactory: <code style="font-family:ui-monospace,Menlo,monospace;opacity:.7">NoSplash</code></div>
+      <div>splashColor: <code style="font-family:ui-monospace,Menlo,monospace;opacity:.7">transparent</code></div>
+      <div>highlightColor: <code style="font-family:ui-monospace,Menlo,monospace;opacity:.7">transparent</code></div>
+      <div>hoverColor: <code style="font-family:ui-monospace,Menlo,monospace;opacity:.7">transparent</code></div>
+    </div>
+    <p class="meta">Don't draw Material ink in prototypes — tap states are <b>opacity</b> changes or <b>background swaps</b> only.</p>
+  </div>
+
+</body></html>

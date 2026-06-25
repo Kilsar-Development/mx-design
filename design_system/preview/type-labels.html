@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="type-labels" subtitle="9 label styles — labelLarge·Bold·Regular·SemiBold, labelMedium ×3, labelSmall, labelTiny" viewport="700x380" -->
+<html><head><meta charset="utf-8"><title>Type — Labels</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:16px 22px;background:#fff;font-family:var(--kls-font-sans);color:#18181A}
+  .row{display:grid;grid-template-columns:198px 1fr 88px;gap:14px;align-items:baseline;padding:7px 0;border-top:1px solid #F3F3F3}
+  .row:first-of-type{border-top:0}
+  .name{font-size:11px;font-weight:600;color:#838383;letter-spacing:.04em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+  .meta{font-size:10px;color:#B4B4B4;font-variant-numeric:tabular-nums;text-align:right;font-weight:500}
+  .meta b{color:#838383;font-weight:600}
+  .group{font-size:9px;font-weight:700;color:#B4B4B4;letter-spacing:.08em;text-transform:uppercase;margin:10px 0 4px}
+  .group:first-child{margin-top:0}
+</style></head>
+<body>
+  <div class="group">Large · 14px</div>
+  <div class="row"><span class="name">labelLarge</span>            <span class="kls-text-label-large">Default label</span>            <span class="meta"><b>14</b>·500</span></div>
+  <div class="row"><span class="name">labelLargeBold</span>        <span class="kls-text-label-large-bold">Bold label</span>          <span class="meta"><b>14</b>·700</span></div>
+  <div class="row"><span class="name">labelLargeRegular</span>     <span class="kls-text-label-large-regular">Regular label</span>     <span class="meta"><b>14</b>·400 / 500</span></div>
+  <div class="row"><span class="name">labelLargeSemiBold</span>    <span class="kls-text-label-large-semibold">Semibold label</span>   <span class="meta"><b>14</b>·600 / 500</span></div>
+
+  <div class="group">Medium · 12px</div>
+  <div class="row"><span class="name">labelMediumRegular</span>    <span class="kls-text-label-medium-regular">Regular caption</span>  <span class="meta"><b>12</b>·400 / 600</span></div>
+  <div class="row"><span class="name">labelMediumMedium</span>     <span class="kls-text-label-medium-medium">Medium caption</span>    <span class="meta"><b>12</b>·500 / 600</span></div>
+  <div class="row"><span class="name">labelMediumSemiBold</span>   <span class="kls-text-label-medium-semibold">Semibold caption</span> <span class="meta"><b>12</b>·600</span></div>
+
+  <div class="group">Small · 10 / 8</div>
+  <div class="row"><span class="name">labelSmall</span>            <span class="kls-text-label-small">SECTION HEADER</span>           <span class="meta"><b>10</b>·600</span></div>
+  <div class="row"><span class="name">labelTiny</span>             <span class="kls-text-label-tiny">METADATA</span>                  <span class="meta"><b>8</b>·500</span></div>
+</body></html>

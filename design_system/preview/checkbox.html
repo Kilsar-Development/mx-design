@@ -1,0 +1,119 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="checkbox" subtitle="Empty / checked / indeterminate · inverted + M3 green variants" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Checkbox — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-family: 'Plus Jakarta Sans'; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .row { display: flex; gap: 22px; align-items: center; }
+  .cell { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; min-width: 64px; }
+  .cell small { font-size: 11px; color: var(--kls-on-surface-variant); }
+
+  /* Checkbox — canonical from selection-mode usage.
+     Square, 22px, radius 6, 1.5px border.
+     - Empty:    border on-surface-variant · transparent bg
+     - Checked:  border on-surface · bg on-surface · check stroked in surface
+     - Indeterm: border on-surface · bg on-surface · dash stroked in surface
+
+     Note: Material 3 spec uses green-200/300 for the check stroke (per
+     app_theme.dart, see preview/theme-defaults.html). The selection-list
+     usage in the Data Sets flow inverts to surface on on-surface for
+     stronger contrast against row backgrounds. Both are canonical — use
+     the inverted variant for multi-select rows, the green variant for
+     standalone form checkboxes. */
+  .cb {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 1.5px solid var(--kls-on-surface-variant);
+    background: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+    transition: background-color 80ms;
+  }
+  .cb.checked, .cb.indet {
+    border-color: var(--kls-on-surface);
+    background: var(--kls-on-surface);
+  }
+  .cb svg { width: 16px; height: 16px; stroke: var(--kls-surface); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Green-check variant (M3 default per app_theme.dart) */
+  .cb.green { border-color: var(--kls-on-surface-variant); background: transparent; }
+  .cb.green.checked { border-color: var(--kls-on-surface); background: transparent; }
+  .cb.green.checked svg { stroke: var(--kls-color-green-300); }
+  [data-theme="light"] .cb.green.checked svg { stroke: var(--kls-color-green-200); }
+
+  .listrow {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px;
+    background: var(--kls-surface);
+    border: 1px solid var(--kls-outline-variant);
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .listrow .meta { display: flex; flex-direction: column; gap: 2px; }
+  .listrow .name { font-size: 15px; font-weight: 600; color: var(--kls-on-surface); }
+  .listrow .sub  { font-size: 12px; color: var(--kls-on-surface-variant); }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">States (inverted — selection-mode variant)</div>
+    <div class="row">
+      <div class="cell">
+        <button class="cb" aria-label="Unchecked"></button>
+        <small>Empty</small>
+      </div>
+      <div class="cell">
+        <button class="cb checked" aria-label="Checked">
+          <svg viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L20 6"/></svg>
+        </button>
+        <small>Checked</small>
+      </div>
+      <div class="cell">
+        <button class="cb indet" aria-label="Indeterminate">
+          <svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg>
+        </button>
+        <small>Indeterminate</small>
+      </div>
+    </div>
+
+    <div class="caption">States (M3 green-check — standalone form variant)</div>
+    <div class="row">
+      <div class="cell">
+        <button class="cb green" aria-label="Unchecked"></button>
+        <small>Empty</small>
+      </div>
+      <div class="cell">
+        <button class="cb green checked" aria-label="Checked">
+          <svg viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L20 6"/></svg>
+        </button>
+        <small>Checked</small>
+      </div>
+    </div>
+
+    <div class="caption">In a selection row</div>
+    <div class="listrow">
+      <button class="cb checked"><svg viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L20 6"/></svg></button>
+      <div class="meta">
+        <span class="name">FAA Part 145 — Repair Station Manual.pdf</span>
+        <span class="sub">Last updated: 2 days ago</span>
+      </div>
+    </div>
+
+    <div class="caption">Spec — 22×22 · radius 6 · 1.5px border · stroke 3px · transitions background 80ms · hit target wraps to ≥40px when used inline in a row</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

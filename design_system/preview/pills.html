@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Pills" subtitle="Status chips — 6 hues, 2 sizes" viewport="700x200" -->
+<html><head><meta charset="utf-8"><title>Pills</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+
+<style>
+  body{margin:0;padding:22px;background:#fff;font-family:'Plus Jakarta Sans'}
+  .row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;align-items:center}
+  .label{font-family: 'Plus Jakarta Sans';font-size:10px;color:#838383;width:80px;display:inline-block}
+  .pill{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600}
+  .green{background:#E6F5E6;color:#2E7E2F}
+  .blue{background:#E5F0FF;color:#074EE8}
+  .red{background:#FDEBEB;color:#BF0707}
+  .amber{background:#FFF1E0;color:#B05A00}
+  .violet{background:#F2EAFF;color:#6929C4}
+  .grey{background:#F3F3F3;color:#4B4B4B}
+  .dark{background:#18181A;color:#fff}
+</style></head>
+<body>
+  <div class="row"><span class="label">md</span>
+    <span class="pill green">Active</span>
+    <span class="pill blue">In review</span>
+    <span class="pill red">Failed</span>
+    <span class="pill amber">Warning</span>
+    <span class="pill violet">Premium</span>
+    <span class="pill grey">Draft</span>
+    <span class="pill dark">New</span>
+  </div>
+  <div class="row"><span class="label">sm</span>
+    <span class="pill green" style="height:20px;font-size:11px;padding:0 8px">Active</span>
+    <span class="pill blue" style="height:20px;font-size:11px;padding:0 8px">12</span>
+    <span class="pill red" style="height:20px;font-size:11px;padding:0 8px">!</span>
+    <span class="pill grey" style="height:20px;font-size:11px;padding:0 8px">tag</span>
+  </div>
+  <div class="row"><span class="label">overline</span>
+    <span class="pill" style="background:transparent;color:#838383;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:0;font-weight:700">Step 1 of 4</span>
+  </div>
+</body></html>

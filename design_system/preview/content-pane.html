@@ -1,0 +1,101 @@
+<!doctype html>
+<!-- @dsCard group="Patterns" name="content-pane" subtitle="Desktop content pane — page-on-scaffold standard (DS proposal G2)" viewport="1200x760" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Content pane — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { background: var(--kls-scaffold-bg); color: var(--kls-on-surface); }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .modelabel { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); padding: 16px 20px 0; }
+
+  /* Content pane — vertical stack directly on the scaffold (NOT inside one card).
+     Scroll-owning · padded large/large/xLarge · gap med */
+  .cp {
+    display: flex; flex-direction: column; gap: var(--kls-space-med);
+    padding: var(--kls-space-large) var(--kls-space-large) var(--kls-space-xlarge);
+  }
+
+  /* 1. Page header — ON the scaffold, not in a card */
+  .ph { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--kls-space-med); }
+  .ph .title { font-size: 32px; font-weight: 700; color: var(--kls-on-surface); line-height: 1.1; }
+  .ph .sub { font-size: 15px; font-weight: 500; color: var(--kls-on-surface-variant); margin-top: var(--kls-space-xsmall); }
+  .pbtn {
+    height: 40px; padding: 0 var(--kls-space-med); border: 0; cursor: pointer;
+    background: var(--kls-tertiary-container); color: var(--kls-on-tertiary-container);
+    border-radius: var(--kls-radius-small); font-size: 14px; font-weight: 700; white-space: nowrap;
+  }
+
+  /* 2. KPI strip */
+  .kpis { display: flex; flex-wrap: wrap; gap: var(--kls-space-small); }
+  .kpi {
+    flex: 1; min-width: 150px;
+    background: var(--kls-surface); border: 1px solid var(--kls-outline-variant);
+    border-radius: var(--kls-radius-med); padding: var(--kls-space-med);
+    display: flex; flex-direction: column; gap: var(--kls-space-xsmall);
+  }
+  .kpi .top { display: flex; align-items: center; justify-content: space-between; }
+  .kpi .k { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .kpi .chip { width: 28px; height: 28px; border-radius: var(--kls-radius-small); display: flex; align-items: center; justify-content: center; background: var(--kls-tertiary); color: var(--kls-on-surface-variant); }
+  .kpi .chip svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .kpi .v { font-size: 30px; font-weight: 700; }
+  .kpi .v.ok { color: var(--kls-success); }
+  .kpi .v.warn { color: var(--kls-progress); }
+
+  /* 3. Primary content card — table only, in one surface card */
+  .panel { background: var(--kls-surface); border: 1px solid var(--kls-outline-variant); border-radius: var(--kls-radius-med); overflow: hidden; }
+  .toolbar { display: flex; align-items: center; gap: var(--kls-space-small); padding: var(--kls-space-small) var(--kls-space-med); border-bottom: 1px solid var(--kls-outline-variant); }
+  .search { flex: 1; height: 36px; border-radius: var(--kls-radius-small); border: 1px solid var(--kls-outline-variant); background: var(--kls-surface); color: var(--kls-on-surface-variant); display: flex; align-items: center; padding: 0 var(--kls-space-small); font-size: 13px; gap: var(--kls-space-xsmall); }
+  .search svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .chips { display: flex; gap: var(--kls-space-xsmall); padding: var(--kls-space-small) var(--kls-space-med); border-bottom: 1px solid var(--kls-outline-variant); }
+  .fchip { padding: 6px 20px; border-radius: var(--kls-radius-large); border: 0; background: var(--kls-tertiary); color: var(--kls-on-tertiary); font-size: 14px; font-weight: 600; }
+  .fchip.on { background: var(--kls-tertiary-container); color: var(--kls-primary); }
+  .trow { display: flex; align-items: center; justify-content: space-between; padding: var(--kls-space-small) var(--kls-space-med); border-bottom: 1px solid var(--kls-outline-variant); font-size: 14px; color: var(--kls-on-surface); }
+  .trow:last-child { border-bottom: 0; }
+  .trow .muted { color: var(--kls-on-surface-variant); }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="cp">
+      <div class="ph">
+        <div>
+          <div class="title">Control Tower</div>
+          <div class="sub">Assignments, progress, and roster health at a glance</div>
+        </div>
+        <button class="pbtn">New assignment</button>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><div class="top"><span class="k">Active</span><span class="chip"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg></span></div><div class="v">24</div></div>
+        <div class="kpi"><div class="top"><span class="k">On track</span><span class="chip"><svg viewBox="0 0 24 24"><path d="M5 13l4 4 10-10" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><div class="v ok">18</div></div>
+        <div class="kpi"><div class="top"><span class="k">At risk</span><span class="chip"><svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z" stroke-linejoin="round"/><path d="M12 10v4" stroke-linecap="round"/></svg></span></div><div class="v warn">6</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="toolbar">
+          <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg>Search students</div>
+        </div>
+        <div class="chips">
+          <button class="fchip on">All</button>
+          <button class="fchip">On track</button>
+          <button class="fchip">At risk</button>
+        </div>
+        <div class="trow"><span>Turbine Engines · Block 1</span><span class="muted">8 tasks · 92%</span></div>
+        <div class="trow"><span>Hydraulics · Block 2</span><span class="muted">5 tasks · 64%</span></div>
+        <div class="trow"><span>Avionics Inspection</span><span class="muted">12 tasks · 78%</span></div>
+      </div>
+    </div>
+    <div style="padding:0 32px 24px;font-size:12px;color:var(--kls-on-surface-variant)">Spec — vertical stack on the scaffold (NOT one wrapping card) · padding large/large/xLarge · gap med. (1) Page header on scaffold: title h1 (32/700), subtitle 15/500 on-surface-variant (xsmall below), trailing primary action right-aligned. (2) KPI strip: surface · 1px outline-variant · radius med · pad med; uppercase labelMediumSemiBold label + 28px icon chip, value 30/700 tinted by tone; flex-wrap gap small. (3) Primary card: only the table in one surface card (1px outline-variant, radius med, overflow hidden); toolbar header (search/filters) + bottom divider, optional divided chip row, table flush.</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="modelabel">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="modelabel">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+  </script>
+</div></body></html>

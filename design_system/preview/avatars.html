@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- @dsCard group="Components" name="Avatars" subtitle="Initials, dark, presence dot" viewport="700x200" -->
+<html><head><meta charset="utf-8"><title>Avatars</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+
+<style>
+  body{margin:0;padding:24px;background:#fff;font-family:'Plus Jakarta Sans'}
+  .row{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+  .av{border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#18181A;background:#E2E2E2;flex-shrink:0}
+  .ring{box-shadow:0 0 0 2px #fff,0 0 0 4px #18181A}
+  .dot{position:relative}
+  .dot::after{content:"";position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:999px;background:#54B855;border:2px solid #fff}
+  .group{display:flex}
+  .group .av:not(:first-child){margin-left:-10px;border:2px solid #fff}
+  .label{font-family: 'Plus Jakarta Sans';font-size:10px;color:#838383;width:80px}
+</style></head>
+<body>
+  <div class="row"><span class="label">sizes</span>
+    <div class="av" style="width:24px;height:24px;font-size:10px">CR</div>
+    <div class="av" style="width:32px;height:32px;font-size:12px">CR</div>
+    <div class="av" style="width:40px;height:40px;font-size:14px">CR</div>
+    <div class="av" style="width:48px;height:48px;font-size:16px">CR</div>
+    <div class="av" style="width:64px;height:64px;font-size:20px">CR</div>
+  </div>
+  <div class="row"><span class="label">states</span>
+    <div class="av" style="width:40px;height:40px;font-size:14px;background:#18181A;color:#fff">CR</div>
+    <div class="av ring" style="width:40px;height:40px;font-size:14px;background:#fff">CR</div>
+    <div class="av dot" style="width:40px;height:40px;font-size:14px">CR</div>
+    <div class="av" style="width:40px;height:40px;font-size:14px;background:#FDEBEB;color:#BF0707">!</div>
+  </div>
+  <div class="row"><span class="label">stack</span>
+    <div class="group">
+      <div class="av" style="width:32px;height:32px;font-size:12px">A</div>
+      <div class="av" style="width:32px;height:32px;font-size:12px;background:#D5D5D5">B</div>
+      <div class="av" style="width:32px;height:32px;font-size:12px;background:#18181A;color:#fff">C</div>
+      <div class="av" style="width:32px;height:32px;font-size:12px;background:#F3F3F3;color:#4B4B4B">+4</div>
+    </div>
+  </div>
+</body></html>
