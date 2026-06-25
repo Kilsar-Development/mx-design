@@ -1,0 +1,56 @@
+{
+  "attribution": {
+    "commit": ""
+  },
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "Skill(simplify)",
+      "Bash(./sync.sh ~/Downloads/\"MX\\(2\\).zip\" app_mocks)"
+    ],
+    "deny": [
+      "Bash(curl *)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(sudo *)",
+      "Bash(ssh *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean -fd *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr close *)"
+    ],
+    "additionalDirectories": [
+      "/Users/joelfrank/dev/Kilsar/mx-design/.claude/skills/sync-design"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-layer-boundaries.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
