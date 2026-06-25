@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/mx-design-system-019df30f-a6e5-7a34-a806-20b51ae1ab4e/colors_and_type.css">
+  <script src="_ds/mx-design-system-019df30f-a6e5-7a34-a806-20b51ae1ab4e/_ds_bundle.js"></script>
+  <link rel="stylesheet" href="written-exams.css">
+  <script>window.KLS_ICON_BASE = "assets/icons"; if(!document.documentElement.getAttribute("data-theme")) document.documentElement.setAttribute("data-theme", "dark");</script>
+  <style>
+    @keyframes pulse-dot{0%,60%,100%{opacity:0.3}30%{opacity:1}}
+    @keyframes kls-fade{from{opacity:0}to{opacity:1}}
+    @keyframes kls-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+    *::-webkit-scrollbar{width:10px;height:10px}
+    *::-webkit-scrollbar-thumb{background:var(--kls-outline-variant);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+    *::-webkit-scrollbar-track{background:transparent}
+  </style>
+</helmet>
+<x-import component-from-global-scope="WebApp" from="./web-app.jsx" dc-props="{{ tweaks }}" hint-size="100%,100%"></x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;groupsSurface&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tabs&quot;,&quot;underline&quot;,&quot;stacked&quot;],&quot;default&quot;:&quot;tabs&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showKpis&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;examRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;student&quot;,&quot;instructor&quot;],&quot;default&quot;:&quot;instructor&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  applyTheme() {
+    document.documentElement.setAttribute("data-theme", this.props.theme || "dark");
+  }
+  componentDidMount() { this.applyTheme(); }
+  componentDidUpdate() { this.applyTheme(); }
+  renderVals() {
+    const p = this.props;
+    return { tweaks: { groupsSurface: p.groupsSurface, showKpis: p.showKpis, examRole: p.examRole } };
+  }
+}
+</script>
+</body>
+</html>
