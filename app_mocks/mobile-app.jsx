@@ -208,7 +208,7 @@ function IOSDevice({
   return (
     <div style={{
       width, height, borderRadius: 48, overflow: 'hidden',
-      position: 'relative', background: dark ? '#000' : '#F2F2F7',
+      position: 'relative', background: dark ? '#000' : 'var(--kls-surface-variant)',
       boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
       fontFamily: '-apple-system, system-ui, sans-serif',
       WebkitFontSmoothing: 'antialiased',
@@ -608,11 +608,47 @@ function TopBar({ title, leading, trailing }) {
 // ---- BottomNav ----
 function BottomNav({ active, onChange, unread = 0 }) {
   const items = [
-    { id: "home",          label: "Home",          icon: "home" },
-    { id: "workspace",     label: "Workspace",     icon: "squares-2x2" },
-    { id: "orion",         label: "Orion",         icon: "sparkles" },
-    { id: "notifications", label: "Notifications", icon: "bell", badge: unread },
+    { id: "home",          label: "Home" },
+    { id: "workspace",     label: "Workspace" },
+    { id: "orion",         label: "Orion" },
+    { id: "notifications", label: "Notifications", badge: unread },
   ];
+  // Inline SVG for every nav icon — no external PNG / mask / KlsIcon dependency, so it can never fall back to a blank dot.
+  const renderIcon = (id, color) => {
+    const svg = (children) => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style={{ flex: "none", display: "block" }} aria-hidden="true">{children}</svg>
+    );
+    if (id === "home") {
+      return svg(<>
+        <path d="M4.2 10.6 L11.1 4.5a1.4 1.4 0 0 1 1.8 0L19.8 10.6a1.4 1.4 0 0 1 .5 1.05V18.6a2 2 0 0 1-2 2H5.7a2 2 0 0 1-2-2v-6.95a1.4 1.4 0 0 1 .5-1.05Z" stroke={color} strokeWidth="1.7" strokeLinejoin="round" />
+        <circle cx="9" cy="14.2" r="1.05" fill={color} />
+        <circle cx="12" cy="14.2" r="1.05" fill={color} />
+        <circle cx="15" cy="14.2" r="1.05" fill={color} />
+      </>);
+    }
+    if (id === "workspace") {
+      return svg(<>
+        <rect x="9.25" y="3" width="5.5" height="4.5" rx="1.3" fill={color} />
+        <rect x="2" y="16.5" width="5.5" height="4.5" rx="1.3" fill={color} />
+        <rect x="9.25" y="16.5" width="5.5" height="4.5" rx="1.3" fill={color} />
+        <rect x="16.5" y="16.5" width="5.5" height="4.5" rx="1.3" fill={color} />
+        <path d="M12 7.5v3.25M4.75 16.5v-3.25h14.5v3.25M12 12.75v3.75" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </>);
+    }
+    if (id === "orion") {
+      return svg(<>
+        <path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M12 8a4 4 0 1 0 4 4" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M12 3.5v4.5M16 12h4.5" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      </>);
+    }
+    // notifications — bell
+    return svg(<>
+      <path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.1 1.5a.6 .6 0 0 1-.5 .95H5.9a.6 .6 0 0 1-.5-.95Z" stroke={color} strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M9.8 19.4a2.4 2.4 0 0 0 4.4 0" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M12 3.2v1.6" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+    </>);
+  };
   return (
     <div style={{
       background: "var(--kls-surface)",
@@ -633,7 +669,7 @@ function BottomNav({ active, onChange, unread = 0 }) {
               fontFamily: "var(--kls-font-sans)",
             }}>
               <span style={{ position: "relative", display: "inline-flex" }}>
-                <Icon name={it.icon} size={32} color={iconColor} />
+                {renderIcon(it.id, iconColor)}
                 {it.badge > 0 && (
                   <span style={{
                     position: "absolute", top: -2, right: -6,
@@ -709,107 +745,164 @@ function HFAvatar({ size = 52 }) {
 }
 
 /* ── home screen ──────────────────────────────────────────────────────────── */
+// Pill — DS spec: pad tiny/small · radius small · labelMediumMedium (12/500) · caller supplies bg+fg
 function StatusPill({ label, color, bg }) {
   return (
-    <span style={{ alignSelf: "flex-start", padding: "5px var(--kls-space-small)", borderRadius: 999, background: bg,
-      color, fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600 }}>{label}</span>
+    <span style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", padding: "var(--kls-space-tiny) var(--kls-space-small)",
+      borderRadius: "var(--kls-radius-small)", background: bg, color,
+      fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{label}</span>
   );
 }
 
+// StatChip — DS spec: filled tertiary · radius small · 16px icon + label · on-surface-variant
 function MetaChip({ icon, children }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 32, padding: "0 var(--kls-space-small)",
-      borderRadius: 999, border: "1px solid var(--kls-outline-variant)",
-      fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", height: 28, padding: "0 var(--kls-space-small)",
+      borderRadius: "var(--kls-radius-small)", background: "var(--kls-tertiary)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
       {icon}{children}
     </span>
   );
 }
 
-function SectionHead({ title }) {
+function SectionHead({ title, count }) {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "0 var(--kls-space-tiny)" }}>
-      <h2 style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 22, fontWeight: 700, color: "var(--kls-on-surface)" }}>{title}</h2>
-      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", textDecoration: "underline", textUnderlineOffset: 3 }}>see all</span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <h2 style={{ margin: 0, display: "flex", alignItems: "baseline", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+        {title}
+        {count != null && <span style={{ fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{count}</span>}
+      </h2>
+      <button style={{ border: "none", background: "transparent", cursor: "pointer", padding: "var(--kls-space-tiny) 0",
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-primary)" }}>See all</button>
     </div>
   );
 }
 
+function HomeProgress({ pct }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>
+        <span>Progress</span><span>{pct}%</span>
+      </div>
+      <div style={{ height: 6, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", overflow: "hidden" }}>
+        <div style={{ width: pct + "%", height: "100%", background: "var(--kls-primary)", borderRadius: "var(--kls-radius-pill)" }} />
+      </div>
+    </div>
+  );
+}
+
+const HOME_REVIEWS = [
+  { id: "r1", kind: "Check-in", tone: "amber", student: "Melodie Stone", title: "Submitted 3 photos for review", sub: "Rivet Inspection Log · Airframe Structures", when: "Today, 09:22 AM" },
+  { id: "r2", kind: "Oral exam", tone: "violet", student: "Joel Bishop", title: "Requested an oral exam", sub: "Engine Run-Up · Powerplant Systems", when: "Yesterday, 04:10 PM" },
+];
+const HOME_BLOCKS = [
+  { id: "b1", title: "Airframe Structures", code: "AM.I.A", pct: 62, tasks: 8, modules: 4, instructors: 2 },
+  { id: "b2", title: "Avionics Fundamentals", code: "AV.II.B", pct: 45, tasks: 6, modules: 3, instructors: 1 },
+];
+const HOME_TASKS = [
+  { id: "t1", title: "Torque Sequence Worksheet", code: "AM.I.A.K10", due: "Due Nov 14" },
+  { id: "t2", title: "Wiring Diagram Reading", code: "AV.II.B.K4", due: "Due Nov 21" },
+  { id: "t3", title: "Magneto Timing Worksheet", code: "PP.I.C.K2", due: "Due Dec 03" },
+];
+const HOME_TONES = {
+  amber:  { fg: "var(--kls-accent-4)",  bg: "var(--kls-accent-5)" },
+  violet: { fg: "var(--kls-accent-12)", bg: "var(--kls-accent-13)" },
+  green:  { fg: "var(--kls-success)",   bg: "var(--kls-success-container)" },
+};
+
 function HomeScreen({ showHelpButton, onHelp, onProfile }) {
+  const carousel = { display: "flex", gap: "var(--kls-space-small)", overflowX: "auto", scrollSnapType: "x mandatory",
+    margin: "0 calc(-1 * var(--kls-space-med))", padding: "var(--kls-space-tiny) var(--kls-space-med)" };
+  const card = { flex: "0 0 84%", scrollSnapAlign: "start", boxSizing: "border-box", background: "var(--kls-surface)",
+    borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" };
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--kls-surface-variant)" }}>
       {/* header (clears the status bar) */}
-      <div style={{ paddingTop: 60, padding: "60px 22px var(--kls-space-small)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--kls-surface-variant)", flex: "none" }}>
+      <div style={{ padding: "60px var(--kls-space-med) var(--kls-space-small)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--kls-surface-variant)", flex: "none" }}>
         <AimLogoMobile />
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
           {showHelpButton && (
             <button onClick={onHelp} aria-label="Help & Feedback" style={{
-              width: 44, height: 44, borderRadius: "50%", flex: "none",
+              width: 44, height: 44, borderRadius: "var(--kls-radius-pill)", flex: "none",
               border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)",
               display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
             }}>
               <HelpGlyph size={24} color="var(--kls-on-surface)" />
             </button>
           )}
           <button onClick={onProfile} aria-label="Your profile" style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
-            <HFAvatar size={52} />
+            <HFAvatar size={48} />
           </button>
         </div>
       </div>
 
       {/* scroll body */}
-      <div style={{ flex: 1, overflow: "auto", padding: "8px 22px 90px", display: "flex", flexDirection: "column", gap: 26 }}>
+      <div style={{ flex: 1, overflow: "auto", padding: "var(--kls-space-tiny) var(--kls-space-med) 90px", display: "flex", flexDirection: "column", gap: "var(--kls-space-large)" }}>
         {/* Pending review */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <SectionHead title="Pending Review" />
-          <div style={{ display: "flex", gap: 14, overflow: "hidden" }}>
-            <div style={{ flex: "0 0 86%", background: "var(--kls-surface)", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-              <StatusPill label="Check-in" color="#C77A18" bg="color-mix(in oklab, #F5A623 20%, var(--kls-surface))" />
-              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>submitted photo(s) for review:</div>
-              <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
-              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--kls-on-surface-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 14 }}>
-                <KlsIcon name="date" size={18} color="var(--kls-on-surface-variant)" /> Mon, 08 Jun, 09:22 AM
-              </div>
-              <MetaChip icon={<KlsIcon name="person" size={16} color="var(--kls-on-surface-variant)" />}>Joel Frank</MetaChip>
-            </div>
-            <div style={{ flex: "0 0 30%", background: "var(--kls-surface)", borderRadius: 16, opacity: 0.6 }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <SectionHead title="Pending review" count={HOME_REVIEWS.length} />
+          <div style={carousel}>
+            {HOME_REVIEWS.map((r) => {
+              const tone = HOME_TONES[r.tone];
+              return (
+                <div key={r.id} style={card}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)" }}>
+                    <StatusPill label={r.kind} color={tone.fg} bg={tone.bg} />
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{r.when}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+                    <MCTAvatar name={r.student} size={36} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.student}</div>
+                      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{r.title}</div>
+                    </div>
+                  </div>
+                  <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+                    <KlsIcon name="worklog" size={16} color="var(--kls-on-surface-variant)" />{r.sub}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Active blocks */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <SectionHead title="Active blocks" />
-          <div style={{ display: "flex", gap: 14, overflow: "hidden" }}>
-            <div style={{ flex: "0 0 86%", background: "var(--kls-surface)", borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-              <StatusPill label="In Progress" color="var(--kls-on-success-container)" bg="var(--kls-success-container)" />
-              <div>
-                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 19, fontWeight: 600, color: "var(--kls-on-surface)" }}>124498.3938</div>
-                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 4 }}>AM.I.A.K10</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <SectionHead title="Active blocks" count={HOME_BLOCKS.length} />
+          <div style={carousel}>
+            {HOME_BLOCKS.map((b) => (
+              <div key={b.id} style={card}>
+                <StatusPill label="In progress" color="var(--kls-success)" bg="var(--kls-success-container)" />
+                <div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>{b.title}</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>{b.code}</div>
+                </div>
+                <HomeProgress pct={b.pct} />
+                <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+                  <MetaChip icon={<KlsIcon name="worklog" size={16} color="var(--kls-on-surface-variant)" />}>{b.tasks} Tasks</MetaChip>
+                  <MetaChip icon={<KlsIcon name="checkpoint" size={16} color="var(--kls-on-surface-variant)" />}>{b.modules} Modules</MetaChip>
+                  <MetaChip icon={<KlsIcon name="person" size={16} color="var(--kls-on-surface-variant)" />}>{b.instructors} Instructor{b.instructors === 1 ? "" : "s"}</MetaChip>
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <MetaChip icon={<KlsIcon name="list" size={16} color="var(--kls-on-surface-variant)" />}>8 Tasks</MetaChip>
-                <MetaChip icon={<KlsIcon name="date" size={16} color="var(--kls-on-surface-variant)" />}>1 Module</MetaChip>
-                <MetaChip icon={<KlsIcon name="person" size={16} color="var(--kls-on-surface-variant)" />}>2 Instructors</MetaChip>
-              </div>
-            </div>
-            <div style={{ flex: "0 0 30%", background: "var(--kls-surface)", borderRadius: 16, opacity: 0.6 }} />
+            ))}
           </div>
         </div>
 
         {/* Next tasks */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <SectionHead title="Next tasks" />
-          <div style={{ background: "var(--kls-surface)", borderRadius: 16, padding: "var(--kls-space-tiny) var(--kls-space-med)" }}>
-            {[["Task A 011326", "No associated ACS codes"], ["AI Test", "No associated ACS codes"]].map(([t, s], i) => (
-              <div key={t} style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 0", borderTop: i ? "1px solid var(--kls-outline-variant)" : "none" }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{t}</div>
-                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 3 }}>{s}</div>
-                </div>
-                <span style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid var(--kls-outline-variant)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-                  <KlsIcon name="star" size={18} color="var(--kls-on-surface-variant)" />
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <SectionHead title="Next tasks" count={HOME_TASKS.length} />
+          <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "0 var(--kls-space-med)" }}>
+            {HOME_TASKS.map((t, i) => (
+              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) 0", borderTop: i ? "1px solid var(--kls-outline-variant)" : "none" }}>
+                <span style={{ width: 38, height: 38, borderRadius: "var(--kls-radius-small)", background: "var(--kls-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                  <KlsIcon name="worklog" size={18} color="var(--kls-on-surface-variant)" />
                 </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 2 }}>{t.code} · {t.due}</div>
+                </div>
+                <KlsIcon name="chevronRight" size={18} color="var(--kls-on-surface-variant)" />
               </div>
             ))}
           </div>
@@ -1701,25 +1794,6 @@ function TMMemberSheet({ member, mode, flags, onClose, onSwitchToEdit, onSave })
             </div>
           </div>
 
-          {/* Meta + activity */}
-          <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
-          <div style={{ display: "flex", gap: 16 }}>
-            <TMMetaCell icon="date" label="Joined" value={member.joined} />
-            <TMMetaCell icon="clock" label="Last active" value={member.lastActive} />
-          </div>
-          <div style={{ paddingBottom: 4 }}>
-            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: 2 }}>Recent activity</div>
-            {tmActivityFor(member).map((item, i, arr) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-small) 0",
-                borderBottom: i < arr.length - 1 ? "1px solid var(--kls-outline-variant)" : "none" }}>
-                <span style={{ width: 32, height: 32, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <KlsIcon name={item.icon} size={16} color="var(--kls-on-surface-variant)" />
-                </span>
-                <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{item.text}</span>
-                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{item.when}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Footer */}
@@ -1896,6 +1970,7 @@ function BlockCard({ status, title, subtitle, stats }) {
 }
 
 const WM_DESTINATIONS = [
+  { key: "controlTower", icon: "tower",   label: "Control Tower" },
   { key: "library",  icon: "date",        label: "Library" },
   { key: "written",  icon: "pencil",      label: "Written Exams" },
   { key: "oral",     icon: "chatBubbles", label: "Oral Exams" },
@@ -1931,7 +2006,7 @@ function WorkspaceScreen({ go }) {
           onClickCapture={(e) => { if (e.currentTarget.dataset.moved === "1") { e.stopPropagation(); e.preventDefault(); } }}
           style={{ display: "flex", gap: 12, overflowX: "auto", padding: "var(--kls-space-xsmall) var(--kls-space-med) var(--kls-space-med)", touchAction: "pan-x", cursor: "grab", userSelect: "none" }}>
           {WM_DESTINATIONS.map((d) => (
-            <DestinationCard key={d.key} icon={d.icon} label={d.label} onClick={() => { if (d.key === "team") go("team"); else if (d.key === "written") go("writtenExams"); }} />
+            <DestinationCard key={d.key} icon={d.icon} label={d.label} onClick={() => { if (d.key === "team") go("team"); else if (d.key === "written") go("writtenExams"); else if (d.key === "controlTower") go("controlTower"); }} />
           ))}
         </div>
 
@@ -1957,6 +2032,804 @@ function WorkspaceScreen({ go }) {
 
 
 
+// ── control-tower-mobile.jsx — Mobile Control Tower (Workspace drill-in) ──────
+// Faithful mobile port of the web Control Tower (web-app.jsx). Education flavor:
+// the instructor assigns Tasks / Oral / Written exams and tracks per-student status.
+// Chrome follows TeamScreen (back header · scrollable body · nav hidden). Student
+// detail + Assign are SheetOverlay bottom sheets (bg primary-container · radius 24
+// top · slide up). The assignee picker mirrors the web Teammate Picker (people +
+// groups, multi). DS tokens only; CompoundSwitch + FilterChip + Pill specs reused.
+
+// Status + type meta — `bar` is the rollup-bar segment color.
+const MCT_STATUS = {
+  not_started: { label: "Not started", bg: "var(--kls-tertiary)",         fg: "var(--kls-on-surface-variant)", bar: "var(--kls-outline-variant)" },
+  in_progress: { label: "In progress", bg: "var(--kls-info-container)",    fg: "var(--kls-info)",     bar: "var(--kls-info)" },
+  overdue:     { label: "Overdue",     bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)", bar: "var(--kls-accent-4)" },
+  completed:   { label: "Completed",   bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
+  passed:      { label: "Passed",      bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
+  failed:      { label: "Failed",      bg: "var(--kls-error-container)",   fg: "var(--kls-error)",    bar: "var(--kls-error)" },
+};
+const MCT_TYPES = {
+  task:    { label: "Task",         icon: "worklog",     long: "Task" },
+  oral:    { label: "Oral exam",    icon: "chatBubbles", long: "Oral Exam" },
+  written: { label: "Written exam", icon: "checkpoint",  long: "Written Exam" },
+};
+const MCT_STUDENTS = [
+  { id: "s1", name: "Joel Bishop",    email: "joel.b@kilsar.com",  lastActive: "2h ago" },
+  { id: "s2", name: "Melodie Stone",  email: "melodie@kilsar.com", lastActive: "40m ago" },
+  { id: "s3", name: "Dana Whitfield", email: "dana@kilsar.com",    lastActive: "Yesterday" },
+  { id: "s4", name: "Marcus Reyes",   email: "marcus@kilsar.com",  lastActive: "5d ago" },
+  { id: "s5", name: "Priya Nair",     email: "priya@kilsar.com",   lastActive: "3h ago" },
+  { id: "s6", name: "Caleb Turner",   email: "caleb@kilsar.com",   lastActive: "1w ago" },
+  { id: "s7", name: "Sofia Alvarez",  email: "sofia@kilsar.com",   lastActive: "Yesterday" },
+  { id: "s8", name: "Liam O'Connor",  email: "liam@kilsar.com",    lastActive: "4d ago" },
+];
+const MCT_GROUP_COLORS = {
+  blue:   { bg: "var(--kls-info-container)",    fg: "var(--kls-info)" },
+  green:  { bg: "var(--kls-success-container)", fg: "var(--kls-success)" },
+  orange: { bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)" },
+  purple: { bg: "var(--kls-accent-13)",         fg: "var(--kls-accent-12)" },
+};
+const MCT_GROUPS = [
+  { id: "g1", name: "Airframe Team",    color: "orange", icon: "cube",       memberIds: ["s1", "s3"] },
+  { id: "g2", name: "Avionics Lab",     color: "purple", icon: "checkpoint", memberIds: ["s2", "s5"] },
+  { id: "g3", name: "Powerplant Group", color: "green",  icon: "tower",      memberIds: ["s4", "s6"] },
+];
+const MCT_TERMS = ["Fall 2024", "Spring 2025"];
+const MCT_COURSES = {
+  "Fall 2024":   ["Airframe Structures", "Avionics Fundamentals", "Powerplant Systems"],
+  "Spring 2025": ["Airframe Systems", "Advanced Avionics", "Turbine Theory"],
+};
+const MCT_TASK_LIBRARY = {
+  "Airframe Structures":   ["Torque Sequence Worksheet", "Rivet Inspection Log"],
+  "Avionics Fundamentals": ["Wiring Diagram Reading", "Bus Architecture Quiz Prep"],
+  "Powerplant Systems":    ["Fuel System Schematic", "Magneto Timing Worksheet"],
+  "Airframe Systems":      ["Hydraulics Troubleshooting", "Landing Gear Rigging"],
+  "Advanced Avionics":     ["Autopilot Config Lab", "Transponder Setup"],
+  "Turbine Theory":        ["Compressor Stage Worksheet", "EGT Analysis"],
+};
+const MCT_EXAM_TITLES = {
+  oral:    ["Engine Run-Up Oral", "Landing Gear Inspection Oral", "Sheet Metal Repair Oral"],
+  written: ["FAA Regulations Written", "Turbine Theory Written", "Electrical Systems Written"],
+};
+const MCT_ORAL_TOPICS = ["Engine Run-Up", "Landing Gear Inspection", "Sheet Metal Repair", "Hydraulic Systems", "Electrical Troubleshooting"];
+const MCT_DUE_PAST = ["Sep 28", "Oct 02", "Oct 09"];
+const MCT_DUE_FUTURE = ["Nov 14", "Nov 21", "Dec 03", "Dec 12"];
+const MCT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "passed", "failed", "in_progress", "completed"];
+const MCT_DONE = ["completed", "passed"];
+
+function mctBuildAssignments() {
+  const out = [];
+  let id = 0;
+  MCT_STUDENTS.forEach((s, si) => {
+    const n = 4 + (si % 3);
+    for (let k = 0; k < n; k++) {
+      const type = ["task", "oral", "written"][(si + k) % 3];
+      let status = MCT_STATUS_CYCLE[(si * 2 + k) % MCT_STATUS_CYCLE.length];
+      if (type === "task" && (status === "passed" || status === "failed")) status = "completed";
+      if (type !== "task" && status === "completed") status = "passed";
+      let title, course, term;
+      if (type === "task") {
+        term = MCT_TERMS[(si + k) % MCT_TERMS.length];
+        const courses = MCT_COURSES[term];
+        course = courses[(si + k) % courses.length];
+        const lib = MCT_TASK_LIBRARY[course];
+        title = lib[k % lib.length];
+      } else {
+        term = MCT_TERMS[k % MCT_TERMS.length];
+        course = "Open-ended";
+        const pool = MCT_EXAM_TITLES[type];
+        title = pool[(si + k) % pool.length];
+      }
+      const due = status === "overdue" ? MCT_DUE_PAST[(si + k) % MCT_DUE_PAST.length] : MCT_DUE_FUTURE[(si + k) % MCT_DUE_FUTURE.length];
+      const score = status === "passed" ? 80 + ((si + k * 3) % 18) : status === "failed" ? 52 + ((si + k) % 14) : null;
+      out.push({ id: "a" + (id++), studentId: s.id, type, title, course, term, due, status, score });
+    }
+  });
+  return out;
+}
+function mctInitials(name) {
+  const p = (name || "").trim().split(/\s+/);
+  return ((p[0] && p[0][0] || "?") + (p[1] && p[1][0] || "")).toUpperCase();
+}
+function mctRollup(items) {
+  const by = { not_started: 0, in_progress: 0, overdue: 0, completed: 0, passed: 0, failed: 0 };
+  items.forEach((a) => { by[a.status] = (by[a.status] || 0) + 1; });
+  const done = by.completed + by.passed;
+  return { by, total: items.length, done, overdue: by.overdue, inProgress: by.in_progress, failed: by.failed };
+}
+const mctGroupMembers = (g) => g.memberIds.map((id) => MCT_STUDENTS.find((s) => s.id === id)).filter(Boolean);
+function mctUngrouped() {
+  const inGroup = new Set(MCT_GROUPS.flatMap((g) => g.memberIds));
+  return MCT_STUDENTS.filter((s) => !inGroup.has(s.id));
+}
+
+// ── Shared bits ───────────────────────────────────────────────
+function MCTAvatar({ name, size = 40 }) {
+  return (
+    <div style={{ flexShrink: 0, width: size, height: size, borderRadius: "var(--kls-radius-pill)",
+      background: "var(--kls-tertiary-container)", color: "var(--kls-on-surface-variant)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: "var(--kls-font-sans)", fontWeight: 700, fontSize: Math.round(size * 0.36) }}>{mctInitials(name)}</div>
+  );
+}
+function MCTMedallion({ color, icon, size = 40 }) {
+  const c = MCT_GROUP_COLORS[color] || MCT_GROUP_COLORS.blue;
+  return (
+    <div style={{ flexShrink: 0, width: size, height: size, borderRadius: "var(--kls-radius-med)", background: c.bg, color: c.fg,
+      display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <KlsIcon name={icon || "group"} size={Math.round(size * 0.5)} color={c.fg} />
+    </div>
+  );
+}
+function MCTStatusPill({ status }) {
+  const m = MCT_STATUS[status] || MCT_STATUS.not_started;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: "var(--kls-radius-small)",
+      background: m.bg, color: m.fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+      <span style={{ width: 6, height: 6, borderRadius: "var(--kls-radius-pill)", background: m.fg }} />{m.label}
+    </span>
+  );
+}
+function MCTRollupBar({ items, height = 8 }) {
+  const order = ["overdue", "failed", "in_progress", "not_started", "completed", "passed"];
+  const total = items.length || 1;
+  const counts = {};
+  items.forEach((a) => { counts[a.status] = (counts[a.status] || 0) + 1; });
+  return (
+    <div style={{ display: "flex", width: "100%", height, borderRadius: "var(--kls-radius-pill)", overflow: "hidden", background: "var(--kls-outline-variant)" }}>
+      {order.map((st) => {
+        const n = counts[st] || 0;
+        if (!n) return null;
+        return <div key={st} style={{ width: ((n / total) * 100) + "%", background: MCT_STATUS[st].bar }} />;
+      })}
+    </div>
+  );
+}
+function MCTOverdueBadge({ n }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: "var(--kls-radius-small)",
+      background: "var(--kls-accent-5)", color: "var(--kls-accent-4)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+      {n} overdue
+    </span>
+  );
+}
+
+// ── KPI strip (2×2) ───────────────────────────────────────────
+function MCTKpiCard({ label, value, icon, tone }) {
+  return (
+    <div style={{ flex: "1 1 0", minWidth: 0, background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)",
+      borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{label}</span>
+        <span style={{ width: 26, height: 26, borderRadius: "var(--kls-radius-small)", background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <KlsIcon name={icon} size={14} color="var(--kls-on-surface-variant)" />
+        </span>
+      </div>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 26, fontWeight: 700, lineHeight: 1, color: tone || "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+}
+
+// ── Quick filter chip (FilterChip spec + count badge) ─────────
+function MCTFilterChip({ active, label, count, onClick }) {
+  return (
+    <button onClick={onClick} style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+      padding: "var(--kls-space-xsmall) var(--kls-space-med)", borderRadius: "var(--kls-radius-large)", border: 0, cursor: "pointer", whiteSpace: "nowrap",
+      background: active ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+      color: active ? "var(--kls-primary)" : "var(--kls-on-tertiary)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, lineHeight: "var(--kls-space-med)" }}>
+      {label}
+      {count != null && (
+        <span style={{ minWidth: 18, height: 18, padding: "0 var(--kls-space-xsmall)", boxSizing: "border-box", borderRadius: "var(--kls-radius-pill)",
+          background: active ? "var(--kls-surface)" : "var(--kls-tertiary-container)", color: "var(--kls-on-surface-variant)", fontSize: 11, fontWeight: 700,
+          display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
+      )}
+    </button>
+  );
+}
+
+// ── Member row inside an expanded group ───────────────────────
+function MCTMemberRow({ student, items, onOpen, isLast }) {
+  const r = mctRollup(items);
+  return (
+    <button onClick={onOpen} style={{ width: "100%", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", textAlign: "left",
+      padding: "var(--kls-space-small)", border: "none", cursor: "pointer", background: "transparent",
+      borderTop: "1px solid var(--kls-outline-variant)" }}>
+      <MCTAvatar name={student.name} size={32} />
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{student.name}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-tiny)" }}>
+          <span style={{ flex: 1, minWidth: 0 }}><MCTRollupBar items={items} height={6} /></span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+        </span>
+      </span>
+      {r.overdue > 0 && <span style={{ width: 8, height: 8, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-accent-4)", flexShrink: 0 }} />}
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+}
+
+// ── Student card (ungrouped, top-level) ───────────────────────
+function MCTStudentCard({ student, items, onOpen }) {
+  const r = mctRollup(items);
+  return (
+    <button onClick={onOpen} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer",
+      background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)",
+      display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+        <MCTAvatar name={student.name} size={40} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{student.name}</div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Last active {student.lastActive}</div>
+        </div>
+        <KlsIcon name="chevronRight" size={18} color="var(--kls-on-surface-variant)" />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+        <span style={{ flex: 1, minWidth: 0 }}><MCTRollupBar items={items} /></span>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+      </div>
+      {r.overdue > 0 && <div><MCTOverdueBadge n={r.overdue} /></div>}
+    </button>
+  );
+}
+
+// ── Group card (expandable) ───────────────────────────────────
+function MCTGroupCard({ group, itemsByStudent, expanded, onToggle, onOpenStudent }) {
+  const members = mctGroupMembers(group);
+  const items = members.flatMap((m) => itemsByStudent[m.id] || []);
+  const r = mctRollup(items);
+  return (
+    <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", overflow: "hidden" }}>
+      <button onClick={onToggle} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer", background: "transparent",
+        padding: "var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <MCTMedallion color={group.color} icon={group.icon} size={40} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{group.name}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{members.length} student{members.length === 1 ? "" : "s"}</div>
+          </div>
+          {r.overdue > 0 && <MCTOverdueBadge n={r.overdue} />}
+          <KlsIcon name={expanded ? "chevronDown" : "chevronRight"} size={18} color="var(--kls-on-surface-variant)" />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <span style={{ flex: 1, minWidth: 0 }}><MCTRollupBar items={items} /></span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+        </div>
+      </button>
+      {expanded && (
+        <div style={{ background: "var(--kls-surface-variant)" }}>
+          {members.map((m, i) => (
+            <MCTMemberRow key={m.id} student={m} items={itemsByStudent[m.id] || []} onOpen={() => onOpenStudent(m.id)} isLast={i === members.length - 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Bottom-sheet shell (SheetOverlay: bg primary-container · radius 24 top) ────
+function MCTSheetShell({ onClose, maxHeight = "92%", z = 1500, children }) {
+  const [shown, setShown] = useTM(false);
+  useTMEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: z, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "relative", maxHeight, display: "flex", flexDirection: "column", background: "var(--kls-primary-container)",
+        borderRadius: "var(--kls-radius-bottom-modal)", boxShadow: "var(--kls-drop-shadow)",
+        transform: shown ? "translateY(0)" : "translateY(100%)", transition: "transform 280ms var(--kls-ease-standard)" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+function MCTSheetClose({ onClose }) {
+  return (
+    <button onClick={onClose} aria-label="Close"
+      style={{ width: 40, height: 40, borderRadius: "var(--kls-radius-pill)", background: "transparent", border: "1px solid var(--kls-outline)", flexShrink: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--kls-on-surface)" }}>
+      <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.6 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+    </button>
+  );
+}
+const mctPrimaryBtn = {
+  height: 48, padding: "0 var(--kls-space-med)", borderRadius: "var(--kls-radius-small)", border: "none", cursor: "pointer",
+  background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+};
+const mctSecondaryBtn = {
+  height: 48, padding: "0 var(--kls-space-med)", borderRadius: "var(--kls-radius-small)", cursor: "pointer", background: "transparent",
+  color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center",
+};
+
+// ── Student detail sheet ──────────────────────────────────────
+function MCTAssignmentRow({ a, last }) {
+  const T = MCT_TYPES[a.type];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) 0",
+      borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)" }}>
+      <span style={{ width: 38, height: 38, borderRadius: "var(--kls-radius-med)", flexShrink: 0, background: "var(--kls-tertiary)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name={T.icon} size={18} color="var(--kls-on-surface-variant)" />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginTop: 2, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          <span>{T.long}</span><span>·</span><span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.type === "task" ? a.course : a.term}</span>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--kls-space-tiny)", flexShrink: 0 }}>
+        <MCTStatusPill status={a.status} />
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          {a.score != null ? "Score " + a.score + "%" : (a.due ? "Due " + a.due : "No due date")}
+        </span>
+      </div>
+    </div>
+  );
+}
+function MCTStudentSheet({ student, assignments, onClose, onAssign }) {
+  const [typeFilter, setTypeFilter] = useTM("all");
+  const mine = assignments.filter((a) => a.studentId === student.id);
+  const r = mctRollup(mine);
+  const list = mine.filter((a) => typeFilter === "all" || a.type === typeFilter);
+  const typeTabs = [{ key: "all", label: "All" }, { key: "task", label: "Tasks" }, { key: "oral", label: "Oral" }, { key: "written", label: "Written" }];
+  const stat = (label, value, tone) => (
+    <div style={{ flex: 1, minWidth: 0, background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 22, fontWeight: 700, color: tone || "var(--kls-on-surface)" }}>{value}</div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)", marginTop: 2 }}>{label}</div>
+    </div>
+  );
+  return (
+    <MCTSheetShell onClose={onClose}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
+        <MCTAvatar name={student.name} size={48} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{student.name}</div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Last active {student.lastActive}</div>
+        </div>
+        <MCTSheetClose onClose={onClose} />
+      </div>
+      {/* Body */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
+          {stat("Completed", r.done + "/" + r.total)}
+          {stat("In progress", r.inProgress, r.inProgress ? "var(--kls-info)" : null)}
+          {stat("Overdue", r.overdue, r.overdue ? "var(--kls-accent-4)" : null)}
+        </div>
+        <MCTRollupBar items={mine} />
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+          {typeTabs.map((t) => (
+            <MCTFilterChip key={t.key} active={typeFilter === t.key} label={t.label} onClick={() => setTypeFilter(t.key)} />
+          ))}
+        </div>
+        <div style={{ paddingBottom: "var(--kls-space-small)" }}>
+          {list.length === 0
+            ? <div style={{ padding: "var(--kls-space-large) var(--kls-space-small)", textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No assignments of this type.</div>
+            : list.map((a, i) => <MCTAssignmentRow key={a.id} a={a} last={i === list.length - 1} />)}
+        </div>
+      </div>
+      {/* Footer */}
+      <div style={{ display: "flex", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+        <button onClick={() => onAssign(student)} style={{ ...mctPrimaryBtn, flex: 1 }}>
+          <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> Assign
+        </button>
+      </div>
+    </MCTSheetShell>
+  );
+}
+
+// ── Assign sheet ──────────────────────────────────────────────
+const mctInput = {
+  width: "100%", boxSizing: "border-box", height: 48, padding: "0 var(--kls-space-small)", borderRadius: "var(--kls-radius-small)",
+  background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)", outline: "none",
+};
+function MCTLabel({ children, trailing }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", marginBottom: "var(--kls-space-xsmall)" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{children}</span>
+      <span style={{ flex: 1 }} />{trailing}
+    </div>
+  );
+}
+function MCTSelect({ value, options, placeholder, disabled, onChange }) {
+  return (
+    <div style={{ position: "relative", opacity: disabled ? 0.5 : 1 }}>
+      <select value={value || ""} disabled={disabled} onChange={(e) => onChange(e.target.value)}
+        style={{ ...mctInput, appearance: "none", WebkitAppearance: "none", cursor: disabled ? "not-allowed" : "pointer",
+          color: value ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", paddingRight: 40 }}>
+        <option value="" disabled>{placeholder}</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <svg viewBox="0 0 24 24" style={{ position: "absolute", right: 12, top: 15, width: 18, height: 18, pointerEvents: "none", stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.6 }}>
+        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+function MCTToggle({ checked, onChange }) {
+  return (
+    <button onClick={() => onChange(!checked)} aria-pressed={checked} style={{
+      width: 44, height: 26, borderRadius: "var(--kls-radius-pill)", border: "none", cursor: "pointer", padding: 2, flexShrink: 0,
+      background: checked ? "var(--kls-primary)" : "var(--kls-outline-variant)", display: "inline-flex", alignItems: "center",
+      transition: "background 120ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 22, height: 22, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-surface)",
+        transform: checked ? "translateX(18px)" : "translateX(0)", transition: "transform 120ms var(--kls-ease-standard)", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+    </button>
+  );
+}
+function MCTToggleRow({ label, hint, checked, onChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</div>
+        {hint && <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 1 }}>{hint}</div>}
+      </div>
+      <MCTToggle checked={checked} onChange={onChange} />
+    </div>
+  );
+}
+function MCTTypeCard({ active, icon, label, accent, onClick }) {
+  return (
+    <button onClick={onClick} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer",
+      padding: "var(--kls-space-small) var(--kls-space-tiny)", borderRadius: "var(--kls-radius-small)",
+      border: active ? ("2px solid " + accent) : "1.5px solid var(--kls-outline-variant)",
+      background: active ? ("color-mix(in srgb, " + accent + " 8%, transparent)") : "var(--kls-surface)",
+      transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={20} color={active ? accent : "var(--kls-on-surface)"} />
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)", textAlign: "center", whiteSpace: "nowrap" }}>{label}</span>
+    </button>
+  );
+}
+// Assignee picker — people + groups, multi-select. Mirrors the web Teammate Picker.
+// Teammate picker — opens as its own bottom sheet from the Assign sheet. People + groups, multi-select.
+function MCTAssigneePickerSheet({ roster, selected, onToggle, onClose }) {
+  const [q, setQ] = useTM("");
+  const term = q.trim().toLowerCase();
+  const has = (type, id) => selected.some((s) => s.type === type && s.id === id);
+  const groups = roster.groups.filter((g) => !term || g.name.toLowerCase().includes(term));
+  const people = roster.people.filter((p) => !term || p.name.toLowerCase().includes(term) || p.email.toLowerCase().includes(term));
+  const empty = groups.length === 0 && people.length === 0;
+  const sectionLabel = (t) => (
+    <div style={{ padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+      letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{t}</div>
+  );
+  const check = (on) => (
+    <span style={{ width: 22, height: 22, borderRadius: "var(--kls-radius-xsmall)", flexShrink: 0,
+      border: on ? "none" : "1.5px solid var(--kls-on-surface-variant)", background: on ? "var(--kls-primary)" : "transparent",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {on && <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-primary)", fill: "none", strokeWidth: 3 }}><path d="M5 12l5 5 9-10" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+    </span>
+  );
+  const row = (key, on, onClick, medallion, title, sub) => (
+    <button key={key} onClick={onClick}
+      style={{ width: "100%", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", border: "none", cursor: "pointer", textAlign: "left", background: on ? "var(--kls-tertiary)" : "transparent" }}>
+      {check(on)}
+      {medallion}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{title}</span>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</span>
+      </span>
+    </button>
+  );
+  return (
+    <MCTSheetShell onClose={onClose} maxHeight="86%" z={1600}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
+        <h2 style={{ flex: 1, margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Choose students / groups</h2>
+        <MCTSheetClose onClose={onClose} />
+      </div>
+      {/* Search */}
+      <div style={{ padding: "0 var(--kls-space-med)", flex: "none" }}>
+        <div style={{ height: 44, display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", padding: "0 var(--kls-space-small)", borderRadius: "var(--kls-radius-small)", background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)" }}>
+          <KlsIcon name="search" size={16} color="var(--kls-on-surface-variant)" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search students or groups"
+            style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+        </div>
+      </div>
+      {/* List */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-xsmall) var(--kls-space-med)" }}>
+        {empty && <div style={{ padding: "var(--kls-space-large) var(--kls-space-small)", textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No matches.</div>}
+        {groups.length > 0 && sectionLabel("Groups")}
+        {groups.map((g) => row("g" + g.id, has("group", g.id), () => onToggle({ type: "group", id: g.id }),
+          <MCTMedallion color={g.color} icon={g.icon} size={32} />, g.name, g.count + " student" + (g.count === 1 ? "" : "s")))}
+        {people.length > 0 && sectionLabel("Students")}
+        {people.map((p) => row("p" + p.id, has("person", p.id), () => onToggle({ type: "person", id: p.id }),
+          <MCTAvatar name={p.name} size={32} />, p.name, p.email))}
+      </div>
+      {/* Footer */}
+      <div style={{ padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+        <button onClick={onClose} style={{ ...mctPrimaryBtn, width: "100%" }}>Done{selected.length ? " · " + selected.length + " selected" : ""}</button>
+      </div>
+    </MCTSheetShell>
+  );
+}
+function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
+  const [type, setType] = useTM("task");
+  const [term, setTerm] = useTM("");
+  const [course, setCourse] = useTM("");
+  const [task, setTask] = useTM("");
+  const [studentDefined, setStudentDefined] = useTM(false);
+  const [topic, setTopic] = useTM("");
+  const [qCount, setQCount] = useTM(20);
+  const [assignees, setAssignees] = useTM(presetAssignees || []);
+  const [due, setDue] = useTM("");
+  const [allowLate, setAllowLate] = useTM(true);
+  const [notify, setNotify] = useTM(true);
+  const [pickerOpen, setPickerOpen] = useTM(false);
+
+  const isExam = type !== "task";
+  const courses = term ? (MCT_COURSES[term] || []) : [];
+  const tasks = course ? (MCT_TASK_LIBRARY[course] || []) : [];
+  const toggleAssignee = (a) => setAssignees((cur) => cur.some((x) => x.type === a.type && x.id === a.id) ? cur.filter((x) => !(x.type === a.type && x.id === a.id)) : [...cur, a]);
+  const chips = assignees.map((s) => {
+    if (s.type === "group") { const g = roster.groups.find((x) => x.id === s.id); return g && { ...s, label: g.name, color: g.color }; }
+    const p = roster.people.find((x) => x.id === s.id); return p && { ...s, label: p.name };
+  }).filter(Boolean);
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : true);
+
+  function buildAndAssign() {
+    if (!valid) return;
+    const expanded = assignees.flatMap((a) => {
+      if (a.type === "group") { const g = roster.groups.find((x) => x.id === a.id); return g ? g.memberIds : []; }
+      return [a.id];
+    });
+    const studentIds = [...new Set(expanded)];
+    const title = type === "task" ? task : type === "written" ? "Written Exam" : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
+    const dueLabel = due ? new Date(due + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit" }) : null;
+    const created = studentIds.map((sid, i) => ({
+      id: "n" + Date.now() + "_" + i, studentId: sid, type, title,
+      course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || MCT_TERMS[0]),
+      due: dueLabel, status: "not_started", score: null,
+    }));
+    onAssign(created, title);
+  }
+
+  return (
+    <>
+    <MCTSheetShell onClose={onClose} maxHeight="94%">
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
+        <span style={{ width: 36, height: 36, borderRadius: "var(--kls-radius-med)", background: "var(--kls-tertiary-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <KlsIcon name="worklog" size={18} color="var(--kls-on-tertiary-container)" />
+        </span>
+        <h2 style={{ flex: 1, margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>New assignment</h2>
+        <MCTSheetClose onClose={onClose} />
+      </div>
+      {/* Body */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        {/* Type */}
+        <div>
+          <MCTLabel>Type</MCTLabel>
+          <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+            <MCTTypeCard active={type === "task"} icon="worklog" label="Task" accent="var(--kls-success)" onClick={() => setType("task")} />
+            <MCTTypeCard active={type === "oral"} icon="chatBubbles" label="Oral Exam" accent="var(--kls-accent-4)" onClick={() => setType("oral")} />
+            <MCTTypeCard active={type === "written"} icon="checkpoint" label="Written Exam" accent="var(--kls-info)" onClick={() => setType("written")} />
+          </div>
+        </div>
+        {/* Work picker */}
+        {type === "task" ? (
+          <>
+            <div><MCTLabel>Term</MCTLabel><MCTSelect value={term} options={MCT_TERMS} placeholder="Select a term" onChange={(v) => { setTerm(v); setCourse(""); setTask(""); }} /></div>
+            <div><MCTLabel>Course</MCTLabel><MCTSelect value={course} options={courses} placeholder={term ? "Select a course" : "Choose a term first"} disabled={!term} onChange={(v) => { setCourse(v); setTask(""); }} /></div>
+            <div><MCTLabel>Task</MCTLabel><MCTSelect value={task} options={tasks} placeholder={course ? "Select a task" : "Choose a course first"} disabled={!course} onChange={setTask} /></div>
+          </>
+        ) : type === "oral" ? (
+          <>
+            <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", marginTop: "calc(-1 * var(--kls-space-small))" }}>
+              <MCTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin." checked={studentDefined} onChange={setStudentDefined} />
+            </div>
+            {!studentDefined && <div><MCTLabel>Topic</MCTLabel><MCTSelect value={topic} options={MCT_ORAL_TOPICS} placeholder="Select a topic" onChange={setTopic} /></div>}
+          </>
+        ) : (
+          <>
+            <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", marginTop: "calc(-1 * var(--kls-space-small))" }}>
+              <MCTToggleRow label="Let the student choose parameters" hint="Student sets topic, length, and scope." checked={studentDefined} onChange={setStudentDefined} />
+            </div>
+            {!studentDefined && (
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+                <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>Question count</span>
+                <button onClick={() => setQCount((n) => Math.max(1, n - 1))} style={{ width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" }}>−</button>
+                <span style={{ width: 36, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{qCount}</span>
+                <button onClick={() => setQCount((n) => n + 1)} style={{ width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" }}>+</button>
+              </div>
+            )}
+          </>
+        )}
+        {/* Assignees */}
+        <div>
+          <MCTLabel trailing={chips.length > 0 ? <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{chips.length} selected</span> : null}>Assign to</MCTLabel>
+          {chips.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-xsmall)", marginBottom: "var(--kls-space-small)" }}>
+              {chips.map((c) => {
+                const dot = c.type === "group" ? (MCT_GROUP_COLORS[c.color] || MCT_GROUP_COLORS.blue).fg : "var(--kls-primary)";
+                return (
+                  <span key={c.type + c.id} style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", height: 32, paddingLeft: 10, paddingRight: 6, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "var(--kls-radius-pill)", background: dot }} />{c.label}
+                    <button onClick={() => toggleAssignee({ type: c.type, id: c.id })} aria-label={"Remove " + c.label} style={{ width: 20, height: 20, borderRadius: "var(--kls-radius-pill)", border: "none", cursor: "pointer", background: "transparent", color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, stroke: "currentColor", fill: "none", strokeWidth: 2 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          <button onClick={() => setPickerOpen(true)} style={{ width: "100%", height: 48, borderRadius: "var(--kls-radius-small)", cursor: "pointer", background: "transparent", border: "1px dashed var(--kls-outline)", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+            <KlsIcon name="group" size={16} color="var(--kls-on-surface)" />{chips.length ? "Edit selection" : "Choose students / groups"}
+          </button>
+        </div>
+        {/* Due + options */}
+        <div><MCTLabel>Due date (optional)</MCTLabel><input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={mctInput} /></div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", marginBottom: "var(--kls-space-small)" }}>
+          <MCTToggleRow label="Allow late submissions" checked={allowLate} onChange={setAllowLate} />
+          <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
+          <MCTToggleRow label="Notify students" hint="Send an in-app notification now." checked={notify} onChange={setNotify} />
+        </div>
+      </div>
+      {/* Footer */}
+      <div style={{ display: "flex", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+        <button onClick={onClose} style={{ ...mctSecondaryBtn, flex: "none", padding: "0 var(--kls-space-med)" }}>Cancel</button>
+        <button onClick={buildAndAssign} disabled={!valid} style={{ ...mctPrimaryBtn, flex: 1, cursor: valid ? "pointer" : "not-allowed", opacity: valid ? 1 : 0.45 }}>
+          Assign{chips.length ? " to " + chips.length : ""}
+        </button>
+      </div>
+    </MCTSheetShell>
+    {pickerOpen && (
+      <MCTAssigneePickerSheet roster={roster} selected={assignees} onToggle={toggleAssignee} onClose={() => setPickerOpen(false)} />
+    )}
+    </>
+  );
+}
+
+// ── Control Tower screen ──────────────────────────────────────
+function ControlTowerScreen({ go }) {
+  const [assignments, setAssignments] = useTM(() => mctBuildAssignments());
+  const [quick, setQuick] = useTM("all");
+  const [expanded, setExpanded] = useTM({});
+  const [openStudent, setOpenStudent] = useTM(null);
+  const [assignOpen, setAssignOpen] = useTM(false);
+  const [assignPreset, setAssignPreset] = useTM([]);
+  const [toast, setToast] = useTM(null);
+
+  const roster = React.useMemo(() => ({
+    people: MCT_STUDENTS.map((s) => ({ id: s.id, name: s.name, email: s.email })),
+    groups: MCT_GROUPS.map((g) => ({ id: g.id, name: g.name, color: g.color, icon: g.icon, count: mctGroupMembers(g).length, memberIds: g.memberIds })),
+  }), []);
+  const itemsByStudent = React.useMemo(() => {
+    const m = {};
+    MCT_STUDENTS.forEach((s) => { m[s.id] = []; });
+    assignments.forEach((a) => { (m[a.studentId] = m[a.studentId] || []).push(a); });
+    return m;
+  }, [assignments]);
+  const totals = React.useMemo(() => {
+    let overdue = 0, inProgress = 0, done = 0;
+    assignments.forEach((a) => { if (a.status === "overdue") overdue++; if (a.status === "in_progress") inProgress++; if (MCT_DONE.includes(a.status)) done++; });
+    return { overdue, inProgress, pct: assignments.length ? Math.round((done / assignments.length) * 100) : 0 };
+  }, [assignments]);
+
+  const sHasOverdue = (s) => (itemsByStudent[s.id] || []).some((a) => a.status === "overdue");
+  const gHasOverdue = (g) => mctGroupMembers(g).some(sHasOverdue);
+  const sInProgress = (s) => (itemsByStudent[s.id] || []).some((a) => a.status === "in_progress");
+  const gInProgress = (g) => mctGroupMembers(g).some(sInProgress);
+
+  const overdueCount = MCT_GROUPS.filter(gHasOverdue).length + mctUngrouped().filter(sHasOverdue).length;
+  const inProgressCount = MCT_GROUPS.filter(gInProgress).length + mctUngrouped().filter(sInProgress).length;
+
+  const groups = MCT_GROUPS.filter((g) => {
+    if (quick === "overdue" && !gHasOverdue(g)) return false;
+    if (quick === "in_progress" && !gInProgress(g)) return false;
+    return true;
+  });
+  const looseStudents = mctUngrouped().filter((s) => {
+    if (quick === "overdue" && !sHasOverdue(s)) return false;
+    if (quick === "in_progress" && !sInProgress(s)) return false;
+    return true;
+  });
+  const rowCount = groups.length + looseStudents.length;
+
+  function doAssign(created, what) {
+    setAssignments((cur) => [...created, ...cur]);
+    setAssignOpen(false);
+    setAssignPreset([]);
+    const n = new Set(created.map((c) => c.studentId)).size;
+    setToast("Assigned “" + (what || "assignment") + "” to " + n + " student" + (n === 1 ? "" : "s") + ".");
+    setTimeout(() => setToast(null), 3200);
+  }
+  function openAssignFor(student) {
+    setOpenStudent(null);
+    setAssignPreset([{ type: "person", id: student.id }]);
+    setAssignOpen(true);
+  }
+
+  const openStudentObj = openStudent ? MCT_STUDENTS.find((s) => s.id === openStudent) : null;
+
+  return (
+    <div data-screen-label="controlTower" style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+      {/* PageHeader: back + title + Assign */}
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-xsmall) var(--kls-space-med) var(--kls-space-xsmall) var(--kls-space-small)", flex: "none" }}>
+        <button onClick={() => go("workspace")} aria-label="Back"
+          style={{ width: 36, height: 36, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--kls-on-surface)", flexShrink: 0 }}>
+          <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}><path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Control Tower</div>
+        <button onClick={() => { setAssignPreset([]); setAssignOpen(true); }}
+          style={{ height: 36, padding: "0 var(--kls-space-small)", borderRadius: "var(--kls-radius-small)", border: "none", cursor: "pointer", background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+          <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> Assign
+        </button>
+      </div>
+
+      {/* Stationary header zone: KPI strip + quick filters */}
+      <div style={{ flex: "none", padding: "var(--kls-space-xsmall) var(--kls-space-med) var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        {/* KPI strip */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
+            <MCTKpiCard label="Students" value={MCT_STUDENTS.length} icon="group" />
+            <MCTKpiCard label="In progress" value={totals.inProgress} icon="worklog" tone={totals.inProgress ? "var(--kls-info)" : null} />
+          </div>
+          <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
+            <MCTKpiCard label="Overdue" value={totals.overdue} icon="clock" tone={totals.overdue ? "var(--kls-accent-4)" : null} />
+            <MCTKpiCard label="Completion" value={totals.pct + "%"} icon="checkpoint" />
+          </div>
+        </div>
+
+        {/* Quick filters */}
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", overflowX: "auto", paddingBottom: "var(--kls-space-tiny)" }}>
+          <MCTFilterChip active={quick === "all"} label="All" onClick={() => setQuick("all")} />
+          <MCTFilterChip active={quick === "in_progress"} label="In progress" count={inProgressCount} onClick={() => setQuick("in_progress")} />
+          <MCTFilterChip active={quick === "overdue"} label="Has overdue" count={overdueCount} onClick={() => setQuick("overdue")} />
+        </div>
+      </div>
+
+      {/* Scrollable list */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med) var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        {rowCount === 0 ? (
+          <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+            <div style={{ fontSize: 14, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try clearing the filters.</div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            {groups.map((g) => (
+              <MCTGroupCard key={g.id} group={g} itemsByStudent={itemsByStudent}
+                expanded={!!expanded[g.id]} onToggle={() => setExpanded((e) => ({ ...e, [g.id]: !e[g.id] }))}
+                onOpenStudent={(id) => setOpenStudent(id)} />
+            ))}
+            {looseStudents.map((s) => (
+              <MCTStudentCard key={s.id} student={s} items={itemsByStudent[s.id] || []} onOpen={() => setOpenStudent(s.id)} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sheets */}
+      {openStudentObj && (
+        <MCTStudentSheet student={openStudentObj} assignments={assignments} onClose={() => setOpenStudent(null)} onAssign={openAssignFor} />
+      )}
+      {assignOpen && (
+        <MCTAssignSheet roster={roster} presetAssignees={assignPreset} onClose={() => { setAssignOpen(false); setAssignPreset([]); }} onAssign={doAssign} />
+      )}
+
+      {/* Snackbar (info-only) */}
+      {toast && (
+        <div style={{ position: "absolute", bottom: 20, left: "var(--kls-space-med)", right: "var(--kls-space-med)", zIndex: 1700,
+          background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", borderRadius: "var(--kls-radius-med)",
+          boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, textAlign: "center" }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+window.ControlTowerScreen = ControlTowerScreen;
+
 // ── Unified mobile shell: one iOS frame + one bottom nav, routes between tabs ──
 function MobilePlaceholder({ label, icon }) {
   return (
@@ -1980,18 +2853,21 @@ function MobileApp() {
   const openFeedback = () => { setProfileOpen(false); setFeedbackOpen(true); };
   const inTeam = (tab === "workspace" && wsScreen === "team");
   const inWritten = (tab === "workspace" && wsScreen === "writtenExams");
+  const inControlTower = (tab === "workspace" && wsScreen === "controlTower");
   let body;
   if (tab === "home") body = <HomeScreen showHelpButton={true} onHelp={openFeedback} onProfile={() => setProfileOpen(true)} />;
   else if (tab === "workspace") {
     if (inWritten) body = <MWrittenExams onBack={() => setWsScreen("workspace")} />;
     else body = (
-      <div style={{ height: "100%", paddingTop: 54, boxSizing: "border-box" }}>
-        {inTeam ? <TeamScreen go={(s) => setWsScreen(s)} /> : <WorkspaceScreen go={(s) => setWsScreen(s)} />}
+      <div style={{ height: "100%", paddingTop: 54, boxSizing: "border-box", background: "var(--kls-surface-variant)" }}>
+        {inTeam ? <TeamScreen go={(s) => setWsScreen(s)} />
+          : inControlTower ? <ControlTowerScreen go={(s) => setWsScreen(s)} />
+          : <WorkspaceScreen go={(s) => setWsScreen(s)} />}
       </div>
     );
   }
   else body = <MobilePlaceholder label={tab === "orion" ? "Orion" : "Notifications"} icon={tab === "orion" ? "orionOutline" : "bell"} />;
-  const showNav = !inTeam && !inWritten;
+  const showNav = !inTeam && !inWritten && !inControlTower;
   return (
     <IOSDevice width={402} height={874}>
       <div style={{ position: "relative", height: "100%", overflow: "hidden" }}>

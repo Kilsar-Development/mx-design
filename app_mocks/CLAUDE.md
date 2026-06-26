@@ -64,8 +64,8 @@ The bar is **zero NEW findings**. Before delivery, compare the finding count to 
 change: if it went up, you introduced a violation — fix it. For each finding you choose not
 to fix, you owe ONE of:
   (a) a real fix, or
-  (b) a one-line justification logged in `DS-GAPS.md` explaining why it's a documented gap,
-      not drift.
+  (b) a real DS fix proposed in `DS-UPDATES.md` (when the right fix is a change to the DS
+      itself, not the app code).
 Silence is not an option. If you're unsure whether a finding is real, ask — do not assume noise.
 
 ### Don't manufacture the noise that trains you to ignore the signal
@@ -103,9 +103,16 @@ project (excluding `_ds/`, `assets/`) and FAILS the gate on:
   2. **No font aliases** — no `const xxFont = …`; write `fontFamily:"var(--kls-font-sans)"`.
   3. **No on-scale raw px** — a px-only spacing value containing a scale step {4,6,12,20,32,64}
      must be a `--kls-space-*` token.
+  4. **Component-spec conformance** — a style object carrying a DS component's signature (e.g.
+     `tertiary-container` bg + `on-tertiary-container` fg ⇒ PrimaryActionButton) must match that
+     primitive's canonical dimensions from `preview/*.html` (h40 · padX `--kls-space-med` · gap
+     `--kls-space-xsmall` · radius 8/12). This catches chrome that's really an off-spec DS
+     primitive (e.g. a 44px-tall button) — checks 1–3 are token-level and blind to it. Extend
+     `COMPONENT_SPECS` as more primitives need guarding; keep rules PRESENT-but-wrong only so it
+     never cries wolf.
 A non-empty FAIL list means you introduced drift — fix it, do not deliver. The "off-scale
 layout literal(s)" line is informational; it does not block. If the audit can't classify
-something and you believe it's a real DS gap, log it in `DS-GAPS.md`.
+something and you believe the DS itself needs to change, log it in `DS-UPDATES.md`.
 
 (Correct token names: easing is `--kls-ease-standard` (NOT `-easing-`); durations are
 `--kls-dur-fade-animation` etc. (NOT `--kls-motion-fade`).)
@@ -135,7 +142,7 @@ its preview card and copy the numbers verbatim:
 
 ## Project structure
 - Shared at root: `_ds/` (design system, do not edit), `assets/` (icons + images),
-  `ds-audit.js`, `DS-GAPS.md`, this file.
+  `ds-audit.js`, `DS-UPDATES.md`, this file.
 - One folder per migrated feature, e.g. `control-tower/Control Tower.dc.html`. Reference
   shared resources with `../` (`../_ds/…`, `../assets/…`).
 
@@ -166,7 +173,7 @@ and each screen's old standalone app-shell is stripped so the single router/chro
 Mounted via `<x-import component-from-global-scope="WebApp"/"MobileApp">`. Faithful + clickable,
 but bundle internals are NOT click-to-edit in the canvas (tweaks still work, as DC props).
 If you regenerate a bundle, re-tokenize any on-scale raw-px paddings the audit flags (the original
-mobile source used raw px; see the fix list in git history / DS-GAPS).
+mobile source used raw px; see the fix list in git history).
 
 **Written Exams** (from project **019df76f**) was on a DIFFERENT design system (Geist + custom
 `--bg/--ink/--accent` tokens). It was **re-themed onto MX** via `written-exams.css` — a stylesheet

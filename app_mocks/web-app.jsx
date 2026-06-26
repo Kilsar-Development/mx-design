@@ -694,9 +694,9 @@ window.CT = {
 const { useState: useCtState, useMemo: useCtMemo } = React;
 
 const ctPrimaryBtn = {
-  height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
+  height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
   background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
-  display: "inline-flex", alignItems: "center", gap: 8,
+  display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
   fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
 };
 const CT_TH = { textAlign: "left", padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 12,
@@ -954,13 +954,13 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
 
   return (
     <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
-      <div style={{ padding: "var(--kls-space-large) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
 
         {/* Page header */}
         <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
-          <div style={{ flex: 1, minWidth: 0, transform: "translateY(-5px)" }}>
-            <h1 style={{ margin: 0, lineHeight: 1, fontFamily: "var(--kls-font-sans)", fontSize: 28, fontWeight: 400, color: "var(--kls-on-surface)" }}>Control Tower</h1>
-            <p style={{ margin: "var(--kls-space-xsmall) 0 0", lineHeight: 1, fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Assign tasks and exams, and track what your students have done.</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Control Tower</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Assign tasks and exams, and track what your students have done.</p>
           </div>
           <button style={ctPrimaryBtn} onClick={() => { setAssignPreset([]); setAssignOpen(true); }}>
             <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> Assign
@@ -1109,7 +1109,7 @@ function CTStudentDrawer({ student, assignments, onClose, onAssign }) {
     </div>
   );
 
-  const typeTabs = [{ key: "all", label: "All" }, { key: "task", label: "Tasks" }, { key: "oral", label: "Oral Exams" }, { key: "written", label: "Written Exams" }];
+  const typeTabs = [{ key: "all", label: "All" }, { key: "task", label: "Tasks" }, { key: "oral", label: "Oral" }, { key: "written", label: "Written" }];
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
@@ -1455,7 +1455,6 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
   const [course, setCourse] = useCtadState("");
   const [task, setTask] = useCtadState("");
   // exam params
-  const [examTitle, setExamTitle] = useCtadState("");
   const [studentDefined, setStudentDefined] = useCtadState(false);
   const [topic, setTopic] = useCtadState("");
   const [qCount, setQCount] = useCtadState("20");
@@ -1490,7 +1489,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
     const p = roster.people.find((x) => x.id === s.id); return { ...s, label: p?.name };
   }).filter((c) => c.label);
 
-  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (examTitle.trim().length > 0 && (studentDefined || selModules.size > 0)));
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (studentDefined || selModules.size > 0));
 
   function buildAndAssign() {
     if (!valid) return;
@@ -1500,7 +1499,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
       return [a.id];
     });
     const studentIds = [...new Set(expanded)];
-    const title = type === "task" ? task : type === "written" ? examTitle.trim() : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
+    const title = type === "task" ? task : type === "written" ? "Written Exam" : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
     const created = studentIds.map((sid, i) => ({
       id: "n" + Date.now() + "_" + i, studentId: sid, type,
       title, course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || CT.TERMS[0]),
@@ -1587,12 +1586,6 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
             </>
           ) : (
             <>
-              <div>
-                <CTLabel>Written exam title</CTLabel>
-                <input value={examTitle} onChange={(e) => setExamTitle(e.target.value)}
-                  placeholder="e.g. FAA Regulations Written" style={ctInput} />
-              </div>
-
               <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
                 <CTToggleRow label="Let the student choose parameters"
                   hint="Student sets topic, length, and scope when they begin."
@@ -2314,10 +2307,10 @@ function CountChip({ n }) {
 }
 
 const primaryBtn = {
-  height: 40, padding: "0 18px", borderRadius: 8, border: "none", cursor: "pointer",
+  height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
   background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
   fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
-  display: "inline-flex", alignItems: "center", gap: 8,
+  display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
 };
 
 // ───────────────────────── Segmented tabs (CompoundSwitch spec) ─────────────────────────
@@ -2371,11 +2364,13 @@ function SegmentedTabs({ tabs, value, onChange, variant }) {
 function Card({ header, action, children }) {
   return (
     <div style={{ background: "var(--kls-surface)", borderRadius: 16, padding: "var(--kls-space-small) 0", overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", marginBottom: "var(--kls-space-tiny)", flexWrap: "wrap" }}>
-        {header}
-        <div style={{ flex: 1 }} />
-        {action}
-      </div>
+      {(header || action) && (
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", marginBottom: "var(--kls-space-tiny)", flexWrap: "wrap" }}>
+          {header}
+          <div style={{ flex: 1 }} />
+          {action}
+        </div>
+      )}
       {children}
     </div>
   );
@@ -2592,9 +2587,21 @@ function WorkspaceMembers({ flags, surface = "tabs" }) {
 
   const stacked = surface === "stacked";
 
+  const pageHeader = (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Team Workspace</h1>
+        <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Manage members and groups in your workspace.</p>
+      </div>
+      {!stacked && (tab === "members" ? inviteBtn : newGroupBtn)}
+    </div>
+  );
+
   return (
     <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
-      <div style={{ padding: "var(--kls-space-large) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        {pageHeader}
 
         {stacked ? (
           <>
@@ -2602,11 +2609,12 @@ function WorkspaceMembers({ flags, surface = "tabs" }) {
             <Card header={<CardTitle label="Groups" count={groups.length} />} action={newGroupBtn}>{groupsBody}</Card>
           </>
         ) : (
-          <Card
-            header={<SegmentedTabs tabs={tabDefs} value={tab} onChange={setTab} variant={surface === "underline" ? "underline" : "pill"} />}
-            action={tab === "members" ? inviteBtn : newGroupBtn}>
-            {tab === "members" ? membersBody : groupsBody}
-          </Card>
+          <>
+            <div style={{ display: "flex" }}>
+              <SegmentedTabs tabs={tabDefs} value={tab} onChange={setTab} variant={surface === "underline" ? "underline" : "pill"} />
+            </div>
+            <Card>{tab === "members" ? membersBody : groupsBody}</Card>
+          </>
         )}
 
       </div>
@@ -2892,23 +2900,6 @@ function MemberDrawer({ member, mode, flags, onClose, onSwitchToEdit, onSave }) 
             </div>
           </div>
 
-          {/* Activity / metadata */}
-          <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "2px 0" }} />
-          <div style={{ display: "flex", gap: 16 }}>
-            <MetaCell icon="date" label="Joined" value={member.joined} />
-            <MetaCell icon="clock" label="Last active" value={member.lastActive} />
-          </div>
-
-          <div>
-            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: 4 }}>Recent activity</div>
-            <div>
-              {activityFor(member).map((item, i, arr) => (
-                <div key={i} style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--kls-outline-variant)" : "none" }}>
-                  <ActivityRow item={item} />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
