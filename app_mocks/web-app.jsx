@@ -2083,14 +2083,32 @@ const SEED_MEMBERS = [
 ];
 
 const ROLES = ["Admin", "Instructor", "Student"];
+const ROLE_DOTS = { Admin: "var(--kls-primary)", Instructor: "var(--kls-info)", Student: "var(--kls-on-surface-variant)" };
 
 // ───────────────────────── Groups (seed) ─────────────────────────
+// group_role is PER-GROUP (a user can be a Creator in one group and a plain Member in
+// another), so it lives on the group — never on the global member record. Exactly one
+// immutable `creatorId`; everyone else is an Editor (in `editorIds`) or a Member (default).
 const SEED_GROUPS = [
-  { id: "g1", name: "Workspace Admins",  color: "blue",   icon: "tower",       description: "Owners and operators with full workspace access.", memberIds: ["m1", "m2", "m7", "m9", "m12"] },
-  { id: "g2", name: "Instructors",       color: "green",  icon: "person",      description: "Teaching staff across all programs.",              memberIds: ["m3", "m4", "m5", "m10"] },
-  { id: "g3", name: "Airframe Cohort",   color: "orange", icon: "cube",        description: "Fall 2024 airframe & powerplant students.",        memberIds: ["m6", "m8", "m11"] },
-  { id: "g4", name: "Avionics Lab",      color: "purple", icon: "checkpoint",  description: "Students and TAs assigned to the avionics bench.",  memberIds: ["m11", "m5"] },
+  { id: "g1", name: "Workspace Admins",  color: "blue",   icon: "tower",       description: "Owners and operators with full workspace access.", memberIds: ["m1", "m2", "m7", "m9", "m12"], creatorId: "m9", editorIds: ["m1"] },
+  { id: "g2", name: "Instructors",       color: "green",  icon: "person",      description: "Teaching staff across all programs.",              memberIds: ["m3", "m4", "m5", "m10"], creatorId: "m3", editorIds: ["m4"] },
+  { id: "g3", name: "Airframe Cohort",   color: "orange", icon: "cube",        description: "Fall 2024 airframe & powerplant students.",        memberIds: ["m6", "m8", "m11"], creatorId: "m6", editorIds: [] },
+  { id: "g4", name: "Avionics Lab",      color: "purple", icon: "checkpoint",  description: "Students and TAs assigned to the avionics bench.",  memberIds: ["m11", "m5"], creatorId: "m5", editorIds: ["m11"] },
 ];
+
+// Resolve a member's group_role within a given group draft/record.
+const CURRENT_USER_ID = "m9"; // the signed-in user — becomes Creator of groups they create
+const GROUP_ROLE_RANK = { creator: 0, editor: 1, member: 2 };
+function groupRoleOf(g, id) {
+  if (!g) return "member";
+  if (id === g.creatorId) return "creator";
+  return (g.editorIds || []).includes(id) ? "editor" : "member";
+}
+const GROUP_ROLE_PALETTE = {
+  creator: { bg: "var(--kls-primary-container)", fg: "var(--kls-on-primary-container)", label: "Creator" },
+  editor:  { bg: "var(--kls-info-container)",     fg: "var(--kls-on-info-container)",     label: "Editor" },
+  member:  { bg: "var(--kls-tertiary)",           fg: "var(--kls-on-surface-variant)",    label: "Member" },
+};
 
 // Recent-activity feed, shaped by role (representative sample for the profile view).
 function activityFor(member) {
@@ -2231,6 +2249,7 @@ function RoleDropdown({ value, onChange }) {
           display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer",
           fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)",
         }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: ROLE_DOTS[value] || "var(--kls-on-surface-variant)", flexShrink: 0 }} />
         {value}
         <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, marginLeft: "auto", stroke: "currentColor", fill: "none", strokeWidth: 1.6, transform: open ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>
           <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -2239,7 +2258,10 @@ function RoleDropdown({ value, onChange }) {
       {open && (
         <FloatingMenu anchorRef={btnRef} width={180} onClose={() => setOpen(false)}>
           {ROLES.map((r) => (
-            <MenuItem key={r} selected={r === value} onClick={() => { onChange(r); setOpen(false); }}>{r}</MenuItem>
+            <MenuItem key={r} selected={r === value} onClick={() => { onChange(r); setOpen(false); }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: ROLE_DOTS[r] || "var(--kls-on-surface-variant)", flexShrink: 0 }} />
+              {r}
+            </MenuItem>
           ))}
         </FloatingMenu>
       )}
@@ -2389,6 +2411,7 @@ function CardTitle({ label, count }) {
 function MembersBody({ members, setMembers, flags }) {
   const [sortDir, setSortDir] = useState("asc");
   const [drawer, setDrawer] = useState(null); // { id, mode } | null
+  const [ctx, setCtx] = useState(null); // { id, x, y } | null — right-click context menu
 
   const setRole = (id, role) => setMembers((ms) => ms.map((m) => (m.id === id ? { ...m, role } : m)));
   const removeMember = (id) => setMembers((ms) => ms.filter((m) => m.id !== id));
@@ -2428,10 +2451,24 @@ function MembersBody({ members, setMembers, flags }) {
               onRole={(r) => setRole(m.id, r)}
               onRemove={() => removeMember(m.id)}
               onView={() => setDrawer({ id: m.id, mode: "view" })}
-              onEdit={() => setDrawer({ id: m.id, mode: "edit" })} />
+              onEdit={() => setDrawer({ id: m.id, mode: "edit" })}
+              onContext={(e) => { e.preventDefault(); setCtx({ id: m.id, x: Math.min(e.clientX, window.innerWidth - 196), y: e.clientY }); }} />
           ))}
         </tbody>
       </table>
+
+      {ctx && (() => {
+        const cm = members.find((m) => m.id === ctx.id);
+        if (!cm) return null;
+        return (
+          <CursorMenu x={ctx.x} y={ctx.y} onClose={() => setCtx(null)}>
+            <MenuItem onClick={() => { setCtx(null); setDrawer({ id: cm.id, mode: "view" }); }}><KlsIcon name="person" size={16} color="var(--kls-on-surface)" />View profile</MenuItem>
+            <MenuItem onClick={() => { setCtx(null); setDrawer({ id: cm.id, mode: "edit" }); }}><KlsIcon name="pencil" size={16} color="var(--kls-on-surface)" />Edit member</MenuItem>
+            <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "var(--kls-space-tiny) var(--kls-space-xsmall)" }} />
+            <MenuItem danger onClick={() => { setCtx(null); removeMember(cm.id); }}><KlsIcon name="trash" size={16} color="var(--kls-error)" />Remove member</MenuItem>
+          </CursorMenu>
+        );
+      })()}
 
       {activeMember && (
         <MemberDrawer
@@ -2450,6 +2487,15 @@ function MembersBody({ members, setMembers, flags }) {
 function GroupsBody({ groups, setGroups, members, editor, setEditor, deleteId, setDeleteId }) {
   const memberById = (id) => members.find((m) => m.id === id);
   const membersOf = (g) => g.memberIds.map(memberById).filter(Boolean);
+  const [expanded, setExpanded] = useState({});
+  const toggle = (id) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
+  const [ctx, setCtx] = useState(null); // { id, x, y } | null — right-click context menu
+  const setMemberGroupRole = (groupId, memberId, role) => setGroups((gs) => gs.map((g) => {
+    if (g.id !== groupId || memberId === g.creatorId) return g; // Creator is immutable
+    const editors = new Set(g.editorIds || []);
+    if (role === "editor") editors.add(memberId); else editors.delete(memberId);
+    return { ...g, editorIds: [...editors] };
+  }));
 
   function saveGroup(draft) {
     if (draft.id) {
@@ -2486,27 +2532,39 @@ function GroupsBody({ groups, setGroups, members, editor, setEditor, deleteId, s
           <thead>
             <tr>
               <th style={TH}>Group</th>
-              <th style={TH}>Description</th>
               <th style={TH}>Members</th>
-              <th style={{ ...TH, width: 48 }}></th>
+              <th style={TH}>Group Role</th>
+              <th style={{ ...TH, width: 40 }}></th>
             </tr>
           </thead>
           <tbody>
             {groups.map((g) => (
               <GroupRow key={g.id} g={g} members={membersOf(g)}
-                onView={() => setEditor({ mode: "view", id: g.id })}
+                expanded={!!expanded[g.id]} onToggle={() => toggle(g.id)}
                 onEdit={() => setEditor({ mode: "edit", id: g.id })}
-                onDelete={() => setDeleteId(g.id)} />
+                onContext={(e) => { e.preventDefault(); setCtx({ id: g.id, x: Math.min(e.clientX, window.innerWidth - 196), y: e.clientY }); }}
+                onMemberRole={setMemberGroupRole} />
             ))}
           </tbody>
         </table>
       )}
 
+      {ctx && (() => {
+        const cg = groups.find((g) => g.id === ctx.id);
+        if (!cg) return null;
+        return (
+          <CursorMenu x={ctx.x} y={ctx.y} onClose={() => setCtx(null)}>
+            <MenuItem onClick={() => { setCtx(null); setEditor({ mode: "edit", id: cg.id }); }}><KlsIcon name="pencil" size={16} color="var(--kls-on-surface)" />Edit group</MenuItem>
+            <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "var(--kls-space-tiny) var(--kls-space-xsmall)" }} />
+            <MenuItem danger onClick={() => { setCtx(null); setDeleteId(cg.id); }}><KlsIcon name="trash" size={16} color="var(--kls-error)" />Delete group</MenuItem>
+          </CursorMenu>
+        );
+      })()}
+
       {editor && (
         <GroupDrawer
           group={editing} mode={editor.mode} allMembers={members}
-          onClose={() => setEditor(null)} onSave={saveGroup}
-          onSwitchToEdit={() => setEditor({ mode: "edit", id: editor.id })} />
+          onClose={() => setEditor(null)} onSave={saveGroup} />
       )}
       {deleteTarget && (
         <DeleteGroupDialog group={deleteTarget} onCancel={() => setDeleteId(null)} onConfirm={confirmDelete} />
@@ -2515,22 +2573,96 @@ function GroupsBody({ groups, setGroups, members, editor, setEditor, deleteId, s
   );
 }
 
-function GroupRow({ g, members, onView, onEdit, onDelete }) {
+// Circular row action button (CircleButton spec: 32 · radius 999 · outline border · 16px icon).
+function RowCircleButton({ title, onClick, children }) {
   const [hover, setHover] = useState(false);
   return (
-    <tr onClick={onView} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
-      <td style={TD}>
-        <button onClick={onView} title="View group"
-          style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, cursor: "pointer", font: "inherit", color: "var(--kls-on-surface)", textAlign: "left" }}>
-          <GroupMedallion color={g.color} icon={g.icon} />
-          <span style={{ fontWeight: 600 }}>{g.name}</span>
-        </button>
+    <button title={title} aria-label={title} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 999, cursor: "pointer", flexShrink: 0,
+        border: "1px solid var(--kls-outline)", background: hover ? "var(--kls-tertiary-container)" : "var(--kls-surface)",
+        color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {children}
+    </button>
+  );
+}
+
+// Context menu anchored at a cursor point (right-click). Same items as the row menu.
+function CursorMenu({ x, y, onClose, children }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    function onDoc(e) { if (ref.current && !ref.current.contains(e.target)) onClose(); }
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onClose, true);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onClose, true); };
+  }, [onClose]);
+  return (
+    <div ref={ref} style={{ position: "fixed", top: y, left: x, width: 184, zIndex: 1000,
+      background: "var(--kls-on-primary)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+      padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>{children}</div>
+  );
+}
+
+// Expanded member sub-row — Control Tower style: indented, surface-variant tint, real
+// table columns. The Group Role column carries the per-group role control (Creator locked).
+function GroupMemberSubRow({ g, m, onMemberRole }) {
+  const [hover, setHover] = useState(false);
+  const isCreator = m.id === g.creatorId;
+  return (
+    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ borderBottom: "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "var(--kls-surface-variant)", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <td style={{ ...TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <WSAvatar initials={initialsFor(m)} size={32} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name || <span style={{ color: "var(--kls-on-surface-variant)", fontWeight: 500 }}>No name set</span>}</div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</div>
+          </div>
+        </div>
       </td>
-      <td style={{ ...TD, color: "var(--kls-on-surface-variant)", maxWidth: 360 }}>{g.description || "—"}</td>
-      <td style={TD}><AvatarStack members={members} /></td>
-      <td style={{ ...TD, textAlign: "right" }} onClick={(e) => e.stopPropagation()}><GroupRowMenu onView={onView} onEdit={onEdit} onDelete={onDelete} /></td>
+      <td style={TD}></td>
+      <td style={TD} onClick={(e) => e.stopPropagation()}>
+        {isCreator
+          ? <GroupRolePill role="creator" />
+          : <GroupRoleControl role={groupRoleOf(g, m.id)} onChange={(r) => onMemberRole(g.id, m.id, r)} />}
+      </td>
+      <td style={{ ...TD, width: 40 }}></td>
     </tr>
+  );
+}
+
+function GroupRow({ g, members, expanded, onToggle, onEdit, onContext, onMemberRole }) {
+  const [hover, setHover] = useState(false);
+  const ordered = [...members].sort((a, b) =>
+    (GROUP_ROLE_RANK[groupRoleOf(g, a.id)] - GROUP_ROLE_RANK[groupRoleOf(g, b.id)]) || (a.name || a.email).localeCompare(b.name || b.email));
+  return (
+    <>
+      <tr onClick={onToggle} onContextMenu={onContext}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)", background: (hover || expanded) ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+        <td style={TD}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <GroupMedallion color={g.color} icon={g.icon} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{g.name}</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 420 }}>{g.description || `${members.length} member${members.length === 1 ? "" : "s"}`}</div>
+            </div>
+          </div>
+        </td>
+        <td style={TD}><AvatarStack members={members} /></td>
+        <td style={TD}></td>
+        <td style={{ ...TD, textAlign: "right", width: 40 }} onClick={(e) => e.stopPropagation()}>
+          <RowCircleButton title="Edit group" onClick={onEdit}>
+            <KlsIcon name="pencil" size={16} color="var(--kls-on-surface)" />
+          </RowCircleButton>
+        </td>
+      </tr>
+      {expanded && ordered.map((m) => (
+        <GroupMemberSubRow key={g.id + "_" + m.id} g={g} m={m} onMemberRole={onMemberRole} />
+      ))}
+    </>
   );
 }
 
@@ -2622,11 +2754,12 @@ function WorkspaceMembers({ flags, surface = "tabs" }) {
   );
 }
 
-function MemberRow({ m, td, onRole, onRemove, onView, onEdit }) {
+function MemberRow({ m, td, onRole, onRemove, onView, onEdit, onContext }) {
   const [hover, setHover] = useState(false);
   return (
     <tr
       onClick={onView}
+      onContextMenu={onContext}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
       <td style={td}>
@@ -3017,8 +3150,9 @@ function PickerCheck({ checked }) {
   );
 }
 
-// Searchable multi-select member picker.
-function MemberPicker({ allMembers, selectedIds, onToggle }) {
+// Searchable multi-select member picker. Selected rows expose a group_role control;
+// the Creator row is locked (checked, no remove, shown as a Creator pill).
+function MemberPicker({ allMembers, selectedIds, onToggle, roleOf, onRole, creatorId }) {
   const [q, setQ] = useGroupState("");
   const [focus, setFocus] = useGroupState(false);
   const term = q.trim().toLowerCase();
@@ -3041,29 +3175,44 @@ function MemberPicker({ allMembers, selectedIds, onToggle }) {
             fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
       </div>
       {/* rows */}
-      <div style={{ maxHeight: 244, overflowY: "auto" }}>
+      <div style={{ maxHeight: 268, overflowY: "auto" }}>
         {list.length === 0 && (
           <div style={{ padding: "var(--kls-space-med) var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No matches.</div>
         )}
         {list.map((m) => {
           const checked = selectedIds.includes(m.id);
+          const isCreator = m.id === creatorId;
+          const role = roleOf ? roleOf(m.id) : "member";
           return (
-            <button key={m.id} onClick={() => onToggle(m.id)}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = checked ? "var(--kls-tertiary)" : "transparent")}
+            <div key={m.id}
               style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-xsmall) var(--kls-space-small)",
-                border: "none", cursor: "pointer", textAlign: "left",
+                display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-xsmall) var(--kls-space-small)",
                 background: checked ? "var(--kls-tertiary)" : "transparent",
               }}>
-              <PickerCheck checked={checked} />
-              <WSAvatar initials={initialsFor(m)} size={32} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: m.name ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name || "No name set"}</span>
-                <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
-              </span>
-              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{m.role}</span>
-            </button>
+              <button
+                onClick={() => !isCreator && onToggle(m.id)}
+                disabled={isCreator}
+                title={isCreator ? "The Creator can't be removed" : undefined}
+                style={{
+                  flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12,
+                  border: "none", background: "transparent", padding: 0, textAlign: "left",
+                  cursor: isCreator ? "default" : "pointer",
+                }}>
+                {isCreator
+                  ? <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, flexShrink: 0, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.8 }}><rect x="5" y="11" width="14" height="9" rx="2" strokeLinejoin="round" /><path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" /></svg>
+                  : <PickerCheck checked={checked} />}
+                <WSAvatar initials={initialsFor(m)} size={32} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: m.name ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name || "No name set"}</span>
+                  <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
+                </span>
+              </button>
+              {checked
+                ? (isCreator
+                    ? <GroupRolePill role="creator" />
+                    : <GroupRoleControl role={role} onChange={(r) => onRole && onRole(m.id, r)} />)
+                : <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", flexShrink: 0 }}>{m.role}</span>}
+            </div>
           );
         })}
       </div>
@@ -3081,11 +3230,61 @@ function GroupFieldLabel({ children, trailing }) {
   );
 }
 
+// ───────────────────────── Group role: read pill + edit control ─────────────────────────
+function GroupRolePill({ role }) {
+  const p = GROUP_ROLE_PALETTE[role] || GROUP_ROLE_PALETTE.member;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", height: 24, padding: "0 var(--kls-space-small)",
+      borderRadius: 999, background: p.bg, color: p.fg, whiteSpace: "nowrap",
+      fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+    }}>{p.label}</span>
+  );
+}
+
+// Compact Member/Editor picker (Creator is immutable and never offered here).
+function GroupRoleControl({ role, onChange }) {
+  const [open, setOpen] = useGroupState(false);
+  const [hover, setHover] = useGroupState(false);
+  const btnRef = useRef(null);
+  const p = GROUP_ROLE_PALETTE[role] || GROUP_ROLE_PALETTE.member;
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{
+          height: 32, padding: "0 var(--kls-space-xsmall) 0 var(--kls-space-small)", minWidth: 108,
+          borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+          background: hover || open ? "var(--kls-tertiary)" : "transparent",
+          display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", cursor: "pointer",
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface)",
+        }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: p.fg, flexShrink: 0 }} />
+        {p.label}
+        <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, marginLeft: "auto", stroke: "currentColor", fill: "none", strokeWidth: 1.6, transform: open ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <FloatingMenu anchorRef={btnRef} align="right" width={148} onClose={() => setOpen(false)}>
+          {["member", "editor"].map((r) => (
+            <MenuItem key={r} selected={r === role} onClick={() => { onChange(r); setOpen(false); }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: GROUP_ROLE_PALETTE[r].fg, flexShrink: 0 }} />
+              {GROUP_ROLE_PALETTE[r].label}
+            </MenuItem>
+          ))}
+        </FloatingMenu>
+      )}
+    </>
+  );
+}
+
 // ───────────────────────── Group create/edit drawer ─────────────────────────
-function GroupDrawer({ group, mode, allMembers, onClose, onSave, onSwitchToEdit }) {
+function GroupDrawer({ group, mode, allMembers, onClose, onSave }) {
   const isCreate = mode === "create";
-  const isView = mode === "view";
-  const blank = { id: null, name: "", description: "", color: "blue", icon: "group", memberIds: [] };
+  const blank = { id: null, name: "", description: "", color: "blue", icon: "group", memberIds: [CURRENT_USER_ID], creatorId: CURRENT_USER_ID, editorIds: [] };
   const [draft, setDraft] = useGroupState(group || blank);
   const [shown, setShown] = useGroupState(false);
 
@@ -3098,10 +3297,25 @@ function GroupDrawer({ group, mode, allMembers, onClose, onSave, onSwitchToEdit 
   }, []);
 
   const set = (k, val) => setDraft((d) => ({ ...d, [k]: val }));
-  const toggleMember = (id) => setDraft((d) => ({
-    ...d, memberIds: d.memberIds.includes(id) ? d.memberIds.filter((x) => x !== id) : [...d.memberIds, id],
-  }));
-  const selectedMembers = allMembers.filter((m) => draft.memberIds.includes(m.id));
+  const toggleMember = (id) => setDraft((d) => {
+    if (id === d.creatorId) return d; // the Creator can't be removed
+    const has = d.memberIds.includes(id);
+    return {
+      ...d,
+      memberIds: has ? d.memberIds.filter((x) => x !== id) : [...d.memberIds, id],
+      editorIds: has ? (d.editorIds || []).filter((x) => x !== id) : (d.editorIds || []),
+    };
+  });
+  const setMemberRole = (id, role) => setDraft((d) => {
+    if (id === d.creatorId) return d; // Creator is immutable — no transfer
+    const editors = new Set(d.editorIds || []);
+    if (role === "editor") editors.add(id); else editors.delete(id);
+    return { ...d, editorIds: [...editors] };
+  });
+  const roleOf = (id) => groupRoleOf(draft, id);
+  const selectedMembers = allMembers
+    .filter((m) => draft.memberIds.includes(m.id))
+    .sort((a, b) => (GROUP_ROLE_RANK[roleOf(a.id)] - GROUP_ROLE_RANK[roleOf(b.id)]) || (a.name || a.email).localeCompare(b.name || b.email));
   const canSave = draft.name.trim().length > 0;
   const drawerWidth = "min(460px, calc(100vw - 24px))";
 
@@ -3125,7 +3339,7 @@ function GroupDrawer({ group, mode, allMembers, onClose, onSave, onSwitchToEdit 
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
           <GroupMedallion color={draft.color} icon={draft.icon} size={36} />
           <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>
-            {isCreate ? "New group" : isView ? "Group details" : "Edit group"}
+            {isCreate ? "New group" : "Edit group"}
           </span>
           <button onClick={onClose} aria-label="Close"
             style={{ width: 32, height: 32, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
@@ -3140,27 +3354,18 @@ function GroupDrawer({ group, mode, allMembers, onClose, onSave, onSwitchToEdit 
         <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
           <div>
             <GroupFieldLabel>Group name</GroupFieldLabel>
-            {isView ? (
-              <div style={{ ...inputBox, color: "var(--kls-on-surface)" }}>{draft.name || "—"}</div>
-            ) : (
-              <input value={draft.name} placeholder="e.g. Airframe Cohort" autoFocus
-                onChange={(e) => set("name", e.target.value)} style={inputBox} />
-            )}
+            <input value={draft.name} placeholder="e.g. Airframe Cohort" autoFocus
+              onChange={(e) => set("name", e.target.value)} style={inputBox} />
           </div>
 
           <div>
             <GroupFieldLabel>Description</GroupFieldLabel>
-            {isView ? (
-              <div style={{ ...inputBox, height: "auto", minHeight: 48, padding: "var(--kls-space-small) var(--kls-space-small)", lineHeight: 1.45, color: draft.description ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>{draft.description || "No description"}</div>
-            ) : (
-              <textarea value={draft.description} placeholder="What is this group for?"
-                onChange={(e) => set("description", e.target.value)} rows={3}
-                style={{ ...inputBox, height: "auto", padding: "var(--kls-space-small) var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
-            )}
+            <textarea value={draft.description} placeholder="What is this group for?"
+              onChange={(e) => set("description", e.target.value)} rows={3}
+              style={{ ...inputBox, height: "auto", padding: "var(--kls-space-small) var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
           </div>
 
           {/* Color */}
-          {!isView && (
           <div>
             <GroupFieldLabel>Color</GroupFieldLabel>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -3178,10 +3383,8 @@ function GroupDrawer({ group, mode, allMembers, onClose, onSave, onSwitchToEdit 
               })}
             </div>
           </div>
-          )}
 
           {/* Icon */}
-          {!isView && (
           <div>
             <GroupFieldLabel>Icon</GroupFieldLabel>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -3199,52 +3402,26 @@ function GroupDrawer({ group, mode, allMembers, onClose, onSave, onSwitchToEdit 
               })}
             </div>
           </div>
-          )}
 
           {/* Members */}
           <div>
             <GroupFieldLabel trailing={
               <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", letterSpacing: 0, textTransform: "none" }}>
-                {selectedMembers.length} {isView ? (selectedMembers.length === 1 ? "member" : "members") : "selected"}
+                {selectedMembers.length} selected
               </span>
             }>Members</GroupFieldLabel>
-            {isView ? (
-              <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 8, overflow: "hidden" }}>
-                {selectedMembers.length === 0 ? (
-                  <div style={{ padding: "var(--kls-space-med) var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No members in this group.</div>
-                ) : selectedMembers.map((m, i) => (
-                  <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderBottom: i < selectedMembers.length - 1 ? "1px solid var(--kls-outline-variant)" : "none" }}>
-                    <WSAvatar initials={initialsFor(m)} size={32} />
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: m.name ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name || "No name set"}</span>
-                      <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
-                    </span>
-                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{m.role}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <MemberPicker allMembers={allMembers} selectedIds={draft.memberIds} onToggle={toggleMember} />
-            )}
+            <MemberPicker allMembers={allMembers} selectedIds={draft.memberIds} onToggle={toggleMember}
+              roleOf={roleOf} onRole={setMemberRole} creatorId={draft.creatorId} />
           </div>
         </div>
 
         {/* Footer */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
-          {isView ? (
-            <>
-              <button onClick={onClose} style={btnSecondary}>Close</button>
-              <button onClick={onSwitchToEdit} style={btnPrimary}>Edit group</button>
-            </>
-          ) : (
-            <>
-              <button onClick={onClose} style={btnSecondary}>Cancel</button>
-              <button onClick={() => canSave && onSave(draft)} disabled={!canSave}
-                style={{ ...btnPrimary, opacity: canSave ? 1 : 0.5, cursor: canSave ? "pointer" : "not-allowed" }}>
-                {isCreate ? "Create group" : "Save changes"}
-              </button>
-            </>
-          )}
+          <button onClick={onClose} style={btnSecondary}>Cancel</button>
+          <button onClick={() => canSave && onSave(draft)} disabled={!canSave}
+            style={{ ...btnPrimary, opacity: canSave ? 1 : 0.5, cursor: canSave ? "pointer" : "not-allowed" }}>
+            {isCreate ? "Create group" : "Save changes"}
+          </button>
         </div>
       </div>
     </div>

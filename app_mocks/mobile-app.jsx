@@ -1171,12 +1171,27 @@ const TM_STATUS_PALETTE = {
   suspended: { bg: "var(--kls-error-container)",   fg: "var(--kls-on-error-container)",   label: "Suspended", dot: "var(--kls-error)" },
 };
 
+// group_role is PER-GROUP: exactly one immutable `creatorId`; everyone else is an
+// Editor (in `editorIds`) or a Member (default). Distinct from the system RoleLevel.
 const TM_SEED_GROUPS = [
-  { id: "g1", name: "Workspace Admins", color: "blue",   icon: "tower",      description: "Owners with full access.",       memberIds: ["m1", "m2", "m5", "m8"] },
-  { id: "g2", name: "Instructors",      color: "green",  icon: "person",     description: "Teaching staff.",                memberIds: ["m3", "m6"] },
-  { id: "g3", name: "Airframe Cohort",  color: "orange", icon: "cube",       description: "Fall 2024 students.",            memberIds: ["m4", "m7", "m9"] },
-  { id: "g4", name: "Avionics Lab",     color: "purple", icon: "checkpoint", description: "Avionics bench students & TAs.", memberIds: ["m9", "m10"] },
+  { id: "g1", name: "Workspace Admins", color: "blue",   icon: "tower",      description: "Owners with full access.",       memberIds: ["m1", "m2", "m5", "m8"], creatorId: "m5", editorIds: ["m1"] },
+  { id: "g2", name: "Instructors",      color: "green",  icon: "person",     description: "Teaching staff.",                memberIds: ["m3", "m6"], creatorId: "m3", editorIds: [] },
+  { id: "g3", name: "Airframe Cohort",  color: "orange", icon: "cube",       description: "Fall 2024 students.",            memberIds: ["m4", "m7", "m9"], creatorId: "m4", editorIds: ["m9"] },
+  { id: "g4", name: "Avionics Lab",     color: "purple", icon: "checkpoint", description: "Avionics bench students & TAs.", memberIds: ["m9", "m10"], creatorId: "m9", editorIds: [] },
 ];
+
+const TM_CURRENT_USER_ID = "m5"; // signed-in user — becomes Creator of groups they create
+const TM_GROUP_ROLE_RANK = { creator: 0, editor: 1, member: 2 };
+function tmGroupRoleOf(g, id) {
+  if (!g) return "member";
+  if (id === g.creatorId) return "creator";
+  return (g.editorIds || []).includes(id) ? "editor" : "member";
+}
+const TM_GROUP_ROLE_PALETTE = {
+  creator: { bg: "var(--kls-primary-container)", fg: "var(--kls-on-primary-container)", label: "Creator" },
+  editor:  { bg: "var(--kls-info-container)",     fg: "var(--kls-on-info-container)",     label: "Editor" },
+  member:  { bg: "var(--kls-tertiary)",           fg: "var(--kls-on-surface-variant)",    label: "Member" },
+};
 
 const TM_ROLES = ["Admin", "Instructor", "Student"];
 const TM_COLORS = [
@@ -1245,6 +1260,37 @@ function TMRolePill({ role }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 var(--kls-space-small)", borderRadius: 999,
       background: "var(--kls-tertiary)", color: "var(--kls-on-tertiary)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>{role}</span>
+  );
+}
+
+// ── Group role: read pill + edit control (Member/Editor segmented) ──
+function TMGroupRolePill({ role }) {
+  const p = TM_GROUP_ROLE_PALETTE[role] || TM_GROUP_ROLE_PALETTE.member;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 var(--kls-space-small)", borderRadius: 999,
+      background: p.bg, color: p.fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>{p.label}</span>
+  );
+}
+
+// Creator is immutable and never offered here — only Member ⇄ Editor.
+function TMGroupRoleControl({ role, onChange }) {
+  return (
+    <div style={{ display: "inline-flex", height: 30, padding: 2, gap: 2, borderRadius: 8, flexShrink: 0,
+      background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+      {["member", "editor"].map((r) => {
+        const active = r === role;
+        return (
+          <button key={r} onClick={(e) => { e.stopPropagation(); onChange(r); }}
+            style={{ height: 26, padding: "0 var(--kls-space-small)", borderRadius: 6, border: 0, cursor: "pointer",
+              background: active ? "var(--kls-surface)" : "transparent",
+              boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+              color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 11, fontWeight: 600 }}>
+            {TM_GROUP_ROLE_PALETTE[r].label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -1399,7 +1445,7 @@ function TMCheck({ checked }) {
   );
 }
 
-function TMMemberPicker({ members, selectedIds, onToggle }) {
+function TMMemberPicker({ members, selectedIds, onToggle, roleOf, onRole, creatorId }) {
   const [q, setQ] = useTM("");
   const term = q.trim().toLowerCase();
   const list = members.filter((m) => !term || m.name.toLowerCase().includes(term) || m.email.toLowerCase().includes(term));
@@ -1411,21 +1457,32 @@ function TMMemberPicker({ members, selectedIds, onToggle }) {
           style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: "var(--kls-font-sans)",
             fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
       </div>
-      <div style={{ maxHeight: 220, overflowY: "auto" }}>
+      <div style={{ maxHeight: 240, overflowY: "auto" }}>
         {list.map((m) => {
           const checked = selectedIds.includes(m.id);
+          const isCreator = m.id === creatorId;
+          const role = roleOf ? roleOf(m.id) : "member";
           return (
-            <button key={m.id} onClick={() => onToggle(m.id)}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-xsmall) var(--kls-space-small)", border: "none",
-                cursor: "pointer", textAlign: "left", background: checked ? "var(--kls-tertiary)" : "transparent" }}>
-              <TMCheck checked={checked} />
-              <TMAvatar m={m} size={30} />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{m.name}</span>
-                <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, color: "var(--kls-on-surface-variant)",
-                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
-              </span>
-            </button>
+            <div key={m.id}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "var(--kls-space-xsmall) var(--kls-space-small)",
+                background: checked ? "var(--kls-tertiary)" : "transparent" }}>
+              <button onClick={() => !isCreator && onToggle(m.id)} disabled={isCreator}
+                style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10, border: "none", background: "transparent",
+                  padding: 0, textAlign: "left", cursor: isCreator ? "default" : "pointer" }}>
+                {isCreator
+                  ? <svg viewBox="0 0 24 24" style={{ width: 22, height: 22, flexShrink: 0, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.8 }}><rect x="5" y="11" width="14" height="9" rx="2" strokeLinejoin="round" /><path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" /></svg>
+                  : <TMCheck checked={checked} />}
+                <TMAvatar m={m} size={30} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                  <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, color: "var(--kls-on-surface-variant)",
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
+                </span>
+              </button>
+              {checked && (isCreator
+                ? <TMGroupRolePill role="creator" />
+                : <TMGroupRoleControl role={role} onChange={(r) => onRole && onRole(m.id, r)} />)}
+            </div>
           );
         })}
       </div>
@@ -1445,7 +1502,7 @@ function TMFieldLabel({ children, trailing }) {
 
 // ── Group view / create / edit bottom sheet (SheetOverlay) ───
 function TMGroupSheet({ group, mode, members, onClose, onSave, onSwitchToEdit }) {
-  const blank = { id: null, name: "", description: "", color: "blue", icon: "group", memberIds: [] };
+  const blank = { id: null, name: "", description: "", color: "blue", icon: "group", memberIds: [TM_CURRENT_USER_ID], creatorId: TM_CURRENT_USER_ID, editorIds: [] };
   const isView = mode === "view";
   const [draft, setDraft] = useTM(group || blank);
   const [shown, setShown] = useTM(false);
@@ -1456,7 +1513,22 @@ function TMGroupSheet({ group, mode, members, onClose, onSave, onSwitchToEdit })
     return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
   }, []);
   const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
-  const toggle = (id) => setDraft((d) => ({ ...d, memberIds: d.memberIds.includes(id) ? d.memberIds.filter((x) => x !== id) : [...d.memberIds, id] }));
+  const toggle = (id) => setDraft((d) => {
+    if (id === d.creatorId) return d; // the Creator can't be removed
+    const has = d.memberIds.includes(id);
+    return {
+      ...d,
+      memberIds: has ? d.memberIds.filter((x) => x !== id) : [...d.memberIds, id],
+      editorIds: has ? (d.editorIds || []).filter((x) => x !== id) : (d.editorIds || []),
+    };
+  });
+  const setMemberRole = (id, role) => setDraft((d) => {
+    if (id === d.creatorId) return d; // Creator is immutable — no transfer
+    const editors = new Set(d.editorIds || []);
+    if (role === "editor") editors.add(id); else editors.delete(id);
+    return { ...d, editorIds: [...editors] };
+  });
+  const roleOf = (id) => tmGroupRoleOf(draft, id);
   const canSave = draft.name.trim().length > 0;
   const isCreate = mode === "create";
 
@@ -1478,7 +1550,8 @@ function TMGroupSheet({ group, mode, members, onClose, onSave, onSwitchToEdit })
   // ── View mode (read-only) ──
   if (isView) {
     const g = group;
-    const groupMembers = g.memberIds.map((id) => members.find((m) => m.id === id)).filter(Boolean);
+    const groupMembers = g.memberIds.map((id) => members.find((m) => m.id === id)).filter(Boolean)
+      .sort((a, b) => (TM_GROUP_ROLE_RANK[tmGroupRoleOf(g, a.id)] - TM_GROUP_ROLE_RANK[tmGroupRoleOf(g, b.id)]) || a.name.localeCompare(b.name));
     return shell(
       <>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
@@ -1510,7 +1583,10 @@ function TMGroupSheet({ group, mode, members, onClose, onSave, onSwitchToEdit })
                     <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{m.name}</span>
                     <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
                   </span>
-                  <TMRolePill role={m.role} />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexShrink: 0 }}>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{m.role}</span>
+                    <TMGroupRolePill role={tmGroupRoleOf(g, m.id)} />
+                  </span>
                 </div>
               ))}
             </div>
@@ -1585,7 +1661,8 @@ function TMGroupSheet({ group, mode, members, onClose, onSave, onSwitchToEdit })
           </div>
           <div>
             <TMFieldLabel trailing={<span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)" }}>{draft.memberIds.length} selected</span>}>Members</TMFieldLabel>
-            <TMMemberPicker members={members} selectedIds={draft.memberIds} onToggle={toggle} />
+            <TMMemberPicker members={members} selectedIds={draft.memberIds} onToggle={toggle}
+              roleOf={roleOf} onRole={setMemberRole} creatorId={draft.creatorId} />
           </div>
         </div>
 
