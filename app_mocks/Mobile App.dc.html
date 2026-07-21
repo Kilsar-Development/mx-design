@@ -11,15 +11,40 @@
   <link rel="stylesheet" href="_ds/mx-design-system-019df30f-a6e5-7a34-a806-20b51ae1ab4e/colors_and_type.css">
   <script src="_ds/mx-design-system-019df30f-a6e5-7a34-a806-20b51ae1ab4e/_ds_bundle.js"></script>
   <link rel="stylesheet" href="written-exams.css">
-  <script>window.KLS_ICON_BASE = "assets/icons"; document.documentElement.setAttribute("data-theme", "light");</script>
+  <script>window.KLS_ICON_BASE = "assets/icons";</script>
   <style>
     *::-webkit-scrollbar{width:0;height:0;display:none}
     *{scrollbar-width:none;-ms-overflow-style:none}
   </style>
 </helmet>
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 0;box-sizing:border-box;background:var(--kls-color-neutral-700);font-family:var(--kls-font-sans)">
-  <x-import component-from-global-scope="MobileApp" from="./mobile-app.jsx?v=9" hint-size="402px,874px"></x-import>
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:var(--kls-space-med);padding:32px 0;box-sizing:border-box;background:var(--kls-color-neutral-700);font-family:var(--kls-font-sans)">
+  <div style="display:inline-flex;align-items:center;gap:var(--kls-space-tiny);height:40px;padding:2px;border-radius:8px;background:var(--kls-tertiary);border:1px solid var(--kls-outline-variant)">
+    <button onClick="{{ setLight }}" style="{{ lightBtnStyle }}">Light</button>
+    <button onClick="{{ setDark }}" style="{{ darkBtnStyle }}">Dark</button>
+  </div>
+  <x-import component-from-global-scope="MobileApp" from="./mobile-app.jsx?v=12" hint-size="402px,874px"></x-import>
 </div>
 </x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;}}">
+class Component extends DCLogic {
+  state = { theme: this.props.theme ?? "dark" };
+  componentDidMount() { this.apply(); }
+  apply() { document.documentElement.setAttribute("data-theme", this.state.theme); }
+  set(theme) { this.setState({ theme }, () => this.apply()); }
+  renderVals() {
+    const base = { height: 36, padding: "0 18px", borderRadius: 8, border: "none", cursor: "pointer",
+      fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 };
+    const active = { ...base, background: "var(--kls-surface)", color: "var(--kls-on-surface)", boxShadow: "0 1px 2px rgba(0,0,0,.04)" };
+    const inactive = { ...base, background: "transparent", color: "var(--kls-on-tertiary)" };
+    const dark = this.state.theme === "dark";
+    return {
+      setLight: () => this.set("light"),
+      setDark: () => this.set("dark"),
+      lightBtnStyle: dark ? inactive : active,
+      darkBtnStyle: dark ? active : inactive,
+    };
+  }
+}
+</script>
 </body>
 </html>

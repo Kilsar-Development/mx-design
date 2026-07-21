@@ -1273,24 +1273,22 @@ function TMGroupRolePill({ role }) {
 }
 
 // Creator is immutable and never offered here — only Member ⇄ Editor.
+// Compact tappable chip (space-efficient for mobile rows): tap flips the role.
 function TMGroupRoleControl({ role, onChange }) {
+  const p = TM_GROUP_ROLE_PALETTE[role] || TM_GROUP_ROLE_PALETTE.member;
+  const next = role === "editor" ? "member" : "editor";
+  const switchPath = next === "editor"
+    ? "M15.5 15.38V8.62L18.88 12 15.5 15.38M14 19l7-7-7-7v14z"   // switch_right → promote
+    : "M8.5 8.62v6.76L5.12 12 8.5 8.62M10 5l-7 7 7 7V5z";         // switch_left → demote
   return (
-    <div style={{ display: "inline-flex", height: 30, padding: 2, gap: 2, borderRadius: 8, flexShrink: 0,
-      background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
-      {["member", "editor"].map((r) => {
-        const active = r === role;
-        return (
-          <button key={r} onClick={(e) => { e.stopPropagation(); onChange(r); }}
-            style={{ height: 26, padding: "0 var(--kls-space-small)", borderRadius: 6, border: 0, cursor: "pointer",
-              background: active ? "var(--kls-surface)" : "transparent",
-              boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
-              color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
-              fontFamily: "var(--kls-font-sans)", fontSize: 11, fontWeight: 600 }}>
-            {TM_GROUP_ROLE_PALETTE[r].label}
-          </button>
-        );
-      })}
-    </div>
+    <button onClick={(e) => { e.stopPropagation(); onChange(next); }}
+      aria-label={`Group role: ${p.label}. Tap to make ${TM_GROUP_ROLE_PALETTE[next].label}.`}
+      style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", height: 24, padding: "0 var(--kls-space-tiny) 0 var(--kls-space-small)",
+        borderRadius: 999, border: 0, cursor: "pointer", flexShrink: 0,
+        background: p.bg, color: p.fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+      {p.label}
+      <svg width={14} height={14} viewBox="0 0 24 24" fill={p.fg} aria-hidden="true"><path d={switchPath} /></svg>
+    </button>
   );
 }
 
@@ -1392,8 +1390,9 @@ function TMSwipeRow({ children, onDelete, onTap, isLast }) {
 }
 
 // ── Groups list ──────────────────────────────────────────────
-function TMGroupsList({ groups, members, onEdit, onDelete, onCreate }) {
-  const membersOf = (g) => g.memberIds.map((id) => members.find((m) => m.id === id)).filter(Boolean);
+function TMGroupsList({ groups, members, expanded, onToggle, onEdit, onDelete, onCreate, onMemberRole }) {
+  const membersOf = (g) => g.memberIds.map((id) => members.find((m) => m.id === id)).filter(Boolean)
+    .sort((a, b) => (TM_GROUP_ROLE_RANK[tmGroupRoleOf(g, a.id)] - TM_GROUP_ROLE_RANK[tmGroupRoleOf(g, b.id)]) || a.name.localeCompare(b.name));
   if (groups.length === 0) {
     return (
       <div style={{ background: "var(--kls-surface)", borderRadius: 16, padding: "var(--kls-space-large) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
@@ -1410,21 +1409,53 @@ function TMGroupsList({ groups, members, onEdit, onDelete, onCreate }) {
     );
   }
   return (
-    <div style={{ background: "var(--kls-surface)", borderRadius: 16, overflow: "hidden" }}>
-      {groups.map((g, i) => (
-        <TMSwipeRow key={g.id} isLast={i === groups.length - 1} onTap={() => onEdit(g.id)} onDelete={() => onDelete(g.id)}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-small)" }}>
-            <TMMedallion color={g.color} icon={g.icon} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)" }}>{g.name}</div>
-              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 1,
-                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.description || "—"}</div>
-              <div style={{ marginTop: 8 }}><TMStack members={membersOf(g)} /></div>
-            </div>
-            <KlsIcon name="chevronRight" size={18} color="var(--kls-on-surface-variant)" />
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      {groups.map((g) => {
+        const gm = membersOf(g);
+        const isOpen = !!expanded[g.id];
+        return (
+          <div key={g.id} style={{ background: "var(--kls-surface)", borderRadius: 16, overflow: "hidden" }}>
+            <TMSwipeRow onTap={() => onToggle(g.id)} onDelete={() => onDelete(g.id)}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-small)" }}>
+                <TMMedallion color={g.color} icon={g.icon} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)" }}>{g.name}</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 1,
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.description || `${gm.length} member${gm.length === 1 ? "" : "s"}`}</div>
+                  {!isOpen && <div style={{ marginTop: 8 }}><TMStack members={gm} /></div>}
+                </div>
+                <KlsIcon name={isOpen ? "chevronDown" : "chevronRight"} size={18} color="var(--kls-on-surface-variant)" />
+              </div>
+            </TMSwipeRow>
+            {isOpen && (
+              <div style={{ background: "var(--kls-surface-variant)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+                {gm.map((m) => {
+                  const isCreator = m.id === g.creatorId;
+                  return (
+                    <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "var(--kls-space-xsmall) var(--kls-space-small)",
+                      borderBottom: "1px solid var(--kls-outline-variant)" }}>
+                      <TMAvatar m={m} size={32} />
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+                        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
+                      </span>
+                      {isCreator
+                        ? <TMGroupRolePill role="creator" />
+                        : <TMGroupRoleControl role={tmGroupRoleOf(g, m.id)} onChange={(r) => onMemberRole(g.id, m.id, r)} />}
+                    </div>
+                  );
+                })}
+                <button onClick={() => onEdit(g.id)}
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+                    height: 44, border: "none", background: "transparent", cursor: "pointer",
+                    fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 700, color: "var(--kls-on-surface-variant)" }}>
+                  <KlsIcon name="pencil" size={16} color="var(--kls-on-surface-variant)" />Edit group
+                </button>
+              </div>
+            )}
           </div>
-        </TMSwipeRow>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1500,10 +1531,9 @@ function TMFieldLabel({ children, trailing }) {
   );
 }
 
-// ── Group view / create / edit bottom sheet (SheetOverlay) ───
-function TMGroupSheet({ group, mode, members, onClose, onSave, onSwitchToEdit }) {
+// ── Group create / edit bottom sheet (SheetOverlay) ───
+function TMGroupSheet({ group, mode, members, onClose, onSave }) {
   const blank = { id: null, name: "", description: "", color: "blue", icon: "group", memberIds: [TM_CURRENT_USER_ID], creatorId: TM_CURRENT_USER_ID, editorIds: [] };
-  const isView = mode === "view";
   const [draft, setDraft] = useTM(group || blank);
   const [shown, setShown] = useTM(false);
   useTMEffect(() => {
@@ -1546,60 +1576,6 @@ function TMGroupSheet({ group, mode, members, onClose, onSave, onSwitchToEdit })
       </div>
     </div>
   );
-
-  // ── View mode (read-only) ──
-  if (isView) {
-    const g = group;
-    const groupMembers = g.memberIds.map((id) => members.find((m) => m.id === id)).filter(Boolean)
-      .sort((a, b) => (TM_GROUP_ROLE_RANK[tmGroupRoleOf(g, a.id)] - TM_GROUP_ROLE_RANK[tmGroupRoleOf(g, b.id)]) || a.name.localeCompare(b.name));
-    return shell(
-      <>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
-          <TMMedallion color={g.color} icon={g.icon} size={40} />
-          <h2 style={{ flex: 1, margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>{g.name}</h2>
-          <button onClick={onClose} aria-label="Close"
-            style={{ width: 40, height: 40, borderRadius: 999, background: "transparent", border: "1px solid var(--kls-outline)", flexShrink: 0,
-              display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--kls-on-surface)" }}>
-            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.6 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
-          </button>
-        </div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div>
-            <TMFieldLabel>Description</TMFieldLabel>
-            <div style={{ ...inputBox, height: "auto", minHeight: 48, padding: "var(--kls-space-small)", lineHeight: 1.45, alignItems: "flex-start",
-              color: g.description ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>{g.description || "No description"}</div>
-          </div>
-          <div>
-            <TMFieldLabel trailing={<span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)" }}>{groupMembers.length} member{groupMembers.length === 1 ? "" : "s"}</span>}>Members</TMFieldLabel>
-            <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 8, overflow: "hidden", background: "var(--kls-surface)" }}>
-              {groupMembers.length === 0 && (
-                <div style={{ padding: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No members in this group.</div>
-              )}
-              {groupMembers.map((m, i) => (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-xsmall) var(--kls-space-small)",
-                  borderBottom: i < groupMembers.length - 1 ? "1px solid var(--kls-outline-variant)" : "none" }}>
-                  <TMAvatar m={m} size={30} />
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{m.name}</span>
-                    <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
-                  </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexShrink: 0 }}>
-                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{m.role}</span>
-                    <TMGroupRolePill role={tmGroupRoleOf(g, m.id)} />
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        {tmCanEditGroups && (
-          <div style={{ padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
-            <button onClick={onSwitchToEdit} style={{ ...tmPrimaryBtn, width: "100%", justifyContent: "center" }}>Edit group</button>
-          </div>
-        )}
-      </>
-    );
-  }
 
   // ── Create / edit mode (form) ──
   return shell(
@@ -1906,6 +1882,14 @@ function TeamScreen({ go }) {
   const [editor, setEditor] = useTM(null);   // { mode, id? }
   const [deleteId, setDeleteId] = useTM(null);
   const [memberView, setMemberView] = useTM(null);   // { id, mode }
+  const [expandedG, setExpandedG] = useTM({});       // group id → bool (inline member expansion)
+  const toggleGroup = (id) => setExpandedG((e) => ({ ...e, [id]: !e[id] }));
+  const setMemberGroupRole = (groupId, memberId, role) => setGroups((gs) => gs.map((g) => {
+    if (g.id !== groupId || memberId === g.creatorId) return g; // Creator is immutable
+    const editors = new Set(g.editorIds || []);
+    if (role === "editor") editors.add(memberId); else editors.delete(memberId);
+    return { ...g, editorIds: [...editors] };
+  }));
 
   function saveMember(draft) {
     setMembers((ms) => ms.map((m) => (m.id === draft.id ? { ...m, ...draft } : m)));
@@ -1959,11 +1943,13 @@ function TeamScreen({ go }) {
         </div>
         {tab === "members"
           ? <TMMembersList members={members} onOpen={(id) => setMemberView({ id, mode: "view" })} />
-          : <TMGroupsList groups={groups} members={members} onEdit={(id) => setEditor({ mode: "view", id })} onDelete={(id) => setDeleteId(id)} onCreate={() => setEditor({ mode: "create" })} />}
+          : <TMGroupsList groups={groups} members={members} expanded={expandedG} onToggle={toggleGroup}
+              onEdit={(id) => setEditor({ mode: "edit", id })} onDelete={(id) => setDeleteId(id)}
+              onCreate={() => setEditor({ mode: "create" })} onMemberRole={setMemberGroupRole} />}
       </div>
 
       {activeMember && <TMMemberSheet member={activeMember} mode={memberView.mode} flags={TM_FLAGS} onClose={() => setMemberView(null)} onSwitchToEdit={() => setMemberView({ id: memberView.id, mode: "edit" })} onSave={saveMember} />}
-      {editor && <TMGroupSheet group={editing} mode={editor.mode} members={members} onClose={() => setEditor(null)} onSave={saveGroup} onSwitchToEdit={() => setEditor({ mode: "edit", id: editor.id })} />}
+      {editor && <TMGroupSheet group={editing} mode={editor.mode} members={members} onClose={() => setEditor(null)} onSave={saveGroup} />}
       {deleteTarget && <TMDeleteDialog group={deleteTarget} onCancel={() => setDeleteId(null)} onConfirm={() => { setGroups((gs) => gs.filter((g) => g.id !== deleteId)); setDeleteId(null); }} />}
     </div>
   );
