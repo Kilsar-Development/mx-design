@@ -1781,10 +1781,11 @@ function TMMetaCell({ icon, label, value }) {
 }
 
 function TMMemberSheet({ member, mode, flags, onClose, onSwitchToEdit, onSave }) {
-  const isEdit = mode === "edit";
+  const [editing, setEditing] = useTM(mode === "edit");
+  const isEdit = editing;
   const [draft, setDraft] = useTM(member);
   const [shown, setShown] = useTM(false);
-  useTMEffect(() => { setDraft(member); }, [member, mode]);
+  useTMEffect(() => { setDraft(member); setEditing(mode === "edit"); }, [member, mode]);
   useTMEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     function onKey(e) { if (e.key === "Escape") onClose(); }
@@ -1793,6 +1794,7 @@ function TMMemberSheet({ member, mode, flags, onClose, onSwitchToEdit, onSave })
   }, []);
   const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
   const canEdit = (field) => isEdit && flags[field];
+  const cancelEdit = () => { setDraft(member); setEditing(false); };
   const v = isEdit ? draft : member;
   const statusOpts = Object.keys(TM_STATUS_PALETTE).map((k) => ({ key: k, render: () => <TMStatusPill status={k} /> }));
 
@@ -1805,6 +1807,13 @@ function TMMemberSheet({ member, mode, flags, onClose, onSwitchToEdit, onSave })
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
           <h2 style={{ flex: 1, margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>{isEdit ? "Edit member" : "Member profile"}</h2>
+          {!isEdit && tmAnyEditable && (
+            <button onClick={() => setEditing(true)}
+              style={{ height: 36, padding: "0 var(--kls-space-small)", borderRadius: "var(--kls-radius-small)", background: "transparent", border: "1px solid var(--kls-outline-variant)", flexShrink: 0,
+                display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", color: "var(--kls-on-surface)", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 700 }}>
+              <KlsIcon name="pencil" size={15} color="currentColor" /> Edit
+            </button>
+          )}
           <button onClick={onClose} aria-label="Close"
             style={{ width: 40, height: 40, borderRadius: 999, background: "transparent", border: "1px solid var(--kls-outline)",
               display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--kls-on-surface)" }}>
@@ -1853,14 +1862,11 @@ function TMMemberSheet({ member, mode, flags, onClose, onSwitchToEdit, onSave })
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
           {isEdit ? (
             <>
-              <button onClick={onClose} style={{ ...tmSecondaryBtn, flex: 1 }}>Cancel</button>
+              <button onClick={cancelEdit} style={{ ...tmSecondaryBtn, flex: 1 }}>Cancel</button>
               <button onClick={() => onSave(draft)} style={{ ...tmPrimaryBtn, flex: 1, justifyContent: "center" }}>Save changes</button>
             </>
           ) : (
-            <>
-              <button onClick={onClose} style={{ ...tmSecondaryBtn, flex: 1 }}>Close</button>
-              {tmAnyEditable && <button onClick={onSwitchToEdit} style={{ ...tmPrimaryBtn, flex: 1, justifyContent: "center" }}>Edit member</button>}
-            </>
+            <button onClick={onClose} style={{ ...tmSecondaryBtn, flex: 1 }}>Close</button>
           )}
         </div>
       </div>
@@ -2160,6 +2166,7 @@ const MCT_DUE_PAST = ["Sep 28", "Oct 02", "Oct 09"];
 const MCT_DUE_FUTURE = ["Nov 14", "Nov 21", "Dec 03", "Dec 12"];
 const MCT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "passed", "failed", "in_progress", "completed"];
 const MCT_DONE = ["completed", "passed"];
+const MCT_ASSIGNED = ["Sep 10", "Sep 24", "Oct 05", "Oct 18"];
 
 function mctBuildAssignments() {
   const out = [];
@@ -2194,6 +2201,48 @@ function mctBuildAssignments() {
 function mctInitials(name) {
   const p = (name || "").trim().split(/\s+/);
   return ((p[0] && p[0][0] || "?") + (p[1] && p[1][0] || "")).toUpperCase();
+}
+// A group allocation: one task/exam assigned to the whole group; `instances`
+// carry per-assignee progress the rollup bar aggregates.
+function mctBuildAllocations() {
+  const out = [];
+  let id = 0;
+  MCT_GROUPS.forEach((g, gi) => {
+    const members = mctGroupMembers(g);
+    const n = 3 + (gi % 2);
+    for (let k = 0; k < n; k++) {
+      const type = ["task", "oral", "written"][(gi + k) % 3];
+      let title, course, term;
+      if (type === "task") {
+        term = MCT_TERMS[(gi + k) % MCT_TERMS.length];
+        const courses = MCT_COURSES[term];
+        course = courses[(gi + k) % courses.length];
+        const lib = MCT_TASK_LIBRARY[course];
+        title = lib[k % lib.length];
+      } else {
+        term = MCT_TERMS[k % MCT_TERMS.length];
+        course = "Open-ended";
+        const pool = MCT_EXAM_TITLES[type];
+        title = pool[(gi + k) % pool.length];
+      }
+      const overdueAlloc = (gi + k) % 3 === 0;
+      const due = overdueAlloc ? MCT_DUE_PAST[(gi + k) % MCT_DUE_PAST.length] : MCT_DUE_FUTURE[(gi + k) % MCT_DUE_FUTURE.length];
+      const assigned = MCT_ASSIGNED[(gi + k) % MCT_ASSIGNED.length];
+      const instances = members.map((m, mi) => {
+        let status = MCT_STATUS_CYCLE[(gi * 2 + k + mi) % MCT_STATUS_CYCLE.length];
+        if (type === "task" && (status === "passed" || status === "failed")) status = "completed";
+        if (type !== "task" && status === "completed") status = "passed";
+        const score = status === "passed" ? 80 + ((mi + k * 3) % 18) : status === "failed" ? 52 + ((mi + k) % 14) : null;
+        return { studentId: m.id, status, score };
+      });
+      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances });
+    }
+  });
+  return out;
+}
+// Adapt a per-student assignment into an allocation-shaped object (single assignee).
+function mctStudentAlloc(a) {
+  return { ...a, assigned: a.assigned || "—", instances: [{ studentId: a.studentId, status: a.status, score: a.score }] };
 }
 function mctRollup(items) {
   const by = { not_started: 0, in_progress: 0, overdue: 0, completed: 0, passed: 0, failed: 0 };
@@ -2313,44 +2362,68 @@ function MCTMemberRow({ student, items, onOpen, isLast }) {
   );
 }
 
-// ── Student card (ungrouped, top-level) ───────────────────────
-function MCTStudentCard({ student, items, onOpen }) {
-  const r = mctRollup(items);
+// ── Overlapping avatar stack (assignees) ──────────────────────
+// NOTE: tapping the stack should open the shared Teammate dialog used on the
+// Tickets and Blocks/Terms screens (not yet wired into this mock).
+function MCTAvatarStack({ students, max = 3, onClick }) {
+  if (!students || students.length === 0) return null;
+  const shown = students.slice(0, max);
+  const extra = students.length - shown.length;
   return (
-    <button onClick={onOpen} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer",
-      background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)",
-      display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+    <span onClick={onClick ? (e) => { e.stopPropagation(); onClick(e); } : undefined} style={{ display: "inline-flex", alignItems: "center" }}>
+      <span style={{ display: "inline-flex" }}>
+        {shown.map((s, i) => (
+          <span key={s.id} style={{ marginLeft: i === 0 ? 0 : -8, borderRadius: "var(--kls-radius-pill)", boxShadow: "0 0 0 2px var(--kls-surface)" }}>
+            <MCTAvatar name={s.name} size={26} />
+          </span>
+        ))}
+      </span>
+      {extra > 0 && <span style={{ marginLeft: 6, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>+{extra} more</span>}
+    </span>
+  );
+}
+
+// ── Allocation row (inside an expanded group / student) ───────
+function MCTAllocationRow({ alloc, onOpen }) {
+  const T = MCT_TYPES[alloc.type];
+  const r = mctRollup(alloc.instances);
+  const students = alloc.instances.map((i) => MCT_STUDENTS.find((s) => s.id === i.studentId)).filter(Boolean);
+  const meta = T.long + " · " + (alloc.type === "task" ? alloc.course : alloc.term) + " · Due " + alloc.due;
+  return (
+    <button onClick={onOpen} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer", background: "transparent",
+      padding: "var(--kls-space-small)", borderTop: "1px solid var(--kls-outline-variant)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
-        <MCTAvatar name={student.name} size={40} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{student.name}</div>
-          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Last active {student.lastActive}</div>
-        </div>
-        <KlsIcon name="chevronRight" size={18} color="var(--kls-on-surface-variant)" />
+        <span style={{ width: 32, height: 32, borderRadius: "var(--kls-radius-small)", flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <KlsIcon name={T.icon} size={16} color="var(--kls-on-surface-variant)" />
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{alloc.title}</span>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</span>
+        </span>
+        {r.overdue > 0 && <MCTOverdueBadge n={r.overdue} />}
+        <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
-        <span style={{ flex: 1, minWidth: 0 }}><MCTRollupBar items={items} /></span>
-        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+        <MCTAvatarStack students={students} />
+        <span style={{ flex: 1, minWidth: 0 }}><MCTRollupBar items={alloc.instances} height={6} /></span>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
       </div>
-      {r.overdue > 0 && <div><MCTOverdueBadge n={r.overdue} /></div>}
     </button>
   );
 }
 
-// ── Group card (expandable) ───────────────────────────────────
-function MCTGroupCard({ group, itemsByStudent, expanded, onToggle, onOpenStudent }) {
-  const members = mctGroupMembers(group);
-  const items = members.flatMap((m) => itemsByStudent[m.id] || []);
+// ── Student card (ungrouped, top-level — expands to its allocations) ──
+function MCTStudentCard({ student, items, expanded, onToggle, onOpenAllocation }) {
   const r = mctRollup(items);
   return (
     <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", overflow: "hidden" }}>
       <button onClick={onToggle} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer", background: "transparent",
         padding: "var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
-          <MCTMedallion color={group.color} icon={group.icon} size={40} />
+          <MCTAvatar name={student.name} size={40} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{group.name}</div>
-            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{members.length} student{members.length === 1 ? "" : "s"}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{student.name}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{items.length} assignment{items.length === 1 ? "" : "s"}</div>
           </div>
           {r.overdue > 0 && <MCTOverdueBadge n={r.overdue} />}
           <KlsIcon name={expanded ? "chevronDown" : "chevronRight"} size={18} color="var(--kls-on-surface-variant)" />
@@ -2362,9 +2435,44 @@ function MCTGroupCard({ group, itemsByStudent, expanded, onToggle, onOpenStudent
       </button>
       {expanded && (
         <div style={{ background: "var(--kls-surface-variant)" }}>
-          {members.map((m, i) => (
-            <MCTMemberRow key={m.id} student={m} items={itemsByStudent[m.id] || []} onOpen={() => onOpenStudent(m.id)} isLast={i === members.length - 1} />
-          ))}
+          {items.length === 0
+            ? <div style={{ padding: "var(--kls-space-small)", borderTop: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 13, color: "var(--kls-on-surface-variant)" }}>No allocations for this student yet.</div>
+            : items.map((a) => <MCTAllocationRow key={a.id} alloc={mctStudentAlloc(a)} onOpen={() => onOpenAllocation(a.id)} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Group card (expandable → its allocations) ─────────────────
+function MCTGroupCard({ group, allocs, expanded, onToggle, onOpenAllocation }) {
+  const members = mctGroupMembers(group);
+  const items = allocs.flatMap((a) => a.instances);
+  const r = mctRollup(items);
+  return (
+    <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", overflow: "hidden" }}>
+      <button onClick={onToggle} style={{ width: "100%", textAlign: "left", border: "none", cursor: "pointer", background: "transparent",
+        padding: "var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <MCTMedallion color={group.color} icon={group.icon} size={40} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{group.name}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{allocs.length} assignment{allocs.length === 1 ? "" : "s"}</div>
+          </div>
+          {r.overdue > 0 && <MCTOverdueBadge n={r.overdue} />}
+          <KlsIcon name={expanded ? "chevronDown" : "chevronRight"} size={18} color="var(--kls-on-surface-variant)" />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <MCTAvatarStack students={members} onClick={() => {}} />
+          <span style={{ flex: 1, minWidth: 0 }}><MCTRollupBar items={items} /></span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+        </div>
+      </button>
+      {expanded && (
+        <div style={{ background: "var(--kls-surface-variant)" }}>
+          {allocs.length === 0
+            ? <div style={{ padding: "var(--kls-space-small)", borderTop: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 13, color: "var(--kls-on-surface-variant)" }}>No allocations for this group yet.</div>
+            : allocs.map((a) => <MCTAllocationRow key={a.id} alloc={a} onOpen={() => onOpenAllocation(a.id)} />)}
         </div>
       )}
     </div>
@@ -2436,55 +2544,242 @@ function MCTAssignmentRow({ a, last }) {
     </div>
   );
 }
-function MCTStudentSheet({ student, assignments, onClose, onAssign }) {
-  const [typeFilter, setTypeFilter] = useTM("all");
-  const mine = assignments.filter((a) => a.studentId === student.id);
-  const r = mctRollup(mine);
-  const list = mine.filter((a) => typeFilter === "all" || a.type === typeFilter);
-  const typeTabs = [{ key: "all", label: "All" }, { key: "task", label: "Tasks" }, { key: "oral", label: "Oral" }, { key: "written", label: "Written" }];
+// ── Allocation detail sheet (view + edit; only Instructions & Due date editable) ──
+function MCTAllocProgressRow({ inst, last }) {
+  const s = MCT_STUDENTS.find((x) => x.id === inst.studentId) || { name: "Unknown" };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) 0", borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)" }}>
+      <MCTAvatar name={s.name} size={36} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{inst.score != null ? "Score " + inst.score + "%" : "No score yet"}</div>
+      </div>
+      <MCTStatusPill status={inst.status} />
+    </div>
+  );
+}
+function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, onSave, onRemove }) {
+  const T = MCT_TYPES[allocation.type];
+  const r = mctRollup(allocation.instances);
+  const initialAssignees = group
+    ? [{ type: "group", id: group.id }]
+    : (allocation.instances[0] ? [{ type: "person", id: allocation.instances[0].studentId }] : []);
+  const [editing, setEditing] = useTM(false);
+  const [due, setDue] = useTM(allocation.due);
+  const [instructions, setInstructions] = useTM(allocation.instructions || "");
+  const [term, setTerm] = useTM(allocation.term || "");
+  const [course, setCourse] = useTM(allocation.type === "task" ? (allocation.course || "") : "");
+  const [task, setTask] = useTM(allocation.type === "task" ? allocation.title : "");
+  const [studentDefined, setStudentDefined] = useTM(!!allocation.studentDefined);
+  const [topic, setTopic] = useTM(allocation.topic || "");
+  const [qCount, setQCount] = useTM(allocation.qCount || 20);
+  const [assignees, setAssignees] = useTM(initialAssignees);
+  const [pickerOpen, setPickerOpen] = useTM(false);
+
+  const courses = term ? (MCT_COURSES[term] || []) : [];
+  const tasks = course ? (MCT_TASK_LIBRARY[course] || []) : [];
+  const toggleAssignee = (a) => setAssignees((cur) => cur.some((x) => x.type === a.type && x.id === a.id) ? cur.filter((x) => !(x.type === a.type && x.id === a.id)) : [...cur, a]);
+  const chips = assignees.map((s) => {
+    if (s.type === "group") { const g = roster.groups.find((x) => x.id === s.id); return g && { ...s, label: g.name, color: g.color }; }
+    const p = roster.people.find((x) => x.id === s.id); return p && { ...s, label: p.name };
+  }).filter(Boolean);
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : true);
+
+  const cancelEdit = () => {
+    setDue(allocation.due);
+    setInstructions(allocation.instructions || "");
+    setTerm(allocation.term || "");
+    setCourse(allocation.type === "task" ? (allocation.course || "") : "");
+    setTask(allocation.type === "task" ? allocation.title : "");
+    setStudentDefined(!!allocation.studentDefined);
+    setTopic(allocation.topic || "");
+    setQCount(allocation.qCount || 20);
+    setAssignees(initialAssignees);
+    setEditing(false);
+  };
+  const buildUpdated = () => {
+    const studentIds = [...new Set(assignees.flatMap((a) => a.type === "group"
+      ? ((roster.groups.find((g) => g.id === a.id) || {}).memberIds || [])
+      : [a.id]))];
+    const prev = {};
+    allocation.instances.forEach((i) => { prev[i.studentId] = i; });
+    const instances = studentIds.length
+      ? studentIds.map((id) => prev[id] || { studentId: id, status: "not_started", score: null })
+      : allocation.instances;
+    return { ...allocation, due,
+      title: allocation.type === "task" ? (task || allocation.title) : allocation.title,
+      course: allocation.type === "task" ? course : allocation.course,
+      term: term || allocation.term,
+      studentDefined, topic, qCount, instructions, instances };
+  };
+
+  const sectionLabel = (t) => (
+    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-small)" }}>{t}</div>
+  );
   const stat = (label, value, tone) => (
     <div style={{ flex: 1, minWidth: 0, background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
       <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 22, fontWeight: 700, color: tone || "var(--kls-on-surface)" }}>{value}</div>
       <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)", marginTop: 2 }}>{label}</div>
     </div>
   );
+  const infoRow = (label, value) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) 0", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", textAlign: "right" }}>{value}</span>
+    </div>
+  );
   return (
+    <>
     <MCTSheetShell onClose={onClose}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
-        <MCTAvatar name={student.name} size={48} />
+        <span style={{ width: 44, height: 44, borderRadius: "var(--kls-radius-med)", flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <KlsIcon name={T.icon} size={20} color="var(--kls-on-surface-variant)" />
+        </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{student.name}</div>
-          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Last active {student.lastActive}</div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{editing ? (task || allocation.title) : allocation.title}</div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{T.long} · {contextLabel || (group ? group.name : "")}</div>
         </div>
+        {!editing && (
+          <button onClick={() => setEditing(true)}
+            style={{ height: 36, padding: "0 var(--kls-space-small)", borderRadius: "var(--kls-radius-small)", background: "transparent", border: "1px solid var(--kls-outline-variant)", flexShrink: 0,
+              display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", color: "var(--kls-on-surface)", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 700 }}>
+            <KlsIcon name="pencil" size={15} color="currentColor" /> Edit
+          </button>
+        )}
         <MCTSheetClose onClose={onClose} />
       </div>
       {/* Body */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
-        <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
-          {stat("Completed", r.done + "/" + r.total)}
-          {stat("In progress", r.inProgress, r.inProgress ? "var(--kls-info)" : null)}
-          {stat("Overdue", r.overdue, r.overdue ? "var(--kls-accent-4)" : null)}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        {/* progress */}
+        <div>
+          {sectionLabel("Progress")}
+          <div style={{ display: "flex", gap: "var(--kls-space-small)", marginBottom: "var(--kls-space-small)" }}>
+            {stat("Completed", r.done + "/" + r.total)}
+            {stat("In progress", r.inProgress, r.inProgress ? "var(--kls-info)" : null)}
+            {stat("Overdue", r.overdue, r.overdue ? "var(--kls-accent-4)" : null)}
+          </div>
+          <MCTRollupBar items={allocation.instances} />
         </div>
-        <MCTRollupBar items={mine} />
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
-          {typeTabs.map((t) => (
-            <MCTFilterChip key={t.key} active={typeFilter === t.key} label={t.label} onClick={() => setTypeFilter(t.key)} />
-          ))}
-        </div>
-        <div style={{ paddingBottom: "var(--kls-space-small)" }}>
-          {list.length === 0
-            ? <div style={{ padding: "var(--kls-space-large) var(--kls-space-small)", textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No assignments of this type.</div>
-            : list.map((a, i) => <MCTAssignmentRow key={a.id} a={a} last={i === list.length - 1} />)}
-        </div>
+        {editing ? (
+          <>
+            {/* Type (locked) */}
+            <div>
+              <MCTLabel>Type</MCTLabel>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", height: 48, boxSizing: "border-box", padding: "0 var(--kls-space-small)", borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface-variant)" }}>
+                <KlsIcon name={T.icon} size={18} color="var(--kls-on-surface-variant)" />
+                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{T.long}</span>
+                <span style={{ marginLeft: "auto", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Can’t be changed</span>
+              </div>
+            </div>
+            {/* Type-specific controls */}
+            {allocation.type === "task" ? (
+              <>
+                <div><MCTLabel>Term</MCTLabel><MCTSelect value={term} options={MCT_TERMS} placeholder="Select a term" onChange={(v) => { setTerm(v); setCourse(""); setTask(""); }} /></div>
+                <div><MCTLabel>Course</MCTLabel><MCTSelect value={course} options={courses} placeholder={term ? "Select a course" : "Choose a term first"} disabled={!term} onChange={(v) => { setCourse(v); setTask(""); }} /></div>
+                <div><MCTLabel>Task</MCTLabel><MCTSelect value={task} options={tasks} placeholder={course ? "Select a task" : "Choose a course first"} disabled={!course} onChange={setTask} /></div>
+              </>
+            ) : allocation.type === "oral" ? (
+              <>
+                <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+                  <MCTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin." checked={studentDefined} onChange={setStudentDefined} />
+                </div>
+                {!studentDefined && <div><MCTLabel>Topic</MCTLabel><MCTSelect value={topic} options={MCT_ORAL_TOPICS} placeholder="Select a topic" onChange={setTopic} /></div>}
+              </>
+            ) : (
+              <>
+                <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+                  <MCTToggleRow label="Let the student choose parameters" hint="Student sets topic, length, and scope." checked={studentDefined} onChange={setStudentDefined} />
+                </div>
+                {!studentDefined && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+                    <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>Question count</span>
+                    <button onClick={() => setQCount((n) => Math.max(1, n - 1))} style={{ width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" }}>−</button>
+                    <span style={{ width: 36, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{qCount}</span>
+                    <button onClick={() => setQCount((n) => n + 1)} style={{ width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" }}>+</button>
+                  </div>
+                )}
+              </>
+            )}
+            {/* Instructions */}
+            <div>
+              <MCTLabel>Instructions (optional)</MCTLabel>
+              <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3} placeholder="What should students focus on or prepare?"
+                style={{ ...mctInput, height: "auto", padding: "var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
+            </div>
+            {/* Assignees */}
+            <div>
+              <MCTLabel trailing={chips.length > 0 ? <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{chips.length} selected</span> : null}>Assign to</MCTLabel>
+              {chips.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-xsmall)", marginBottom: "var(--kls-space-small)" }}>
+                  {chips.map((c) => {
+                    const dot = c.type === "group" ? (MCT_GROUP_COLORS[c.color] || MCT_GROUP_COLORS.blue).fg : "var(--kls-primary)";
+                    return (
+                      <span key={c.type + c.id} style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", height: 32, paddingLeft: 10, paddingRight: 6, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "var(--kls-radius-pill)", background: dot }} />{c.label}
+                        <button onClick={() => toggleAssignee({ type: c.type, id: c.id })} aria-label={"Remove " + c.label} style={{ width: 20, height: 20, borderRadius: "var(--kls-radius-pill)", border: "none", cursor: "pointer", background: "transparent", color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, stroke: "currentColor", fill: "none", strokeWidth: 2 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              <button onClick={() => setPickerOpen(true)} style={{ width: "100%", height: 48, borderRadius: "var(--kls-radius-small)", cursor: "pointer", background: "transparent", border: "1px dashed var(--kls-outline)", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+                <KlsIcon name="group" size={16} color="var(--kls-on-surface)" />{chips.length ? "Edit selection" : "Choose students / groups"}
+              </button>
+            </div>
+            {/* Due date */}
+            <div style={{ paddingBottom: "var(--kls-space-small)" }}>
+              <MCTLabel>Due date</MCTLabel>
+              <input value={due} onChange={(e) => setDue(e.target.value)} placeholder="No due date" style={mctInput} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              {sectionLabel("Details")}
+              {infoRow("Type", T.long)}
+              {infoRow(allocation.type === "task" ? "Course" : "Term", allocation.type === "task" ? allocation.course : allocation.term)}
+              {infoRow("Assigned", allocation.assigned)}
+              {infoRow("Due date", due)}
+              {allocation.instructions && (
+                <div style={{ paddingTop: "var(--kls-space-small)" }}>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: 4 }}>Instructions</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)", lineHeight: 1.5 }}>{allocation.instructions}</div>
+                </div>
+              )}
+            </div>
+            <div style={{ paddingBottom: "var(--kls-space-small)" }}>
+              {sectionLabel("Student progress")}
+              {allocation.instances.map((inst, i) => (
+                <MCTAllocProgressRow key={inst.studentId} inst={inst} last={i === allocation.instances.length - 1} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
       {/* Footer */}
-      <div style={{ display: "flex", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
-        <button onClick={() => onAssign(student)} style={{ ...mctPrimaryBtn, flex: 1 }}>
-          <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> Assign
-        </button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+        {editing ? (
+          <>
+            <button onClick={() => onRemove(allocation)} style={{ ...mctSecondaryBtn, color: "var(--kls-error)", flex: "none", padding: "0 var(--kls-space-med)", gap: 6 }}>
+              <KlsIcon name="trash" size={16} color="var(--kls-error)" /> Delete
+            </button>
+            <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
+              <button onClick={cancelEdit} style={{ ...mctSecondaryBtn, flex: "none", padding: "0 var(--kls-space-med)" }}>Cancel</button>
+              <button onClick={() => valid && onSave(buildUpdated())} disabled={!valid} style={{ ...mctPrimaryBtn, flex: "none", padding: "0 var(--kls-space-med)", cursor: valid ? "pointer" : "not-allowed", opacity: valid ? 1 : 0.45 }}>Save</button>
+            </div>
+          </>
+        ) : (
+          <button onClick={onClose} style={{ ...mctSecondaryBtn, flex: 1 }}>Close</button>
+        )}
       </div>
     </MCTSheetShell>
+    {pickerOpen && (
+      <MCTAssigneePickerSheet roster={roster} selected={assignees} onToggle={toggleAssignee} onClose={() => setPickerOpen(false)} />
+    )}
+    </>
   );
 }
 
@@ -2624,8 +2919,6 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
   const [qCount, setQCount] = useTM(20);
   const [assignees, setAssignees] = useTM(presetAssignees || []);
   const [due, setDue] = useTM("");
-  const [allowLate, setAllowLate] = useTM(true);
-  const [notify, setNotify] = useTM(true);
   const [pickerOpen, setPickerOpen] = useTM(false);
 
   const isExam = type !== "task";
@@ -2730,11 +3023,6 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
         </div>
         {/* Due + options */}
         <div><MCTLabel>Due date (optional)</MCTLabel><input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={mctInput} /></div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", marginBottom: "var(--kls-space-small)" }}>
-          <MCTToggleRow label="Allow late submissions" checked={allowLate} onChange={setAllowLate} />
-          <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
-          <MCTToggleRow label="Notify students" hint="Send an in-app notification now." checked={notify} onChange={setNotify} />
-        </div>
       </div>
       {/* Footer */}
       <div style={{ display: "flex", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
@@ -2754,9 +3042,11 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
 // ── Control Tower screen ──────────────────────────────────────
 function ControlTowerScreen({ go }) {
   const [assignments, setAssignments] = useTM(() => mctBuildAssignments());
+  const [allocations, setAllocations] = useTM(() => mctBuildAllocations());
   const [quick, setQuick] = useTM("all");
   const [expanded, setExpanded] = useTM({});
-  const [openStudent, setOpenStudent] = useTM(null);
+  const [expandedStudents, setExpandedStudents] = useTM({});
+  const [openAllocId, setOpenAllocId] = useTM(null);
   const [assignOpen, setAssignOpen] = useTM(false);
   const [assignPreset, setAssignPreset] = useTM([]);
   const [toast, setToast] = useTM(null);
@@ -2771,16 +3061,24 @@ function ControlTowerScreen({ go }) {
     assignments.forEach((a) => { (m[a.studentId] = m[a.studentId] || []).push(a); });
     return m;
   }, [assignments]);
+  const allocsByGroup = React.useMemo(() => {
+    const m = {};
+    MCT_GROUPS.forEach((g) => { m[g.id] = []; });
+    allocations.forEach((a) => { (m[a.groupId] = m[a.groupId] || []).push(a); });
+    return m;
+  }, [allocations]);
   const totals = React.useMemo(() => {
+    const instances = allocations.flatMap((a) => a.instances);
     let overdue = 0, inProgress = 0, done = 0;
-    assignments.forEach((a) => { if (a.status === "overdue") overdue++; if (a.status === "in_progress") inProgress++; if (MCT_DONE.includes(a.status)) done++; });
-    return { overdue, inProgress, pct: assignments.length ? Math.round((done / assignments.length) * 100) : 0 };
-  }, [assignments]);
+    instances.forEach((a) => { if (a.status === "overdue") overdue++; if (a.status === "in_progress") inProgress++; if (MCT_DONE.includes(a.status)) done++; });
+    return { overdue, inProgress, pct: instances.length ? Math.round((done / instances.length) * 100) : 0 };
+  }, [allocations]);
 
   const sHasOverdue = (s) => (itemsByStudent[s.id] || []).some((a) => a.status === "overdue");
-  const gHasOverdue = (g) => mctGroupMembers(g).some(sHasOverdue);
   const sInProgress = (s) => (itemsByStudent[s.id] || []).some((a) => a.status === "in_progress");
-  const gInProgress = (g) => mctGroupMembers(g).some(sInProgress);
+  const gItems = (g) => (allocsByGroup[g.id] || []).flatMap((a) => a.instances);
+  const gHasOverdue = (g) => gItems(g).some((a) => a.status === "overdue");
+  const gInProgress = (g) => gItems(g).some((a) => a.status === "in_progress");
 
   const overdueCount = MCT_GROUPS.filter(gHasOverdue).length + mctUngrouped().filter(sHasOverdue).length;
   const inProgressCount = MCT_GROUPS.filter(gInProgress).length + mctUngrouped().filter(sInProgress).length;
@@ -2805,13 +3103,31 @@ function ControlTowerScreen({ go }) {
     setToast("Assigned “" + (what || "assignment") + "” to " + n + " student" + (n === 1 ? "" : "s") + ".");
     setTimeout(() => setToast(null), 3200);
   }
-  function openAssignFor(student) {
-    setOpenStudent(null);
-    setAssignPreset([{ type: "person", id: student.id }]);
-    setAssignOpen(true);
+  function saveAllocation(updated) {
+    if (allocations.some((a) => a.id === updated.id)) setAllocations((cur) => cur.map((a) => (a.id === updated.id ? updated : a)));
+    else setAssignments((cur) => cur.map((a) => {
+      if (a.id !== updated.id) return a;
+      const inst = updated.instances[0] || {};
+      return { ...a, due: updated.due, instructions: updated.instructions, title: updated.title, course: updated.course, term: updated.term, status: inst.status, score: inst.score };
+    }));
+    setOpenAllocId(null);
+    setToast("Updated “" + updated.title + "”.");
+    setTimeout(() => setToast(null), 3200);
+  }
+  function removeAllocation(alloc) {
+    if (allocations.some((a) => a.id === alloc.id)) setAllocations((cur) => cur.filter((a) => a.id !== alloc.id));
+    else setAssignments((cur) => cur.filter((a) => a.id !== alloc.id));
+    setOpenAllocId(null);
+    setToast("Removed “" + alloc.title + "”.");
+    setTimeout(() => setToast(null), 3200);
   }
 
-  const openStudentObj = openStudent ? MCT_STUDENTS.find((s) => s.id === openStudent) : null;
+  const groupAlloc = openAllocId ? allocations.find((a) => a.id === openAllocId) : null;
+  const assignAlloc = (openAllocId && !groupAlloc) ? assignments.find((a) => a.id === openAllocId) : null;
+  const openAlloc = groupAlloc || (assignAlloc ? mctStudentAlloc(assignAlloc) : null);
+  const openAllocGroup = groupAlloc ? MCT_GROUPS.find((g) => g.id === groupAlloc.groupId) : null;
+  const openAllocStudent = assignAlloc ? MCT_STUDENTS.find((s) => s.id === assignAlloc.studentId) : null;
+  const openAllocLabel = openAllocGroup ? openAllocGroup.name : (openAllocStudent ? openAllocStudent.name : "");
 
   return (
     <div data-screen-label="controlTower" style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
@@ -2861,20 +3177,23 @@ function ControlTowerScreen({ go }) {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
             {groups.map((g) => (
-              <MCTGroupCard key={g.id} group={g} itemsByStudent={itemsByStudent}
+              <MCTGroupCard key={g.id} group={g} allocs={allocsByGroup[g.id] || []}
                 expanded={!!expanded[g.id]} onToggle={() => setExpanded((e) => ({ ...e, [g.id]: !e[g.id] }))}
-                onOpenStudent={(id) => setOpenStudent(id)} />
+                onOpenAllocation={(id) => setOpenAllocId(id)} />
             ))}
             {looseStudents.map((s) => (
-              <MCTStudentCard key={s.id} student={s} items={itemsByStudent[s.id] || []} onOpen={() => setOpenStudent(s.id)} />
+              <MCTStudentCard key={s.id} student={s} items={itemsByStudent[s.id] || []}
+                expanded={!!expandedStudents[s.id]} onToggle={() => setExpandedStudents((e) => ({ ...e, [s.id]: !e[s.id] }))}
+                onOpenAllocation={(id) => setOpenAllocId(id)} />
             ))}
           </div>
         )}
       </div>
 
       {/* Sheets */}
-      {openStudentObj && (
-        <MCTStudentSheet student={openStudentObj} assignments={assignments} onClose={() => setOpenStudent(null)} onAssign={openAssignFor} />
+      {openAlloc && (
+        <MCTAllocationSheet allocation={openAlloc} group={openAllocGroup} contextLabel={openAllocLabel} roster={roster}
+          onClose={() => setOpenAllocId(null)} onSave={saveAllocation} onRemove={removeAllocation} />
       )}
       {assignOpen && (
         <MCTAssignSheet roster={roster} presetAssignees={assignPreset} onClose={() => { setAssignOpen(false); setAssignPreset([]); }} onAssign={doAssign} />

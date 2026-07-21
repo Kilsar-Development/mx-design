@@ -1490,6 +1490,12 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
                 {infoRow(allocation.type === "task" ? "Course" : "Term", allocation.type === "task" ? allocation.course : allocation.term)}
                 {infoRow("Assigned", allocation.assigned)}
                 {infoRow("Due date", due)}
+                {allocation.instructions && (
+                  <div style={{ paddingTop: "var(--kls-space-small)" }}>
+                    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: 4 }}>Instructions</div>
+                    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)", lineHeight: 1.5 }}>{allocation.instructions}</div>
+                  </div>
+                )}
               </div>
 
               {/* student progress */}
@@ -1819,8 +1825,6 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
   // shared
   const [assignees, setAssignees] = useCtadState(presetAssignees); // [{type,id}]
   const [due, setDue] = useCtadState("");
-  const [allowLate, setAllowLate] = useCtadState(true);
-  const [notify, setNotify] = useCtadState(true);
   const [pickerOpen, setPickerOpen] = useCtadState(false);
 
   useCtadEffect(() => {
@@ -2001,11 +2005,6 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
           <div>
             <CTLabel>Due date (optional)</CTLabel>
             <input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={ctInput} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
-            <CTToggleRow label="Allow late submissions" checked={allowLate} onChange={setAllowLate} />
-            <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
-            <CTToggleRow label="Notify students" hint="Send an in-app notification now." checked={notify} onChange={setNotify} />
           </div>
         </div>
 
