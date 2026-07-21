@@ -609,6 +609,48 @@ function ctBuildAssignments() {
   return out;
 }
 
+// ── Group allocations (one piece of work assigned to a whole group) ───────────
+// Each allocation is a distinct task/exam given to every member of the group.
+// `instances` carry the per-assignee progress the segmented bar aggregates.
+const CT_ASSIGNED = ["Sep 10", "Sep 24", "Oct 05", "Oct 18"];
+function ctBuildAllocations() {
+  const out = [];
+  let id = 0;
+  CT_GROUPS.forEach((g, gi) => {
+    const members = ctGroupMembers(g);
+    const n = 3 + (gi % 2); // 3–4 allocations per group
+    for (let k = 0; k < n; k++) {
+      const type = ["task", "oral", "written"][(gi + k) % 3];
+      let title, course, term;
+      if (type === "task") {
+        term = CT_TERMS[(gi + k) % CT_TERMS.length];
+        const courses = CT_COURSES[term];
+        course = courses[(gi + k) % courses.length];
+        const lib = CT_TASK_LIBRARY[course];
+        title = lib[k % lib.length];
+      } else {
+        term = CT_TERMS[k % CT_TERMS.length];
+        course = "Open-ended";
+        const pool = CT_EXAM_TITLES[type];
+        title = pool[(gi + k) % pool.length];
+      }
+      const overdueAlloc = (gi + k) % 3 === 0;
+      const due = overdueAlloc ? CT_DUE_PAST[(gi + k) % CT_DUE_PAST.length] : CT_DUE_FUTURE[(gi + k) % CT_DUE_FUTURE.length];
+      const assigned = CT_ASSIGNED[(gi + k) % CT_ASSIGNED.length];
+      const instances = members.map((m, mi) => {
+        let status = CT_STATUS_CYCLE[(gi * 2 + k + mi) % CT_STATUS_CYCLE.length];
+        if (type === "task" && (status === "passed" || status === "failed")) status = "completed";
+        if (type !== "task" && status === "completed") status = "passed";
+        const score = status === "passed" ? 80 + ((mi + k * 3) % 18) : status === "failed" ? 52 + ((mi + k) % 14) : null;
+        return { studentId: m.id, status, score };
+      });
+      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances,
+        settings: { allowResubmission: type !== "task", notifyOverdue: true } });
+    }
+  });
+  return out;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function ctInitials(name) {
   const p = (name || "").trim().split(/\s+/);
@@ -683,8 +725,8 @@ window.CT = {
   STATUS: CT_STATUS, TYPES: CT_TYPES, STUDENTS: CT_STUDENTS, GROUPS: CT_GROUPS,
   GROUP_COLORS: CT_GROUP_COLORS, groupMembers: ctGroupMembers, ungrouped: ctUngroupedStudents,
   TERMS: CT_TERMS, COURSES: CT_COURSES, TASK_LIBRARY: CT_TASK_LIBRARY, EXAM_TITLES: CT_EXAM_TITLES,
-  DUE_FUTURE: CT_DUE_FUTURE, DONE: CT_DONE,
-  buildAssignments: ctBuildAssignments, initials: ctInitials, rollup: ctRollup,
+  DUE_FUTURE: CT_DUE_FUTURE, ASSIGNED: CT_ASSIGNED, DONE: CT_DONE,
+  buildAssignments: ctBuildAssignments, buildAllocations: ctBuildAllocations, initials: ctInitials, rollup: ctRollup,
   Avatar: CTAvatar, StatusPill: CTStatusPill, RollupBar: CTRollupBar, GroupMedallion: CTGroupMedallion,
 };
 
@@ -761,7 +803,7 @@ function CTContextMenu({ x, y, items, onClose }) {
           <button key={i} onClick={() => { onClose(); it.onClick(); }} style={{
             height: 52, padding: "0 var(--kls-space-small)", border: "none", background: "transparent", cursor: "pointer",
             display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", borderRadius: 6,
-            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-secondary)", textAlign: "left" }}
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: it.destructive ? "var(--kls-error)" : "var(--kls-on-secondary)", textAlign: "left" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary-container)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
             <KlsIcon name={it.icon} size={18} color="currentColor" />
@@ -773,48 +815,134 @@ function CTContextMenu({ x, y, items, onClose }) {
   );
 }
 
-function StudentRow({ student, items, onOpen, onMenu, indent = false }) {
+function StudentRow({ student, items, expanded, onToggle, onOpenAllocation, onMenuAllocation, onMenu }) {
   const [hover, setHover] = useCtState(false);
   const CT = window.CT;
   const r = CT.rollup(items);
   return (
+    <>
+      <tr onClick={onToggle} onContextMenu={onMenu} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)",
+          background: hover || expanded ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+        <td style={CT_TD}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <CT.Avatar name={student.name} size={40} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{student.name}</div>
+              <div style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{items.length} assignment{items.length === 1 ? "" : "s"}</div>
+            </div>
+          </div>
+        </td>
+        <td style={CT_TD}></td>
+        <td style={{ ...CT_TD, minWidth: 200 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 90 }}><CT.RollupBar items={items} /></div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+          </div>
+        </td>
+        <td style={CT_TD}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {r.overdue > 0
+              ? <CountBadge n={r.overdue} label="overdue" bg="var(--kls-accent-5)" fg="var(--kls-accent-4)" />
+              : <span style={{ fontSize: 13, color: "var(--kls-on-surface-variant)" }}>—</span>}
+          </div>
+        </td>
+        <td style={{ ...CT_TD, textAlign: "right", width: 40 }}>
+          <KlsIcon name={expanded ? "chevronDown" : "chevronRight"} size={18} color="var(--kls-on-surface-variant)" />
+        </td>
+      </tr>
+      {expanded && items.length === 0 && (
+        <tr style={{ background: "var(--kls-surface-variant)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <td colSpan={5} style={{ ...CT_TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))", color: "var(--kls-on-surface-variant)", fontSize: 13 }}>No allocations for this student yet.</td>
+        </tr>
+      )}
+      {expanded && items.map((a) => (
+        <AllocationRow key={a.id} alloc={ctStudentAlloc(a)} onOpen={() => onOpenAllocation(a.id)} onMenu={(e) => onMenuAllocation(e, a)} />
+      ))}
+    </>
+  );
+}
+
+// Adapt a per-student assignment into an allocation-shaped object so the shared
+// AllocationRow + allocation drawer can render it (single-assignee instance).
+function ctStudentAlloc(a) {
+  return { ...a, assigned: a.assigned || "—",
+    instances: [{ studentId: a.studentId, status: a.status, score: a.score }],
+    settings: a.settings || { allowResubmission: a.type !== "task", notifyOverdue: true } };
+}
+
+// Overlapping avatar stack for the Assignees column. Shows up to `max` avatars,
+// then "+X more". NOTE: clicking the stack should open the shared Teammate dialog
+// popup used on the Tickets and Blocks/Terms screens (not yet wired into this bundle).
+function CTAvatarStack({ students, max = 3, onClick }) {
+  const CT = window.CT;
+  if (!students || students.length === 0) return null;
+  const shown = students.slice(0, max);
+  const extra = students.length - shown.length;
+  return (
+    <div onClick={onClick ? (e) => { e.stopPropagation(); onClick(e); } : undefined}
+      style={{ display: "inline-flex", alignItems: "center", cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ display: "flex" }}>
+        {shown.map((s, i) => (
+          <div key={s.id} title={s.name} style={{ marginLeft: i === 0 ? 0 : -8, borderRadius: 999,
+            position: "relative", zIndex: shown.length - i, boxShadow: "0 0 0 2px var(--kls-surface)" }}>
+            <CT.Avatar name={s.name} size={28} />
+          </div>
+        ))}
+      </div>
+      {extra > 0 && <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>+{extra} more</span>}
+    </div>
+  );
+}
+
+function AllocationRow({ alloc, onOpen, onMenu }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const T = CT.TYPES[alloc.type];
+  const r = CT.rollup(alloc.instances);
+  const meta = `${T.label} · ${alloc.type === "task" ? alloc.course : alloc.term} · Due ${alloc.due}`;
+  const students = alloc.instances.map((i) => CT.STUDENTS.find((s) => s.id === i.studentId)).filter(Boolean);
+  return (
     <tr onClick={onOpen} onContextMenu={onMenu} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)",
-        background: hover ? "var(--kls-tertiary)" : (indent ? "var(--kls-surface-variant)" : "transparent"), transition: "background 80ms var(--kls-ease-standard)" }}>
-      <td style={{ ...CT_TD, paddingLeft: indent ? "calc(var(--kls-space-large) + var(--kls-space-med))" : "var(--kls-space-med)" }}>
+        background: hover ? "var(--kls-tertiary)" : "var(--kls-surface-variant)", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <td style={{ ...CT_TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <CT.Avatar name={student.name} size={indent ? 32 : 40} />
+          <span style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <KlsIcon name={T.icon} size={16} color="var(--kls-on-surface-variant)" />
+          </span>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{student.name}</div>
-            <div style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>Last active {student.lastActive}</div>
+            <div style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{alloc.title}</div>
+            <div style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{meta}</div>
           </div>
         </div>
       </td>
+      <td style={CT_TD}>
+        <CTAvatarStack students={students} />
+      </td>
       <td style={{ ...CT_TD, minWidth: 200 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ flex: 1, minWidth: 90 }}><CT.RollupBar items={items} /></div>
+          <div style={{ flex: 1, minWidth: 90 }}><CT.RollupBar items={alloc.instances} /></div>
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
         </div>
       </td>
       <td style={CT_TD}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {r.overdue > 0
-            ? <CountBadge n={r.overdue} label="overdue" bg="var(--kls-accent-5)" fg="var(--kls-accent-4)" />
-            : <span style={{ fontSize: 13, color: "var(--kls-on-surface-variant)" }}>—</span>}
-        </div>
+        {r.overdue > 0
+          ? <CountBadge n={r.overdue} label="overdue" bg="var(--kls-accent-5)" fg="var(--kls-accent-4)" />
+          : <span style={{ fontSize: 13, color: "var(--kls-on-surface-variant)" }}>—</span>}
       </td>
       <td style={{ ...CT_TD, textAlign: "right", width: 40 }}>
-        <KlsIcon name="sidebar-collapse" size={16} color="var(--kls-on-surface-variant)" rotate={180} />
+        <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
       </td>
     </tr>
   );
 }
 
-function CTGroupRow({ group, itemsByStudent, expanded, onToggle, onOpenStudent, onMenu, onMenuStudent }) {
+function CTGroupRow({ group, allocs, expanded, onToggle, onMenu, onOpenAllocation, onMenuAllocation }) {
   const [hover, setHover] = useCtState(false);
   const CT = window.CT;
   const members = CT.groupMembers(group);
-  const items = members.flatMap((m) => itemsByStudent[m.id] || []);
+  const items = allocs.flatMap((a) => a.instances);
   const r = CT.rollup(items);
   return (
     <>
@@ -826,9 +954,12 @@ function CTGroupRow({ group, itemsByStudent, expanded, onToggle, onOpenStudent, 
             <CT.GroupMedallion color={group.color} icon={group.icon} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{group.name}</div>
-              <div style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{members.length} student{members.length === 1 ? "" : "s"}</div>
+              <div style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{allocs.length} assignment{allocs.length === 1 ? "" : "s"}</div>
             </div>
           </div>
+        </td>
+        <td style={CT_TD}>
+          <CTAvatarStack students={members} onClick={() => {}} />
         </td>
         <td style={{ ...CT_TD, minWidth: 200 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -847,8 +978,13 @@ function CTGroupRow({ group, itemsByStudent, expanded, onToggle, onOpenStudent, 
           <KlsIcon name={expanded ? "chevronDown" : "chevronRight"} size={18} color="var(--kls-on-surface-variant)" />
         </td>
       </tr>
-      {expanded && members.map((m) => (
-        <StudentRow key={group.id + "_" + m.id} student={m} items={itemsByStudent[m.id] || []} indent onOpen={() => onOpenStudent(m.id)} onMenu={(e) => onMenuStudent(e, m)} />
+      {expanded && allocs.length === 0 && (
+        <tr style={{ background: "var(--kls-surface-variant)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <td colSpan={5} style={{ ...CT_TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))", color: "var(--kls-on-surface-variant)", fontSize: 13 }}>No allocations for this group yet.</td>
+        </tr>
+      )}
+      {expanded && allocs.map((a) => (
+        <AllocationRow key={a.id} alloc={a} onOpen={() => onOpenAllocation(a.id)} onMenu={(e) => onMenuAllocation(e, a)} />
       ))}
     </>
   );
@@ -866,12 +1002,14 @@ function CountBadge({ n, label, bg, fg }) {
 function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
   const CT = window.CT;
   const [assignments, setAssignments] = useCtState(() => CT.buildAssignments());
+  const [allocations, setAllocations] = useCtState(() => CT.buildAllocations());
   const [quick, setQuick] = useCtState(initialQuick); // all|overdue
   const [expandedGroups, setExpandedGroups] = useCtState({});
-  const [openStudent, setOpenStudent] = useCtState(null);
+  const [expandedStudents, setExpandedStudents] = useCtState({});
+  const [openAllocId, setOpenAllocId] = useCtState(null);
   const [assignOpen, setAssignOpen] = useCtState(false);
   const [assignPreset, setAssignPreset] = useCtState([]);
-  const [ctxMenu, setCtxMenu] = useCtState(null); // {x,y,preset,label}
+  const [ctxMenu, setCtxMenu] = useCtState(null); // {x,y,items}
   const [toast, setToast] = useCtState(null);
 
   const roster = useCtMemo(() => ({
@@ -887,21 +1025,30 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
     return m;
   }, [assignments]);
 
+  const allocsByGroup = useCtMemo(() => {
+    const m = {};
+    CT.GROUPS.forEach((g) => { m[g.id] = []; });
+    allocations.forEach((a) => { (m[a.groupId] = m[a.groupId] || []).push(a); });
+    return m;
+  }, [allocations]);
+
   const totals = useCtMemo(() => {
+    const instances = allocations.flatMap((a) => a.instances);
     let overdue = 0, inProgress = 0, done = 0;
-    assignments.forEach((a) => {
+    instances.forEach((a) => {
       if (a.status === "overdue") overdue++;
       if (a.status === "in_progress") inProgress++;
       if (CT.DONE.includes(a.status)) done++;
     });
-    const pct = assignments.length ? Math.round((done / assignments.length) * 100) : 0;
+    const pct = instances.length ? Math.round((done / instances.length) * 100) : 0;
     return { overdue, inProgress, pct };
-  }, [assignments]);
+  }, [allocations]);
 
   const studentHasOverdue = (s) => (itemsByStudent[s.id] || []).some((a) => a.status === "overdue");
-  const groupHasOverdue = (g) => CT.groupMembers(g).some(studentHasOverdue);
   const studentInProgress = (s) => (itemsByStudent[s.id] || []).some((a) => a.status === "in_progress");
-  const groupInProgress = (g) => CT.groupMembers(g).some(studentInProgress);
+  const groupItems = (g) => (allocsByGroup[g.id] || []).flatMap((a) => a.instances);
+  const groupHasOverdue = (g) => groupItems(g).some((a) => a.status === "overdue");
+  const groupInProgress = (g) => groupItems(g).some((a) => a.status === "in_progress");
 
   const term = query.trim().toLowerCase();
   const studentMatch = (s) => !term || s.name.toLowerCase().includes(term) || s.email.toLowerCase().includes(term);
@@ -933,24 +1080,40 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
     setTimeout(() => setToast(null), 3200);
   }
 
-  function openAssignFor(student) {
-    setOpenStudent(null);
-    setAssignPreset([{ type: "person", id: student.id }]);
-    setAssignOpen(true);
+  function saveAllocation(updated) {
+    if (allocations.some((a) => a.id === updated.id)) {
+      setAllocations((cur) => cur.map((a) => (a.id === updated.id ? updated : a)));
+    } else {
+      const inst = updated.instances[0] || {};
+      setAssignments((cur) => cur.map((a) => (a.id === updated.id
+        ? { ...a, due: updated.due, title: updated.title, course: updated.course, term: updated.term, instructions: updated.instructions, status: inst.status, score: inst.score } : a)));
+    }
+    setOpenAllocId(null);
+    setToast(`Updated “${updated.title}”.`);
+    setTimeout(() => setToast(null), 3200);
+  }
+  function removeAllocation(alloc) {
+    if (allocations.some((a) => a.id === alloc.id)) setAllocations((cur) => cur.filter((a) => a.id !== alloc.id));
+    else setAssignments((cur) => cur.filter((a) => a.id !== alloc.id));
+    setOpenAllocId(null);
+    setToast(`Removed “${alloc.title}”.`);
+    setTimeout(() => setToast(null), 3200);
   }
 
-  function openMenu(e, preset, label) {
+  function openMenu(e, items) {
     e.preventDefault();
-    setCtxMenu({ x: e.clientX, y: e.clientY, preset, label });
+    setCtxMenu({ x: e.clientX, y: e.clientY, items });
   }
-  function assignFromMenu() {
-    if (!ctxMenu) return;
-    setOpenStudent(null);
-    setAssignPreset(ctxMenu.preset);
-    setAssignOpen(true);
-  }
-  const menuStudent = (e, s) => openMenu(e, [{ type: "person", id: s.id }], s.name);
-  const menuGroup = (e, g) => openMenu(e, [{ type: "group", id: g.id }], g.name);
+  const menuStudent = (e, s) => openMenu(e, [
+    { icon: "worklog", label: "Add assignment", onClick: () => { setAssignPreset([{ type: "person", id: s.id }]); setAssignOpen(true); } },
+  ]);
+  const menuGroup = (e, g) => openMenu(e, [
+    { icon: "worklog", label: "Add assignment", onClick: () => { setAssignPreset([{ type: "group", id: g.id }]); setAssignOpen(true); } },
+  ]);
+  const menuAllocation = (e, a) => openMenu(e, [
+    { icon: "pencil", label: "Edit", onClick: () => setOpenAllocId(a.id) },
+    { icon: "trash", label: "Remove", destructive: true, onClick: () => removeAllocation(a) },
+  ]);
 
   return (
     <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
@@ -996,7 +1159,8 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={CT_TH}>Student / Group</th>
+                  <th style={CT_TH}>Group / Student</th>
+                  <th style={CT_TH}>Assignees</th>
                   <th style={CT_TH}>Progress</th>
                   <th style={CT_TH}>Needs attention</th>
                   <th style={{ ...CT_TH, width: 40 }}></th>
@@ -1004,15 +1168,20 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
               </thead>
               <tbody>
                 {groups.map((g) => (
-                  <CTGroupRow key={g.id} group={g} itemsByStudent={itemsByStudent}
+                  <CTGroupRow key={g.id} group={g} allocs={allocsByGroup[g.id] || []}
                     expanded={!!expandedGroups[g.id]}
                     onToggle={() => setExpandedGroups((e) => ({ ...e, [g.id]: !e[g.id] }))}
-                    onOpenStudent={(id) => setOpenStudent(id)}
                     onMenu={(e) => menuGroup(e, g)}
-                    onMenuStudent={menuStudent} />
+                    onOpenAllocation={(id) => setOpenAllocId(id)}
+                    onMenuAllocation={menuAllocation} />
                 ))}
                 {looseStudents.map((s) => (
-                  <StudentRow key={s.id} student={s} items={itemsByStudent[s.id] || []} onOpen={() => setOpenStudent(s.id)} onMenu={(e) => menuStudent(e, s)} />
+                  <StudentRow key={s.id} student={s} items={itemsByStudent[s.id] || []}
+                    expanded={!!expandedStudents[s.id]}
+                    onToggle={() => setExpandedStudents((e) => ({ ...e, [s.id]: !e[s.id] }))}
+                    onOpenAllocation={(id) => setOpenAllocId(id)}
+                    onMenuAllocation={menuAllocation}
+                    onMenu={(e) => menuStudent(e, s)} />
                 ))}
               </tbody>
             </table>
@@ -1021,13 +1190,6 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
       </div>
 
       {/* Drawers */}
-      {openStudent && (
-        <window.CTStudentDrawer
-          student={CT.STUDENTS.find((s) => s.id === openStudent)}
-          assignments={assignments}
-          onClose={() => setOpenStudent(null)}
-          onAssign={openAssignFor} />
-      )}
       {assignOpen && (
         <window.CTAssignDrawer
           roster={roster}
@@ -1036,9 +1198,29 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
           onAssign={doAssign} />
       )}
 
+      {openAllocId && (() => {
+        const groupAlloc = allocations.find((a) => a.id === openAllocId);
+        const assignAlloc = !groupAlloc ? assignments.find((a) => a.id === openAllocId) : null;
+        const alloc = groupAlloc || (assignAlloc ? ctStudentAlloc(assignAlloc) : null);
+        if (!alloc) return null;
+        const group = groupAlloc ? CT.GROUPS.find((g) => g.id === groupAlloc.groupId) : null;
+        const student = assignAlloc ? CT.STUDENTS.find((s) => s.id === assignAlloc.studentId) : null;
+        const contextLabel = group ? group.name : (student ? student.name : "");
+        return (
+          <window.CTAllocationDrawer
+            allocation={alloc}
+            group={group}
+            contextLabel={contextLabel}
+            roster={roster}
+            onClose={() => setOpenAllocId(null)}
+            onSave={saveAllocation}
+            onRemove={removeAllocation} />
+        );
+      })()}
+
       {ctxMenu && (
         <CTContextMenu x={ctxMenu.x} y={ctxMenu.y} onClose={() => setCtxMenu(null)}
-          items={[{ icon: "worklog", label: "Add assignment", onClick: assignFromMenu }]} />
+          items={ctxMenu.items} />
       )}
 
       {/* Snackbar */}
@@ -1056,51 +1238,106 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
 
 // ── App shell ────────────────────────────────────────────────────────────────
 
-// ct-student-drawer.jsx — Student detail: their assignments + per-status. Reads window.CT.
-const { useState: useCtsdState, useEffect: useCtsdEffect } = React;
+// (student drawer removed — student rows now expand inline like groups)
 
-function CTAssignmentRow({ a, last }) {
-  const T = window.CT.TYPES[a.type];
+
+// ct-allocation-drawer.jsx — Allocation detail: work assigned to a whole group.
+//   Shows info + each assignee's progress. Header Edit button flips to edit mode; Save persists.
+// Reads window.CT.
+const { useState: useCtldState, useEffect: useCtldEffect } = React;
+
+function CTAllocLabel({ children }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "var(--kls-space-small) 0",
+    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+      textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-small)" }}>{children}</div>
+  );
+}
+
+function CTAllocProgressRow({ inst, last }) {
+  const CT = window.CT;
+  const s = CT.STUDENTS.find((x) => x.id === inst.studentId) || { name: "Unknown" };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-small) 0",
       borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)" }}>
-      <span style={{ width: 38, height: 38, borderRadius: 12, flexShrink: 0, background: "var(--kls-tertiary)",
-        display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-        <KlsIcon name={T.icon} size={18} color="var(--kls-on-surface-variant)" />
-      </span>
+      <CT.Avatar name={s.name} size={36} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
-          <span>{a.type === "task" ? "Task" : a.type === "oral" ? "Oral Exam" : "Written Exam"}</span>
-          <span>·</span>
-          <span>{a.type === "task" ? a.course : a.term}</span>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          {inst.score != null ? `Score ${inst.score}%` : "No score yet"}
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-        <window.CT.StatusPill status={a.status} />
-        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
-          {a.score != null ? `Score ${a.score}%` : (a.due ? `Due ${a.due}` : "No due date")}
-        </span>
-      </div>
+      <CT.StatusPill status={inst.status} />
     </div>
   );
 }
 
-function CTStudentDrawer({ student, assignments, onClose, onAssign }) {
-  const [shown, setShown] = useCtsdState(false);
-  const [typeFilter, setTypeFilter] = useCtsdState("all"); // all|task|oral|written
+function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, onSave, onRemove }) {
+  const CT = window.CT;
+  const T = CT.TYPES[allocation.type];
+  const initialAssignees = group
+    ? [{ type: "group", id: group.id }]
+    : (allocation.instances[0] ? [{ type: "person", id: allocation.instances[0].studentId }] : []);
 
-  useCtsdEffect(() => {
+  const [shown, setShown] = useCtldState(false);
+  const [editing, setEditing] = useCtldState(false);
+  const [due, setDue] = useCtldState(allocation.due);
+  const [term, setTerm] = useCtldState(allocation.term || "");
+  const [course, setCourse] = useCtldState(allocation.type === "task" ? (allocation.course || "") : "");
+  const [task, setTask] = useCtldState(allocation.type === "task" ? allocation.title : "");
+  const [studentDefined, setStudentDefined] = useCtldState(!!allocation.studentDefined);
+  const [topic, setTopic] = useCtldState(allocation.topic || "");
+  const [qCount, setQCount] = useCtldState(String(allocation.qCount || 20));
+  const [selModules, setSelModules] = useCtldState(() => new Set(allocation.selModules || []));
+  const [instructions, setInstructions] = useCtldState(allocation.instructions || "");
+  const [assignees, setAssignees] = useCtldState(initialAssignees);
+  const [pickerOpen, setPickerOpen] = useCtldState(false);
+
+  useCtldEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
-    function onKey(e) { if (e.key === "Escape") onClose && onClose(); }
+    function onKey(e) { if (e.key === "Escape" && !pickerOpen) onClose && onClose(); }
     document.addEventListener("keydown", onKey);
     return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
-  }, []);
+  }, [pickerOpen]);
 
-  const mine = assignments.filter((a) => a.studentId === student.id);
-  const r = window.CT.rollup(mine);
-  const list = mine.filter((a) => typeFilter === "all" || a.type === typeFilter);
-  const drawerWidth = "min(480px, calc(100vw - 24px))";
+  const r = CT.rollup(allocation.instances);
+  const drawerWidth = "min(500px, calc(100vw - 24px))";
+  const oralTopics = (window.KILSAR_DATA && window.KILSAR_DATA.blocks) ? window.KILSAR_DATA.blocks.map((b) => b.title) : [];
+  const courses = term ? (CT.COURSES[term] || []) : [];
+  const tasks = course ? (CT.TASK_LIBRARY[course] || []) : [];
+  const chips = assignees.map((s) => {
+    if (s.type === "group") { const g = (roster.groups || []).find((x) => x.id === s.id); return { ...s, label: g && g.name, color: g && g.color }; }
+    const p = (roster.people || []).find((x) => x.id === s.id); return { ...s, label: p && p.name };
+  }).filter((c) => c.label);
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : (studentDefined || selModules.size > 0));
+
+  function cancelEdit() {
+    setDue(allocation.due);
+    setTerm(allocation.term || "");
+    setCourse(allocation.type === "task" ? (allocation.course || "") : "");
+    setTask(allocation.type === "task" ? allocation.title : "");
+    setStudentDefined(!!allocation.studentDefined);
+    setTopic(allocation.topic || "");
+    setQCount(String(allocation.qCount || 20));
+    setSelModules(new Set(allocation.selModules || []));
+    setInstructions(allocation.instructions || "");
+    setAssignees(initialAssignees);
+    setEditing(false);
+  }
+  function buildUpdated() {
+    const studentIds = [...new Set(assignees.flatMap((a) => a.type === "group"
+      ? (((roster.groups || []).find((g) => g.id === a.id) || {}).memberIds || [])
+      : [a.id]))];
+    const prev = {};
+    allocation.instances.forEach((i) => { prev[i.studentId] = i; });
+    const instances = studentIds.length
+      ? studentIds.map((id) => prev[id] || { studentId: id, status: "not_started", score: null })
+      : allocation.instances;
+    return { ...allocation, due,
+      title: allocation.type === "task" ? (task || allocation.title) : allocation.title,
+      course: allocation.type === "task" ? course : allocation.course,
+      term: term || allocation.term,
+      studentDefined, topic, qCount, selModules: [...selModules], instructions, instances };
+  }
 
   const stat = (label, value, tone) => (
     <div style={{ flex: 1, minWidth: 0, background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
@@ -1109,7 +1346,12 @@ function CTStudentDrawer({ student, assignments, onClose, onAssign }) {
     </div>
   );
 
-  const typeTabs = [{ key: "all", label: "All" }, { key: "task", label: "Tasks" }, { key: "oral", label: "Oral" }, { key: "written", label: "Written" }];
+  const infoRow = (label, value) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "var(--kls-space-small) 0", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", textAlign: "right" }}>{value}</span>
+    </div>
+  );
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
@@ -1123,11 +1365,22 @@ function CTStudentDrawer({ student, assignments, onClose, onAssign }) {
       }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
-          <window.CT.Avatar name={student.name} size={48} />
+          <span style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <KlsIcon name={T.icon} size={22} color="var(--kls-on-surface-variant)" />
+          </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{student.name}</div>
-            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Last active {student.lastActive}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allocation.title}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{T.label} · {contextLabel || (group ? group.name : "")}</div>
           </div>
+          {!editing && (
+            <button onClick={() => setEditing(true)} style={{ height: 36, padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer",
+              background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
+              fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 700 }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              <KlsIcon name="pencil" size={15} color="currentColor" /> Edit
+            </button>
+          )}
           <button onClick={onClose} aria-label="Close"
             style={{ width: 36, height: 36, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
               color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
@@ -1141,55 +1394,156 @@ function CTStudentDrawer({ student, assignments, onClose, onAssign }) {
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
-          {/* stats */}
-          <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
-            {stat("Completed", `${r.done}/${r.total}`)}
-            {stat("In progress", r.inProgress, r.inProgress ? "var(--kls-info)" : null)}
-            {stat("Overdue", r.overdue, r.overdue ? "var(--kls-accent-4)" : null)}
-          </div>
-          <window.CT.RollupBar items={mine} height={8} />
-
-          {/* type filter */}
-          <div style={{ display: "inline-flex", gap: 4, padding: 2, height: 40, alignSelf: "flex-start", boxSizing: "border-box",
-            background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", borderRadius: 8 }}>
-            {typeTabs.map((t) => {
-              const active = t.key === typeFilter;
-              return (
-                <button key={t.key} onClick={() => setTypeFilter(t.key)} style={{
-                  height: 36, padding: "0 var(--kls-space-small)", borderRadius: 8, border: "none", cursor: "pointer",
-                  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
-                  background: active ? "var(--kls-surface)" : "transparent",
-                  color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
-                  boxShadow: active ? "0 1px 2px rgba(0,0,0,.04)" : "none" }}>{t.label}</button>
-              );
-            })}
-          </div>
-
-          {/* assignments */}
+          {/* progress summary */}
           <div>
-            {list.length === 0 ? (
-              <div style={{ padding: "var(--kls-space-large) var(--kls-space-small)", textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No assignments of this type.</div>
-            ) : list.map((a, i) => <CTAssignmentRow key={a.id} a={a} last={i === list.length - 1} />)}
+            <CTAllocLabel>Progress</CTAllocLabel>
+            <div style={{ display: "flex", gap: "var(--kls-space-small)", marginBottom: "var(--kls-space-small)" }}>
+              {stat("Completed", `${r.done}/${r.total}`)}
+              {stat("In progress", r.inProgress, r.inProgress ? "var(--kls-info)" : null)}
+              {stat("Overdue", r.overdue, r.overdue ? "var(--kls-accent-4)" : null)}
+            </div>
+            <CT.RollupBar items={allocation.instances} height={8} />
           </div>
+
+          {editing ? (
+            <>
+              {/* Type (locked) */}
+              <div>
+                <CTLabel>Type</CTLabel>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, height: 48, boxSizing: "border-box", padding: "0 var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface-variant)" }}>
+                  <KlsIcon name={T.icon} size={18} color="var(--kls-on-surface-variant)" />
+                  <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{T.label}</span>
+                  <span style={{ marginLeft: "auto", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Can’t be changed</span>
+                </div>
+              </div>
+
+              {/* Type-specific controls (mirrors the Assign flow) */}
+              {allocation.type === "task" ? (
+                <>
+                  <div><CTLabel>Term</CTLabel><CTSelect value={term} options={CT.TERMS} placeholder="Select a term" onChange={(v) => { setTerm(v); setCourse(""); setTask(""); }} /></div>
+                  <div><CTLabel>Course</CTLabel><CTSelect value={course} options={courses} placeholder={term ? "Select a course" : "Choose a term first"} disabled={!term} onChange={(v) => { setCourse(v); setTask(""); }} /></div>
+                  <div><CTLabel>Task</CTLabel><CTSelect value={task} options={tasks} placeholder={course ? "Select a task" : "Choose a course first"} disabled={!course} onChange={setTask} /></div>
+                </>
+              ) : allocation.type === "oral" ? (
+                <>
+                  <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+                    <CTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin the oral exam." checked={studentDefined} onChange={setStudentDefined} />
+                  </div>
+                  {!studentDefined && (<div><CTLabel>Topic</CTLabel><CTSelect value={topic} options={oralTopics} placeholder="Select a topic" onChange={setTopic} /></div>)}
+                </>
+              ) : (
+                <>
+                  <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+                    <CTToggleRow label="Let the student choose parameters" hint="Student sets topic, length, and scope when they begin." checked={studentDefined} onChange={setStudentDefined} />
+                  </div>
+                  {!studentDefined && (<WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} />)}
+                </>
+              )}
+
+              {/* Instructions */}
+              <div>
+                <CTLabel>Instructions (optional)</CTLabel>
+                <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3} placeholder="What should students focus on or prepare?"
+                  style={{ ...ctInput, height: "auto", padding: "var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
+              </div>
+
+              {/* Assignees */}
+              <div>
+                <CTLabel trailing={chips.length > 0 ? (<span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{chips.length} selected</span>) : null}>Assign to</CTLabel>
+                {chips.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                    {chips.map((c) => {
+                      const dot = c.type === "group" ? ((window.PK_COLORS[c.color] || window.PK_COLORS.blue).fg) : "var(--kls-primary)";
+                      return (
+                        <span key={c.type + c.id} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 32, paddingLeft: 10, paddingRight: 6, borderRadius: 999, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+                          <span style={{ width: 8, height: 8, borderRadius: 999, background: dot }} />
+                          {c.label}
+                          <button onClick={() => setAssignees((cur) => cur.filter((x) => !(x.type === c.type && x.id === c.id)))} aria-label={"Remove " + c.label} style={{ width: 20, height: 20, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent", color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                            <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, stroke: "currentColor", fill: "none", strokeWidth: 2 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <button onClick={() => setPickerOpen(true)} style={{ width: "100%", height: 48, borderRadius: 8, cursor: "pointer", background: "transparent", border: "1px dashed var(--kls-outline)", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+                  <KlsIcon name="group" size={16} color="var(--kls-on-surface)" /> Choose students / groups
+                </button>
+              </div>
+
+              {/* Due date */}
+              <div>
+                <CTLabel>Due date</CTLabel>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, boxSizing: "border-box", padding: "0 var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)" }}>
+                  <KlsIcon name="date" size={16} color="var(--kls-on-surface-variant)" />
+                  <input value={due} onChange={(e) => setDue(e.target.value)} placeholder="No due date"
+                    style={{ border: "none", outline: "none", background: "transparent", width: 160, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* details */}
+              <div>
+                <CTAllocLabel>Details</CTAllocLabel>
+                {infoRow("Type", T.label)}
+                {infoRow(allocation.type === "task" ? "Course" : "Term", allocation.type === "task" ? allocation.course : allocation.term)}
+                {infoRow("Assigned", allocation.assigned)}
+                {infoRow("Due date", due)}
+              </div>
+
+              {/* student progress */}
+              <div>
+                <CTAllocLabel>Student progress</CTAllocLabel>
+                {allocation.instances.map((inst, i) => (
+                  <CTAllocProgressRow key={inst.studentId} inst={inst} last={i === allocation.instances.length - 1} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
-          <button onClick={() => onAssign && onAssign(student)} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
-            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: 8,
-            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
-            <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> Assign
-          </button>
-          <button onClick={onClose} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
-            background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
-            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Close</button>
+          {editing ? (
+            <>
+              <button onClick={() => onRemove && onRemove(allocation)} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+                background: "transparent", color: "var(--kls-error)", border: "1px solid var(--kls-outline-variant)", display: "inline-flex", alignItems: "center", gap: 8,
+                fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
+                <KlsIcon name="trash" size={16} color="var(--kls-error)" /> Delete
+              </button>
+              <div style={{ display: "inline-flex", gap: 8 }}>
+                <button onClick={cancelEdit} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+                  background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Cancel</button>
+                <button onClick={() => onSave && onSave(buildUpdated())} disabled={!valid} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: valid ? "pointer" : "default",
+                  background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", opacity: valid ? 1 : 0.5,
+                  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Save changes</button>
+              </div>
+            </>
+          ) : (
+            <button onClick={onClose} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", marginLeft: "auto",
+              background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Close</button>
+          )}
         </div>
       </div>
+      {pickerOpen && (
+        <window.TeammatePicker
+          title="Choose students / groups"
+          mode="multi"
+          kinds={["people", "groups"]}
+          peopleRoster={roster.people}
+          groups={roster.groups}
+          initialSelection={assignees}
+          onClose={() => setPickerOpen(false)}
+          onSubmit={(sel) => { setAssignees(sel); setPickerOpen(false); }} />
+      )}
     </div>
   );
 }
 
-window.CTStudentDrawer = CTStudentDrawer;
+window.CTAllocationDrawer = CTAllocationDrawer;
 
 // ct-assign-drawer.jsx — Assign a Task / Oral exam / Written exam to students.
 //   • Task: pick Term → Course → existing Task.
@@ -2909,14 +3263,15 @@ function MetaCell({ icon, label, value }) {
 }
 
 function MemberDrawer({ member, mode, flags, onClose, onSwitchToEdit, onSave }) {
-  const isEdit = mode === "edit";
+  const [editing, setEditing] = useDrawerState(mode === "edit");
+  const isEdit = editing;
   // local draft (only meaningful in edit mode)
   const [draft, setDraft] = useDrawerState(member);
   const [photo, setPhoto] = useDrawerState(null);
   const [shown, setShown] = useDrawerState(false);
   const fileRef = useDrawerRef(null);
 
-  useDrawerEffect(() => { setDraft(member); setPhoto(null); }, [member, mode]);
+  useDrawerEffect(() => { setDraft(member); setPhoto(null); setEditing(mode === "edit"); }, [member, mode]);
   useDrawerEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     function onKey(e) { if (e.key === "Escape") onClose(); }
@@ -2927,6 +3282,7 @@ function MemberDrawer({ member, mode, flags, onClose, onSwitchToEdit, onSave }) 
   const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
   const canEdit = (field) => isEdit && flags[field];
   const anyEditable = ["name", "email", "title", "role", "status"].some((f) => flags[f]);
+  function cancelEdit() { setDraft(member); setPhoto(null); setEditing(false); }
 
   function pickPhoto(e) {
     const f = e.target.files && e.target.files[0];
@@ -2961,6 +3317,15 @@ function MemberDrawer({ member, mode, flags, onClose, onSwitchToEdit, onSave }) 
           <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>
             {isEdit ? "Edit member" : "Member profile"}
           </span>
+          {!isEdit && anyEditable && (
+            <button onClick={() => setEditing(true)} style={{ height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer",
+              background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
+              fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 700 }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              <KlsIcon name="pencil" size={15} color="currentColor" /> Edit
+            </button>
+          )}
           <button
             onClick={onClose} aria-label="Close"
             style={{ width: 32, height: 32, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
@@ -3039,14 +3404,11 @@ function MemberDrawer({ member, mode, flags, onClose, onSwitchToEdit, onSave }) 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
           {isEdit ? (
             <>
-              <button onClick={onClose} style={btnSecondary}>Cancel</button>
+              <button onClick={cancelEdit} style={btnSecondary}>Cancel</button>
               <button onClick={() => onSave(draft)} style={btnPrimary}>Save changes</button>
             </>
           ) : (
-            <>
-              <button onClick={onClose} style={btnSecondary}>Close</button>
-              {anyEditable && <button onClick={onSwitchToEdit} style={btnPrimary}>Edit member</button>}
-            </>
+            <button onClick={onClose} style={btnSecondary}>Close</button>
           )}
         </div>
       </div>
