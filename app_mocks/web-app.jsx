@@ -510,8 +510,6 @@ const CT_STATUS = {
   in_progress: { label: "In progress", bg: "var(--kls-info-container)",    fg: "var(--kls-info)",     bar: "var(--kls-info)" },
   overdue:     { label: "Overdue",     bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)", bar: "var(--kls-accent-4)" },
   completed:   { label: "Completed",   bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
-  passed:      { label: "Passed",      bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
-  failed:      { label: "Failed",      bg: "var(--kls-error-container)",   fg: "var(--kls-error)",    bar: "var(--kls-error)" },
 };
 
 const CT_TYPES = {
@@ -573,7 +571,7 @@ const CT_EXAM_TITLES = {
 // ── Generate assignment instances (deterministic) ────────────────────────────
 const CT_DUE_PAST = ["Sep 28", "Oct 02", "Oct 09"];
 const CT_DUE_FUTURE = ["Nov 14", "Nov 21", "Dec 03", "Dec 12"];
-const CT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "passed", "failed", "in_progress", "completed"];
+const CT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "in_progress", "completed", "not_started", "in_progress"];
 
 function ctBuildAssignments() {
   const out = [];
@@ -583,8 +581,6 @@ function ctBuildAssignments() {
     for (let k = 0; k < n; k++) {
       const type = ["task", "oral", "written"][(si + k) % 3];
       let status = CT_STATUS_CYCLE[(si * 2 + k) % CT_STATUS_CYCLE.length];
-      if (type === "task" && (status === "passed" || status === "failed")) status = "completed";
-      if (type !== "task" && status === "completed") status = "passed";
 
       let title, course, term;
       if (type === "task") {
@@ -601,7 +597,7 @@ function ctBuildAssignments() {
       }
 
       const due = status === "overdue" ? CT_DUE_PAST[(si + k) % CT_DUE_PAST.length] : CT_DUE_FUTURE[(si + k) % CT_DUE_FUTURE.length];
-      const score = status === "passed" ? 80 + ((si + k * 3) % 18) : status === "failed" ? 52 + ((si + k) % 14) : null;
+      const score = (status === "completed" && type !== "task") ? 55 + ((si + k * 7) % 42) : null;
 
       out.push({ id: "a" + (id++), studentId: s.id, type, title, course, term, due, status, score });
     }
@@ -639,9 +635,7 @@ function ctBuildAllocations() {
       const assigned = CT_ASSIGNED[(gi + k) % CT_ASSIGNED.length];
       const instances = members.map((m, mi) => {
         let status = CT_STATUS_CYCLE[(gi * 2 + k + mi) % CT_STATUS_CYCLE.length];
-        if (type === "task" && (status === "passed" || status === "failed")) status = "completed";
-        if (type !== "task" && status === "completed") status = "passed";
-        const score = status === "passed" ? 80 + ((mi + k * 3) % 18) : status === "failed" ? 52 + ((mi + k) % 14) : null;
+        const score = (status === "completed" && type !== "task") ? 55 + ((mi + k * 7) % 42) : null;
         return { studentId: m.id, status, score };
       });
       out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances,
@@ -656,13 +650,13 @@ function ctInitials(name) {
   const p = (name || "").trim().split(/\s+/);
   return ((p[0]?.[0] || "?") + (p[1]?.[0] || "")).toUpperCase();
 }
-const CT_DONE = ["completed", "passed"];
+const CT_DONE = ["completed"];
 function ctRollup(items) {
-  const by = { not_started: 0, in_progress: 0, overdue: 0, completed: 0, passed: 0, failed: 0 };
+  const by = { not_started: 0, in_progress: 0, overdue: 0, completed: 0 };
   items.forEach((a) => { by[a.status] = (by[a.status] || 0) + 1; });
   const total = items.length;
-  const done = by.completed + by.passed;
-  return { by, total, done, overdue: by.overdue, inProgress: by.in_progress, failed: by.failed };
+  const done = by.completed;
+  return { by, total, done, overdue: by.overdue, inProgress: by.in_progress };
 }
 
 // ── Shared bits ──────────────────────────────────────────────────────────────
@@ -694,7 +688,7 @@ function CTStatusPill({ status, size = "md" }) {
 
 // Stacked roll-up bar of an item set's statuses.
 function CTRollupBar({ items, height = 8 }) {
-  const order = ["overdue", "failed", "in_progress", "not_started", "completed", "passed"];
+  const order = ["overdue", "in_progress", "not_started", "completed"];
   const total = items.length || 1;
   const counts = {};
   items.forEach((a) => { counts[a.status] = (counts[a.status] || 0) + 1; });
@@ -1287,6 +1281,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
   const [studentDefined, setStudentDefined] = useCtldState(!!allocation.studentDefined);
   const [topic, setTopic] = useCtldState(allocation.topic || "");
   const [qCount, setQCount] = useCtldState(String(allocation.qCount || 20));
+  const [difficulty, setDifficulty] = useCtldState(allocation.difficulty || "Medium");
   const [selModules, setSelModules] = useCtldState(() => new Set(allocation.selModules || []));
   const [instructions, setInstructions] = useCtldState(allocation.instructions || "");
   const [assignees, setAssignees] = useCtldState(initialAssignees);
@@ -1318,6 +1313,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
     setStudentDefined(!!allocation.studentDefined);
     setTopic(allocation.topic || "");
     setQCount(String(allocation.qCount || 20));
+    setDifficulty(allocation.difficulty || "Medium");
     setSelModules(new Set(allocation.selModules || []));
     setInstructions(allocation.instructions || "");
     setAssignees(initialAssignees);
@@ -1336,7 +1332,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
       title: allocation.type === "task" ? (task || allocation.title) : allocation.title,
       course: allocation.type === "task" ? course : allocation.course,
       term: term || allocation.term,
-      studentDefined, topic, qCount, selModules: [...selModules], instructions, instances };
+      studentDefined, topic, qCount, difficulty, selModules: [...selModules], instructions, instances };
   }
 
   const stat = (label, value, tone) => (
@@ -1430,6 +1426,8 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
                     <CTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin the oral exam." checked={studentDefined} onChange={setStudentDefined} />
                   </div>
                   {!studentDefined && (<div><CTLabel>Topic</CTLabel><CTSelect value={topic} options={oralTopics} placeholder="Select a topic" onChange={setTopic} /></div>)}
+                  <div><CTLabel>Difficulty</CTLabel><CTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
+                  <CTStepper value={qCount} setValue={setQCount} />
                 </>
               ) : (
                 <>
@@ -1808,6 +1806,20 @@ function WrittenTopicPicker({ selModules, setSelModules, count, setCount }) {
   );
 }
 
+// Compact question-count stepper (oral exams; written uses the pool-aware stepper above).
+function CTStepper({ value, setValue, min = 1, max = 200 }) {
+  const n = Number(value) || 0;
+  const stepBtn = { width: 36, height: 32, display: "grid", placeItems: "center", border: "none", background: "transparent", borderRadius: 8, padding: 0, fontSize: 20, lineHeight: 1, cursor: "pointer", color: "var(--kls-on-surface-variant)" };
+  return (
+    <div style={{ display: "flex", alignItems: "center", background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+      <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Question count</span>
+      <button onClick={() => setValue(String(Math.max(min, n - 1)))} style={stepBtn}>−</button>
+      <div style={{ width: 40, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{n}</div>
+      <button onClick={() => setValue(String(Math.min(max, n + 1)))} style={stepBtn}>+</button>
+    </div>
+  );
+}
+
 function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
   const [shown, setShown] = useCtadState(false);
   const [type, setType] = useCtadState("task"); // task|oral|written
@@ -1818,6 +1830,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
   const [studentDefined, setStudentDefined] = useCtadState(false);
   const [topic, setTopic] = useCtadState("");
   const [qCount, setQCount] = useCtadState("20");
+  const [difficulty, setDifficulty] = useCtadState("Medium");
   const [timeLimit, setTimeLimit] = useCtadState("60");
   const [passScore, setPassScore] = useCtadState("70");
   const [instructions, setInstructions] = useCtadState("");
@@ -1862,6 +1875,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
       id: "n" + Date.now() + "_" + i, studentId: sid, type,
       title, course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || CT.TERMS[0]),
       due: dueLabel, status: "not_started", score: null,
+      ...(type === "oral" ? { difficulty, qCount: Number(qCount) } : {}),
     }));
     onAssign && onAssign(created);
   }
@@ -1941,6 +1955,8 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
                   <CTSelect value={topic} options={oralTopics} placeholder="Select a topic" onChange={setTopic} />
                 </div>
               )}
+              <div><CTLabel>Difficulty</CTLabel><CTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
+              <CTStepper value={qCount} setValue={setQCount} />
             </>
           ) : (
             <>

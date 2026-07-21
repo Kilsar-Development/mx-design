@@ -2115,8 +2115,6 @@ const MCT_STATUS = {
   in_progress: { label: "In progress", bg: "var(--kls-info-container)",    fg: "var(--kls-info)",     bar: "var(--kls-info)" },
   overdue:     { label: "Overdue",     bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)", bar: "var(--kls-accent-4)" },
   completed:   { label: "Completed",   bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
-  passed:      { label: "Passed",      bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
-  failed:      { label: "Failed",      bg: "var(--kls-error-container)",   fg: "var(--kls-error)",    bar: "var(--kls-error)" },
 };
 const MCT_TYPES = {
   task:    { label: "Task",         icon: "worklog",     long: "Task" },
@@ -2162,10 +2160,43 @@ const MCT_EXAM_TITLES = {
   written: ["FAA Regulations Written", "Turbine Theory Written", "Electrical Systems Written"],
 };
 const MCT_ORAL_TOPICS = ["Engine Run-Up", "Landing Gear Inspection", "Sheet Metal Repair", "Hydraulic Systems", "Electrical Troubleshooting"];
+
+// Question-pool taxonomy for the Written exam flow: Term → Course → ACS code (leaf). Mirrors web CT_POOL.
+const MCT_POOL = [
+  { id: "t-f24", name: "Fall 2024", courses: [
+    { id: "c-pp1", name: "Powerplant Systems", subject: "Powerplant", codes: [
+      { id: "pp1a", code: "PA.I.A",  desc: "Reciprocating engine theory & construction", count: 18 },
+      { id: "pp1b", code: "PA.I.B",  desc: "Valves & valve mechanisms", count: 22 },
+      { id: "pp3a", code: "PA.III.A", desc: "Magnetos & ignition timing", count: 26 },
+    ]},
+    { id: "c-af1", name: "Airframe Structures", subject: "Airframe", codes: [
+      { id: "af1a", code: "AM.II.A.K1", desc: "Sheet metal layout & forming", count: 34 },
+      { id: "af1b", code: "AM.II.A.K2", desc: "Riveting & fastener selection", count: 16 },
+    ]},
+    { id: "c-gen1", name: "General & Regulations", subject: "General", codes: [
+      { id: "g1k1",  code: "AM.I.A.K1",  desc: "Electron theory", count: 3 },
+      { id: "g1far", code: "GE.I.A",     desc: "FAR Part 43 — maintenance records", count: 12 },
+    ]},
+  ]},
+  { id: "t-s25", name: "Spring 2025", courses: [
+    { id: "c-pp2", name: "Turbine Theory", subject: "Powerplant", codes: [
+      { id: "pp2a", code: "PA.IV.A", desc: "Compressor stages & airflow", count: 20 },
+      { id: "pp2b", code: "PA.IV.B", desc: "EGT & engine instruments", count: 14 },
+    ]},
+    { id: "c-af2", name: "Airframe Systems", subject: "Airframe", codes: [
+      { id: "af2a", code: "AM.II.B.K1", desc: "Hydraulics & pneumatics", count: 28 },
+      { id: "af2b", code: "AM.II.B.K2", desc: "Landing gear systems", count: 24 },
+    ]},
+    { id: "c-gen2", name: "Physics & Math", subject: "General", codes: [
+      { id: "g2a", code: "GE.II.A", desc: "Mathematics for aviation", count: 16 },
+      { id: "g2b", code: "GE.II.B", desc: "Physics principles", count: 19 },
+    ]},
+  ]},
+];
 const MCT_DUE_PAST = ["Sep 28", "Oct 02", "Oct 09"];
 const MCT_DUE_FUTURE = ["Nov 14", "Nov 21", "Dec 03", "Dec 12"];
-const MCT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "passed", "failed", "in_progress", "completed"];
-const MCT_DONE = ["completed", "passed"];
+const MCT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "in_progress", "completed", "not_started", "in_progress"];
+const MCT_DONE = ["completed"];
 const MCT_ASSIGNED = ["Sep 10", "Sep 24", "Oct 05", "Oct 18"];
 
 function mctBuildAssignments() {
@@ -2176,8 +2207,6 @@ function mctBuildAssignments() {
     for (let k = 0; k < n; k++) {
       const type = ["task", "oral", "written"][(si + k) % 3];
       let status = MCT_STATUS_CYCLE[(si * 2 + k) % MCT_STATUS_CYCLE.length];
-      if (type === "task" && (status === "passed" || status === "failed")) status = "completed";
-      if (type !== "task" && status === "completed") status = "passed";
       let title, course, term;
       if (type === "task") {
         term = MCT_TERMS[(si + k) % MCT_TERMS.length];
@@ -2192,7 +2221,7 @@ function mctBuildAssignments() {
         title = pool[(si + k) % pool.length];
       }
       const due = status === "overdue" ? MCT_DUE_PAST[(si + k) % MCT_DUE_PAST.length] : MCT_DUE_FUTURE[(si + k) % MCT_DUE_FUTURE.length];
-      const score = status === "passed" ? 80 + ((si + k * 3) % 18) : status === "failed" ? 52 + ((si + k) % 14) : null;
+      const score = (status === "completed" && type !== "task") ? 55 + ((si + k * 7) % 42) : null;
       out.push({ id: "a" + (id++), studentId: s.id, type, title, course, term, due, status, score });
     }
   });
@@ -2230,9 +2259,7 @@ function mctBuildAllocations() {
       const assigned = MCT_ASSIGNED[(gi + k) % MCT_ASSIGNED.length];
       const instances = members.map((m, mi) => {
         let status = MCT_STATUS_CYCLE[(gi * 2 + k + mi) % MCT_STATUS_CYCLE.length];
-        if (type === "task" && (status === "passed" || status === "failed")) status = "completed";
-        if (type !== "task" && status === "completed") status = "passed";
-        const score = status === "passed" ? 80 + ((mi + k * 3) % 18) : status === "failed" ? 52 + ((mi + k) % 14) : null;
+        const score = (status === "completed" && type !== "task") ? 55 + ((mi + k * 7) % 42) : null;
         return { studentId: m.id, status, score };
       });
       out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances });
@@ -2245,10 +2272,10 @@ function mctStudentAlloc(a) {
   return { ...a, assigned: a.assigned || "—", instances: [{ studentId: a.studentId, status: a.status, score: a.score }] };
 }
 function mctRollup(items) {
-  const by = { not_started: 0, in_progress: 0, overdue: 0, completed: 0, passed: 0, failed: 0 };
+  const by = { not_started: 0, in_progress: 0, overdue: 0, completed: 0 };
   items.forEach((a) => { by[a.status] = (by[a.status] || 0) + 1; });
-  const done = by.completed + by.passed;
-  return { by, total: items.length, done, overdue: by.overdue, inProgress: by.in_progress, failed: by.failed };
+  const done = by.completed;
+  return { by, total: items.length, done, overdue: by.overdue, inProgress: by.in_progress };
 }
 const mctGroupMembers = (g) => g.memberIds.map((id) => MCT_STUDENTS.find((s) => s.id === id)).filter(Boolean);
 function mctUngrouped() {
@@ -2284,7 +2311,7 @@ function MCTStatusPill({ status }) {
   );
 }
 function MCTRollupBar({ items, height = 8 }) {
-  const order = ["overdue", "failed", "in_progress", "not_started", "completed", "passed"];
+  const order = ["overdue", "in_progress", "not_started", "completed"];
   const total = items.length || 1;
   const counts = {};
   items.forEach((a) => { counts[a.status] = (counts[a.status] || 0) + 1; });
@@ -2573,6 +2600,8 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
   const [studentDefined, setStudentDefined] = useTM(!!allocation.studentDefined);
   const [topic, setTopic] = useTM(allocation.topic || "");
   const [qCount, setQCount] = useTM(allocation.qCount || 20);
+  const [difficulty, setDifficulty] = useTM(allocation.difficulty || "Medium");
+  const [selModules, setSelModules] = useTM(() => new Set(allocation.selModules || []));
   const [assignees, setAssignees] = useTM(initialAssignees);
   const [pickerOpen, setPickerOpen] = useTM(false);
 
@@ -2583,7 +2612,7 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
     if (s.type === "group") { const g = roster.groups.find((x) => x.id === s.id); return g && { ...s, label: g.name, color: g.color }; }
     const p = roster.people.find((x) => x.id === s.id); return p && { ...s, label: p.name };
   }).filter(Boolean);
-  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : true);
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : (studentDefined || selModules.size > 0));
 
   const cancelEdit = () => {
     setDue(allocation.due);
@@ -2594,6 +2623,8 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
     setStudentDefined(!!allocation.studentDefined);
     setTopic(allocation.topic || "");
     setQCount(allocation.qCount || 20);
+    setDifficulty(allocation.difficulty || "Medium");
+    setSelModules(new Set(allocation.selModules || []));
     setAssignees(initialAssignees);
     setEditing(false);
   };
@@ -2610,7 +2641,7 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
       title: allocation.type === "task" ? (task || allocation.title) : allocation.title,
       course: allocation.type === "task" ? course : allocation.course,
       term: term || allocation.term,
-      studentDefined, topic, qCount, instructions, instances };
+      studentDefined, topic, qCount, difficulty, selModules: [...selModules], instructions, instances };
   };
 
   const sectionLabel = (t) => (
@@ -2685,20 +2716,15 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
                   <MCTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin." checked={studentDefined} onChange={setStudentDefined} />
                 </div>
                 {!studentDefined && <div><MCTLabel>Topic</MCTLabel><MCTSelect value={topic} options={MCT_ORAL_TOPICS} placeholder="Select a topic" onChange={setTopic} /></div>}
+            <div><MCTLabel>Difficulty</MCTLabel><MCTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
+            <MCTStepper value={qCount} setValue={setQCount} />
               </>
             ) : (
               <>
                 <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
                   <MCTToggleRow label="Let the student choose parameters" hint="Student sets topic, length, and scope." checked={studentDefined} onChange={setStudentDefined} />
                 </div>
-                {!studentDefined && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
-                    <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>Question count</span>
-                    <button onClick={() => setQCount((n) => Math.max(1, n - 1))} style={{ width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" }}>−</button>
-                    <span style={{ width: 36, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{qCount}</span>
-                    <button onClick={() => setQCount((n) => n + 1)} style={{ width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" }}>+</button>
-                  </div>
-                )}
+                {!studentDefined && <MCTWrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} />}
               </>
             )}
             {/* Instructions */}
@@ -2846,11 +2872,154 @@ function MCTTypeCard({ active, icon, label, accent, onClick }) {
     </button>
   );
 }
+// Checkbox with indeterminate state (used by the written topic picker).
+function MCTCheck({ checked, indeterminate, onClick }) {
+  const on = checked || indeterminate;
+  return (
+    <span onClick={(e) => { e.stopPropagation(); onClick && onClick(); }} style={{ width: 22, height: 22, borderRadius: "var(--kls-radius-xsmall)", flexShrink: 0, cursor: "pointer",
+      border: on ? "none" : "1.5px solid var(--kls-on-surface-variant)", background: on ? "var(--kls-primary)" : "transparent",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {indeterminate
+        ? <span style={{ width: 10, height: 2, borderRadius: 1, background: "var(--kls-on-primary)" }} />
+        : checked && <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-primary)", fill: "none", strokeWidth: 3 }}><path d="M5 12l5 5 9-10" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+    </span>
+  );
+}
+// Compact question-count stepper (oral exams).
+function MCTStepper({ value, setValue, min = 1, max = 200, label = "Question count" }) {
+  const n = Number(value) || 0;
+  const btn = { width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+      <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</span>
+      <button onClick={() => setValue(Math.max(min, n - 1))} style={btn}>−</button>
+      <span style={{ width: 36, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{n}</span>
+      <button onClick={() => setValue(Math.min(max, n + 1))} style={btn}>+</button>
+    </div>
+  );
+}
+// Study-mode question-pool picker (Term → Course → ACS code) for the Written exam flow. Mirrors web WrittenTopicPicker.
+function MCTWrittenTopicPicker({ selModules, setSelModules, count, setCount }) {
+  const [expanded, setExpanded] = useTM({});
+  const [subj, setSubj] = useTM("All");
+  const subjects = ["All", "Powerplant", "Airframe", "General"];
+  const allCodes = MCT_POOL.flatMap((t) => t.courses.flatMap((c) => c.codes));
+  const pool = allCodes.reduce((a, c) => a + (selModules.has(c.id) ? c.count : 0), 0);
+  const n = Number(count) || 0;
+  const drawing = Math.min(n, pool);
+  const toggleOne = (id) => setSelModules((prev) => { const set = new Set(prev); set.has(id) ? set.delete(id) : set.add(id); return set; });
+  const toggleSet = (ids) => setSelModules((prev) => { const set = new Set(prev); const all = ids.every((id) => set.has(id)); ids.forEach((id) => all ? set.delete(id) : set.add(id)); return set; });
+  const toggleExpand = (id) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
+  const qStyle = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0 };
+  const chev = (open, onClick) => (
+    <button onClick={(e) => { e.stopPropagation(); onClick(); }} aria-label="expand" style={{ width: 20, height: 20, border: "none", background: "transparent", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0, flexShrink: 0 }}>
+      <KlsIcon name={open ? "chevronDown" : "chevronRight"} size={16} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+  const cfgRow = (label, value) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 0" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+  return (
+    <>
+      <div>
+        <MCTLabel>Topics</MCTLabel>
+        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", flexWrap: "wrap", marginBottom: "var(--kls-space-small)" }}>
+          {subjects.map((sj) => {
+            const active = subj === sj;
+            return (
+              <button key={sj} onClick={() => setSubj(sj)} style={{ height: 32, padding: "0 var(--kls-space-small)", borderRadius: "var(--kls-radius-pill)", cursor: "pointer",
+                fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600,
+                background: active ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+                border: "1px solid " + (active ? "var(--kls-primary)" : "var(--kls-outline-variant)"),
+                color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)" }}>{sj}</button>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          {MCT_POOL.map((t) => {
+            const courses = subj === "All" ? t.courses : t.courses.filter((c) => c.subject === subj);
+            if (!courses.length) return null;
+            const tCodes = courses.flatMap((c) => c.codes);
+            const tIds = tCodes.map((c) => c.id);
+            const tAll = tIds.every((id) => selModules.has(id));
+            const tSome = tIds.some((id) => selModules.has(id));
+            const tTotal = tCodes.reduce((a, c) => a + c.count, 0);
+            const tOpen = !!expanded[t.id];
+            return (
+              <div key={t.id} style={{ borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", background: "var(--kls-surface-variant)" }}>
+                  {chev(tOpen, () => toggleExpand(t.id))}
+                  <MCTCheck checked={tAll} indeterminate={tSome && !tAll} onClick={() => toggleSet(tIds)} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontWeight: 600, fontSize: 14, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>{t.name}</span>
+                  </div>
+                  <span style={qStyle}>{tTotal} Q</span>
+                </div>
+                {tOpen && courses.map((c) => {
+                  const cIds = c.codes.map((x) => x.id);
+                  const cAll = cIds.every((id) => selModules.has(id));
+                  const cSome = cIds.some((id) => selModules.has(id));
+                  const cTotal = c.codes.reduce((a, x) => a + x.count, 0);
+                  const cOpen = !!expanded[c.id];
+                  return (
+                    <React.Fragment key={c.id}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-large)", borderTop: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)" }}>
+                        {chev(cOpen, () => toggleExpand(c.id))}
+                        <MCTCheck checked={cAll} indeterminate={cSome && !cAll} onClick={() => toggleSet(cIds)} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontFamily: "var(--kls-font-sans)", fontWeight: 600, fontSize: 14, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>{c.name}</span>
+                        </div>
+                        <span style={qStyle}>{cTotal} Q</span>
+                      </div>
+                      {cOpen && c.codes.map((x) => {
+                        const sel = selModules.has(x.id);
+                        return (
+                          <div key={x.id} onClick={() => toggleOne(x.id)} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+                            padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) calc(var(--kls-space-large) + var(--kls-space-med))",
+                            cursor: "pointer", borderTop: "1px solid var(--kls-outline-variant)",
+                            background: sel ? "color-mix(in srgb, var(--kls-info) 8%, transparent)" : "transparent" }}>
+                            <MCTCheck checked={sel} onClick={() => toggleOne(x.id)} />
+                            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: 8 }}>
+                              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", flexShrink: 0 }}>{x.code}</span>
+                              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{x.desc}</span>
+                            </div>
+                            <span style={qStyle}>{x.count} Q</span>
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Question count</span>
+            {pool > 0 && <button onClick={() => setCount(pool)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--kls-info)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>(All)</button>}
+          </div>
+          <button onClick={() => setCount(Math.max(1, n - 1))} style={{ width: 36, height: 32, border: "none", background: "transparent", borderRadius: "var(--kls-radius-small)", fontSize: 20, lineHeight: 1, cursor: "pointer", color: "var(--kls-on-surface-variant)" }}>−</button>
+          <div style={{ width: 40, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{n}</div>
+          <button onClick={() => { if (n < pool) setCount(n + 1); }} style={{ width: 36, height: 32, border: "none", background: "transparent", borderRadius: "var(--kls-radius-small)", fontSize: 20, lineHeight: 1, color: n >= pool ? "var(--kls-outline-variant)" : "var(--kls-on-surface-variant)", cursor: n >= pool ? "default" : "pointer" }}>+</button>
+        </div>
+        {cfgRow("Pool", pool + " question" + (pool === 1 ? "" : "s"))}
+        {cfgRow("Drawing", drawing + " question" + (drawing === 1 ? "" : "s"))}
+      </div>
+    </>
+  );
+}
 // Assignee picker — people + groups, multi-select. Mirrors the web Teammate Picker.
 // Teammate picker — opens as its own bottom sheet from the Assign sheet. People + groups, multi-select.
 function MCTAssigneePickerSheet({ roster, selected, onToggle, onClose }) {
   const [q, setQ] = useTM("");
   const term = q.trim().toLowerCase();
+  const [tab, setTab] = useTM("people");
   const has = (type, id) => selected.some((s) => s.type === type && s.id === id);
   const groups = roster.groups.filter((g) => !term || g.name.toLowerCase().includes(term));
   const people = roster.people.filter((p) => !term || p.name.toLowerCase().includes(term) || p.email.toLowerCase().includes(term));
@@ -2892,15 +3061,34 @@ function MCTAssigneePickerSheet({ roster, selected, onToggle, onClose }) {
             style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
         </div>
       </div>
+      {/* People / Groups tabs */}
+      <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) 0", flex: "none" }}>
+        <div style={{ display: "flex", gap: 4, height: 40, padding: 2, boxSizing: "border-box", borderRadius: "var(--kls-radius-small)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+          {[["people", "People"], ["groups", "Groups"]].map(([k, lbl]) => {
+            const active = tab === k;
+            return (
+              <button key={k} onClick={() => setTab(k)} style={{ flex: 1, height: 36, border: "none", borderRadius: "var(--kls-radius-small)", cursor: "pointer",
+                fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+                background: active ? "var(--kls-surface)" : "transparent",
+                color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
+                boxShadow: active ? "0 1px 2px rgba(0,0,0,.04)" : "none" }}>{lbl}</button>
+            );
+          })}
+        </div>
+      </div>
       {/* List */}
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-xsmall) var(--kls-space-med)" }}>
-        {empty && <div style={{ padding: "var(--kls-space-large) var(--kls-space-small)", textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No matches.</div>}
-        {groups.length > 0 && sectionLabel("Groups")}
-        {groups.map((g) => row("g" + g.id, has("group", g.id), () => onToggle({ type: "group", id: g.id }),
-          <MCTMedallion color={g.color} icon={g.icon} size={32} />, g.name, g.count + " student" + (g.count === 1 ? "" : "s")))}
-        {people.length > 0 && sectionLabel("Students")}
-        {people.map((p) => row("p" + p.id, has("person", p.id), () => onToggle({ type: "person", id: p.id }),
-          <MCTAvatar name={p.name} size={32} />, p.name, p.email))}
+        {tab === "groups" ? (
+          groups.length === 0
+            ? <div style={{ padding: "var(--kls-space-large) var(--kls-space-small)", textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No groups match.</div>
+            : groups.map((g) => row("g" + g.id, has("group", g.id), () => onToggle({ type: "group", id: g.id }),
+                <MCTMedallion color={g.color} icon={g.icon} size={32} />, g.name, g.count + " student" + (g.count === 1 ? "" : "s")))
+        ) : (
+          people.length === 0
+            ? <div style={{ padding: "var(--kls-space-large) var(--kls-space-small)", textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No students match.</div>
+            : people.map((p) => row("p" + p.id, has("person", p.id), () => onToggle({ type: "person", id: p.id }),
+                <MCTAvatar name={p.name} size={32} />, p.name, p.email))
+        )}
       </div>
       {/* Footer */}
       <div style={{ padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
@@ -2917,6 +3105,9 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
   const [studentDefined, setStudentDefined] = useTM(false);
   const [topic, setTopic] = useTM("");
   const [qCount, setQCount] = useTM(20);
+  const [difficulty, setDifficulty] = useTM("Medium");
+  const [selModules, setSelModules] = useTM(() => new Set());
+  const [instructions, setInstructions] = useTM("");
   const [assignees, setAssignees] = useTM(presetAssignees || []);
   const [due, setDue] = useTM("");
   const [pickerOpen, setPickerOpen] = useTM(false);
@@ -2929,7 +3120,7 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
     if (s.type === "group") { const g = roster.groups.find((x) => x.id === s.id); return g && { ...s, label: g.name, color: g.color }; }
     const p = roster.people.find((x) => x.id === s.id); return p && { ...s, label: p.name };
   }).filter(Boolean);
-  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : true);
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (studentDefined || selModules.size > 0));
 
   function buildAndAssign() {
     if (!valid) return;
@@ -2943,7 +3134,8 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
     const created = studentIds.map((sid, i) => ({
       id: "n" + Date.now() + "_" + i, studentId: sid, type, title,
       course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || MCT_TERMS[0]),
-      due: dueLabel, status: "not_started", score: null,
+      due: dueLabel, status: "not_started", score: null, instructions,
+      ...(type === "oral" ? { difficulty, qCount } : type === "written" ? { selModules: [...selModules], qCount } : {}),
     }));
     onAssign(created, title);
   }
@@ -2983,20 +3175,15 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
               <MCTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin." checked={studentDefined} onChange={setStudentDefined} />
             </div>
             {!studentDefined && <div><MCTLabel>Topic</MCTLabel><MCTSelect value={topic} options={MCT_ORAL_TOPICS} placeholder="Select a topic" onChange={setTopic} /></div>}
+            <div><MCTLabel>Difficulty</MCTLabel><MCTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
+            <MCTStepper value={qCount} setValue={setQCount} />
           </>
         ) : (
           <>
             <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", marginTop: "calc(-1 * var(--kls-space-small))" }}>
               <MCTToggleRow label="Let the student choose parameters" hint="Student sets topic, length, and scope." checked={studentDefined} onChange={setStudentDefined} />
             </div>
-            {!studentDefined && (
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
-                <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>Question count</span>
-                <button onClick={() => setQCount((n) => Math.max(1, n - 1))} style={{ width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" }}>−</button>
-                <span style={{ width: 36, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{qCount}</span>
-                <button onClick={() => setQCount((n) => n + 1)} style={{ width: 36, height: 32, borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer", fontSize: 20, lineHeight: 1, color: "var(--kls-on-surface-variant)" }}>+</button>
-              </div>
-            )}
+            {!studentDefined && <MCTWrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} />}
           </>
         )}
         {/* Assignees */}
@@ -3021,6 +3208,8 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
             <KlsIcon name="group" size={16} color="var(--kls-on-surface)" />{chips.length ? "Edit selection" : "Choose students / groups"}
           </button>
         </div>
+        {/* Instructions */}
+        <div><MCTLabel>Instructions (optional)</MCTLabel><textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3} placeholder="What should students focus on or prepare?" style={{ ...mctInput, height: "auto", padding: "var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} /></div>
         {/* Due + options */}
         <div><MCTLabel>Due date (optional)</MCTLabel><input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={mctInput} /></div>
       </div>
