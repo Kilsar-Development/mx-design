@@ -23,7 +23,7 @@
 </helmet>
 <x-import component-from-global-scope="WebApp" from="./web-app.jsx?v=2" dc-props="{{ tweaks }}" hint-size="100%,100%"></x-import>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;groupsSurface&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tabs&quot;,&quot;underline&quot;,&quot;stacked&quot;],&quot;default&quot;:&quot;tabs&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showKpis&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;examRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;student&quot;,&quot;instructor&quot;],&quot;default&quot;:&quot;instructor&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;groupsSurface&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tabs&quot;,&quot;underline&quot;,&quot;stacked&quot;],&quot;default&quot;:&quot;tabs&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showKpis&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;examRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;student&quot;,&quot;instructor&quot;],&quot;default&quot;:&quot;instructor&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;ctRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;instructor&quot;,&quot;student&quot;],&quot;default&quot;:&quot;instructor&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Control Tower&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   applyTheme() {
     document.documentElement.setAttribute("data-theme", this.props.theme || "dark");
@@ -32,7 +32,7 @@ class Component extends DCLogic {
   componentDidUpdate() { this.applyTheme(); }
   renderVals() {
     const p = this.props;
-    return { tweaks: { groupsSurface: p.groupsSurface, showKpis: p.showKpis, examRole: p.examRole } };
+    return { tweaks: { groupsSurface: p.groupsSurface, showKpis: p.showKpis, examRole: p.examRole, ctRole: p.ctRole } };
   }
 }
 </script>

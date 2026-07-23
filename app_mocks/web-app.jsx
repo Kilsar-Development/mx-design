@@ -513,9 +513,9 @@ const CT_STATUS = {
 };
 
 const CT_TYPES = {
-  task:    { label: "Task",         short: "Task",    icon: "worklog",     passFail: false },
-  oral:    { label: "Oral exam",    short: "Oral",    icon: "chatBubbles", passFail: true },
-  written: { label: "Written exam", short: "Written", icon: "checkpoint",  passFail: true },
+  task:    { label: "Task",         short: "Task",    icon: "worklog",     passFail: false, dot: "var(--kls-color-purple-400)" },
+  oral:    { label: "Oral exam",    short: "Oral",    icon: "chatBubbles", passFail: true,  dot: "var(--kls-color-teal-200)" },
+  written: { label: "Written exam", short: "Written", icon: "checkpoint",  passFail: true,  dot: "var(--kls-color-red-100)" },
 };
 
 // ── Roster ──────────────────────────────────────────────────────────────────
@@ -740,17 +740,32 @@ const CT_TH = { textAlign: "left", padding: "var(--kls-space-small) var(--kls-sp
   borderBottom: "1px solid var(--kls-outline-variant)", whiteSpace: "nowrap" };
 const CT_TD = { paddingTop: "var(--kls-space-small)", paddingRight: "var(--kls-space-med)", paddingBottom: "var(--kls-space-small)", paddingLeft: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface)", verticalAlign: "middle" };
 
-function StatCard({ label, value, tone, icon }) {
+function StatCard({ label, value, tone, icon, valueSize = 30, onGo, goTitle }) {
+  const [hover, setHover] = useState(false);
   return (
     <div style={{ flex: 1, minWidth: 0, background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)",
       borderRadius: 12, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{label}</span>
-        <span style={{ width: 28, height: 28, borderRadius: 8, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ width: 28, height: 28, borderRadius: 8, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
           <KlsIcon name={icon} size={14} color="var(--kls-on-surface-variant)" />
         </span>
       </div>
-      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 30, fontWeight: 700, lineHeight: 1, color: tone || "var(--kls-on-surface)" }}>{value}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: valueSize, fontWeight: 700, lineHeight: valueSize >= 24 ? 1 : 1.25, color: tone || "var(--kls-on-surface)",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: valueSize >= 24 ? "nowrap" : "normal",
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{value}</span>
+        {onGo && (
+          <button onClick={onGo} title={goTitle || "Go"} aria-label={goTitle || "Go"}
+            onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+            style={{ flex: "none", width: 28, height: 28, borderRadius: 999, cursor: "pointer",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              background: hover ? "var(--kls-primary)" : "var(--kls-tertiary-container)",
+              border: "1px solid var(--kls-outline-variant)", transition: "background 125ms var(--kls-ease-standard)" }}>
+            <KlsIcon name="chevronRight" size={16} color={hover ? "var(--kls-on-primary)" : "var(--kls-on-surface-variant)"} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1226,6 +1241,382 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
           {toast}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Student Control Tower ─────────────────────────────────────────────────────
+// The same Control Tower, seen by a student: their OWN past/current assignments.
+// Merges individual assignments + the work allocated to their group (their instance).
+// Past = completed; Current = everything not completed. Read-only detail drawer
+// carries the action button. `layout` (sections | list | cards) explores treatments.
+const CT_MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+function ctParseDue(s) {
+  if (!s) return null;
+  const parts = String(s).split(" ");
+  const m = CT_MONTHS[parts[0]];
+  if (m == null) return null;
+  return new Date(2024, m, parseInt(parts[1], 10) || 1);
+}
+const CT_TODAY = new Date(2024, 10, 18); // Nov 18, 2024 — "today" for the demo
+function ctActionLabel(status, type) {
+  if (status === "completed") return type === "task" ? "View submission" : "View result";
+  if (status === "not_started") return "Start";
+  if (status === "overdue") return "Start now";
+  return "Continue"; // in_progress
+}
+function ctDueRelative(item) {
+  const d = ctParseDue(item.due);
+  if (!d) return item.due;
+  const days = Math.round((d - CT_TODAY) / 86400000);
+  if (item.status === "completed") return `Due ${item.due}`;
+  if (days < 0) return `${-days}d overdue`;
+  if (days === 0) return "Due today";
+  if (days === 1) return "Due tomorrow";
+  if (days <= 7) return `Due in ${days}d`;
+  return `Due ${item.due}`;
+}
+
+function StudentTypeGlyph({ type, size = 40 }) {
+  const T = window.CT.TYPES[type];
+  return (
+    <span style={{ flexShrink: 0, width: size, height: size, borderRadius: 12, background: "var(--kls-tertiary)",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      <KlsIcon name={T.icon} size={Math.round(size * 0.45)} color="var(--kls-on-surface-variant)" />
+    </span>
+  );
+}
+
+function StudentAssignRow({ item, onOpen }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const T = CT.TYPES[item.type];
+  const via = item.source === "group" ? item.groupName : "Assigned to you";
+  const meta = `${T.label} · ${item.type === "task" ? item.course : item.term} · ${via}`;
+  const overdue = item.status === "overdue";
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)",
+        cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <StudentTypeGlyph type={item.type} size={40} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</div>
+      </div>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+        color: overdue ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)" }}>{ctDueRelative(item)}</span>
+      <CT.StatusPill status={item.status} />
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </div>
+  );
+}
+
+function StudentAssignCard({ item, onOpen }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const T = CT.TYPES[item.type];
+  const via = item.source === "group" ? item.groupName : "Assigned to you";
+  const overdue = item.status === "overdue";
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", cursor: "pointer",
+        background: "var(--kls-surface)", border: `1px solid ${hover ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"}`,
+        borderRadius: 12, transition: "border-color 80ms var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)" }}>
+        <StudentTypeGlyph type={item.type} size={40} />
+        <CT.StatusPill status={item.status} />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{item.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 2 }}>{T.label} · {item.type === "task" ? item.course : item.term}</div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)",
+        paddingTop: "var(--kls-space-small)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{via}</span>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+          color: overdue ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)" }}>{ctDueRelative(item)}</span>
+      </div>
+    </div>
+  );
+}
+
+function StudentSortButton({ dir, onToggle }) {
+  const [hover, setHover] = useCtState(false);
+  return (
+    <button onClick={onToggle} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", height: 36, padding: "0 var(--kls-space-small)", borderRadius: 999, cursor: "pointer",
+        background: hover ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+        color: "var(--kls-on-tertiary)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+      <KlsIcon name="date" size={16} color="var(--kls-on-surface-variant)" />
+      Due date
+      <span style={{ fontSize: 13, color: "var(--kls-on-surface-variant)" }}>{dir === "asc" ? "↑" : "↓"}</span>
+    </button>
+  );
+}
+
+function StudentAssignTableRow({ item, onOpen }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const T = CT.TYPES[item.type];
+  const via = item.source === "group" ? item.groupName : "Assigned to you";
+  const sub = `${item.type === "task" ? item.course : item.term} · ${via}`;
+  const overdue = item.status === "overdue";
+  const rowTd = { ...CT_TD, borderBottom: "1px solid var(--kls-outline-variant)" };
+  return (
+    <tr onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <td style={rowTd}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+          <StudentTypeGlyph type={item.type} size={40} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>
+          </div>
+        </div>
+      </td>
+      <td style={rowTd}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 var(--kls-space-xsmall)", borderRadius: 8,
+          background: "var(--kls-tertiary)", color: "var(--kls-on-surface-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: T.dot, flex: "none" }}></span>
+          {T.label}
+        </span>
+      </td>
+      <td style={{ ...rowTd, textAlign: "right", whiteSpace: "nowrap" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: overdue ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)" }}>{ctDueRelative(item)}</span>
+          <CT.StatusPill status={item.status} />
+          <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function StudentControlTower({ query = "", onNavigate }) {
+  const CT = window.CT;
+  const ME = CT.STUDENTS[0]; // Joel Bishop — the signed-in student
+  const [status, setStatus] = useCtState("all"); // all|todo|overdue|completed
+  const [typeFilter, setTypeFilter] = useCtState("all"); // all|task|oral|written
+  const [sortDir, setSortDir] = useCtState("asc");
+  const [openId, setOpenId] = useCtState(null);
+
+  const items = useCtMemo(() => {
+    const out = [];
+    CT.buildAssignments().forEach((a) => { if (a.studentId === ME.id) out.push({ ...a, source: "individual" }); });
+    CT.buildAllocations().forEach((al) => {
+      const inst = al.instances.find((i) => i.studentId === ME.id);
+      if (!inst) return;
+      const g = CT.GROUPS.find((x) => x.id === al.groupId);
+      out.push({ id: al.id + "@" + ME.id, type: al.type, title: al.title, course: al.course, term: al.term,
+        due: al.due, status: inst.status, score: inst.score, instructions: al.instructions,
+        source: "group", groupName: g ? g.name : "Group" });
+    });
+    return out;
+  }, []);
+
+  const counts = useCtMemo(() => {
+    const c = { todo: 0, overdue: 0, completed: 0, inProgress: 0, dueThisWeek: 0 };
+    items.forEach((i) => {
+      if (i.status === "completed") c.completed++;
+      else if (i.status === "overdue") c.overdue++;
+      else { c.todo++; if (i.status === "in_progress") c.inProgress++; }
+      if (i.status !== "completed") {
+        const d = ctParseDue(i.due);
+        if (d) { const days = Math.round((d - CT_TODAY) / 86400000); if (days >= 0 && days <= 7) c.dueThisWeek++; }
+      }
+    });
+    return c;
+  }, [items]);
+
+  const term = query.trim().toLowerCase();
+  const filtered = useCtMemo(() => {
+    const f = items.filter((i) => {
+      if (status === "todo" && !(i.status === "not_started" || i.status === "in_progress")) return false;
+      if (status === "overdue" && i.status !== "overdue") return false;
+      if (status === "completed" && i.status !== "completed") return false;
+      if (typeFilter !== "all" && i.type !== typeFilter) return false;
+      if (term && !i.title.toLowerCase().includes(term)) return false;
+      return true;
+    });
+    f.sort((a, b) => {
+      const da = ctParseDue(a.due), db = ctParseDue(b.due);
+      const va = da ? da.getTime() : Infinity, vb = db ? db.getTime() : Infinity;
+      return sortDir === "asc" ? va - vb : vb - va;
+    });
+    return f;
+  }, [items, status, typeFilter, term, sortDir]);
+
+  const openItem = openId ? items.find((i) => i.id === openId) : null;
+
+  // Current task: the task the student is actively working on (in-progress),
+  // else the soonest-due open task. Active block: the term it belongs to.
+  const currentTaskItem = useCtMemo(() => {
+    const open = items.filter((i) => i.type === "task" && i.status !== "completed");
+    const inProg = open.find((i) => i.status === "in_progress");
+    if (inProg) return inProg;
+    const byDue = [...open].sort((a, b) => {
+      const da = ctParseDue(a.due), db = ctParseDue(b.due);
+      return (da ? da.getTime() : Infinity) - (db ? db.getTime() : Infinity);
+    });
+    return byDue[0] || null;
+  }, [items]);
+  const pending = items.filter((i) => i.status !== "completed").length;
+  const examsCompleted = items.filter((i) => i.status === "completed" && i.type !== "task").length;
+
+  const kpis = [
+    { label: "Pending Assignments", value: pending, tone: pending ? "var(--kls-accent-4)" : null, icon: "worklog" },
+    { label: "Current Task", value: currentTaskItem ? currentTaskItem.title : "—", valueSize: 15, icon: "checkpoint",
+      onGo: () => onNavigate && onNavigate("terms"), goTitle: "Go to Courses" },
+    { label: "Active Block", value: currentTaskItem ? currentTaskItem.term : CT.TERMS[0], valueSize: 15, icon: "date",
+      onGo: () => onNavigate && onNavigate("terms"), goTitle: "Go to Courses" },
+    { label: "Total Exams Completed", value: examsCompleted, tone: "var(--kls-info)", icon: "checkpoint" },
+  ];
+
+  const emptyBlock = (
+    <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+      <div style={{ fontSize: 14, color: "var(--kls-on-surface-variant)", marginTop: 4 }}>Try a different filter.</div>
+    </div>
+  );
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        {/* Page header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Control Tower</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Everything assigned to you — what's due and what you're working on.</p>
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div style={{ display: "flex", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+          {kpis.map((k) => <StatCard key={k.label} label={k.label} value={k.value} tone={k.tone} icon={k.icon} valueSize={k.valueSize} onGo={k.onGo} goTitle={k.goTitle} />)}
+        </div>
+
+        {/* Assignments table (instructor look & feel) */}
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {/* Filters */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+              <CTFilterChip active={status === "all"} label="All" onClick={() => setStatus("all")} />
+              <CTFilterChip active={status === "todo"} label="To do" count={counts.todo} onClick={() => setStatus("todo")} />
+              <CTFilterChip active={status === "overdue"} label="Overdue" count={counts.overdue} onClick={() => setStatus("overdue")} />
+              <CTFilterChip active={status === "completed"} label="Completed" count={counts.completed} onClick={() => setStatus("completed")} />
+            </div>
+          </div>
+          {/* Table */}
+          {filtered.length === 0 ? emptyBlock : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={CT_TH}>Assignment</th>
+                  <th style={CT_TH}>Type</th>
+                  <th style={{ ...CT_TH, textAlign: "right", cursor: "pointer", userSelect: "none" }} onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}>
+                    Due date
+                    <span style={{ marginLeft: 6, display: "inline-block", transform: sortDir === "desc" ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>▲</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((i) => <StudentAssignTableRow key={i.id} item={i} onOpen={() => setOpenId(i.id)} />)}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {openItem && <StudentAssignmentDrawer item={openItem} onClose={() => setOpenId(null)} />}
+    </div>
+  );
+}
+
+function StudentAssignmentDrawer({ item, onClose }) {
+  const CT = window.CT;
+  const T = CT.TYPES[item.type];
+  const [shown, setShown] = useCtState(false);
+  React.useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose && onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  const drawerWidth = "min(460px, calc(100vw - 24px))";
+  const via = item.source === "group" ? item.groupName : "Assigned directly to you";
+  const showScore = item.status === "completed" && item.type !== "task" && item.score != null;
+
+  const label = (t) => (
+    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-tiny)" }}>{t}</div>
+  );
+  const infoRow = (l, value) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) 0", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{l}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", textAlign: "right" }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: drawerWidth,
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))", transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <StudentTypeGlyph type={item.type} size={44} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{T.label}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{item.title}</div>
+          </div>
+          <button onClick={onClose} aria-label="Close"
+            style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div>
+            {label("Status")}
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+              <CT.StatusPill status={item.status} />
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600,
+                color: item.status === "overdue" ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)" }}>{ctDueRelative(item)}</span>
+            </div>
+          </div>
+          <div>
+            {label("Details")}
+            {infoRow("Type", T.label)}
+            {item.type === "task" ? infoRow("Course", item.course) : infoRow("Term", item.term)}
+            {infoRow("Assigned via", via)}
+            {infoRow("Due date", item.due)}
+            {showScore && infoRow("Result", `${item.score}%`)}
+          </div>
+          <div>
+            {label("Instructions")}
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>
+              {item.instructions || "No instructions were provided for this assignment."}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer action */}
+        <div style={{ padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          <button style={{ ...ctPrimaryBtn, width: "100%", justifyContent: "center" }}>
+            {ctActionLabel(item.status, item.type)}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1911,7 +2302,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
           {/* Type */}
           <div>
             <CTLabel>Type</CTLabel>
@@ -3877,6 +4268,8 @@ function WebApp(props) {
   const groupsSurface = props.groupsSurface || "tabs";
   const showKpis = props.showKpis !== false;
   const examRole = props.examRole || "instructor";
+  const ctRole = props.ctRole || "instructor";
+  const studentLayout = props.studentLayout || "sections";
   const [active, setActive] = useState("controlTower");
   const [query, setQuery] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
@@ -3888,7 +4281,9 @@ function WebApp(props) {
     setActive(key);
   };
   let content;
-  if (active === "controlTower") content = <ControlTower showKpis={showKpis} initialQuick="all" query={query} />;
+  if (active === "controlTower") content = ctRole === "student"
+    ? <StudentControlTower layout={studentLayout} query={query} onNavigate={onSelect} />
+    : <ControlTower showKpis={showKpis} initialQuick="all" query={query} />;
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
   else if (active === "writtenExams") content = <WrittenExams role={examRole} />;
   else content = <WebPlaceholder tabKey={active} />;
@@ -3896,7 +4291,7 @@ function WebApp(props) {
     <div style={{ height: "100vh", display: "flex", background: "var(--kls-scaffold-bg)", overflow: "hidden" }}>
       <NavSidebar active={active} workspaceName="EduDev" version="2.16.5" flavor="education" onSelect={onSelect} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <Header unread={47} onSearch={setQuery} onAvatar={() => setProfileOpen(true)} searchPlaceholder={active === "controlTower" ? "Search students" : "Search"} />
+        <Header unread={47} onSearch={setQuery} onAvatar={() => setProfileOpen(true)} searchPlaceholder={active === "controlTower" ? (ctRole === "student" ? "Search assignments" : "Search students") : "Search"} />
         {content}
       </div>
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} onHelp={() => { setProfileOpen(false); setHelpOpen(true); }} />

@@ -191,6 +191,16 @@
   --kls-color-purple-600:  #4C1D95;
   --kls-color-purple-700:  #2E1065;
 
+  /* ---- Primitives — teal (added 2026-07; see DS-UPDATES #4) ---- */
+  --kls-color-teal-50:   #F0FDFA;
+  --kls-color-teal-100:  #99F6E4;
+  --kls-color-teal-200:  #2DD4BF;
+  --kls-color-teal-300:  #14B8A6;
+  --kls-color-teal-400:  #0D9488;
+  --kls-color-teal-500:  #0F766E;
+  --kls-color-teal-600:  #115E59;
+  --kls-color-teal-700:  #134E4A;
+
   /* ---- Primitives — transparent (black @ alpha) ---- */
   --kls-color-transparent-20: rgba(0,0,0,0.20);
   --kls-color-transparent-40: rgba(0,0,0,0.40);
