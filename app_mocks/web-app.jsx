@@ -1277,6 +1277,35 @@ function ctDueRelative(item) {
   return `Due ${item.due}`;
 }
 
+// Deterministic mock step progress for a task — stepped bar ("X of Y Done").
+function ctTaskSteps(item) {
+  let h = 0; const s = String(item.id);
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  const total = 4 + (h % 5); // 4..8 steps
+  let done;
+  if (item.status === "completed") done = total;
+  else if (item.status === "not_started") done = 0;
+  else done = 1 + (h % (total - 1)); // 1..total-1
+  return { done, total };
+}
+
+function StudentStepBar({ done, total, color }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} style={{ flex: 1, height: 6, borderRadius: 999, background: i < done ? color : "var(--kls-outline-variant)" }} />
+      ))}
+    </div>
+  );
+}
+
+// Mock active blocks (ACS-coded) for the student dashboard.
+const CT_STUDENT_BLOCKS = [
+  { id: "b1", title: "124498.3938", codes: ["AM.I.A.K10"],              tasks: 8, modules: 1, students: 1 },
+  { id: "b2", title: "124512.4471", codes: ["AM.I.B.K3", "AM.I.B.K4"],  tasks: 5, modules: 2, students: 1 },
+  { id: "b3", title: "124533.1180", codes: ["PP.II.C.K7"],              tasks: 3, modules: 1, students: 1 },
+];
+
 function StudentTypeGlyph({ type, size = 40 }) {
   const T = window.CT.TYPES[type];
   return (
@@ -1393,6 +1422,70 @@ function StudentAssignTableRow({ item, onOpen }) {
   );
 }
 
+function StudentDashPanel({ title, count, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{title}</span>
+        <span style={{ minWidth: 22, height: 22, padding: "0 var(--kls-space-xsmall)", boxSizing: "border-box", borderRadius: 999, background: "var(--kls-tertiary)", color: "var(--kls-on-surface-variant)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column" }}>{children}</div>
+    </div>
+  );
+}
+
+function StudentDashEmpty({ icon, line, sub }) {
+  return (
+    <div style={{ padding: "var(--kls-space-large) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-tiny)" }}>
+      <span style={{ width: 44, height: 44, borderRadius: 12, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-tiny)" }}>
+        <KlsIcon name={icon} size={20} color="var(--kls-on-surface-variant)" />
+      </span>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{line}</div>
+      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", textWrap: "pretty", maxWidth: "34ch" }}>{sub}</div>
+    </div>
+  );
+}
+
+function StudentTaskRow({ item, onOpen, last }) {
+  const [hover, setHover] = useCtState(false);
+  const { done, total } = ctTaskSteps(item);
+  const color = item.status === "overdue" ? "var(--kls-accent-4)" : "var(--kls-info)";
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 68, boxSizing: "border-box", padding: "var(--kls-space-small) var(--kls-space-med)", cursor: "pointer",
+        borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <StudentTypeGlyph type={item.type} size={36} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-tiny)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}><StudentStepBar done={done} total={total} color={color} /></div>
+          <span style={{ flex: "none", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: color, whiteSpace: "nowrap" }}>{done} of {total} Done</span>
+        </div>
+      </div>
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </div>
+  );
+}
+
+function StudentBlockRow({ block, onOpen, last }) {
+  const [hover, setHover] = useCtState(false);
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 68, boxSizing: "border-box", padding: "var(--kls-space-small) var(--kls-space-med)", cursor: "pointer",
+        borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <span style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 12, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name="date" size={17} color="var(--kls-on-surface-variant)" />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{block.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{block.codes.join(" · ")}</div>
+      </div>
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </div>
+  );
+}
+
 function StudentControlTower({ query = "", onNavigate }) {
   const CT = window.CT;
   const ME = CT.STUDENTS[0]; // Joel Bishop — the signed-in student
@@ -1449,27 +1542,20 @@ function StudentControlTower({ query = "", onNavigate }) {
 
   const openItem = openId ? items.find((i) => i.id === openId) : null;
 
-  // Current task: the task the student is actively working on (in-progress),
-  // else the soonest-due open task. Active block: the term it belongs to.
-  const currentTaskItem = useCtMemo(() => {
-    const open = items.filter((i) => i.type === "task" && i.status !== "completed");
-    const inProg = open.find((i) => i.status === "in_progress");
-    if (inProg) return inProg;
-    const byDue = [...open].sort((a, b) => {
-      const da = ctParseDue(a.due), db = ctParseDue(b.due);
-      return (da ? da.getTime() : Infinity) - (db ? db.getTime() : Infinity);
-    });
-    return byDue[0] || null;
-  }, [items]);
   const pending = items.filter((i) => i.status !== "completed").length;
   const examsCompleted = items.filter((i) => i.status === "completed" && i.type !== "task").length;
 
+  // Dashboard: current tasks (open tasks, 0..n) + active blocks (terms with open work, 0..n)
+  const currentTasks = useCtMemo(() => items
+    .filter((i) => i.type === "task" && i.status !== "completed")
+    .sort((a, b) => {
+      const da = ctParseDue(a.due), db = ctParseDue(b.due);
+      return (da ? da.getTime() : Infinity) - (db ? db.getTime() : Infinity);
+    }), [items]);
+  const activeBlocks = CT_STUDENT_BLOCKS;
+
   const kpis = [
     { label: "Pending Assignments", value: pending, tone: pending ? "var(--kls-accent-4)" : null, icon: "worklog" },
-    { label: "Current Task", value: currentTaskItem ? currentTaskItem.title : "—", valueSize: 15, icon: "checkpoint",
-      onGo: () => onNavigate && onNavigate("terms"), goTitle: "Go to Courses" },
-    { label: "Active Block", value: currentTaskItem ? currentTaskItem.term : CT.TERMS[0], valueSize: 15, icon: "date",
-      onGo: () => onNavigate && onNavigate("terms"), goTitle: "Go to Courses" },
     { label: "Total Exams Completed", value: examsCompleted, tone: "var(--kls-info)", icon: "checkpoint" },
   ];
 
@@ -1495,6 +1581,24 @@ function StudentControlTower({ query = "", onNavigate }) {
         {/* KPIs */}
         <div style={{ display: "flex", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
           {kpis.map((k) => <StatCard key={k.label} label={k.label} value={k.value} tone={k.tone} icon={k.icon} valueSize={k.valueSize} onGo={k.onGo} goTitle={k.goTitle} />)}
+        </div>
+
+        {/* Dashboard: Current Tasks + Active Blocks (each 0..n) */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "var(--kls-space-small)" }}>
+          <StudentDashPanel title="Continue Working" count={currentTasks.length}>
+            {currentTasks.length === 0
+              ? <StudentDashEmpty icon="checkpoint" line="No tasks in progress." sub="You're all caught up on assigned work." />
+              : currentTasks.map((i, idx) => (
+                  <StudentTaskRow key={i.id} item={i} last={idx === currentTasks.length - 1} onOpen={() => setOpenId(i.id)} />
+                ))}
+          </StudentDashPanel>
+          <StudentDashPanel title="Active Blocks" count={activeBlocks.length}>
+            {activeBlocks.length === 0
+              ? <StudentDashEmpty icon="date" line="No active blocks." sub="You have no open work in any block right now." />
+              : activeBlocks.map((b, idx) => (
+                  <StudentBlockRow key={b.id} block={b} last={idx === activeBlocks.length - 1} onOpen={() => onNavigate && onNavigate("terms")} />
+                ))}
+          </StudentDashPanel>
         </div>
 
         {/* Assignments table (instructor look & feel) */}

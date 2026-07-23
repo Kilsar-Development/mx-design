@@ -3559,23 +3559,88 @@ function MCTStudentDetailSheet({ item, onClose }) {
   );
 }
 
-// ── Current-work row (section label left · title + go button right) ────────────
-function MCTStudentWorkRow({ label, value, onGo }) {
+// ── Student dashboard: stepped task progress + ACS-coded blocks ────────────────
+function mctTaskSteps(item) {
+  let h = 0; const s = String(item.id);
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  const total = 4 + (h % 5); // 4..8 steps
+  let done;
+  if (item.status === "completed") done = total;
+  else if (item.status === "not_started") done = 0;
+  else done = 1 + (h % (total - 1));
+  return { done, total };
+}
+const MCT_STUDENT_BLOCKS = [
+  { id: "b1", title: "124498.3938", codes: ["AM.I.A.K10"],             tasks: 8, modules: 1, students: 1 },
+  { id: "b2", title: "124512.4471", codes: ["AM.I.B.K3", "AM.I.B.K4"], tasks: 5, modules: 2, students: 1 },
+  { id: "b3", title: "124533.1180", codes: ["PP.II.C.K7"],             tasks: 3, modules: 1, students: 1 },
+];
+function MCTStepBar({ done, total, color }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-xsmall) 0" }}>
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
-        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{label}</span>
-        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</span>
-      </div>
-      {onGo && (
-        <button onClick={onGo} aria-label="Go to Courses"
-          style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "var(--kls-radius-pill)", cursor: "pointer",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            background: "var(--kls-tertiary-container)", border: "1px solid var(--kls-outline-variant)" }}>
-          <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
-        </button>
-      )}
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} style={{ flex: 1, height: 6, borderRadius: "var(--kls-radius-pill)", background: i < done ? color : "var(--kls-outline-variant)" }} />
+      ))}
     </div>
+  );
+}
+function MCTStudentDashPanel({ title, count, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: "var(--kls-radius-med)", overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{title}</span>
+        <span style={{ minWidth: 22, height: 22, padding: "0 var(--kls-space-xsmall)", boxSizing: "border-box", borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", color: "var(--kls-on-surface-variant)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column" }}>{children}</div>
+    </div>
+  );
+}
+function MCTStudentDashEmpty({ icon, line, sub }) {
+  return (
+    <div style={{ padding: "var(--kls-space-large) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-tiny)" }}>
+      <span style={{ width: 44, height: 44, borderRadius: "var(--kls-radius-med)", background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-tiny)" }}>
+        <KlsIcon name={icon} size={20} color="var(--kls-on-surface-variant)" />
+      </span>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{line}</div>
+      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", textWrap: "pretty", maxWidth: "34ch" }}>{sub}</div>
+    </div>
+  );
+}
+function MCTStudentTaskRow({ item, onOpen, last }) {
+  const T = MCT_TYPES[item.type];
+  const { done, total } = mctTaskSteps(item);
+  const color = item.status === "overdue" ? "var(--kls-accent-4)" : "var(--kls-info)";
+  return (
+    <button onClick={onOpen} style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 68, boxSizing: "border-box",
+      padding: "var(--kls-space-small) var(--kls-space-med)", border: "none", background: "transparent", cursor: "pointer", borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)" }}>
+      <span style={{ width: 36, height: 36, borderRadius: "var(--kls-radius-med)", flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name={T.icon} size={17} color="var(--kls-on-surface-variant)" />
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-tiny)" }}>
+          <span style={{ flex: 1, minWidth: 0 }}><MCTStepBar done={done} total={total} color={color} /></span>
+          <span style={{ flex: "none", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: color, whiteSpace: "nowrap" }}>{done} of {total} Done</span>
+        </span>
+      </span>
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+}
+function MCTStudentBlockRow({ block, onOpen, last }) {
+  return (
+    <button onClick={onOpen} style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 68, boxSizing: "border-box",
+      padding: "var(--kls-space-small) var(--kls-space-med)", border: "none", background: "transparent", cursor: "pointer", borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)" }}>
+      <span style={{ width: 36, height: 36, borderRadius: "var(--kls-radius-med)", flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name="date" size={17} color="var(--kls-on-surface-variant)" />
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{block.title}</span>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{block.codes.join(" · ")}</span>
+      </span>
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </button>
   );
 }
 
@@ -3612,16 +3677,13 @@ function StudentControlTowerScreen({ go }) {
     return f;
   }, [items, status, sortDir]);
 
-  const currentTaskItem = React.useMemo(() => {
-    const open = items.filter((i) => i.type === "task" && i.status !== "completed");
-    const inProg = open.find((i) => i.status === "in_progress");
-    if (inProg) return inProg;
-    const byDue = [...open].sort((a, b) => {
+  const currentTasks = React.useMemo(() => items
+    .filter((i) => i.type === "task" && i.status !== "completed")
+    .sort((a, b) => {
       const da = mctParseDue(a.due), db = mctParseDue(b.due);
       return (da ? da.getTime() : Infinity) - (db ? db.getTime() : Infinity);
-    });
-    return byDue[0] || null;
-  }, [items]);
+    }), [items]);
+  const activeBlocks = MCT_STUDENT_BLOCKS;
   const pending = items.filter((i) => i.status !== "completed").length;
   const examsCompleted = items.filter((i) => i.status === "completed" && i.type !== "task").length;
   const openItem = openId ? items.find((i) => i.id === openId) : null;
@@ -3640,32 +3702,22 @@ function StudentControlTowerScreen({ go }) {
         </div>
       </div>
 
-      {/* Stationary zone: subtitle + KPI strip + filters */}
-      <div style={{ flex: "none", padding: "0 var(--kls-space-med) var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+      {/* Scrollable dashboard + list */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med) var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
         <p style={{ margin: 0, maxWidth: "28ch", fontFamily: "var(--kls-font-sans)", fontSize: 13.5, lineHeight: 1.4, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>Everything assigned to you — what's due and what you're working on.</p>
-        {/* KPI + current work */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
-          <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
-            <MCTStudentKpiCard label="Pending Assignments" value={pending} icon="worklog" tone={pending ? "var(--kls-accent-4)" : null} />
-            <MCTStudentKpiCard label="Total Exams Completed" value={examsCompleted} icon="checkpoint" tone="var(--kls-info)" />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
-            <MCTStudentWorkRow label="Current Task" value={currentTaskItem ? currentTaskItem.title : "—"} onGo={() => go("workspace")} />
-            <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
-            <MCTStudentWorkRow label="Active Block" value={currentTaskItem ? currentTaskItem.term : MCT_TERMS[0]} onGo={() => go("workspace")} />
-          </div>
+        {/* KPI pair */}
+        <div style={{ display: "flex", gap: "var(--kls-space-small)" }}>
+          <MCTStudentKpiCard label="Pending Assignments" value={pending} icon="worklog" tone={pending ? "var(--kls-accent-4)" : null} />
+          <MCTStudentKpiCard label="Total Exams Completed" value={examsCompleted} icon="checkpoint" tone="var(--kls-info)" />
         </div>
-        {/* Status filters + sort */}
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", overflowX: "auto", paddingBottom: "var(--kls-space-tiny)" }}>
+        {/* Status filters */}
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", overflowX: "auto", padding: "var(--kls-space-tiny) 0" }}>
           <MCTFilterChip compact active={status === "all"} label="All" onClick={() => setStatus("all")} />
           <MCTFilterChip compact active={status === "todo"} label="To do" onClick={() => setStatus("todo")} />
           <MCTFilterChip compact active={status === "overdue"} label="Overdue" onClick={() => setStatus("overdue")} />
           <MCTFilterChip compact active={status === "completed"} label="Completed" onClick={() => setStatus("completed")} />
         </div>
-      </div>
-
-      {/* Scrollable list */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med) var(--kls-space-large)" }}>
+        {/* Assignment list */}
         {filtered.length === 0 ? (
           <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
