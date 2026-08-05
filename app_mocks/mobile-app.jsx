@@ -994,9 +994,9 @@ function SheetCloseBtn({ onClose }) {
 /* ── Your Profile sheet ───────────────────────────────────────────────────── */
 function Toggle({ on }) {
   return (
-    <span style={{ width: 52, height: 31, borderRadius: 999, background: on ? "var(--kls-primary)" : "var(--kls-surface-container-low)",
+    <span style={{ width: 44, height: 26, borderRadius: 999, background: on ? "var(--kls-primary)" : "var(--kls-surface-container-low)",
       position: "relative", flex: "none", transition: "background 200ms" }}>
-      <span style={{ position: "absolute", top: 3, left: on ? 24 : 3, width: 25, height: 25, borderRadius: "50%",
+      <span style={{ position: "absolute", top: 2, left: on ? 20 : 2, width: 22, height: 22, borderRadius: "50%",
         background: "var(--kls-surface)", boxShadow: "0 1px 3px rgba(0,0,0,0.3)", transition: "left 200ms" }} />
     </span>
   );
@@ -3752,6 +3752,7 @@ function MobilePlaceholder({ label, icon }) {
 }
 function MobileApp(props) {
   const ctRole = (props && props.ctRole) || "instructor";
+  const examSummaryMode = (props && props.examSummaryMode) || "From attempt";
   const { BottomNav } = window.KLS;
   const [tab, setTab] = useState("home");
   const [wsScreen, setWsScreen] = useState("workspace");
@@ -3764,7 +3765,7 @@ function MobileApp(props) {
   let body;
   if (tab === "home") body = <HomeScreen showHelpButton={true} onHelp={openFeedback} onProfile={() => setProfileOpen(true)} />;
   else if (tab === "workspace") {
-    if (inWritten) body = <MWrittenExams onBack={() => setWsScreen("workspace")} />;
+    if (inWritten) body = <MWrittenExams summaryMode={examSummaryMode} onBack={() => setWsScreen("workspace")} />;
     else body = (
       <div style={{ height: "100%", paddingTop: 54, boxSizing: "border-box", background: "var(--kls-surface-variant)" }}>
         {inTeam ? <TeamScreen go={(s) => setWsScreen(s)} />
@@ -4025,16 +4026,16 @@ window.KILSAR_DATA = (() => {
 
   // Historical exam attempts
   const history = [
-    { id: 'h-1', date: '2026-04-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.83, duration: '52:14', acs: ['PA.I'] },
-    { id: 'h-2', date: '2026-04-28', mode: 'Study', title: 'Pistons + Cylinders mix', count: 25, score: 0.68, duration: '34:02', acs: ['PA.I.C', 'PA.I.D'] },
-    { id: 'h-3', date: '2026-04-25', mode: 'Exam', title: 'Powerplant — Random across all', count: 60, score: 0.71, duration: '58:41', acs: ['PA.I', 'PA.II', 'PA.III'] },
-    { id: 'h-4', date: '2026-04-22', mode: 'Study', title: 'Valves deep dive', count: 22, score: 0.91, duration: '21:08', acs: ['PA.I.B'] },
-    { id: 'h-5', date: '2026-04-19', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.78, duration: '54:33', acs: ['PA.I'] },
-    { id: 'h-6', date: '2026-04-16', mode: 'Exam', title: 'Custom: Theory + Components', count: 40, score: 0.65, duration: '38:55', acs: ['PA.I.E', 'PA.I.F'] },
-    { id: 'h-7', date: '2026-04-12', mode: 'Study', title: 'Magnetos refresher', count: 18, score: 0.88, duration: '15:21', acs: ['PA.III.A'] },
-    { id: 'h-8', date: '2026-04-08', mode: 'Exam', title: 'Powerplant — Random', count: 60, score: 0.66, duration: '59:02', acs: ['PA.I', 'PA.II', 'PA.III'] },
-    { id: 'h-9', date: '2026-04-04', mode: 'Study', title: 'Pistons — focused', count: 15, score: 0.53, duration: '18:44', acs: ['PA.I.D'] },
-    { id: 'h-10', date: '2026-03-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.72, duration: '56:18', acs: ['PA.I'] },
+    { id: 'h-1', date: '2026-04-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.83, duration: '52:14', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 9, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 10, total: 11 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 8, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 7, total: 9 }, { acs: 'PA.I.E', module: 'Components', correct: 9, total: 11 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 9 }] },
+    { id: 'h-2', date: '2026-04-28', mode: 'Study', title: 'Pistons + Cylinders mix', count: 25, score: 0.68, duration: '34:02', acs: ['PA.I.C', 'PA.I.D'], breakdown: [{ acs: 'PA.I.C', module: 'Cylinders', correct: 9, total: 13 }, { acs: 'PA.I.D', module: 'Pistons', correct: 8, total: 12 }] },
+    { id: 'h-3', date: '2026-04-25', mode: 'Exam', title: 'Powerplant — Random across all', count: 60, score: 0.71, duration: '58:41', acs: ['PA.I', 'PA.II', 'PA.III'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 5, total: 7 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 4, total: 7 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 4, total: 7 }, { acs: 'PA.II.A', module: 'Carburetion', correct: 6, total: 8 }, { acs: 'PA.II.B', module: 'Fuel Injection', correct: 5, total: 7 }, { acs: 'PA.II.D', module: 'Exhaust Systems', correct: 5, total: 7 }, { acs: 'PA.III.A', module: 'Magnetos', correct: 8, total: 9 }, { acs: 'PA.III.C', module: 'Spark Plugs', correct: 6, total: 8 }] },
+    { id: 'h-4', date: '2026-04-22', mode: 'Study', title: 'Valves deep dive', count: 22, score: 0.91, duration: '21:08', acs: ['PA.I.B'], breakdown: [{ acs: 'PA.I.B', module: 'Valves', correct: 20, total: 22 }] },
+    { id: 'h-5', date: '2026-04-19', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.78, duration: '54:33', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 8, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 9, total: 10 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 8, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 6, total: 9 }, { acs: 'PA.I.E', module: 'Components', correct: 9, total: 11 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 10 }] },
+    { id: 'h-6', date: '2026-04-16', mode: 'Exam', title: 'Custom: Theory + Components', count: 40, score: 0.65, duration: '38:55', acs: ['PA.I.E', 'PA.I.F'], breakdown: [{ acs: 'PA.I.E', module: 'Components', correct: 14, total: 21 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 12, total: 19 }] },
+    { id: 'h-7', date: '2026-04-12', mode: 'Study', title: 'Magnetos refresher', count: 18, score: 0.88, duration: '15:21', acs: ['PA.III.A'], breakdown: [{ acs: 'PA.III.A', module: 'Magnetos', correct: 16, total: 18 }] },
+    { id: 'h-8', date: '2026-04-08', mode: 'Exam', title: 'Powerplant — Random', count: 60, score: 0.66, duration: '59:02', acs: ['PA.I', 'PA.II', 'PA.III'], breakdown: [{ acs: 'PA.I.B', module: 'Valves', correct: 6, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 5, total: 9 }, { acs: 'PA.II.A', module: 'Carburetion', correct: 7, total: 10 }, { acs: 'PA.II.C', module: 'Turbochargers', correct: 5, total: 8 }, { acs: 'PA.III.A', module: 'Magnetos', correct: 8, total: 11 }, { acs: 'PA.III.D', module: 'Starting Systems', correct: 9, total: 12 }] },
+    { id: 'h-9', date: '2026-04-04', mode: 'Study', title: 'Pistons — focused', count: 15, score: 0.53, duration: '18:44', acs: ['PA.I.D'], breakdown: [{ acs: 'PA.I.D', module: 'Pistons', correct: 8, total: 15 }] },
+    { id: 'h-10', date: '2026-03-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.72, duration: '56:18', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 7, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 8, total: 10 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 7, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 6, total: 10 }, { acs: 'PA.I.E', module: 'Components', correct: 8, total: 10 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 10 }] },
   ];
 
   // Student roster (instructor view)
@@ -4318,6 +4319,7 @@ const Sparkline = ({ data, width = 180, height = 44, color = 'var(--good)' }) =>
 const MSetupStudy = ({ tab, onTab, onModeChange, onBegin, onBack, onGoHistory, onGoProgress } = {}) => {
   const D = window.KILSAR_DATA;
   const blocks = D.blocks.slice(0, 4);
+  const [orionEnabled, setOrionEnabled] = React.useState(true);
   return (
     <MobileShell tab={tab} onTab={onTab}>
       <MobileNav
@@ -4364,13 +4366,16 @@ const MSetupStudy = ({ tab, onTab, onModeChange, onBegin, onBack, onGoHistory, o
           </div>
           <div style={{ height: 0.5, background: 'var(--line)', marginLeft: 16 }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}>
-            <span style={{ fontSize: 15 }}>Orion AI</span>
-            <div style={{
-              width: 42, height: 26, background: 'var(--good)', borderRadius: 999, padding: 2,
-              display: 'flex', justifyContent: 'flex-end',
+            <span style={{ fontSize: 15 }}>Orion Enabled</span>
+            <button role="switch" aria-checked={orionEnabled} onClick={() => setOrionEnabled(!orionEnabled)} style={{
+              width: 44, height: 26, borderRadius: 'var(--kls-radius-pill)', padding: 2, border: 0, flex: 'none', cursor: 'pointer',
+              background: orionEnabled ? 'var(--kls-primary)' : 'var(--kls-outline-variant)',
+              transition: 'background var(--kls-dur-fade-animation) var(--kls-ease-standard)',
             }}>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff' }} />
-            </div>
+              <div style={{ width: 22, height: 22, borderRadius: 'var(--kls-radius-pill)', background: 'var(--kls-surface)',
+                transform: orionEnabled ? 'translateX(18px)' : 'translateX(0)',
+                transition: 'transform var(--kls-dur-fade-animation) var(--kls-ease-standard)' }} />
+            </button>
           </div>
         </WECard>
       </div>
@@ -4646,7 +4651,31 @@ const MRunnerExam = ({ onNext, onExit } = {}) => {
 /* ─────────────────────────────────────────────────────────────
    Screen 5 — Results
    ───────────────────────────────────────────────────────────── */
-const MResults = ({ onDone, onDrill, onRetake, tab, onTab } = {}) => {
+const MResults = ({ onDone, onDrill, onRetake, tab, onTab, mode = 'study' } = {}) => {
+  const lossRows = [
+    { topic: 'Hydraulics & Pneumatics', acs: 'AF.II.A', missed: 6, total: 14 },
+    { topic: 'Composites', acs: 'AF.I.C', missed: 5, total: 10 },
+    { topic: 'Landing Gear', acs: 'AF.II.B', missed: 4, total: 12 },
+    { topic: 'Ice & Rain Control', acs: 'AF.II.D', missed: 3, total: 6 },
+  ];
+  // Per-area seed for the exam breakdown — sums to the hero (78 of 100 correct)
+  const areaRows = [
+    ['AF.I', { correct: 31, total: 38, leaves: [
+      ['AF.I.A', 'Sheet Metal', 11, 13],
+      ['AF.I.C', 'Composites', 6, 10],
+      ['AF.I.D', 'Corrosion', 8, 9],
+      ['AF.I.E', 'Finishes', 6, 6],
+    ] }],
+    ['AF.II', { correct: 47, total: 62, leaves: [
+      ['AF.II.A', 'Hydraulics & Pneumatics', 8, 14],
+      ['AF.II.B', 'Landing Gear', 12, 16],
+      ['AF.II.C', 'Fuel Systems', 11, 13],
+      ['AF.II.D', 'Ice & Rain Control', 6, 9],
+      ['AF.II.E', 'Fire Protection', 10, 10],
+    ] }],
+  ];
+  const [openArea, setOpenArea] = React.useState({});
+  const areaTitle = (code) => (((window.KILSAR_DATA || {}).blocks || []).find(b => b.acs === code) || {}).title || '';
   const correct = 78, total = 100;
   const score = correct / total;
   const passed = score >= 0.7;
@@ -4699,15 +4728,59 @@ const MResults = ({ onDone, onDrill, onRetake, tab, onTab } = {}) => {
         </WECard>
       </div>
 
+      {mode === 'exam' ? (
+        <>
+          <WESectionHead title="Performance by ACS code" />
+          <div style={{ padding: '0 16px' }}>
+            <WECard>
+              {areaRows.map(([code, v], i, arr) => {
+                const pct = v.correct / v.total;
+                const color = pct >= 0.8 ? 'var(--good)' : pct >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+                const open = !!openArea[code];
+                return (
+                  <React.Fragment key={code}>
+                    <div onClick={() => setOpenArea(o => ({ ...o, [code]: !o[code] }))}
+                      style={{ padding: 'var(--kls-space-small) 16px', display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', minHeight: 44, boxSizing: 'border-box' }}>
+                      <WEIcon name={open ? 'chev-d' : 'chev-r'} size={14} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="mono" style={{ fontSize: 14.5, fontWeight: 600 }}>{code}</div>
+                        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2, display: 'flex', gap: 'var(--kls-space-xsmall)', alignItems: 'center' }}>
+                          <span>{areaTitle(code)}</span>
+                          <span>·</span>
+                          <span>{v.correct} of {v.total} correct</span>
+                        </div>
+                      </div>
+                      <div className="mono" style={{ fontSize: 15, fontWeight: 700, color }}>{Math.round(pct * 100)}%</div>
+                      <div style={{ width: 44, height: 6, background: 'var(--bg-sunken)', borderRadius: 999, overflow: 'hidden' }}>
+                        <div style={{ width: `${pct * 100}%`, height: '100%', background: color }} />
+                      </div>
+                    </div>
+                    {open && v.leaves.map(([leaf, title, lc, lt]) => {
+                      const lp = lc / lt;
+                      const lcol = lp >= 0.8 ? 'var(--good)' : lp >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+                      return (
+                        <div key={leaf} style={{ padding: '10px 16px 10px 46px', borderTop: '0.5px solid var(--line)', background: 'var(--bg-sunken)', display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="mono" style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{leaf}</div>
+                            <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 1 }}>{title} · {lc} of {lt}</div>
+                          </div>
+                          <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: lcol }}>{Math.round(lp * 100)}%</div>
+                        </div>
+                      );
+                    })}
+                    {i < arr.length - 1 && <div style={{ height: 0.5, background: 'var(--line)', marginLeft: 16 }} />}
+                  </React.Fragment>
+                );
+              })}
+            </WECard>
+          </div>
+        </>
+      ) : (
+        <>
       <WESectionHead title="Where you lost points" />
       <div style={{ padding: '0 16px' }}>
         <WECard>
-          {[
-            { topic: 'Hydraulics & Pneumatics', acs: 'AF.II.A', missed: 6, total: 14 },
-            { topic: 'Composites', acs: 'AF.I.C', missed: 5, total: 10 },
-            { topic: 'Landing Gear', acs: 'AF.II.B', missed: 4, total: 12 },
-            { topic: 'Ice & Rain Control', acs: 'AF.II.D', missed: 3, total: 6 },
-          ].map((r, i, arr) => (
+          {lossRows.map((r, i, arr) => (
             <React.Fragment key={r.topic}>
               <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -4727,6 +4800,8 @@ const MResults = ({ onDone, onDrill, onRetake, tab, onTab } = {}) => {
           ))}
         </WECard>
       </div>
+        </>
+      )}
 
       <div style={{ padding: '20px 16px 28px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <button style={{
@@ -4747,7 +4822,7 @@ const MResults = ({ onDone, onDrill, onRetake, tab, onTab } = {}) => {
 /* ─────────────────────────────────────────────────────────────
    Screen 6 — History list
    ───────────────────────────────────────────────────────────── */
-const MHistory = ({ tab, onTab, onBack } = {}) => {
+const MHistory = ({ tab, onTab, onBack, onOpenAttempt } = {}) => {
   const items = (window.KILSAR_DATA.history || []).slice(0, 8);
   const fallback = items.length ? items : Array.from({ length: 6 }, (_, i) => ({
     id: `h-${i}`,
@@ -4770,11 +4845,11 @@ const MHistory = ({ tab, onTab, onBack } = {}) => {
       <div style={{ padding: '0 16px 28px' }}>
         <WECard>
           {fallback.map((h, i, arr) => {
-            const isExam = h.mode === 'exam';
+            const isExam = String(h.mode || '').toLowerCase() === 'exam';
             const pass = (h.score || 0.7) >= 0.7;
             return (
               <React.Fragment key={h.id}>
-                <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div onClick={() => onOpenAttempt && onOpenAttempt(h)} style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                   <div style={{
                     width: 38, height: 38, borderRadius: 10, flexShrink: 0,
                     background: isExam ? 'var(--lock-soft)' : 'var(--accent-soft)',
@@ -4785,7 +4860,7 @@ const MHistory = ({ tab, onTab, onBack } = {}) => {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                      <span style={{ fontSize: 15, fontWeight: 600 }}>{h.subject}</span>
+                      <span style={{ fontSize: 15, fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.title || h.subject}</span>
                       {isExam && <span style={{ fontSize: 11, color: 'var(--lock)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Exam</span>}
                     </div>
                     <div style={{ fontSize: 12.5, color: 'var(--ink-3)', display: 'flex', gap: 8, marginTop: 2 }}>
@@ -4803,6 +4878,234 @@ const MHistory = ({ tab, onTab, onBack } = {}) => {
                 </div>
                 {i < arr.length - 1 && <div style={{ height: 0.5, background: 'var(--line)', marginLeft: 66 }} />}
               </React.Fragment>
+            );
+          })}
+        </WECard>
+      </div>
+    </MobileShell>
+  );
+};
+
+
+/* ─────────────────────────────────────────────────────────────
+   Attempt summary (opened from History)
+   ───────────────────────────────────────────────────────────── */
+const MHistoryDetail = ({ attempt, onBack, summaryMode = 'From attempt' }) => {
+  const D = window.KILSAR_DATA;
+  const [filter, setFilter] = React.useState('all');
+  const [openAreas, setOpenAreas] = React.useState({});
+  const [openQ, setOpenQ] = React.useState({});
+
+  // Per-question results come from the attempt's own per-ACS breakdown.
+  const questions = React.useMemo(() => {
+    const bank = D.sampleQuestions;
+    const out = [];
+    (attempt.breakdown || []).forEach(row => {
+      const pool = bank.filter(q => q.module === row.module);
+      for (let j = 0; j < row.total; j++) {
+        const q = pool.length ? pool[j % pool.length] : bank[out.length % bank.length];
+        const isCorrect = j < row.correct;
+        out.push({
+          ...q,
+          acs: row.acs, module: row.module,
+          id: attempt.id + '-q-' + out.length,
+          chosen: isCorrect ? q.correct : (q.choices.find(c => c.id !== q.correct) || {}).id,
+          isCorrect,
+        });
+      }
+    });
+    return out;
+  }, [attempt.id]);
+
+  const correct = questions.filter(q => q.isCorrect).length;
+  const wrong = questions.length - correct;
+  const attemptCorrect = Math.round(attempt.count * attempt.score);
+  const mode = summaryMode === 'From attempt' ? attempt.mode : summaryMode;
+  const pctColor = (p) => p >= 0.8 ? 'var(--good)' : p >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+
+  const byModule = {};
+  questions.forEach(q => {
+    if (!byModule[q.module]) byModule[q.module] = { correct: 0, total: 0, acs: q.acs };
+    byModule[q.module].total++;
+    if (q.isCorrect) byModule[q.module].correct++;
+  });
+
+  const areaMap = {};
+  questions.forEach(q => {
+    const area = String(q.acs || '').split('.').slice(0, 2).join('.');
+    if (!areaMap[area]) areaMap[area] = { correct: 0, total: 0, leaves: {} };
+    areaMap[area].total++;
+    if (q.isCorrect) areaMap[area].correct++;
+    const leaves = areaMap[area].leaves;
+    if (!leaves[q.acs]) leaves[q.acs] = { correct: 0, total: 0, module: q.module };
+    leaves[q.acs].total++;
+    if (q.isCorrect) leaves[q.acs].correct++;
+  });
+  const byArea = Object.entries(areaMap);
+  const areaTitle = (code) => ((D.blocks || []).find(b => b.acs === code) || {}).title || '';
+
+  const isExam = mode === 'Exam';
+  const visible = questions.filter(q => filter === 'wrong' ? !q.isCorrect : true);
+  const taken = new Date(attempt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  return (
+    <MobileShell>
+      <MobileNav title={isExam ? 'Exam session' : 'Practice session'} back="History" onBack={onBack}
+        subtitle={'Taken ' + taken + ' · ' + attempt.duration + ' · ' + attempt.count + ' questions'} />
+
+      {/* Score card */}
+      <div style={{ padding: '4px 16px 0' }}>
+        <WECard style={{ padding: 16 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)',
+            padding: '5px 10px', borderRadius: 8, marginBottom: 14,
+            background: isExam ? 'var(--lock-soft)' : 'var(--accent-soft)',
+            color: isExam ? 'var(--lock)' : 'var(--accent)',
+            fontSize: 13.5, fontWeight: 600,
+          }}>
+            <WEIcon name={isExam ? 'lock' : 'book'} size={14} />{mode}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--kls-space-small)' }}>
+            {[
+              ['Score', Math.round(attempt.score * 100) + '%', pctColor(attempt.score), 'left'],
+              ['Correct', attemptCorrect + ' / ' + attempt.count, 'var(--ink)', 'center'],
+              ['Missed', String(attempt.count - attemptCorrect), (attempt.count - attemptCorrect) ? 'var(--bad)' : 'var(--ink)', 'right'],
+            ].map(([label, value, color, align]) => (
+              <div key={label} style={{ textAlign: align }}>
+                <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 6 }}>{label}</div>
+                <div className="mono" style={{ fontSize: 22, fontWeight: 700, color }}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </WECard>
+      </div>
+
+      {/* Breakdown — by ACS code in Exam mode, by module in Study mode */}
+      <div style={{ padding: 'var(--kls-space-small) 16px 0' }}>
+        <WECard style={{ padding: 16 }}>
+          <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em', marginBottom: 14 }}>
+            {isExam ? 'Performance by ACS code' : 'Performance by module'}
+          </div>
+          {isExam ? (
+            <div>
+              {byArea.map(([code, v], ai) => {
+                const pct = v.correct / v.total;
+                const color = pctColor(pct);
+                const open = !!openAreas[code];
+                const leaves = Object.entries(v.leaves);
+                return (
+                  <div key={code}>
+                    <div onClick={() => setOpenAreas(o => ({ ...o, [code]: !o[code] }))}
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', padding: 'var(--kls-space-small) 0',
+                        borderBottom: ai === byArea.length - 1 && !open ? 0 : '0.5px solid var(--line)', minHeight: 44, boxSizing: 'border-box' }}>
+                      <WEIcon name={open ? 'chev-d' : 'chev-r'} size={14} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="mono" style={{ fontSize: 15, fontWeight: 600 }}>{code}</div>
+                        <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 2 }}>{areaTitle(code)} · {v.correct} of {v.total} correct</div>
+                      </div>
+                      <div className="mono" style={{ fontSize: 16, fontWeight: 700, color }}>{Math.round(pct * 100)}%</div>
+                    </div>
+                    {open && leaves.map(([leaf, lv], li) => {
+                      const lp = lv.correct / lv.total;
+                      return (
+                        <div key={leaf} style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)',
+                          padding: '10px 0 10px 28px',
+                          borderBottom: (ai === byArea.length - 1 && li === leaves.length - 1) ? 0 : '0.5px solid var(--line)' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="mono" style={{ fontSize: 13, color: 'var(--ink-2)' }}>{leaf}</div>
+                            <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 1 }}>{lv.module} · {lv.correct} of {lv.total}</div>
+                          </div>
+                          <div className="mono" style={{ fontSize: 13.5, fontWeight: 600, color: pctColor(lp) }}>{Math.round(lp * 100)}%</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)' }}>
+              {Object.entries(byModule).map(([mod, v]) => {
+                const pct = v.correct / v.total;
+                const color = pctColor(pct);
+                return (
+                  <div key={mod} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: 'var(--kls-space-small)' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--kls-space-small)', marginBottom: 8 }}>
+                      <span style={{ fontSize: 15, fontWeight: 500 }}>{mod}</span>
+                      <span className="mono" style={{ fontSize: 16, fontWeight: 700, color }}>{Math.round(pct * 100)}%</span>
+                    </div>
+                    <div style={{ height: 4, background: 'var(--bg-sunken)', borderRadius: 999, overflow: 'hidden' }}>
+                      <div style={{ width: (pct * 100) + '%', height: '100%', background: color }} />
+                    </div>
+                    <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 8 }}>{v.correct} of {v.total} correct</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </WECard>
+      </div>
+
+      {/* All questions */}
+      <div style={{ padding: 'var(--kls-space-small) 16px 28px' }}>
+        <WECard style={{ padding: '16px 0 0' }}>
+          <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em', padding: '0 16px 14px' }}>All questions</div>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, padding: 2, margin: '0 16px 4px',
+            background: 'var(--bg-sunken)', borderRadius: 9,
+          }}>
+            {[['all', 'All (' + questions.length + ')'], ['wrong', 'Missed (' + wrong + ')']].map(([v, l]) => {
+              const active = filter === v;
+              return (
+                <div key={v} onClick={() => setFilter(v)} style={{ padding: '7px 10px', borderRadius: 7, textAlign: 'center',
+                  background: active ? 'var(--bg-elev)' : 'transparent', boxShadow: active ? '0 1px 2px rgba(11,15,20,0.08)' : 'none',
+                  fontSize: 13.5, fontWeight: active ? 600 : 500, color: active ? 'var(--ink)' : 'var(--ink-3)' }}>{l}</div>
+              );
+            })}
+          </div>
+          {questions.length < attempt.count && (
+            <div style={{ fontSize: 12, color: 'var(--ink-4)', padding: '8px 16px 0' }}>Showing {questions.length} of {attempt.count} questions</div>
+          )}
+          {visible.map((q) => {
+            const idx = questions.indexOf(q);
+            const open = !!openQ[q.id];
+            const chosen = (q.choices.find(c => c.id === q.chosen) || {}).text;
+            const right = (q.choices.find(c => c.id === q.correct) || {}).text;
+            return (
+              <div key={q.id} style={{ borderTop: '0.5px solid var(--line)' }}>
+                <div onClick={() => setOpenQ(o => ({ ...o, [q.id]: !o[q.id] }))}
+                  style={{ display: 'grid', gridTemplateColumns: '18px 24px 1fr 14px', gap: 'var(--kls-space-small)',
+                    alignItems: 'center', padding: 'var(--kls-space-small) 16px', minHeight: 44, boxSizing: 'border-box' }}>
+                  <span className="mono" style={{ fontSize: 12, color: 'var(--ink-4)' }}>{idx + 1}</span>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', display: 'grid', placeItems: 'center',
+                    background: q.isCorrect ? 'var(--good-soft)' : 'var(--bad-soft)', color: q.isCorrect ? 'var(--good)' : 'var(--bad)' }}>
+                    <WEIcon name={q.isCorrect ? 'check' : 'x'} size={12} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.3 }}>{q.stem}</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3, display: 'flex', gap: 'var(--kls-space-xsmall)' }}>
+                      <span className="mono">{q.acs}</span>
+                      <span>·</span>
+                      <span>{q.module}</span>
+                    </div>
+                  </div>
+                  <WEIcon name={open ? 'chev-d' : 'chev-r'} size={14} style={{ color: 'var(--ink-5)' }} />
+                </div>
+                {open && (
+                  <div style={{ padding: '0 16px 14px 58px', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)' }}>
+                    {!q.isCorrect && (
+                      <div style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>
+                        <span style={{ color: 'var(--bad)', fontWeight: 600 }}>Your answer: </span>{chosen}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>
+                      <span style={{ color: 'var(--good)', fontWeight: 600 }}>Correct: </span>{right}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 2 }}>{q.explanation}</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-4)' }}>{q.reference}</div>
+                  </div>
+                )}
+              </div>
             );
           })}
         </WECard>
@@ -4893,20 +5196,23 @@ const MProgress = ({ tab, onTab, onBack } = {}) => {
 };
 
 Object.assign(window, {
-  MSetupStudy, MSetupExam, MPreExamSheet, MRunnerExam, MResults, MHistory, MProgress,
+  MSetupStudy, MSetupExam, MPreExamSheet, MRunnerExam, MResults, MHistory, MHistoryDetail, MProgress,
 });
 
 
 // ── Written Exams mobile flow (folded in from 019df76f, re-themed) ──
-function MWrittenExams({ onBack }) {
+function MWrittenExams({ onBack, summaryMode = 'From attempt' }) {
   const [tab, setTab] = React.useState('practice');
   const [mode, setMode] = React.useState('study');
   const [phase, setPhase] = React.useState('setup');
   if (phase === 'warning') return <MPreExamSheet onProceed={() => setPhase('runner')} onClose={() => setPhase('setup')} />;
   if (phase === 'runner') return <MRunnerExam onNext={() => setPhase('results')} onExit={() => setPhase('setup')} />;
-  if (phase === 'results') return <MResults onDone={() => setPhase('setup')} onDrill={() => setPhase('runner')} onRetake={() => setPhase('setup')} />;
-  const tp = { tab, onTab: setTab };
-  if (tab === 'history') return <MHistory {...tp} onBack={onBack} />;
+  const [attempt, setAttempt] = React.useState(null);
+  const summaryModeKey = summaryMode === 'From attempt' ? mode : summaryMode.toLowerCase();
+  if (attempt) return <MHistoryDetail attempt={attempt} summaryMode={summaryMode} onBack={() => setAttempt(null)} />;
+  if (phase === 'results') return <MResults mode={summaryModeKey} onDone={() => setPhase('setup')} onDrill={() => setPhase('runner')} onRetake={() => setPhase('setup')} />;
+  const tp = { tab: null, onTab: setTab };
+  if (tab === 'history') return <MHistory {...tp} onBack={onBack} onOpenAttempt={setAttempt} />;
   if (tab === 'progress') return <MProgress {...tp} onBack={onBack} />;
   return mode === 'exam'
     ? <MSetupExam {...tp} onModeChange={setMode} onBegin={() => setPhase('warning')} onBack={onBack} />

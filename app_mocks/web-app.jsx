@@ -269,8 +269,8 @@ function Header({ systemMessage = null, unread = 0, onAvatar, onBell, onSearch, 
 // `flavor` swaps labels via WorkspaceSettings overrides (termsKey / ticketsKey
 // / coursesKey / assignmentsKey). The icon set is identical across flavors.
 const FLAVOR_LABELS = {
-  education:  { terms: "Courses",   tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams" },
-  commercial: { terms: "Cases",     tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams" },
+  education:  { terms: "Courses",   tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
+  commercial: { terms: "Cases",     tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
 };
 
 const SIDEBAR_TABS_BASE = [
@@ -283,6 +283,7 @@ const SIDEBAR_TABS_BASE = [
   { key: "analytics",     icon: "tabs/analytics" },
   { key: "controlTower",  icon: "tower" },
   { key: "writtenExams", icon: "checkpoint" },
+  { key: "integrations",  symbol: "webhook" },
 ];
 
 function tabsForFlavor(flavor) {
@@ -406,6 +407,7 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
             <SidebarOption
               key={tab.key}
               icon={tab.icon}
+              symbol={tab.symbol}
               label={tab.label}
               isActive={active === tab.key}
               showLabel={showLabels}
@@ -431,13 +433,6 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
           showLabel={showLabels}
           onClick={() => onSelect && onSelect("help")}
         />
-        <SidebarOption
-          icon="tabs/logout"
-          label="Logout"
-          isActive={false}
-          showLabel={showLabels}
-          onClick={() => onSelect && onSelect("logout")}
-        />
 
         {/* Version */}
         <div
@@ -460,7 +455,15 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
   );
 }
 
-function SidebarOption({ icon, glyph, label, isActive, showLabel, onClick }) {
+// Material Symbols glyph (loaded in the DC helmet) — for icons the DS PNG set lacks.
+function MSGlyph({ name, size = 24, color = "currentColor" }) {
+  return (
+    <span className="material-symbols-outlined" aria-hidden="true"
+      style={{ fontSize: size, lineHeight: 1, color, flex: "none", fontVariationSettings: "'opsz' " + size }}>{name}</span>
+  );
+}
+
+function SidebarOption({ icon, glyph, symbol, label, isActive, showLabel, onClick }) {
   // Active uses --kls-primary tint; idle uses --kls-on-surface (matches Flutter spec).
   const iconColor = isActive ? "var(--kls-primary)" : "var(--kls-on-surface)";
   const labelColor = "var(--kls-on-surface)";
@@ -482,7 +485,7 @@ function SidebarOption({ icon, glyph, label, isActive, showLabel, onClick }) {
         width: "100%",
       }}
     >
-      {glyph ? <HelpGlyph size={24} color={iconColor} /> : <KlsIcon name={icon} size={24} color={iconColor} />}
+      {glyph ? <HelpGlyph size={24} color={iconColor} /> : symbol ? <MSGlyph name={symbol} size={24} color={iconColor} /> : <KlsIcon name={icon} size={24} color={iconColor} />}
       {showLabel && (
         <span
           className="kls-text-navigation"
@@ -4360,7 +4363,7 @@ function WebPlaceholder({ tabKey }) {
     <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ textAlign: "center", maxWidth: 360, padding: "var(--kls-space-large)" }}>
         <div style={{ width: 64, height: 64, borderRadius: 16, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-          <KlsIcon name={m.icon} size={28} color="var(--kls-on-surface-variant)" />
+          <KlsIcon name={m.icon || "worklog"} size={28} color="var(--kls-on-surface-variant)" />
         </div>
         <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>{m.label}</div>
         <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 6, lineHeight: 1.5 }}>This screen isn’t built in the mock yet. Control Tower and Workspace are the live ones.</div>
@@ -4372,6 +4375,7 @@ function WebApp(props) {
   const groupsSurface = props.groupsSurface || "tabs";
   const showKpis = props.showKpis !== false;
   const examRole = props.examRole || "instructor";
+  const examSummaryMode = props.examSummaryMode || "From attempt";
   const ctRole = props.ctRole || "instructor";
   const studentLayout = props.studentLayout || "sections";
   const [active, setActive] = useState("controlTower");
@@ -4389,7 +4393,8 @@ function WebApp(props) {
     ? <StudentControlTower layout={studentLayout} query={query} onNavigate={onSelect} />
     : <ControlTower showKpis={showKpis} initialQuick="all" query={query} />;
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
-  else if (active === "writtenExams") content = <WrittenExams role={examRole} />;
+  else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
+  else if (active === "integrations") content = <Integrations query={query} />;
   else content = <WebPlaceholder tabKey={active} />;
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--kls-scaffold-bg)", overflow: "hidden" }}>
@@ -4403,6 +4408,344 @@ function WebApp(props) {
     </div>
   );
 }
+// ════════════════════════════════════════════════════════════════════
+// INTEGRATIONS (web only) — pair one or more workspace events with a webhook URL
+// ════════════════════════════════════════════════════════════════════
+const INTEGRATION_EVENTS = [
+  { key: "assignment.created",   label: "Assignment created" },
+  { key: "assignment.submitted", label: "Assignment submitted" },
+  { key: "assignment.graded",    label: "Assignment graded" },
+  { key: "assignment.overdue",   label: "Assignment overdue" },
+  { key: "exam.completed",       label: "Written exam completed" },
+  { key: "exam.failed",          label: "Written exam failed" },
+  { key: "module.completed",     label: "Module completed" },
+  { key: "student.enrolled",     label: "Student enrolled" },
+  { key: "student.removed",      label: "Student removed" },
+  { key: "course.published",     label: "Course published" },
+];
+const intEventLabel = (k) => (INTEGRATION_EVENTS.find((e) => e.key === k) || { label: k }).label;
+
+const SEED_INTEGRATIONS = [
+  { id: "i1", events: ["assignment.graded", "assignment.submitted"], url: "https://hooks.edudev.io/lms/grade-sync", enabled: true },
+  { id: "i2", events: ["student.enrolled", "student.removed"],        url: "https://api.aim.edu/v2/roster/enroll",   enabled: true },
+  { id: "i3", events: ["exam.failed"],                                 url: "https://hooks.slack.com/services/T02/B71/xk9", enabled: false },
+];
+
+const INT_TH = { textAlign: "left", padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)",
+  fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)",
+  borderBottom: "1px solid var(--kls-outline-variant)", whiteSpace: "nowrap" };
+const INT_TD = { padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 14,
+  fontWeight: 500, color: "var(--kls-on-surface)", borderBottom: "1px solid var(--kls-outline-variant)", verticalAlign: "middle" };
+const INT_MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
+
+// Endpoint check — mocked round-trip. Format gate first, then a "reachability" probe.
+const intUrlFormatOk = (u) => /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/\S*)?$/i.test(u.trim());
+function intProbe(url) {
+  // Deterministic mock: placeholder / local / non-public hosts fail the probe.
+  const host = (url.trim().match(/^https:\/\/([^/:]+)/i) || [])[1] || "";
+  const bad = /(^|\.)(example\.(com|org|net)|localhost|test|invalid)$/i.test(host) || /^\d+\.\d+\.\d+\.\d+$/.test(host);
+  return new Promise((res) => setTimeout(() => res(bad
+    ? { state: "failed", detail: "No response from " + host + " — check the host is publicly reachable." }
+    : { state: "verified", detail: "Responded 200 OK in 214 ms." }), 1200));
+}
+
+function Integrations({ query = "" }) {
+  const [rows, setRows] = useState(SEED_INTEGRATIONS);
+  const [editing, setEditing] = useState(null);
+  const term = query.trim().toLowerCase();
+  const list = rows.filter((r) => !term || r.url.toLowerCase().includes(term) || r.events.some((e) => intEventLabel(e).toLowerCase().includes(term)));
+
+  const save = (draft) => {
+    setRows((prev) => draft.id
+      ? prev.map((r) => (r.id === draft.id ? { ...draft } : r))
+      : prev.concat([{ ...draft, id: "i" + Date.now() }]));
+    setEditing(null);
+  };
+  const remove = (id) => { setRows((prev) => prev.filter((r) => r.id !== id)); setEditing(null); };
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Integrations</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Pair workspace events with a webhook URL. We POST the event payload each time one fires.</p>
+          </div>
+          <button onClick={() => setEditing({ events: [], url: "", enabled: true })} style={ctPrimaryBtn}>New integration</button>
+        </div>
+
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {list.length === 0 ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+                <MSGlyph name="webhook" size={26} color="var(--kls-on-surface-variant)" />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{rows.length === 0 ? "No integrations yet" : "Nothing matches"}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)", maxWidth: 320, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
+                {rows.length === 0 ? "Pair events with a webhook URL and we'll start delivering payloads." : "Try a different search."}
+              </div>
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={INT_TH}>Events</th>
+                  <th style={INT_TH}>Webhook URL</th>
+                  <th style={{ ...INT_TH, width: 110 }}>Enabled</th>
+                  <th style={{ ...INT_TH, width: 96, textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((r) => <IntegrationRow key={r.id} row={r}
+                  onToggle={() => setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, enabled: !x.enabled } : x)))}
+                  onEdit={() => setEditing({ ...r, events: r.events.slice() })}
+                  onDelete={() => remove(r.id)} />)}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {editing && <IntegrationDrawer draft={editing} onChange={setEditing} onSave={save} onDelete={remove} onClose={() => setEditing(null)} />}
+    </div>
+  );
+}
+
+function IntEventTag({ label }) {
+  return (
+    <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-tertiary)", whiteSpace: "nowrap" }}>{label}</span>
+  );
+}
+
+function IntegrationRow({ row, onToggle, onEdit, onDelete }) {
+  const [hover, setHover] = useState(false);
+  const shown = row.events.slice(0, 2);
+  const rest = row.events.length - shown.length;
+  return (
+    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ background: hover ? "var(--kls-surface-container-low)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <td style={INT_TD}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-tiny)" }}>
+          {shown.map((e) => <IntEventTag key={e} label={intEventLabel(e)} />)}
+          {rest > 0 && <IntEventTag label={"+" + rest} />}
+        </div>
+      </td>
+      <td style={{ ...INT_TD, fontFamily: INT_MONO, fontSize: 13, color: "var(--kls-on-surface-variant)", wordBreak: "break-all" }}>{row.url}</td>
+      <td style={INT_TD}><IntSwitch on={row.enabled} label="Enabled" onClick={onToggle} /></td>
+      <td style={{ ...INT_TD, textAlign: "right", whiteSpace: "nowrap" }}>
+        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", justifyContent: "flex-end" }}>
+          <IntIconBtn label="Edit" icon="pencil" onClick={onEdit} />
+          <IntIconBtn label="Delete" icon="trash" onClick={onDelete} tone="var(--kls-error)" />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function IntIconBtn({ label, icon, onClick, tone }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 8, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={16} color={tone || "var(--kls-on-surface-variant)"} />
+    </button>
+  );
+}
+
+function IntegrationDrawer({ draft, onChange, onSave, onDelete, onClose }) {
+  const [shown, setShown] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [check, setCheck] = useState({ state: "idle", detail: "", url: "" }); // idle|checking|verified|failed
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+
+  const url = draft.url.trim();
+  const formatOk = intUrlFormatOk(url);
+  const verified = check.state === "verified" && check.url === url;
+  const runCheck = () => {
+    if (!formatOk) return;
+    setCheck({ state: "checking", detail: "", url });
+    intProbe(url).then((r) => setCheck({ ...r, url }));
+  };
+  // Validate as soon as a full URL lands in the field (paste or typing settles).
+  useEffect(() => {
+    if (!formatOk) { setCheck({ state: "idle", detail: "", url: "" }); return; }
+    if (check.url === url && check.state !== "idle") return;
+    const t = setTimeout(runCheck, 400);
+    return () => clearTimeout(t);
+  }, [url, formatOk]);
+
+  const canSave = draft.events.length > 0 && verified;
+  const label = (t) => (
+    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-tiny)" }}>{t}</div>
+  );
+  const toggleEvent = (k) => onChange({ ...draft, events: draft.events.includes(k) ? draft.events.filter((x) => x !== k) : draft.events.concat([k]) });
+  const eventSummary = draft.events.length === 0 ? "Choose events"
+    : draft.events.length === 1 ? intEventLabel(draft.events[0])
+    : draft.events.length + " events selected";
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div role="dialog" aria-modal="true" aria-label={draft.id ? "Edit integration" : "New integration"}
+        style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: "min(426px, calc(100vw - 24px))",
+          background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden",
+          transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))", transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>{draft.id ? "Edit integration" : "New integration"}</span>
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 36, height: 36, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div>
+            {label("Events")}
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setMenuOpen((v) => !v)}
+                style={{ width: "100%", height: 40, padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer",
+                  border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, textAlign: "left",
+                  color: draft.events.length ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{eventSummary}</span>
+                <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.9, transform: menuOpen ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>
+                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {menuOpen && (
+                <div style={{ position: "absolute", top: 44, left: 0, right: 0, zIndex: 5, maxHeight: 300, overflowY: "auto",
+                  background: "var(--kls-on-primary)", border: "1px solid var(--kls-outline-variant)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-xsmall) 0" }}>
+                  {INTEGRATION_EVENTS.map((e) => (
+                    <IntMenuItem key={e.key} label={e.label} selected={draft.events.includes(e.key)} onClick={() => toggleEvent(e.key)} />
+                  ))}
+                </div>
+              )}
+            </div>
+            {draft.events.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-tiny)", marginTop: "var(--kls-space-small)" }}>
+                {draft.events.map((k) => (
+                  <button key={k} onClick={() => toggleEvent(k)} title="Remove"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+                      border: "none", cursor: "pointer", background: "var(--kls-tertiary)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-tertiary)" }}>
+                    {intEventLabel(k)}
+                    <svg viewBox="0 0 24 24" style={{ width: 12, height: 12, stroke: "currentColor", fill: "none", strokeWidth: 2.4 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            {label("Webhook URL")}
+            <input value={draft.url} onChange={(ev) => onChange({ ...draft, url: ev.target.value })} onBlur={runCheck}
+              placeholder="https://example.com/hooks/kilsar" spellCheck={false}
+              style={{ width: "100%", height: 48, boxSizing: "border-box", padding: "0 var(--kls-space-small)", borderRadius: 8,
+                border: "1px solid " + ((url && !formatOk) || check.state === "failed" ? "var(--kls-error)" : verified ? "var(--kls-success)" : "var(--kls-outline-variant)"),
+                background: "var(--kls-surface)", color: "var(--kls-on-surface)", outline: "none", fontFamily: INT_MONO, fontSize: 13 }} />
+            <IntCheckStatus url={url} formatOk={formatOk} check={check} onRecheck={runCheck} />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", paddingTop: "var(--kls-space-tiny)" }}>
+            <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>Enabled</span>
+            <IntSwitch on={draft.enabled} label="Enabled" onClick={() => onChange({ ...draft, enabled: !draft.enabled })} />
+          </div>
+        </div>
+
+        <div style={{ padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)", display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          {draft.id && (
+            <button onClick={() => onDelete(draft.id)}
+              style={{ height: 40, padding: "0 var(--kls-space-small)", borderRadius: 8, border: "none", background: "transparent", cursor: "pointer",
+                fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-error)" }}>Delete</button>
+          )}
+          <span style={{ flex: 1 }} />
+          <button onClick={onClose}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", border: "1px solid var(--kls-outline-variant)",
+              background: "transparent", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>Cancel</button>
+          <button disabled={!canSave} onClick={() => onSave({ ...draft, url })}
+            style={{ ...ctPrimaryBtn, opacity: canSave ? 1 : 0.4, cursor: canSave ? "pointer" : "not-allowed" }}>Save pairing</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Validation feedback for the endpoint: format gate → probe → result.
+function IntCheckStatus({ url, formatOk, check, onRecheck }) {
+  const wrap = { display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginTop: "var(--kls-space-tiny)",
+    fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 };
+  if (!url) return <div style={{ ...wrap, color: "var(--kls-on-surface-variant)" }}>Must be an HTTPS endpoint that accepts POST.</div>;
+  if (!formatOk) return <div style={{ ...wrap, color: "var(--kls-error)" }}>Enter a full https:// URL, e.g. https://hooks.acme.io/kilsar.</div>;
+  if (check.state === "checking") return (
+    <div style={{ ...wrap, color: "var(--kls-on-surface-variant)" }}>
+      <IntSpinner />
+      <span>Checking endpoint…</span>
+    </div>
+  );
+  if (check.state === "verified") return (
+    <div style={{ ...wrap, color: "var(--kls-success)" }}>
+      <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "currentColor", fill: "none", strokeWidth: 2.2 }}><path d="M5 13l4 4 10-10" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <span>Endpoint verified · {check.detail}</span>
+    </div>
+  );
+  if (check.state === "failed") return (
+    <div style={{ ...wrap, color: "var(--kls-error)", alignItems: "flex-start" }}>
+      <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, flex: "none", marginTop: 2, stroke: "currentColor", fill: "none", strokeWidth: 2 }}><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 16.5v.5" strokeLinecap="round" /></svg>
+      <span style={{ flex: 1, lineHeight: 1.45 }}>{check.detail}</span>
+      <button onClick={onRecheck} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0,
+        fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-primary)" }}>Retry</button>
+    </div>
+  );
+  return null;
+}
+
+function IntSpinner() {
+  return (
+    <span style={{ width: 14, height: 14, borderRadius: 999, border: "2px solid var(--kls-outline-variant)", borderTopColor: "var(--kls-primary)",
+      display: "inline-block", animation: "int-spin 900ms linear infinite" }} />
+  );
+}
+
+// DS switch spec: track 44x26 · knob 22 · on `primary` / off `outline-variant`
+function IntSwitch({ on, label, onClick }) {
+  return (
+    <button role="switch" aria-checked={on} aria-label={label} onClick={onClick}
+      style={{ width: 44, height: 26, borderRadius: 999, border: "none", padding: 0, cursor: "pointer", position: "relative",
+        background: on ? "var(--kls-primary)" : "var(--kls-outline-variant)", transition: "background 250ms var(--kls-ease-standard)" }}>
+      <span style={{ position: "absolute", top: 2, left: on ? 20 : 2, width: 22, height: 22, borderRadius: 999,
+        background: "var(--kls-surface)", transition: "left 250ms var(--kls-ease-standard)" }} />
+    </button>
+  );
+}
+
+// Multi-select row — DS checkbox: 22x22 · radius 6 · 1.5px border
+function IntMenuItem({ label, selected, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: "100%", height: 52, padding: "0 var(--kls-space-small)", border: "none", cursor: "pointer", textAlign: "left",
+        display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        background: hover ? "var(--kls-tertiary)" : "transparent",
+        fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+      <span style={{ width: 22, height: 22, borderRadius: 6, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        border: "1.5px solid " + (selected ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"),
+        background: selected ? "var(--kls-primary)" : "transparent" }}>
+        {selected && <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-primary)", fill: "none", strokeWidth: 3 }}><path d="M5 13l4 4 10-10" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+      </span>
+      <span style={{ flex: 1 }}>{label}</span>
+    </button>
+  );
+}
+
 window.WebApp = WebApp;
 
 // ── Help & Feedback dialog + Profile drawer (folded in from 88549d6b web app.jsx) ──
@@ -4489,14 +4832,15 @@ const PROFILE_AVATAR = "assets/images/placeholderImage.jpg";
 
 function DrawerToggle({ on }) {
   return (
-    <span style={{ width: 52, height: 30, borderRadius: 999, flex: "none", background: on ? "var(--kls-primary)" : "var(--kls-surface-container-low)", position: "relative", transition: "background 200ms" }}>
-      <span style={{ position: "absolute", top: 3, left: on ? 25 : 3, width: 24, height: 24, borderRadius: "50%", background: on ? "var(--kls-surface)" : "var(--kls-on-surface-variant)", transition: "left 200ms" }} />
+    <span style={{ width: 44, height: 26, borderRadius: 999, flex: "none", background: on ? "var(--kls-primary)" : "var(--kls-surface-container-low)", position: "relative", transition: "background 200ms" }}>
+      <span style={{ position: "absolute", top: 2, left: on ? 20 : 2, width: 22, height: 22, borderRadius: "50%", background: on ? "var(--kls-surface)" : "var(--kls-on-surface-variant)", transition: "left 200ms" }} />
     </span>
   );
 }
 
 function ProfileDrawer({ open, onClose, onHelp }) {
   const [helpHover, setHelpHover] = useState(false);
+  const [logoutHover, setLogoutHover] = useState(false);
   const [closeHover, setCloseHover] = useState(false);
   useEffect(() => {
     if (!open) return;
@@ -4545,6 +4889,12 @@ function ProfileDrawer({ open, onClose, onHelp }) {
             <HelpGlyph size={20} color="var(--kls-on-surface)" />
             <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>Help &amp; Feedback</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="var(--kls-on-surface-variant)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <button onMouseEnter={() => setLogoutHover(true)} onMouseLeave={() => setLogoutHover(false)}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px var(--kls-space-small)", margin: "0 -12px", border: "none", borderRadius: 10, cursor: "pointer", textAlign: "left",
+              background: logoutHover ? "color-mix(in oklab, var(--kls-on-surface) 7%, transparent)" : "transparent" }}>
+            <KlsIcon name="tabs/logout" size={20} color="var(--kls-on-surface)" />
+            <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>Logout</span>
           </button>
         </div>
         <div style={{ padding: "16px 24px", display: "flex", justifyContent: "flex-end" }}>
@@ -4789,16 +5139,16 @@ window.KILSAR_DATA = (() => {
 
   // Historical exam attempts
   const history = [
-    { id: 'h-1', date: '2026-04-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.83, duration: '52:14', acs: ['PA.I'] },
-    { id: 'h-2', date: '2026-04-28', mode: 'Study', title: 'Pistons + Cylinders mix', count: 25, score: 0.68, duration: '34:02', acs: ['PA.I.C', 'PA.I.D'] },
-    { id: 'h-3', date: '2026-04-25', mode: 'Exam', title: 'Powerplant — Random across all', count: 60, score: 0.71, duration: '58:41', acs: ['PA.I', 'PA.II', 'PA.III'] },
-    { id: 'h-4', date: '2026-04-22', mode: 'Study', title: 'Valves deep dive', count: 22, score: 0.91, duration: '21:08', acs: ['PA.I.B'] },
-    { id: 'h-5', date: '2026-04-19', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.78, duration: '54:33', acs: ['PA.I'] },
-    { id: 'h-6', date: '2026-04-16', mode: 'Exam', title: 'Custom: Theory + Components', count: 40, score: 0.65, duration: '38:55', acs: ['PA.I.E', 'PA.I.F'] },
-    { id: 'h-7', date: '2026-04-12', mode: 'Study', title: 'Magnetos refresher', count: 18, score: 0.88, duration: '15:21', acs: ['PA.III.A'] },
-    { id: 'h-8', date: '2026-04-08', mode: 'Exam', title: 'Powerplant — Random', count: 60, score: 0.66, duration: '59:02', acs: ['PA.I', 'PA.II', 'PA.III'] },
-    { id: 'h-9', date: '2026-04-04', mode: 'Study', title: 'Pistons — focused', count: 15, score: 0.53, duration: '18:44', acs: ['PA.I.D'] },
-    { id: 'h-10', date: '2026-03-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.72, duration: '56:18', acs: ['PA.I'] },
+    { id: 'h-1', date: '2026-04-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.83, duration: '52:14', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 9, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 10, total: 11 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 8, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 7, total: 9 }, { acs: 'PA.I.E', module: 'Components', correct: 9, total: 11 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 9 }] },
+    { id: 'h-2', date: '2026-04-28', mode: 'Study', title: 'Pistons + Cylinders mix', count: 25, score: 0.68, duration: '34:02', acs: ['PA.I.C', 'PA.I.D'], breakdown: [{ acs: 'PA.I.C', module: 'Cylinders', correct: 9, total: 13 }, { acs: 'PA.I.D', module: 'Pistons', correct: 8, total: 12 }] },
+    { id: 'h-3', date: '2026-04-25', mode: 'Exam', title: 'Powerplant — Random across all', count: 60, score: 0.71, duration: '58:41', acs: ['PA.I', 'PA.II', 'PA.III'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 5, total: 7 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 4, total: 7 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 4, total: 7 }, { acs: 'PA.II.A', module: 'Carburetion', correct: 6, total: 8 }, { acs: 'PA.II.B', module: 'Fuel Injection', correct: 5, total: 7 }, { acs: 'PA.II.D', module: 'Exhaust Systems', correct: 5, total: 7 }, { acs: 'PA.III.A', module: 'Magnetos', correct: 8, total: 9 }, { acs: 'PA.III.C', module: 'Spark Plugs', correct: 6, total: 8 }] },
+    { id: 'h-4', date: '2026-04-22', mode: 'Study', title: 'Valves deep dive', count: 22, score: 0.91, duration: '21:08', acs: ['PA.I.B'], breakdown: [{ acs: 'PA.I.B', module: 'Valves', correct: 20, total: 22 }] },
+    { id: 'h-5', date: '2026-04-19', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.78, duration: '54:33', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 8, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 9, total: 10 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 8, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 6, total: 9 }, { acs: 'PA.I.E', module: 'Components', correct: 9, total: 11 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 10 }] },
+    { id: 'h-6', date: '2026-04-16', mode: 'Exam', title: 'Custom: Theory + Components', count: 40, score: 0.65, duration: '38:55', acs: ['PA.I.E', 'PA.I.F'], breakdown: [{ acs: 'PA.I.E', module: 'Components', correct: 14, total: 21 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 12, total: 19 }] },
+    { id: 'h-7', date: '2026-04-12', mode: 'Study', title: 'Magnetos refresher', count: 18, score: 0.88, duration: '15:21', acs: ['PA.III.A'], breakdown: [{ acs: 'PA.III.A', module: 'Magnetos', correct: 16, total: 18 }] },
+    { id: 'h-8', date: '2026-04-08', mode: 'Exam', title: 'Powerplant — Random', count: 60, score: 0.66, duration: '59:02', acs: ['PA.I', 'PA.II', 'PA.III'], breakdown: [{ acs: 'PA.I.B', module: 'Valves', correct: 6, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 5, total: 9 }, { acs: 'PA.II.A', module: 'Carburetion', correct: 7, total: 10 }, { acs: 'PA.II.C', module: 'Turbochargers', correct: 5, total: 8 }, { acs: 'PA.III.A', module: 'Magnetos', correct: 8, total: 11 }, { acs: 'PA.III.D', module: 'Starting Systems', correct: 9, total: 12 }] },
+    { id: 'h-9', date: '2026-04-04', mode: 'Study', title: 'Pistons — focused', count: 15, score: 0.53, duration: '18:44', acs: ['PA.I.D'], breakdown: [{ acs: 'PA.I.D', module: 'Pistons', correct: 8, total: 15 }] },
+    { id: 'h-10', date: '2026-03-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.72, duration: '56:18', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 7, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 8, total: 10 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 7, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 6, total: 10 }, { acs: 'PA.I.E', module: 'Components', correct: 8, total: 10 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 10 }] },
   ];
 
   // Student roster (instructor view)
@@ -5127,6 +5477,7 @@ const PracticeSetup = ({ tweaks, onStart }) => {
   const [mode, setMode] = React.useState('study');
   const [count, setCount] = React.useState(25);
   const [random, setRandom] = React.useState(false);
+  const [orionEnabled, setOrionEnabled] = React.useState(true);
   const [filterSubject, setFilterSubject] = React.useState('All');
   const [examChoice, setExamChoice] = React.useState('airframe');
 
@@ -5164,7 +5515,7 @@ const PracticeSetup = ({ tweaks, onStart }) => {
     acs: activeExam.acs,
     modules: [],
   });
-  const beginStudy = () => onStart({ mode: 'study', count, random, modules: [...selectedModules] });
+  const beginStudy = () => onStart({ mode: 'study', count, random, orionEnabled, modules: [...selectedModules] });
 
   return (
     <div className="setup-grid">
@@ -5278,6 +5629,10 @@ const PracticeSetup = ({ tweaks, onStart }) => {
               <CountStepper value={count} availablePool={random ? 397 : totalAvailable} onChange={setCount} onSelectAll={() => setCount(random ? 397 : totalAvailable)} />
               <ConfigRow label="Pool" value={`${random ? 397 : totalAvailable} question(s)`} />
               <ConfigRow label="Drawing" value={`${count} question(s)`} />
+              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', gap: 12}}>
+                <span style={{fontSize: 12, fontWeight: 600, color: 'var(--ink-3)'}}>Orion Enabled</span>
+                <Toggle on={orionEnabled} onClick={() => setOrionEnabled(!orionEnabled)} />
+              </div>
             </div>
           ) : (
             <div style={{display: 'flex', flexDirection: 'column'}}>
@@ -5506,17 +5861,20 @@ const Checkbox = ({ checked, indeterminate, onChange }) => (
   </button>
 );
 
+/* Switch / Toggle — DS spec (preview/switch.html): track 44×26 · knob 22 · 2px inset ·
+   on = primary, off = outline-variant, knob = surface · travel 18px · fade/ease-standard. */
 const Toggle = ({ on, onClick }) => (
-  <button onClick={onClick} style={{
-    width: 32, height: 18, borderRadius: 999,
-    background: on ? 'var(--ink)' : 'var(--line-2)',
-    border: 0, padding: 0, position: 'relative',
-    transition: 'background 120ms',
+  <button role="switch" aria-checked={on} onClick={onClick} style={{
+    width: 44, height: 26, borderRadius: 'var(--kls-radius-pill)',
+    background: on ? 'var(--kls-primary)' : 'var(--kls-outline-variant)',
+    border: 0, padding: 2, flex: 'none', cursor: 'pointer',
+    transition: 'background var(--kls-dur-fade-animation) var(--kls-ease-standard)',
   }}>
     <div style={{
-      position: 'absolute', top: 2, left: on ? 16 : 2,
-      width: 14, height: 14, borderRadius: '50%',
-      background: 'white', transition: 'left 120ms',
+      width: 22, height: 22, borderRadius: 'var(--kls-radius-pill)',
+      background: 'var(--kls-surface)',
+      transform: on ? 'translateX(18px)' : 'translateX(0)',
+      transition: 'transform var(--kls-dur-fade-animation) var(--kls-ease-standard)',
     }} />
   </button>
 );
@@ -5596,881 +5954,26 @@ const Stat = ({ label, value, mono, icon }) => (
 );
 
 /* Question runner */
-const QuestionRunner = ({ session, tweaks, onFinish, onExit }) => {
+const HistoryDetail = ({ attempt, onBack, summaryMode = 'From attempt' }) => {
   const D = window.KILSAR_DATA;
-  // Build question list (cycle the sample bank up to count)
+  // Per-question results come from the attempt's own per-ACS breakdown.
   const questions = React.useMemo(() => {
+    const bank = D.sampleQuestions;
     const out = [];
-    for (let i = 0; i < session.count; i++) out.push({...D.sampleQuestions[i % D.sampleQuestions.length], id: `q-${i}`});
-    return out;
-  }, [session.count]);
-
-  const [idx, setIdx] = React.useState(0);
-  const [answers, setAnswers] = React.useState({}); // id -> choice
-  const [revealed, setRevealed] = React.useState({}); // id -> bool (study mode immediate feedback)
-  const [orionOpen, setOrionOpen] = React.useState(session.mode === 'study');
-  const [showSubmit, setShowSubmit] = React.useState(false);
-  const [timeLeft, setTimeLeft] = React.useState(session.duration || session.count * 120); // exam-mode uses fixed duration
-
-  const isExam = session.mode === 'exam';
-  const q = questions[idx];
-  const chosen = answers[q.id];
-  const isRevealed = revealed[q.id];
-
-  React.useEffect(() => {
-    if (!isExam) return;
-    const t = setInterval(() => setTimeLeft(s => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(t);
-  }, [isExam]);
-
-  // Demo: prefill some answers in tweaks-set "preview state"
-  React.useEffect(() => {
-    if (tweaks.questionState === 'progress' && Object.keys(answers).length === 0) {
-      const a = {}; const r = {};
-      for (let i = 0; i < Math.min(idx, questions.length); i++) {
-        const qq = questions[i];
-        const useCorrect = Math.random() < 0.7;
-        a[qq.id] = useCorrect ? qq.correct : (qq.choices.find(c => c.id !== qq.correct)?.id);
-        if (!isExam) r[qq.id] = true;
+    (attempt.breakdown || []).forEach(row => {
+      const pool = bank.filter(q => q.module === row.module);
+      for (let j = 0; j < row.total; j++) {
+        const q = pool.length ? pool[j % pool.length] : bank[out.length % bank.length];
+        const isCorrect = j < row.correct;
+        out.push({
+          ...q,
+          acs: row.acs, module: row.module,
+          id: attempt.id + '-q-' + out.length,
+          chosen: isCorrect ? q.correct : (q.choices.find(c => c.id !== q.correct) || {}).id,
+          isCorrect,
+        });
       }
-      setAnswers(a); setRevealed(r);
-    }
-  }, []);
-
-  const choose = (cid) => {
-    if (isRevealed) return;
-    setAnswers({...answers, [q.id]: cid});
-    if (!isExam) {
-      setTimeout(() => setRevealed(r => ({...r, [q.id]: true})), 100);
-    }
-  };
-
-  const next = () => {
-    if (idx < questions.length - 1) setIdx(idx + 1);
-    else setShowSubmit(true);
-  };
-  const prev = () => idx > 0 && setIdx(idx - 1);
-
-  const finish = () => {
-    const results = questions.map(qq => ({
-      ...qq,
-      chosen: answers[qq.id] || null,
-      correct: qq.correct,
-      isCorrect: answers[qq.id] === qq.correct,
-    }));
-    const total = session.duration || session.count * 120;
-    onFinish({ session, questions: results, duration: total - timeLeft });
-  };
-
-  const fmtTime = (s) => {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
-    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-  };
-
-  return (
-    <div style={{minHeight: '100vh', display: 'grid', gridTemplateRows: 'auto 1fr auto', background: 'var(--bg)'}}>
-      {/* Exam top bar */}
-      <div className="runner-topbar" style={{
-        height: 56, padding: '0 16px',
-        background: isExam ? 'var(--ink)' : 'var(--bg-elev)',
-        color: isExam ? 'var(--bg-elev)' : 'var(--ink)',
-        borderBottom: '1px solid var(--line)',
-      }}>
-        <div className="runner-topbar__title">
-          {isExam ? <Icon name="lock" size={14} /> : <Icon name="book" size={14} />}
-          <span style={{fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap'}}>{isExam ? 'Exam Mode' : 'Study Mode'}</span>
-          <span className="runner-topbar__title-extra" style={{opacity: 0.6, fontSize: 13}}>·</span>
-          <span className="runner-topbar__title-extra" style={{fontSize: 13, opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{isExam && session.subject ? session.subject : 'Reciprocating Engines'}</span>
-        </div>
-
-        {/* Progress dots */}
-        <div className="runner-progress">
-          <span className="mono" style={{fontSize: 12, opacity: 0.7, whiteSpace: 'nowrap'}}>{idx + 1} / {questions.length}</span>
-          <div className="runner-progress__bar" style={{height: 4, background: isExam ? 'rgba(255,255,255,0.12)' : 'var(--bg-sunken)', borderRadius: 999}}>
-            <div style={{
-              width: `${((idx + 1) / questions.length) * 100}%`, height: '100%',
-              background: isExam ? '#fff' : 'var(--ink)',
-              borderRadius: 999, transition: 'width 200ms',
-            }} />
-          </div>
-        </div>
-
-        {isExam && (
-          <div style={{display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0}}>
-            <Icon name="history" size={14} />
-            <span className="mono" style={{fontSize: 14, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: timeLeft < 300 ? '#FFA199' : 'inherit'}}>
-              {fmtTime(timeLeft)}
-            </span>
-          </div>
-        )}
-        <button onClick={onExit} className="btn btn--sm" style={{background: 'transparent', border: '1px solid currentColor', color: 'inherit', opacity: 0.85, flexShrink: 0}}>
-          {isExam ? 'Save & Exit' : 'Exit'}
-        </button>
-      </div>
-
-      {/* Main content */}
-      <div style={{display: 'grid', gridTemplateColumns: orionOpen && !isExam ? '1fr 360px' : '1fr', overflow: 'hidden'}}>
-        <div className="scroll-y" style={{overflowY: 'auto', padding: '36px 28px 28px'}}>
-          <div style={{maxWidth: 760, margin: '0 auto'}}>
-            <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20}}>
-              <span className="chip">{q.acs}</span>
-              <span style={{fontSize: 12, color: 'var(--ink-4)'}}>{q.module}</span>
-              <div style={{flex: 1}} />
-            </div>
-
-            <div className="serif" style={{fontSize: 26, lineHeight: 1.35, marginBottom: 28, color: 'var(--ink)', letterSpacing: '-0.005em'}}>
-              {q.stem}
-            </div>
-
-            {/* Figure placeholder if applicable */}
-            {idx === 1 && (
-              <div style={{
-                marginBottom: 24, border: '1px solid var(--line)', borderRadius: 8, padding: 16,
-                background: 'var(--bg-inset)', display: 'flex', alignItems: 'center', gap: 12,
-              }}>
-                <div style={{width: 100, height: 80, background: 'var(--bg-sunken)', borderRadius: 4, display: 'grid', placeItems: 'center', color: 'var(--ink-4)'}}>
-                  <Icon name="image" size={20} />
-                </div>
-                <div>
-                  <div style={{fontSize: 12, color: 'var(--ink-4)'}}>FIGURE 12</div>
-                  <div style={{fontSize: 13.5, fontWeight: 500}}>Cylinder bore micrometer measurement</div>
-                </div>
-              </div>
-            )}
-
-            {/* Choices */}
-            <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-              {q.choices.map(c => {
-                const selected = chosen === c.id;
-                const isCorrect = c.id === q.correct;
-                const showState = isRevealed && !isExam;
-                let bg = 'var(--bg-elev)', border = 'var(--line-2)', accent = null;
-                if (showState && isCorrect) { bg = 'var(--good-soft)'; border = 'var(--good)'; accent = 'good'; }
-                else if (showState && selected && !isCorrect) { bg = 'var(--bad-soft)'; border = 'var(--bad)'; accent = 'bad'; }
-                else if (selected) { border = 'var(--ink)'; bg = 'var(--bg-elev)'; }
-
-                return (
-                  <button key={c.id} onClick={() => choose(c.id)} disabled={isRevealed} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 14,
-                    padding: '14px 16px',
-                    border: `1px solid ${border}`,
-                    background: bg, borderRadius: 8,
-                    textAlign: 'left', cursor: isRevealed ? 'default' : 'pointer',
-                    boxShadow: selected && !showState ? '0 0 0 3px rgba(11,15,20,0.06)' : 'none',
-                    transition: 'all 100ms',
-                  }}>
-                    <div style={{
-                      width: 26, height: 26, borderRadius: '50%',
-                      border: `1px solid ${selected || accent ? 'transparent' : 'var(--line-2)'}`,
-                      background: accent === 'good' ? 'var(--good)' : accent === 'bad' ? 'var(--bad)' : selected ? 'var(--ink)' : 'transparent',
-                      color: selected || accent ? 'white' : 'var(--ink-3)',
-                      display: 'grid', placeItems: 'center',
-                      flexShrink: 0,
-                      fontSize: 13, fontWeight: 600,
-                      fontFamily: 'var(--font-mono)',
-                    }}>
-                      {accent === 'good' ? <Icon name="check" size={13} /> : accent === 'bad' ? <Icon name="x" size={13} /> : c.id}
-                    </div>
-                    <div style={{flex: 1, fontSize: 15, lineHeight: 1.45, paddingTop: 3}}>{c.text}</div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Study-mode feedback */}
-            {isRevealed && !isExam && (
-              <div className="fade-in" style={{
-                marginTop: 24, padding: 18, borderRadius: 10,
-                background: chosen === q.correct ? 'var(--good-soft)' : 'var(--bad-soft)',
-                border: `1px solid ${chosen === q.correct ? 'var(--good)' : 'var(--bad)'}`,
-                borderLeft: `3px solid ${chosen === q.correct ? 'var(--good)' : 'var(--bad)'}`,
-              }}>
-                <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10}}>
-                  <Icon name={chosen === q.correct ? 'check' : 'x'} size={14} />
-                  <span style={{fontWeight: 600, fontSize: 13.5}}>
-                    {chosen === q.correct ? 'Correct' : `Incorrect — answer is ${q.correct}`}
-                  </span>
-                  <div style={{flex: 1}} />
-                  <span style={{fontSize: 11.5, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)'}}>{q.reference}</span>
-                </div>
-                <div style={{fontSize: 14, lineHeight: 1.55, color: 'var(--ink-2)'}}>{q.explanation}</div>
-                <div style={{display: 'flex', gap: 8, marginTop: 14}}>
-                  <button className="btn btn--sm" onClick={() => setOrionOpen(true)} style={{background: 'var(--bg-elev)'}}>
-                    <Icon name="orion" size={13} />
-                    Ask Orion to elaborate
-                  </button>
-                  <button className="btn btn--sm">
-                    <Icon name="book" size={13} />
-                    Open reference
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Orion side panel — Study mode only */}
-        {orionOpen && !isExam && <OrionPanel question={q} onClose={() => setOrionOpen(false)} />}
-
-        {/* Exam-mode locked Orion strip */}
-        {isExam && <OrionLocked />}
-      </div>
-
-      {/* Footer nav */}
-      <div style={{
-        height: 64, padding: '0 28px',
-        background: 'var(--bg-elev)',
-        borderTop: '1px solid var(--line)',
-        display: 'flex', alignItems: 'center', gap: 12,
-      }}>
-        <button className="btn" onClick={prev} disabled={idx === 0}>
-          <Icon name="chev-l" size={13} />
-          Previous
-        </button>
-        <QuestionPalette questions={questions} answers={answers} idx={idx} setIdx={setIdx} isExam={isExam} revealed={revealed} />
-        <div style={{flex: 1}} />
-        <span style={{fontSize: 12, color: 'var(--ink-4)'}}>
-          <kbd>←</kbd> <kbd>→</kbd> navigate · <kbd>1</kbd>–<kbd>3</kbd> answer
-        </span>
-        {idx === questions.length - 1 ? (
-          <button className="btn btn--primary" onClick={() => setShowSubmit(true)}>
-            Submit {isExam ? 'Exam' : 'Practice'}
-            <Icon name="check" size={13} />
-          </button>
-        ) : (
-          <button className="btn btn--primary" onClick={next} disabled={isExam ? false : !chosen}>
-            {isRevealed || isExam ? 'Next' : 'Submit answer'}
-            <Icon name="arrow-r" size={13} />
-          </button>
-        )}
-      </div>
-
-      {showSubmit && (
-        <div style={{position: 'fixed', inset: 0, background: 'rgba(11,15,20,0.55)', display: 'grid', placeItems: 'center', zIndex: 100, padding: 20, backdropFilter: 'blur(4px)'}}>
-          <div className="card" style={{maxWidth: 480, padding: 28}}>
-            <h2 style={{marginBottom: 8}}>Submit {isExam ? 'exam' : 'practice'}?</h2>
-            <p style={{color: 'var(--ink-3)', fontSize: 14, marginBottom: 18}}>
-              You answered {Object.keys(answers).length} of {questions.length} questions.
-            </p>
-            <div style={{display: 'flex', gap: 8, justifyContent: 'flex-end'}}>
-              <button className="btn" onClick={() => setShowSubmit(false)}>Keep working</button>
-              <button className="btn btn--primary" onClick={finish}>Submit and see results</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const QuestionPalette = ({ questions, answers, idx, setIdx, isExam, revealed }) => (
-  <div style={{display: 'flex', gap: 3, alignItems: 'center', maxWidth: 560, overflowX: 'auto', padding: '0 8px'}}>
-    {questions.map((qq, i) => {
-      const answered = answers[qq.id];
-      const isRev = revealed[qq.id];
-      let bg = 'var(--bg-sunken)', color = 'var(--ink-3)';
-      if (i === idx) { bg = 'var(--ink)'; color = 'var(--bg-elev)'; }
-      else if (isRev && !isExam) { bg = answered === qq.correct ? 'var(--good)' : 'var(--bad)'; color = 'white'; }
-      else if (answered) { bg = 'var(--ink-2)'; color = 'var(--bg-elev)'; }
-      return (
-        <button key={i} onClick={() => setIdx(i)} title={`Question ${i+1}`} style={{
-          width: 22, height: 22, borderRadius: 4,
-          border: 0, background: bg, color, fontSize: 10.5, fontWeight: 600,
-          fontFamily: 'var(--font-mono)', position: 'relative', flexShrink: 0,
-        }}>
-          {i + 1}
-        </button>
-      );
-    })}
-  </div>
-);
-
-const OrionLocked = () => (
-  <div style={{
-    width: 56, borderLeft: '1px solid var(--line)',
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    padding: '20px 0', gap: 14, background: 'var(--bg-inset)',
-  }}>
-    <div style={{
-      width: 32, height: 32, borderRadius: 8,
-      background: 'var(--lock-soft)', color: 'var(--lock)',
-      display: 'grid', placeItems: 'center',
-    }}>
-      <Icon name="orion" size={16} />
-    </div>
-    <div style={{
-      writingMode: 'vertical-rl', transform: 'rotate(180deg)',
-      fontSize: 11, color: 'var(--ink-4)', letterSpacing: '0.08em',
-      textTransform: 'uppercase', fontWeight: 500,
-      display: 'flex', alignItems: 'center', gap: 6,
-    }}>
-      Orion locked during exam
-    </div>
-    <div style={{flex: 1}} />
-    <Icon name="lock" size={14} />
-  </div>
-);
-
-const OrionPanel = ({ question, onClose }) => {
-  const [messages, setMessages] = React.useState([
-    { role: 'orion', text: 'I noticed you might be working through valve overlap. Want me to walk through the four-stroke cycle and where overlap happens?' },
-  ]);
-  const [input, setInput] = React.useState('');
-
-  const send = (text) => {
-    if (!text.trim()) return;
-    const next = [...messages, { role: 'user', text }];
-    setMessages(next);
-    setInput('');
-    setTimeout(() => {
-      setMessages([...next, { role: 'orion', typing: true }]);
-      setTimeout(() => {
-        setMessages([...next, {
-          role: 'orion',
-          text: 'Think of it like this: at the end of the exhaust stroke, the exhaust valve is still open as inertia pulls residual gas out. The intake valve cracks open early so the incoming charge "rides" that low-pressure wave into the cylinder. The brief overlap is what improves volumetric efficiency.',
-        }]);
-      }, 800);
-    }, 200);
-  };
-
-  return (
-    <div style={{borderLeft: '1px solid var(--line)', background: 'var(--bg-elev)', display: 'flex', flexDirection: 'column', height: '100%'}}>
-      <div style={{padding: '14px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10}}>
-        <div style={{
-          width: 24, height: 24, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #4D8BFF, #A586E8)',
-          color: 'white', display: 'grid', placeItems: 'center',
-        }}>
-          <Icon name="orion" size={13} />
-        </div>
-        <div style={{flex: 1}}>
-          <div style={{fontSize: 13, fontWeight: 600, lineHeight: 1.1}}>Orion</div>
-          <div style={{fontSize: 11, color: 'var(--good)', display: 'flex', alignItems: 'center', gap: 4}}>
-            <span style={{width: 5, height: 5, borderRadius: '50%', background: 'var(--good)'}} />
-            Available · Study Mode
-          </div>
-        </div>
-        <button className="btn btn--ghost btn--sm" onClick={onClose}><Icon name="x" size={12} /></button>
-      </div>
-
-      <div className="scroll-y" style={{flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 12}}>
-        <div style={{padding: 10, background: 'var(--bg-inset)', borderRadius: 8, fontSize: 11.5, color: 'var(--ink-3)', lineHeight: 1.5}}>
-          <div style={{fontWeight: 600, color: 'var(--ink-2)', marginBottom: 4}}>Context</div>
-          Question {question.id} · {question.module} · {question.acs}
-        </div>
-        {messages.map((m, i) => (
-          <div key={i} style={{display: 'flex', flexDirection: m.role === 'user' ? 'row-reverse' : 'row', gap: 8}}>
-            <div style={{
-              maxWidth: '85%',
-              padding: '8px 12px', borderRadius: 12,
-              background: m.role === 'user' ? 'var(--ink)' : 'var(--bg-inset)',
-              color: m.role === 'user' ? 'var(--bg-elev)' : 'var(--ink-2)',
-              fontSize: 13, lineHeight: 1.5,
-            }}>
-              {m.typing ? <span style={{display: 'inline-flex', gap: 3}}>
-                <Pulse delay={0} /><Pulse delay={150} /><Pulse delay={300} />
-              </span> : m.text}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{padding: 12, borderTop: '1px solid var(--line)'}}>
-        <div style={{display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8}}>
-          {['Explain like I\'m new', 'Why is B wrong?', 'Show diagram'].map(s => (
-            <button key={s} className="btn btn--sm" onClick={() => send(s)} style={{fontSize: 11.5}}>{s}</button>
-          ))}
-        </div>
-        <div style={{display: 'flex', gap: 6, alignItems: 'center', border: '1px solid var(--line-2)', borderRadius: 8, padding: '6px 10px', background: 'var(--bg-elev)'}}>
-          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send(input)} placeholder="Ask Orion..." style={{flex: 1, border: 0, background: 'transparent', outline: 'none', fontSize: 13.5}} />
-          <button className="btn btn--ghost btn--sm" onClick={() => send(input)} style={{color: 'var(--accent)'}}><Icon name="send" size={14} /></button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const Pulse = ({ delay }) => (
-  <span style={{
-    width: 5, height: 5, borderRadius: '50%', background: 'var(--ink-3)',
-    animation: `pulse-dot 1.2s ${delay}ms infinite`,
-  }} />
-);
-
-window.PreExamWarning = PreExamWarning;
-window.QuestionRunner = QuestionRunner;
-
-/* Results + Missed Questions + Orion Remediation */
-
-const ResultsScreen = ({ result, onStartFollowUp, onDone }) => {
-  const { session, questions, duration } = result;
-  const correct = questions.filter(q => q.isCorrect).length;
-  const score = correct / questions.length;
-  const passed = score >= 0.7;
-  const missed = questions.filter(q => !q.isCorrect);
-
-  // Group misses by module
-  const byModule = {};
-  missed.forEach(q => {
-    if (!byModule[q.module]) byModule[q.module] = [];
-    byModule[q.module].push(q);
-  });
-
-  const fmtTime = (s) => `${Math.floor(s/60)}m ${s%60}s`;
-
-  return (
-    <div className="page" style={{maxWidth: 1080, margin: '0 auto'}}>
-      {/* Hero */}
-      <div className="card" style={{padding: 32, marginBottom: 20, position: 'relative', overflow: 'hidden'}}>
-        <div style={{display: 'flex', alignItems: 'flex-start', gap: 32}}>
-          <div style={{flex: '0 0 200px'}}>
-            <div style={{fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4, fontWeight: 500}}>
-              {session.mode === 'exam' ? 'Exam Result' : 'Practice Result'}
-            </div>
-            <div style={{fontSize: 13, color: 'var(--ink-3)'}}>Reciprocating Engines</div>
-          </div>
-          <div style={{flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr', gap: 24, alignItems: 'baseline'}}>
-            <div>
-              <div className="serif tnum" style={{fontSize: 76, lineHeight: 1, color: passed ? 'var(--good)' : 'var(--bad)', letterSpacing: '-0.03em'}}>
-                {Math.round(score * 100)}<span style={{fontSize: 34, color: 'var(--ink-4)'}}>%</span>
-              </div>
-              <div style={{fontSize: 12, color: 'var(--ink-3)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6}}>
-                <span className={passed ? 'chip chip--good' : 'chip chip--bad'}>{passed ? 'PASS' : 'BELOW PASSING'}</span>
-                <span>FAA passing: 70%</span>
-              </div>
-            </div>
-            <ResultStat label="Correct" value={`${correct}/${questions.length}`} />
-            <ResultStat label="Time" value={fmtTime(duration)} />
-          </div>
-        </div>
-
-        {/* Score bar comparison */}
-        <div style={{marginTop: 28, paddingTop: 24, borderTop: '1px solid var(--line)'}}>
-          <div style={{fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, fontWeight: 500}}>Trend (last 6 attempts in this section)</div>
-          <div style={{display: 'flex', gap: 4, alignItems: 'flex-end', height: 60}}>
-            {[0.66, 0.72, 0.71, 0.78, 0.65, 0.72, score].map((v, i, a) => (
-              <div key={i} style={{flex: 1, position: 'relative'}}>
-                <div style={{
-                  height: `${v * 100}%`, minHeight: 8,
-                  background: i === a.length - 1 ? (passed ? 'var(--good)' : 'var(--bad)') : 'var(--ink-5)',
-                  borderRadius: '4px 4px 0 0',
-                }} />
-                <div style={{textAlign: 'center', fontSize: 10.5, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', marginTop: 4}}>{Math.round(v*100)}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{position: 'relative', height: 1, background: 'var(--line)', marginTop: -28, marginBottom: 28}}>
-            <div style={{position: 'absolute', top: -7, right: 0, fontSize: 10.5, color: 'var(--ink-4)', background: 'var(--bg-elev)', padding: '0 6px', fontFamily: 'var(--font-mono)'}}>70% pass</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Remediation hero — Orion re-enabled */}
-      {missed.length > 0 && (
-        <div className="card" style={{padding: 24, marginBottom: 20, background: 'linear-gradient(180deg, var(--bg-elev), var(--accent-soft))', borderColor: 'var(--accent)', borderWidth: 1}}>
-          <div style={{display: 'flex', gap: 20, alignItems: 'flex-start'}}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 12, flexShrink: 0,
-              background: 'linear-gradient(135deg, #4D8BFF, #A586E8)',
-              color: 'white', display: 'grid', placeItems: 'center',
-            }}>
-              <Icon name="orion" size={22} />
-            </div>
-            <div style={{flex: 1}}>
-              <div style={{fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6}}>
-                <Icon name="unlock" size={11} /> Orion re-enabled · Remediation ready
-              </div>
-              <h2 style={{fontSize: 18, marginBottom: 8}}>Let's break down the {missed.length} you missed.</h2>
-              <p style={{color: 'var(--ink-2)', fontSize: 13.5, lineHeight: 1.55, marginBottom: 14, maxWidth: 620}}>
-                Your weak areas in this attempt were <strong>{Object.keys(byModule).slice(0, 2).join(' and ')}</strong>. I can walk through each miss, surface the pattern, and generate a 15-question drill targeting those exact gaps.
-              </p>
-              <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
-                <button className="btn btn--primary" onClick={onStartFollowUp}>
-                  <Icon name="sparkles" size={13} />
-                  Generate quiz from misses ({missed.length} Q)
-                </button>
-                <button className="btn">Review with Orion</button>
-                <button className="btn">See weak-area breakdown</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Missed questions */}
-      {missed.length > 0 && (
-        <div className="card" style={{padding: 0, marginBottom: 20}}>
-          <div style={{padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center'}}>
-            <h3>Missed Questions</h3>
-            <span style={{fontSize: 12, color: 'var(--ink-4)', marginLeft: 10}}>{missed.length} of {questions.length}</span>
-            <div style={{flex: 1}} />
-            <div className="tabs">
-              <button className="tab" data-active>By question</button>
-              <button className="tab">By module</button>
-            </div>
-          </div>
-          {missed.slice(0, 4).map((q, i) => (
-            <MissedRow key={q.id} q={q} idx={i} />
-          ))}
-          {missed.length > 4 && (
-            <button className="btn btn--ghost" style={{margin: 12, width: 'calc(100% - 24px)'}}>
-              View all {missed.length} missed
-              <Icon name="chev-d" size={12} />
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Footer actions */}
-      <div style={{display: 'flex', gap: 8, justifyContent: 'space-between', padding: '12px 0'}}>
-        <button className="btn" onClick={onDone}>
-          <Icon name="chev-l" size={13} /> Back to Written Exams
-        </button>
-        <div style={{display: 'flex', gap: 8}}>
-          <button className="btn"><Icon name="download" size={13} /> Export results</button>
-          <button className="btn">Retake same setup</button>
-          <button className="btn btn--primary" onClick={onStartFollowUp}>
-            <Icon name="sparkles" size={13} />
-            Quiz from misses
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ResultStat = ({ label, value }) => (
-  <div>
-    <div style={{fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, fontWeight: 500}}>{label}</div>
-    <div className="tnum" style={{fontSize: 24, fontWeight: 600, fontFamily: 'var(--font-mono)'}}>{value}</div>
-  </div>
-);
-
-const MissedRow = ({ q, idx }) => {
-  const [open, setOpen] = React.useState(idx === 0);
-  return (
-    <div style={{borderTop: idx > 0 ? '1px solid var(--line)' : 0}}>
-      <button onClick={() => setOpen(!open)} style={{
-        width: '100%', padding: '14px 18px', display: 'flex', alignItems: 'center',
-        gap: 12, background: 'transparent', border: 0, textAlign: 'left',
-      }}>
-        <div style={{
-          width: 24, height: 24, borderRadius: '50%',
-          background: 'var(--bad-soft)', color: 'var(--bad)',
-          display: 'grid', placeItems: 'center', flexShrink: 0,
-        }}>
-          <Icon name="x" size={12} />
-        </div>
-        <div style={{flex: 1}}>
-          <div style={{fontSize: 13.5, fontWeight: 500, marginBottom: 2}}>{q.stem.slice(0, 90)}{q.stem.length > 90 && '…'}</div>
-          <div style={{fontSize: 12, color: 'var(--ink-4)', display: 'flex', alignItems: 'center', gap: 8}}>
-            <span className="chip" style={{fontSize: 10.5}}>{q.acs}</span>
-            <span>{q.module}</span>
-            <span>· You answered <strong style={{color: 'var(--bad)'}}>{q.chosen || '—'}</strong>, correct was <strong style={{color: 'var(--good)'}}>{q.correct}</strong></span>
-          </div>
-        </div>
-        <Icon name={open ? 'chev-d' : 'chev-r'} size={13} />
-      </button>
-      {open && (
-        <div style={{padding: '0 18px 18px 54px', display: 'flex', flexDirection: 'column', gap: 12}}>
-          {q.choices.map(c => (
-            <div key={c.id} style={{
-              display: 'flex', gap: 10, padding: '8px 12px', borderRadius: 6,
-              background: c.id === q.correct ? 'var(--good-soft)' : c.id === q.chosen ? 'var(--bad-soft)' : 'var(--bg-inset)',
-              fontSize: 13, lineHeight: 1.5,
-            }}>
-              <span className="mono" style={{fontWeight: 600, color: c.id === q.correct ? 'var(--good)' : c.id === q.chosen ? 'var(--bad)' : 'var(--ink-4)'}}>{c.id}</span>
-              <span>{c.text}</span>
-              {c.id === q.correct && <Icon name="check" size={13} />}
-              {c.id === q.chosen && c.id !== q.correct && <Icon name="x" size={13} />}
-            </div>
-          ))}
-          <div style={{padding: 12, background: 'var(--bg-inset)', borderRadius: 6, fontSize: 13, lineHeight: 1.5, color: 'var(--ink-2)'}}>
-            <strong style={{fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-4)', display: 'block', marginBottom: 6}}>Explanation</strong>
-            {q.explanation}
-          </div>
-          <div style={{display: 'flex', gap: 6}}>
-            <button className="btn btn--sm"><Icon name="orion" size={12} /> Ask Orion</button>
-            <button className="btn btn--sm"><Icon name="book" size={12} /> {q.reference}</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-window.ResultsScreen = ResultsScreen;
-
-/* History tab + Instructor lookup + Progress Dashboard */
-
-const HistoryTab = ({ tweaks, onOpenAttempt, student = null }) => {
-  const D = window.KILSAR_DATA;
-  const isInstructor = tweaks.role === 'instructor';
-  const sourceHistory = (isInstructor && student) ? (D.studentDataFor(student.id)?.history || D.history) : D.history;
-  const [filterMode, setFilterMode] = React.useState('All');
-  const [filterRange, setFilterRange] = React.useState('Last 30 days');
-
-  const visibleHistory = sourceHistory.filter(h => filterMode === 'All' || h.mode === filterMode);
-
-  return (
-    <div>
-      <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14}}>
-          <div className="tabs">
-            {['All', 'Exam', 'Study'].map(m => (
-              <button key={m} className="tab" data-active={filterMode === m} onClick={() => setFilterMode(m)}>{m}</button>
-            ))}
-          </div>
-          <div className="tabs">
-            {['Last 7 days', 'Last 30 days', 'All time'].map(r => (
-              <button key={r} className="tab" data-active={filterRange === r} onClick={() => setFilterRange(r)}>{r}</button>
-            ))}
-          </div>
-          <div style={{flex: 1}} />
-          <button className="btn"><Icon name="filter" size={13} /> Filter</button>
-          <button className="btn"><Icon name="download" size={13} /> Export</button>
-        </div>
-
-        <div className="card" style={{padding: 0}}>
-          <div style={{display: 'grid', gridTemplateColumns: '90px 1fr 90px 110px 100px 80px 36px', padding: '10px 18px', borderBottom: '1px solid var(--line)', background: 'var(--bg-inset)', fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500}}>
-            <div>Date</div>
-            <div>Title</div>
-            <div>Mode</div>
-            <div>Questions</div>
-            <div>Time</div>
-            <div style={{textAlign: 'right'}}>Score</div>
-            <div></div>
-          </div>
-          {visibleHistory.map(h => (
-            <button key={h.id} onClick={() => onOpenAttempt && onOpenAttempt(h)} style={{
-              width: '100%', display: 'grid',
-              gridTemplateColumns: '90px 1fr 90px 110px 100px 80px 36px',
-              padding: '12px 18px', borderTop: '1px solid var(--line)',
-              background: 'transparent', border: 0, textAlign: 'left',
-              alignItems: 'center', cursor: 'pointer',
-            }}>
-              <div className="mono" style={{fontSize: 12.5, color: 'var(--ink-3)'}}>{h.date.slice(5)}</div>
-              <div>
-                <div style={{fontSize: 13.5, fontWeight: 500}}>{h.title}</div>
-                <div style={{fontSize: 11.5, color: 'var(--ink-4)', display: 'flex', gap: 4, marginTop: 2}}>
-                  {h.acs.slice(0, 3).map(a => <span key={a} className="chip" style={{fontSize: 10}}>{a}</span>)}
-                </div>
-              </div>
-              <div>
-                <span className={h.mode === 'Exam' ? 'chip chip--lock' : 'chip chip--accent'}>
-                  {h.mode === 'Exam' ? <Icon name="lock" size={10} /> : <Icon name="book" size={10} />}
-                  {h.mode}
-                </span>
-              </div>
-              <div className="mono" style={{fontSize: 13}}>{h.count}</div>
-              <div className="mono" style={{fontSize: 13, color: 'var(--ink-3)'}}>{h.duration}</div>
-              <div style={{textAlign: 'right'}}>
-                <span className="mono" style={{fontSize: 14, fontWeight: 600, color: h.score >= 0.7 ? 'var(--good)' : 'var(--bad)'}}>{Math.round(h.score*100)}%</span>
-              </div>
-              <div style={{color: 'var(--ink-4)', textAlign: 'right'}}><Icon name="chev-r" size={13} /></div>
-            </button>
-          ))}
-        </div>
-    </div>
-  );
-};
-
-const KV = ({ label, value, good }) => (
-  <div>
-    <div style={{fontSize: 10.5, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500}}>{label}</div>
-    <div className="mono" style={{fontSize: 16, fontWeight: 600, color: good ? 'var(--good)' : 'var(--ink)'}}>{value}</div>
-  </div>
-);
-
-/* Dashboard */
-const Dashboard = ({ onJumpToWeak, tweaks = {}, student = null }) => {
-  const D = window.KILSAR_DATA;
-  const isInstructor = tweaks.role === 'instructor';
-  const sd = (isInstructor && student) ? D.studentDataFor(student.id) : null;
-  const overallTrend = sd ? sd.overallTrend : D.overallTrend;
-  const acsTrends = sd ? sd.acsTrends : D.acsTrends;
-  const lastScore = overallTrend[overallTrend.length - 1];
-  const focusAreas = [
-    { module: 'Theory of Operation', acs: 'PA.I.F', mastery: 0.49, trend: -3, suggestion: 'Detonation, valve timing concepts repeatedly miss' },
-    { module: 'Pistons', acs: 'PA.I.D', mastery: 0.55, trend: 2, suggestion: 'Ring identification & oversize bore questions' },
-    { module: 'Composites', acs: 'AF.I.C', mastery: 0.51, trend: 5, suggestion: 'Repair classifications, ply orientation' },
-  ];
-
-  return (
-    <div>
-      {/* Stat row */}
-      <div className="dashboard-stats" style={{gridTemplateColumns: 'repeat(3, 1fr)'}}>
-        <BigStat label="Avg score · last 10" value={`${Math.round(lastScore*100)}%`} trend={`${sd ? (sd.student.trend>0?'+':'')+sd.student.trend+'pt' : '+5.2pt'}`} good />
-        <BigStat label="Attempts this week" value="6" sub="2 exam, 4 study" />
-        <BigStat label="Time invested" value="11h 24m" sub="this month" />
-      </div>
-
-      <div className="dashboard-grid">
-        {/* Trend chart */}
-        <div className="card" style={{padding: 20}}>
-          <div style={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18}}>
-            <div>
-              <h3>Score trend</h3>
-              <div style={{fontSize: 12.5, color: 'var(--ink-3)', marginTop: 2}}>Last 10 attempts across all sections</div>
-            </div>
-            <div className="tabs">
-              <button className="tab" data-active>10</button>
-              <button className="tab">25</button>
-              <button className="tab">All</button>
-            </div>
-          </div>
-          <TrendChart data={overallTrend} />
-
-          <div style={{marginTop: 24, paddingTop: 18, borderTop: '1px solid var(--line)'}}>
-            <div style={{fontSize: 12, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12, fontWeight: 500}}>By ACS code</div>
-            <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-              {Object.entries(acsTrends).map(([acs, vals]) => (
-                <ACSRow key={acs} acs={acs} vals={vals} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Focus areas */}
-        <div className="card" style={{padding: 20, alignSelf: 'start'}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4}}>
-            <Icon name="sparkles" size={14} />
-            <h3>Focus Areas</h3>
-          </div>
-          <div style={{fontSize: 12.5, color: 'var(--ink-3)', marginBottom: 18}}>Auto-generated from your last 10 attempts</div>
-
-          <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
-            {focusAreas.map(f => (
-              <div key={f.acs} style={{padding: 12, border: '1px solid var(--line)', borderRadius: 8, background: 'var(--bg-inset)'}}>
-                <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6}}>
-                  <span className="mono" style={{fontSize: 11, color: 'var(--ink-4)'}}>{f.acs}</span>
-                  <span style={{fontSize: 13.5, fontWeight: 600}}>{f.module}</span>
-                  <div style={{flex: 1}} />
-                  <span className="mono" style={{fontSize: 12, fontWeight: 600, color: 'var(--bad)'}}>{Math.round(f.mastery*100)}%</span>
-                </div>
-                <div className="bar bar--bad" style={{height: 4, marginBottom: 8}}>
-                  <span style={{width: `${f.mastery*100}%`}} />
-                </div>
-                <div style={{fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.45}}>{f.suggestion}</div>
-              </div>
-            ))}
-          </div>
-
-          <button onClick={onJumpToWeak} className="btn btn--primary" style={{width: '100%', marginTop: 16}}>
-            <Icon name="sparkles" size={13} />
-            Generate exam targeting weak areas
-          </button>
-          <div style={{textAlign: 'center', fontSize: 11.5, color: 'var(--ink-4)', marginTop: 8}}>30 questions · weighted toward modules &lt; 60%</div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const BigStat = ({ label, value, trend, sub, good, highlight }) => (
-  <div className="card" style={{padding: 16, background: highlight ? 'linear-gradient(180deg, var(--bg-elev), var(--accent-soft))' : 'var(--bg-elev)', borderColor: highlight ? 'var(--accent)' : 'var(--line)'}}>
-    <div style={{fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500, marginBottom: 6}}>{label}</div>
-    <div style={{display: 'flex', alignItems: 'baseline', gap: 8}}>
-      <div className="mono tnum" style={{fontSize: 26, fontWeight: 600}}>{value}</div>
-      {trend && <div className="mono" style={{fontSize: 12, color: good ? 'var(--good)' : 'var(--bad)'}}>{trend}</div>}
-    </div>
-    {sub && <div style={{fontSize: 11.5, color: 'var(--ink-4)', marginTop: 2}}>{sub}</div>}
-  </div>
-);
-
-const TrendChart = ({ data }) => {
-  const W = 500, H = 160;
-  const pad = { l: 28, r: 14, t: 10, b: 22 };
-  const innerW = W - pad.l - pad.r, innerH = H - pad.t - pad.b;
-  const x = (i) => pad.l + (i / (data.length - 1)) * innerW;
-  const y = (v) => pad.t + (1 - v) * innerH;
-  const path = data.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ');
-  const area = `${path} L ${x(data.length-1)} ${pad.t + innerH} L ${pad.l} ${pad.t + innerH} Z`;
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{width: '100%', height: 'auto', overflow: 'visible'}}>
-      {/* Grid lines */}
-      {[0, 0.25, 0.5, 0.75, 1].map(t => (
-        <g key={t}>
-          <line x1={pad.l} y1={y(t)} x2={W - pad.r} y2={y(t)} stroke="var(--line)" strokeDasharray={t === 0.7 ? '0' : '2 3'} />
-          <text x={pad.l - 6} y={y(t) + 3} fontSize="10" fill="var(--ink-4)" textAnchor="end" fontFamily="var(--font-mono)">{Math.round(t*100)}</text>
-        </g>
-      ))}
-      {/* Pass line at 70 */}
-      <line x1={pad.l} y1={y(0.7)} x2={W - pad.r} y2={y(0.7)} stroke="var(--warn)" strokeDasharray="4 3" strokeWidth="1" />
-      <text x={W - pad.r} y={y(0.7) - 4} fontSize="9.5" fill="var(--warn)" textAnchor="end" fontFamily="var(--font-mono)">FAA pass · 70%</text>
-
-      <path d={area} fill="var(--ink)" opacity="0.06" />
-      <path d={path} fill="none" stroke="var(--ink)" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
-      {data.map((v, i) => (
-        <g key={i}>
-          <circle cx={x(i)} cy={y(v)} r={i === data.length - 1 ? 4 : 2.5} fill={i === data.length - 1 ? 'var(--good)' : 'var(--ink)'} />
-          {i === data.length - 1 && (
-            <text x={x(i) + 8} y={y(v) - 6} fontSize="11" fill="var(--good)" fontFamily="var(--font-mono)" fontWeight="600">{Math.round(v*100)}%</text>
-          )}
-        </g>
-      ))}
-      {/* X axis labels */}
-      {data.map((_, i) => (
-        <text key={i} x={x(i)} y={H - 6} fontSize="10" fill="var(--ink-4)" textAnchor="middle" fontFamily="var(--font-mono)">{i + 1}</text>
-      ))}
-    </svg>
-  );
-};
-
-const ACSRow = ({ acs, vals }) => {
-  const last = vals[vals.length - 1];
-  const first = vals[0];
-  const trend = last - first;
-  const W = 100, H = 24;
-  const x = (i) => (i / (vals.length - 1)) * W;
-  const y = (v) => (1 - v) * H;
-  const path = vals.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ');
-  const color = last >= 0.7 ? 'var(--good)' : last >= 0.55 ? 'var(--warn)' : 'var(--bad)';
-
-  return (
-    <div style={{display: 'grid', gridTemplateColumns: '60px 1fr 110px 50px 50px', alignItems: 'center', gap: 10, padding: '4px 0'}}>
-      <span className="mono" style={{fontSize: 11.5, color: 'var(--ink-3)'}}>{acs}</span>
-      <div className="bar" style={{height: 5}}>
-        <span style={{width: `${last*100}%`, background: color}} />
-      </div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100" height="24">
-        <path d={path} fill="none" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
-        <circle cx={x(vals.length-1)} cy={y(last)} r="2" fill={color} />
-      </svg>
-      <span className="mono" style={{fontSize: 12, fontWeight: 600, textAlign: 'right'}}>{Math.round(last*100)}%</span>
-      <span className="mono" style={{fontSize: 11, color: trend > 0 ? 'var(--good)' : 'var(--bad)', textAlign: 'right'}}>
-        {trend > 0 ? '+' : ''}{Math.round(trend*100)}
-      </span>
-    </div>
-  );
-};
-
-window.HistoryTab = HistoryTab;
-window.Dashboard = Dashboard;
-
-/* Historical exam detail — click an attempt to see this */
-
-const HistoryDetail = ({ attempt, onBack }) => {
-  const D = window.KILSAR_DATA;
-  // Build per-question results from sample bank for realism
-  const questions = React.useMemo(() => {
-    const out = [];
-    const n = Math.min(attempt.count, 30); // show up to 30 in detail
-    for (let i = 0; i < n; i++) {
-      const q = D.sampleQuestions[i % D.sampleQuestions.length];
-      // Fix correctness ratio to match overall score
-      const wantCorrect = (i / n) < attempt.score;
-      out.push({
-        ...q,
-        id: `${attempt.id}-q-${i}`,
-        chosen: wantCorrect ? q.correct : q.choices.find(c => c.id !== q.correct).id,
-        isCorrect: wantCorrect,
-        timeSpent: 60 + Math.floor(Math.random() * 90),
-      });
-    }
+    });
     return out;
   }, [attempt.id]);
 
@@ -6484,6 +5987,27 @@ const HistoryDetail = ({ attempt, onBack }) => {
     byModule[q.module].total++;
     if (q.isCorrect) byModule[q.module].correct++;
   });
+
+  // Mode drives which breakdown shows: Exam → by ACS code, Study → by module.
+  const mode = summaryMode === 'From attempt' ? attempt.mode : summaryMode;
+
+  // Roll questions up to ACS area (PA.I, PA.II…) for Exam mode
+  const areaMap = {};
+  questions.forEach(q => {
+    const area = String(q.acs || '').split('.').slice(0, 2).join('.');
+    if (!areaMap[area]) areaMap[area] = { correct: 0, total: 0, leaves: {} };
+    areaMap[area].total++;
+    if (q.isCorrect) areaMap[area].correct++;
+    const leaves = areaMap[area].leaves;
+    if (!leaves[q.acs]) leaves[q.acs] = { correct: 0, total: 0, module: q.module };
+    leaves[q.acs].total++;
+    if (q.isCorrect) leaves[q.acs].correct++;
+  });
+  const byArea = Object.entries(areaMap);
+  const areaTitle = (code) => ((D.blocks || []).find(b => b.acs === code) || {}).title || '';
+  const pctColor = (p) => p >= 0.8 ? 'var(--good)' : p >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+  const [openAreas, setOpenAreas] = React.useState({});
+  const toggleArea = (code) => setOpenAreas(o => ({ ...o, [code]: !o[code] }));
 
   const [filter, setFilter] = React.useState('all'); // all | wrong
   const visible = questions.filter(q => {
@@ -6538,7 +6062,61 @@ const HistoryDetail = ({ attempt, onBack }) => {
 
       {/* Two-column: breakdown + question list */}
       <div style={{display: 'grid', gridTemplateColumns: '1fr', gap: 18}}>
-        {/* Per-module breakdown */}
+        {/* Breakdown — by ACS code in Exam mode, by module in Study mode */}
+        {mode === 'Exam' ? (
+        <div className="card" style={{padding: 18}}>
+          <h3 style={{marginBottom: 12}}>Performance by ACS code</h3>
+          <div>
+            {byArea.map(([code, v], ai) => {
+              const pct = v.correct / v.total;
+              const color = pctColor(pct);
+              const open = !!openAreas[code];
+              const leaves = Object.entries(v.leaves);
+              return (
+                <div key={code}>
+                  <button onClick={() => toggleArea(code)} style={{
+                    width: '100%', padding: 'var(--kls-space-small) 0', background: 'transparent',
+                    borderWidth: 0, borderBottom: ai === byArea.length - 1 && !open ? 0 : '1px solid var(--line)', borderStyle: 'solid', borderColor: 'var(--line)',
+                    textAlign: 'left', cursor: 'pointer',
+                    display: 'grid', gridTemplateColumns: '14px 1fr auto 60px 46px', gap: 'var(--kls-space-small)', alignItems: 'center',
+                  }}>
+                    <Icon name={open ? 'chev-d' : 'chev-r'} size={13} />
+                    <div style={{minWidth: 0}}>
+                      <div className="mono" style={{fontSize: 13.5, fontWeight: 600}}>{code}</div>
+                      <div style={{fontSize: 11.5, color: 'var(--ink-4)'}}>{areaTitle(code)} · {leaves.length} code{leaves.length === 1 ? '' : 's'}</div>
+                    </div>
+                    <span style={{fontSize: 11.5, color: 'var(--ink-3)', whiteSpace: 'nowrap'}}>{v.correct} of {v.total} correct</span>
+                    <div className="bar" style={{height: 4}}>
+                      <span style={{width: `${pct*100}%`, background: color}} />
+                    </div>
+                    <span className="mono" style={{fontSize: 14, fontWeight: 600, color, textAlign: 'right'}}>{Math.round(pct*100)}%</span>
+                  </button>
+                  {open && leaves.map(([leaf, lv]) => {
+                    const lp = lv.correct / lv.total;
+                    const lc = pctColor(lp);
+                    return (
+                      <div key={leaf} style={{
+                        padding: '10px 0 10px 28px', borderBottom: '1px solid var(--line)',
+                        display: 'grid', gridTemplateColumns: '1fr auto 60px 46px', gap: 'var(--kls-space-small)', alignItems: 'center',
+                      }}>
+                        <div style={{minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 'var(--kls-space-xsmall)'}}>
+                          <span className="mono" style={{fontSize: 12, color: 'var(--ink-2)'}}>{leaf}</span>
+                          <span style={{fontSize: 12.5, color: 'var(--ink-3)'}}>{lv.module}</span>
+                        </div>
+                        <span style={{fontSize: 11.5, color: 'var(--ink-4)', whiteSpace: 'nowrap'}}>{lv.correct} of {lv.total}</span>
+                        <div className="bar" style={{height: 3}}>
+                          <span style={{width: `${lp*100}%`, background: lc}} />
+                        </div>
+                        <span className="mono" style={{fontSize: 12.5, fontWeight: 600, color: lc, textAlign: 'right'}}>{Math.round(lp*100)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        ) : (
         <div className="card" style={{padding: 18}}>
           <h3 style={{marginBottom: 12}}>Performance by module</h3>
           <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10}}>
@@ -6563,6 +6141,7 @@ const HistoryDetail = ({ attempt, onBack }) => {
             })}
           </div>
         </div>
+        )}
 
         {/* All questions list */}
         <div className="card" style={{padding: 0}}>
@@ -6589,6 +6168,433 @@ const HistoryDetail = ({ attempt, onBack }) => {
   );
 };
 
+const ResultStat = ({ label, value, tone }) => (
+  <div>
+    <div style={{fontSize: 10.5, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 3}}>{label}</div>
+    <div className="mono" style={{fontSize: 26, fontWeight: 600, lineHeight: 1, color: tone || 'var(--ink)'}}>{value}</div>
+  </div>
+);
+
+const Sparkline = ({ values, width = 260, height = 44, color = 'var(--accent)' }) => {
+  if (!values || !values.length) return null;
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = (max - min) || 1;
+  const pts = values.map((v, i) => [
+    (i / (values.length - 1)) * (width - 2) + 1,
+    height - 3 - ((v - min) / span) * (height - 8),
+  ]);
+  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+  return (
+    <svg className="sparkline" width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none">
+      <path d={`${d} L${width - 1} ${height} L1 ${height} Z`} fill={color} opacity="0.10" />
+      <path d={d} stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.6" fill={color} />
+    </svg>
+  );
+};
+
+/* ── Question runner ───────────────────────────────────────────── */
+const QuestionRunner = ({ session, tweaks, onFinish, onExit }) => {
+  const D = window.KILSAR_DATA;
+  const isExam = session.mode === 'exam';
+  const questions = React.useMemo(() => {
+    const bank = D.sampleQuestions;
+    return Array.from({ length: session.count }, (_, i) => ({
+      ...bank[i % bank.length],
+      id: `s-q-${i}`,
+    }));
+  }, [session]);
+
+  const [idx, setIdx] = React.useState(0);
+  const [answers, setAnswers] = React.useState({});
+  const [flagged, setFlagged] = React.useState({});
+  const [revealed, setRevealed] = React.useState({});
+  const [elapsed, setElapsed] = React.useState(0);
+  React.useEffect(() => {
+    const t = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const q = questions[idx];
+  const chosen = answers[q.id] || null;
+  const showFeedback = !isExam && !!revealed[q.id];
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const answeredCount = Object.keys(answers).length;
+
+  const choose = (cid) => {
+    if (showFeedback) return;
+    setAnswers(a => ({ ...a, [q.id]: cid }));
+    if (!isExam) setRevealed(r => ({ ...r, [q.id]: true }));
+  };
+
+  const finish = () => {
+    const results = questions.map(qq => ({
+      ...qq,
+      chosen: answers[qq.id] || null,
+      isCorrect: answers[qq.id] === qq.correct,
+      timeSpent: Math.max(8, Math.round(elapsed / questions.length)),
+    }));
+    onFinish({ session, questions: results, duration: fmt(elapsed) });
+  };
+
+  return (
+    <div style={{flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--kls-scaffold-bg)'}}>
+      <div className="runner-topbar" style={{padding: '14px 18px', borderBottom: '1px solid var(--line)', background: 'var(--bg-elev)'}}>
+        <div className="runner-topbar__title">
+          <button className="btn btn--ghost btn--sm" onClick={onExit}><Icon name="chev-l" size={12} />Exit</button>
+          <span className={isExam ? 'chip chip--lock' : 'chip chip--accent'}>
+            <Icon name={isExam ? 'lock' : 'book'} size={10} />{isExam ? 'Exam' : 'Study'}
+          </span>
+          <span className="runner-topbar__title-extra" style={{fontSize: 13, color: 'var(--ink-3)'}}>{session.subject || q.block}</span>
+        </div>
+        <div className="runner-progress">
+          <span className="mono" style={{fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap'}}>{idx + 1} / {questions.length}</span>
+          <div className="bar runner-progress__bar" style={{height: 4}}>
+            <span style={{width: `${((idx + 1) / questions.length) * 100}%`}} />
+          </div>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
+          <span className="mono" style={{fontSize: 13, fontWeight: 600, color: isExam ? 'var(--lock)' : 'var(--ink-2)'}}>{fmt(elapsed)}</span>
+          <button className="btn btn--sm" onClick={() => setFlagged(f => ({ ...f, [q.id]: !f[q.id] }))} data-on={!!flagged[q.id]}>
+            <Icon name="flag" size={12} />{flagged[q.id] ? 'Flagged' : 'Flag'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{flex: 1, overflowY: 'auto'}}>
+        <div style={{maxWidth: 780, margin: '0 auto', padding: '26px 18px 90px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontSize: 11.5, color: 'var(--ink-4)'}}>
+            <span className="mono">{q.acs}</span>
+            <span>·</span>
+            <span>{q.module}</span>
+          </div>
+          <h2 style={{fontSize: 21, lineHeight: 1.4, fontWeight: 500, marginBottom: 22, textWrap: 'pretty'}}>{q.stem}</h2>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+            {q.choices.map(c => {
+              const picked = chosen === c.id;
+              const right = showFeedback && c.id === q.correct;
+              const wrongPick = showFeedback && picked && c.id !== q.correct;
+              return (
+                <button key={c.id} onClick={() => choose(c.id)} style={{
+                  display: 'flex', gap: 14, alignItems: 'flex-start', textAlign: 'left',
+                  padding: '14px 16px', borderRadius: 8, cursor: showFeedback ? 'default' : 'pointer',
+                  background: right ? 'var(--good-soft)' : wrongPick ? 'var(--bad-soft)' : picked ? 'var(--bg-sunken)' : 'var(--bg-elev)',
+                  border: '1px solid ' + (right ? 'var(--good)' : wrongPick ? 'var(--bad)' : picked ? 'var(--ink-4)' : 'var(--line)'),
+                  fontSize: 15, lineHeight: 1.5, color: 'var(--ink)',
+                }}>
+                  <span className="mono" style={{
+                    width: 22, height: 22, flexShrink: 0, borderRadius: '50%', display: 'grid', placeItems: 'center',
+                    fontSize: 11.5, fontWeight: 600,
+                    background: right ? 'var(--good)' : wrongPick ? 'var(--bad)' : picked ? 'var(--ink)' : 'var(--bg-sunken)',
+                    color: (right || wrongPick || picked) ? 'var(--bg-elev)' : 'var(--ink-3)',
+                  }}>{c.id}</span>
+                  <span style={{flex: 1}}>{c.text}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {showFeedback && (
+            <div className="fade-in" style={{marginTop: 18, padding: 16, background: 'var(--bg-inset)', border: '1px solid var(--line)', borderRadius: 8}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10}}>
+                <span className={chosen === q.correct ? 'chip chip--good' : 'chip chip--bad'}>
+                  <Icon name={chosen === q.correct ? 'check' : 'x'} size={10} />
+                  {chosen === q.correct ? 'Correct' : 'Incorrect'}
+                </span>
+                <span className="mono" style={{fontSize: 11.5, color: 'var(--ink-4)'}}>Answer {q.correct}</span>
+              </div>
+              <div style={{fontSize: 14, lineHeight: 1.6, color: 'var(--ink-2)'}}>{q.explanation}</div>
+              <div className="mono" style={{fontSize: 11, color: 'var(--ink-4)', marginTop: 10}}>{q.reference}</div>
+              <div style={{display: 'flex', gap: 6, marginTop: 14}}>
+                <button className="btn btn--sm"><Icon name="orion" size={12} />Ask Orion</button>
+                <button className="btn btn--sm"><Icon name="book" size={12} />Open reference</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{
+        borderTop: '1px solid var(--line)', background: 'var(--bg-elev)', padding: '14px 18px',
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <button className="btn" onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0}>
+          <Icon name="chev-l" size={12} />Previous
+        </button>
+        <div style={{flex: 1, fontSize: 12, color: 'var(--ink-4)'}}>{answeredCount} of {questions.length} answered</div>
+        {idx === questions.length - 1 ? (
+          <button className="btn btn--primary btn--lg" onClick={finish}>
+            {isExam ? 'Submit exam' : 'Finish session'}
+          </button>
+        ) : (
+          <button className="btn btn--primary btn--lg" onClick={() => setIdx(i => Math.min(questions.length - 1, i + 1))}>
+            Next<Icon name="chev-r" size={12} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Post-session results ──────────────────────────────────────── */
+const ResultsScreen = ({ result, onStartFollowUp, onDone }) => {
+  const { session, questions, duration } = result;
+  const correct = questions.filter(q => q.isCorrect).length;
+  const wrong = questions.length - correct;
+  const score = correct / questions.length;
+  const isExam = session.mode === 'exam';
+  const passed = score >= 0.7;
+  const tone = score >= 0.8 ? 'var(--good)' : score >= 0.7 ? 'var(--warn)' : 'var(--bad)';
+
+  const byModule = {};
+  questions.forEach(q => {
+    if (!byModule[q.module]) byModule[q.module] = { correct: 0, total: 0, acs: q.acs };
+    byModule[q.module].total++;
+    if (q.isCorrect) byModule[q.module].correct++;
+  });
+  const missed = questions.filter(q => !q.isCorrect);
+
+  return (
+    <div className="page" data-screen-label="Results" style={{maxWidth: 1080, margin: '0 auto'}}>
+      <div className="card" style={{padding: 24, marginBottom: 18}}>
+        <div style={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap'}}>
+          <div style={{flex: '1 1 300px', minWidth: 0}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10}}>
+              <span className={isExam ? 'chip chip--lock' : 'chip chip--accent'}>
+                <Icon name={isExam ? 'lock' : 'book'} size={10} />{isExam ? 'Exam' : 'Study'}
+              </span>
+              {isExam && <span className={passed ? 'chip chip--good' : 'chip chip--bad'}>{passed ? 'Pass' : 'Below 70%'}</span>}
+            </div>
+            <h2 style={{fontSize: 22, marginBottom: 6}}>{isExam ? 'Exam complete' : 'Session complete'}</h2>
+            <div style={{fontSize: 13, color: 'var(--ink-3)'}}>
+              {questions.length} questions · {duration}{session.subject ? ' · ' + session.subject : ''}
+            </div>
+          </div>
+          <div style={{display: 'flex', gap: 28}}>
+            <ResultStat label="Score" value={`${Math.round(score * 100)}%`} tone={tone} />
+            <ResultStat label="Correct" value={`${correct}/${questions.length}`} />
+            <ResultStat label="Missed" value={wrong} tone={wrong ? 'var(--bad)' : null} />
+          </div>
+        </div>
+        <div style={{display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap'}}>
+          {wrong > 0 && (
+            <button className="btn btn--primary" onClick={onStartFollowUp}>
+              <Icon name="sparkles" size={13} />Quiz from these {wrong} misses
+            </button>
+          )}
+          <button className="btn" onClick={onDone}>Back to setup</button>
+          <button className="btn"><Icon name="orion" size={13} />Review with Orion</button>
+        </div>
+      </div>
+
+      <div className="card" style={{padding: 18, marginBottom: 18}}>
+        <h3 style={{marginBottom: 12}}>Performance by module</h3>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10}}>
+          {Object.entries(byModule).map(([mod, v]) => {
+            const pct = v.correct / v.total;
+            const color = pct >= 0.8 ? 'var(--good)' : pct >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+            return (
+              <div key={mod} style={{padding: 'var(--kls-space-small)', background: 'var(--bg-inset)', border: '1px solid var(--line)', borderRadius: 8}}>
+                <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6}}>
+                  <div>
+                    <div style={{fontSize: 13.5, fontWeight: 600}}>{mod}</div>
+                    <div className="mono" style={{fontSize: 11, color: 'var(--ink-4)'}}>{v.acs}</div>
+                  </div>
+                  <div className="mono" style={{fontSize: 16, fontWeight: 600, color}}>{Math.round(pct * 100)}%</div>
+                </div>
+                <div className="bar" style={{height: 4}}>
+                  <span style={{width: `${pct * 100}%`, background: color}} />
+                </div>
+                <div style={{fontSize: 11.5, color: 'var(--ink-3)', marginTop: 6}}>{v.correct} of {v.total} correct</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="card" style={{padding: 0}}>
+        <div style={{padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10}}>
+          <h3 style={{margin: 0}}>Missed questions</h3>
+          <span style={{fontSize: 12, color: 'var(--ink-4)'}}>{missed.length}</span>
+        </div>
+        {missed.length === 0 ? (
+          <div style={{padding: 28, textAlign: 'center', fontSize: 13.5, color: 'var(--ink-3)'}}>
+            Nothing missed in this session.
+          </div>
+        ) : missed.map((q, i) => (
+          <HistoryQuestionRow key={q.id} q={q} idx={questions.indexOf(q)} isFirst={i === 0} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ── Exam history list ─────────────────────────────────────────── */
+const HistoryTab = ({ tweaks, student, onOpenAttempt }) => {
+  const D = window.KILSAR_DATA;
+  const sd = student ? D.studentDataFor(student.id) : null;
+  const attempts = sd ? sd.history : D.history;
+  const [modeFilter, setModeFilter] = React.useState('all');
+  const rows = attempts.filter(a => modeFilter === 'all' || a.mode.toLowerCase() === modeFilter);
+  const avg = attempts.reduce((s, a) => s + a.score, 0) / attempts.length;
+  const best = Math.max(...attempts.map(a => a.score));
+  const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  return (
+    <div>
+      <div className="dashboard-stats">
+        <Stat label="Attempts" value={attempts.length} mono />
+        <Stat label="Average score" value={`${Math.round(avg * 100)}%`} mono />
+        <Stat label="Best score" value={`${Math.round(best * 100)}%`} mono />
+        <Stat label="Exams taken" value={attempts.filter(a => a.mode === 'Exam').length} mono />
+      </div>
+
+      <div className="card" style={{padding: 0}}>
+        <div style={{padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap'}}>
+          <h3 style={{margin: 0}}>{student ? `${student.name}'s attempts` : 'Your attempts'}</h3>
+          <span style={{fontSize: 12, color: 'var(--ink-4)'}}>{rows.length} shown</span>
+          <div style={{flex: 1}} />
+          <div className="tabs">
+            {[['all', 'All'], ['exam', 'Exam'], ['study', 'Study']].map(([v, l]) => (
+              <button key={v} className="tab" data-active={modeFilter === v} onClick={() => setModeFilter(v)}>{l}</button>
+            ))}
+          </div>
+        </div>
+        {rows.map((a, i) => {
+          const tone = a.score >= 0.8 ? 'var(--good)' : a.score >= 0.7 ? 'var(--warn)' : 'var(--bad)';
+          return (
+            <button key={a.id} onClick={() => onOpenAttempt(a)} style={{
+              width: '100%', padding: '14px 18px', background: 'transparent', textAlign: 'left', cursor: 'pointer',
+              borderWidth: 0, borderTop: i === 0 ? 0 : '1px solid var(--line)', borderStyle: 'solid', borderColor: 'var(--line)',
+              display: 'grid', gridTemplateColumns: '1fr auto auto 70px 56px 14px', gap: 14, alignItems: 'center',
+            }}>
+              <div style={{minWidth: 0}}>
+                <div style={{fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{a.title}</div>
+                <div style={{fontSize: 11.5, color: 'var(--ink-4)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 8}}>
+                  <span>{fmtDate(a.date)}</span>
+                  <span className="mono">{a.acs.join(' · ')}</span>
+                </div>
+              </div>
+              <span className={a.mode === 'Exam' ? 'chip chip--lock' : 'chip chip--accent'}>
+                <Icon name={a.mode === 'Exam' ? 'lock' : 'book'} size={10} />{a.mode}
+              </span>
+              <span className="mono" style={{fontSize: 11.5, color: 'var(--ink-3)', whiteSpace: 'nowrap'}}>{a.count} Q · {a.duration}</span>
+              <div className="bar" style={{height: 4}}>
+                <span style={{width: `${a.score * 100}%`, background: tone}} />
+              </div>
+              <span className="mono" style={{fontSize: 15, fontWeight: 600, color: tone, textAlign: 'right'}}>{Math.round(a.score * 100)}%</span>
+              <Icon name="chev-r" size={13} />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ── Progress dashboard ────────────────────────────────────────── */
+const Dashboard = ({ tweaks, student, onJumpToWeak }) => {
+  const D = window.KILSAR_DATA;
+  const sd = student ? D.studentDataFor(student.id) : null;
+  const trend = sd ? sd.overallTrend : D.overallTrend;
+  const acsTrends = sd ? sd.acsTrends : D.acsTrends;
+  const attempts = sd ? sd.history : D.history;
+  const latest = trend[trend.length - 1];
+  const delta = Math.round((latest - trend[0]) * 100);
+
+  const modules = D.blocks.flatMap(b => b.modules.map(m => ({ ...m, block: b.title })));
+  const weakest = [...modules].sort((a, b) => a.mastery - b.mastery).slice(0, 6);
+  const strongest = [...modules].sort((a, b) => b.mastery - a.mastery).slice(0, 4);
+  const readiness = modules.reduce((s, m) => s + m.mastery, 0) / modules.length;
+
+  return (
+    <div>
+      <div className="dashboard-stats">
+        <Stat label="Latest score" value={`${Math.round(latest * 100)}%`} mono />
+        <Stat label="Trend" value={`${delta >= 0 ? '+' : ''}${delta} pts`} mono />
+        <Stat label="Readiness" value={`${Math.round(readiness * 100)}%`} mono />
+        <Stat label="Attempts" value={attempts.length} mono />
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="card" style={{padding: 18}}>
+          <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 14}}>
+            <h3 style={{margin: 0}}>Score trend</h3>
+            <span style={{fontSize: 11.5, color: 'var(--ink-4)'}}>Last {trend.length} attempts</span>
+          </div>
+          <Sparkline values={trend} width={560} height={110} color={delta >= 0 ? 'var(--good)' : 'var(--bad)'} />
+          <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--ink-4)'}}>
+            <span className="mono">{Math.round(trend[0] * 100)}%</span>
+            <span className="mono">{Math.round(latest * 100)}%</span>
+          </div>
+
+          <div className="divider" style={{margin: '18px 0'}} />
+          <h3 style={{marginBottom: 12, fontSize: 14}}>By ACS code</h3>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+            {Object.entries(acsTrends).map(([code, vals]) => {
+              const v = vals[vals.length - 1];
+              const tone = v >= 0.8 ? 'var(--good)' : v >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+              return (
+                <div key={code} style={{display: 'grid', gridTemplateColumns: '72px 1fr 90px 44px', gap: 'var(--kls-space-small)', alignItems: 'center'}}>
+                  <span className="mono" style={{fontSize: 12, color: 'var(--ink-2)'}}>{code}</span>
+                  <div className="bar" style={{height: 4}}>
+                    <span style={{width: `${v * 100}%`, background: tone}} />
+                  </div>
+                  <Sparkline values={vals} width={90} height={22} color={tone} />
+                  <span className="mono" style={{fontSize: 12.5, fontWeight: 600, color: tone, textAlign: 'right'}}>{Math.round(v * 100)}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{display: 'flex', flexDirection: 'column', gap: 18}}>
+          <div className="card" style={{padding: 18}}>
+            <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 12}}>
+              <h3 style={{margin: 0}}>Weakest modules</h3>
+              <button className="btn btn--sm" onClick={onJumpToWeak}>Practice these</button>
+            </div>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+              {weakest.map(m => {
+                const tone = m.mastery >= 0.8 ? 'var(--good)' : m.mastery >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+                return (
+                  <div key={m.id} style={{display: 'grid', gridTemplateColumns: '10px 1fr 44px', gap: 10, alignItems: 'center'}}>
+                    <MasteryDot m={m.mastery} />
+                    <div style={{minWidth: 0}}>
+                      <div style={{fontSize: 13.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{m.title}</div>
+                      <div style={{fontSize: 11, color: 'var(--ink-4)', display: 'flex', gap: 6}}>
+                        <span className="mono">{m.acs}</span>
+                        <span>{m.block}</span>
+                      </div>
+                    </div>
+                    <span className="mono" style={{fontSize: 12.5, fontWeight: 600, color: tone, textAlign: 'right'}}>{Math.round(m.mastery * 100)}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="card" style={{padding: 18}}>
+            <h3 style={{marginBottom: 12}}>Strongest modules</h3>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+              {strongest.map(m => (
+                <div key={m.id} style={{display: 'grid', gridTemplateColumns: '10px 1fr 44px', gap: 10, alignItems: 'center'}}>
+                  <MasteryDot m={m.mastery} />
+                  <div style={{minWidth: 0}}>
+                    <div style={{fontSize: 13.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{m.title}</div>
+                    <div className="mono" style={{fontSize: 11, color: 'var(--ink-4)'}}>{m.acs}</div>
+                  </div>
+                  <span className="mono" style={{fontSize: 12.5, fontWeight: 600, color: 'var(--good)', textAlign: 'right'}}>{Math.round(m.mastery * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const HistoryQuestionRow = ({ q, idx, isFirst }) => {
   const [open, setOpen] = React.useState(false);
   const fmtT = (s) => `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
@@ -6599,7 +6605,7 @@ const HistoryQuestionRow = ({ q, idx, isFirst }) => {
         display: 'grid', gridTemplateColumns: '24px 28px 1fr auto auto', gap: 12,
         background: 'transparent', border: 0, textAlign: 'left', alignItems: 'center', cursor: 'pointer',
       }}>
-        <span className="mono" style={{fontSize: 11.5, color: 'var(--ink-4)', textAlign: 'right'}}>{idx + 1}</span>
+        <span className="mono" style={{fontSize: 11.5, color: 'var(--ink-4)', textAlign: 'left'}}>{idx + 1}</span>
         <div style={{
           width: 22, height: 22, borderRadius: '50%',
           background: q.isCorrect ? 'var(--good-soft)' : 'var(--bad-soft)',
@@ -6652,7 +6658,7 @@ window.HistoryDetail = HistoryDetail;
 
 
 // ── Written Exams orchestrator (folded into the Web App as the writtenExams route) ──
-function WrittenExams({ role = "instructor" }) {
+function WrittenExams({ role = "instructor", summaryMode = "From attempt" }) {
   const D = window.KILSAR_DATA;
   const tw = { role, mode: "study", questionState: "fresh" };
   const [internalTab, setInternalTab] = React.useState("practice");
@@ -6701,7 +6707,7 @@ function WrittenExams({ role = "instructor" }) {
         </div>
         {internalTab === "practice" && <PracticeSetup tweaks={tw} onStart={handleStart} />}
         {internalTab === "history" && !historyAttempt && <HistoryTab tweaks={tw} student={role === "instructor" ? viewingStudent : null} onOpenAttempt={(a) => setHistoryAttempt(a)} />}
-        {internalTab === "history" && historyAttempt && <HistoryDetail attempt={historyAttempt} onBack={() => setHistoryAttempt(null)} />}
+        {internalTab === "history" && historyAttempt && <HistoryDetail attempt={historyAttempt} summaryMode={summaryMode} onBack={() => setHistoryAttempt(null)} />}
         {internalTab === "progress" && <Dashboard tweaks={tw} student={role === "instructor" ? viewingStudent : null} onJumpToWeak={() => setInternalTab("practice")} />}
       </div>
       <StudentPickerDialog open={pickerOpen} onClose={() => setPickerOpen(false)} selectedId={viewingStudentId} onSelect={(id) => { setViewingStudentId(id); setPickerOpen(false); setHistoryAttempt(null); }} />

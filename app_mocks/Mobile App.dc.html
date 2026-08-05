@@ -22,10 +22,10 @@
     <button onClick="{{ setLight }}" style="{{ lightBtnStyle }}">Light</button>
     <button onClick="{{ setDark }}" style="{{ darkBtnStyle }}">Dark</button>
   </div>
-  <x-import component-from-global-scope="MobileApp" from="./mobile-app.jsx?v=16" ct-role="{{ ctRole }}" hint-size="402px,874px"></x-import>
+  <x-import component-from-global-scope="MobileApp" from="./mobile-app.jsx?v=22" ct-role="{{ ctRole }}" exam-summary-mode="{{ examSummaryMode }}" hint-size="402px,874px"></x-import>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;ctRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;instructor&quot;,&quot;student&quot;],&quot;default&quot;:&quot;instructor&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Control Tower&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;ctRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;instructor&quot;,&quot;student&quot;],&quot;default&quot;:&quot;instructor&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Control Tower&quot;},&quot;examSummaryMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;From attempt&quot;,&quot;Exam&quot;,&quot;Study&quot;],&quot;default&quot;:&quot;From attempt&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Written Exams&quot;}}">
 class Component extends DCLogic {
   state = { theme: this.props.theme ?? "dark" };
   componentDidMount() { this.apply(); }
@@ -43,6 +43,7 @@ class Component extends DCLogic {
       lightBtnStyle: dark ? inactive : active,
       darkBtnStyle: dark ? active : inactive,
       ctRole: this.props.ctRole ?? "instructor",
+      examSummaryMode: this.props.examSummaryMode ?? "From attempt",
     };
   }
 }

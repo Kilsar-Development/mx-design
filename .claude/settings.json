@@ -12,7 +12,8 @@
       "Grep",
       "WebFetch",
       "Skill(simplify)",
-      "Bash(./sync.sh ~/Downloads/\"MX\\(2\\).zip\" app_mocks)"
+      "Bash(ls -lt ~/Downloads/MX*.zip 2>/dev/null | head)",
+      "Read(//Users/joelfrank/Downloads/*)"
     ],
     "deny": [
       "Bash(curl *)",
