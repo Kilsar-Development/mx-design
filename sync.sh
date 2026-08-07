@@ -23,7 +23,8 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOWNLOADS="${HOME}/Downloads"
 
 # project-zip-basename  ->  repo-folder
-# The basename is matched WITHOUT the .zip extension; newest match wins.
+# Exact names and browser-numbered copies (for example, MX(1).zip) are matched;
+# newest match wins.
 MAPPINGS=(
   "MX.zip|app_mocks"
   "MX Design System.zip|design_system"
@@ -51,11 +52,22 @@ mirror() {
   echo "  ✓ $target  ($n files)  <- $(basename "$zip")"
 }
 
-# Newest file in ~/Downloads whose name equals "$1" (handles spaces).
+# Newest exact or browser-numbered copy of "$1" in ~/Downloads.
 newest_zip() {
   local name="$1"
-  # -t sorts newest-first; head -1 takes it. Null-safe enough for our names.
-  ls -t "$DOWNLOADS/$name" 2>/dev/null | head -1
+  local stem="${name%.zip}" candidate base suffix newest=""
+  for candidate in "$DOWNLOADS/$stem"*.zip; do
+    [[ -f "$candidate" ]] || continue
+    base="${candidate##*/}"
+    suffix="${base#"$stem"}"
+    if [[ "$suffix" != ".zip" && ! "$suffix" =~ ^[[:space:]]?\([0-9]+\)\.zip$ ]]; then
+      continue
+    fi
+    if [[ -z "$newest" || "$candidate" -nt "$newest" ]]; then
+      newest="$candidate"
+    fi
+  done
+  printf '%s\n' "$newest"
 }
 
 sync_all() {
