@@ -91,3 +91,50 @@ Final type-dot mapping: Task `purple-400`, Oral `teal-200`, Written `red-100` (#
 hue reads as cyan/teal) and, if useful, map it onto a numbered `accent-*` slot (10/11 are reserved
 but unbound) so it tracks light/dark like the others. Currently only the raw `--kls-color-teal-*`
 primitives are defined.
+
+---
+
+## 5. 🔵 Add a **four-circles grid-view** icon — no asset exists for the list/grid toggle
+**Found:** 2026-08 · Library screen (web) — list/grid view toggle
+
+The Library toolbar needs a grid-view glyph: a **2×2 arrangement of hollow circles (rings)**.
+The DS asset set has no such icon. The two near misses are both wrong:
+- `assets/icons/circles.png` — a **single** ring, not four.
+- `assets/icons/fourDots.png` — four **filled** dots, thinner/smaller than the intended mark.
+
+Local call: the toggle draws an inline SVG (`LibGridGlyph` in `web-app.jsx`) — four 3.4r circles
+at 6.5/13.5 on a 20×20 box, 1.6 stroke, `currentColor`. **It is an approximation, not the exact
+icon** the user referenced (their reference has heavier rings and tighter spacing).
+
+**Ask of the DS:** ship a canonical `fourCircles` (or `gridView`) PNG in `assets/icons/`, mask-
+compatible like the rest, so the Library toggle can drop the inline SVG.
+
+---
+
+## 6. 🔵 Add **eye / hide (visibility)** and **grid-view** icons — DS has neither
+**Found:** 2026-08 · Model editor (web) — part-visibility toggles in the left tree
+
+The model editor's Parts tree needs a per-part **show/hide** control. The DS icon set ships no
+eye / eye-off glyph, so `MeEyeBtn` (`web-app.jsx`) currently masks `camera.png` and dims it when
+the part is hidden. That is **semantically misleading** — camera reads as "viewport" or "capture,"
+not "visibility."
+
+**Ask of the DS:** ship `eye` + `eyeOff` (or a single `visibility` glyph the app can dim) in
+`assets/icons/`, mask-compatible. Related: item 5's four-circles grid-view icon is still owed;
+both are the same class of gap (common editor/table chrome with no canonical asset).
+
+---
+
+## 7. 🔵 Add a **compact switch** size — 44×26 is too heavy for dense control lists
+**Found:** 2026-08 · Model editor (web) — Object Groups / Annotations / Isolate toggles
+
+`switch.html` specs one size: track 44×26 · knob 22 · 2 inset · travel 18. In the model editor's
+inspector, switches sit on 32px-tall list rows (one per part, plus one per group), and at 26px tall
+the control dominates the row and crowds the label.
+
+Local call: the editor's `MeSwitch` renders a **compact** variant — track 36×20 · knob 16 ·
+2 inset · travel 16 — same tokens (`primary` / `outline-variant` / `surface`), same
+fade-animation + ease-standard transitions. Form-level toggles keep the canonical 44×26.
+
+**Ask of the DS:** add a documented `sm` size to `switch.html` (proposed 36×20 / knob 16 / travel 16)
+for dense list rows, so this isn't a per-app improvisation.

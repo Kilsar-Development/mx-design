@@ -1168,7 +1168,7 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
               <div style={{ fontSize: 14, color: "var(--kls-on-surface-variant)", marginTop: 4 }}>Try clearing the search or filters.</div>
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
                 <tr>
                   <th style={CT_TH}>Group / Student</th>
@@ -1617,7 +1617,7 @@ function StudentControlTower({ query = "", onNavigate }) {
           </div>
           {/* Table */}
           {filtered.length === 0 ? emptyBlock : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
                 <tr>
                   <th style={CT_TH}>Assignment</th>
@@ -4378,9 +4378,10 @@ function WebApp(props) {
   const examSummaryMode = props.examSummaryMode || "From attempt";
   const ctRole = props.ctRole || "instructor";
   const studentLayout = props.studentLayout || "sections";
-  const [active, setActive] = useState("controlTower");
+  const [active, setActive] = useState("library");
   const [query, setQuery] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
+  const [editing3D, setEditing3D] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const flags = { name: true, email: false, title: true, role: true, status: false, avatar: true };
   const onSelect = (key) => {
@@ -4395,7 +4396,9 @@ function WebApp(props) {
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
   else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
   else if (active === "integrations") content = <Integrations query={query} />;
+  else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
   else content = <WebPlaceholder tabKey={active} />;
+  if (editing3D) return <ModelEditor node={editing3D} onClose={() => setEditing3D(null)} />;
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--kls-scaffold-bg)", overflow: "hidden" }}>
       <NavSidebar active={active} workspaceName="EduDev" version="2.16.5" flavor="education" onSelect={onSelect} />
@@ -4487,7 +4490,7 @@ function Integrations({ query = "" }) {
               </div>
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
               <thead>
                 <tr>
                   <th style={INT_TH}>Events</th>
@@ -6715,3 +6718,1206 @@ function WrittenExams({ role = "instructor", summaryMode = "From attempt" }) {
   );
 }
 window.WrittenExams = WrittenExams;
+
+// ════════════════════════════════════════════════════════════════════
+// LIBRARY (web) — workspace files + folders. Part 1: index / browse.
+// ════════════════════════════════════════════════════════════════════
+const LIB_ITEMS = [
+  { id: "f1", kind: "folder", name: "domjan",                      bytes: 0,         type: "",    added: "2025-07-25",
+    children: [
+      { id: "f1a", kind: "pdf", name: "Torque Sequence Worksheet.pdf", bytes: 486400, type: "PDF", added: "2025-07-25" },
+      { id: "f1b", kind: "pdf", name: "Shop Safety Briefing.pdf",      bytes: 1258291, type: "PDF", added: "2025-07-26" },
+    ] },
+  { id: "f2", kind: "folder", name: "joel",                        bytes: 0,         type: "",    added: "2025-06-23",
+    children: [
+      { id: "f2a", kind: "pdf", name: "Rivet Inspection Log.pdf",      bytes: 204800, type: "PDF", added: "2025-06-23" },
+    ] },
+  { id: "f3", kind: "folder", name: "test_pagination",             bytes: 0,         type: "",    added: "2025-09-12",
+    children: [
+      { id: "f3a", kind: "pdf", name: "Page Set 001.pdf",              bytes: 1048576, type: "PDF", added: "2025-09-12" },
+      { id: "f3b", kind: "pdf", name: "Page Set 002.pdf",              bytes: 1153434, type: "PDF", added: "2025-09-12" },
+      { id: "f3c", kind: "pdf", name: "Page Set 003.pdf",              bytes: 999424,  type: "PDF", added: "2025-09-13" },
+    ] },
+  { id: "f4", kind: "folder", name: "testfolder",                  bytes: 0,         type: "",    added: "2026-05-11",
+    children: [
+      { id: "f4a", kind: "doc", name: "Module Outline.docx",           bytes: 65536,   type: "DOCX", added: "2026-05-11" },
+      { id: "f4b", kind: "txt", name: "notes.txt",                     bytes: 2048,    type: "TXT",  added: "2026-05-12" },
+    ] },
+  { id: "d1", kind: "pdf",    name: "8083-30A-AIM (General).pdf",  bytes: 128278528, type: "PDF", added: "2026-04-08" },
+  { id: "d2", kind: "pdf",    name: "ACS_Code_Descriptions_Mapped.pdf", bytes: 22538, type: "PDF", added: "2026-04-08" },
+  { id: "d3", kind: "pdf",    name: "AMA-23-EKIT Airframe.pdf",    bytes: 11053384,  type: "PDF", added: "2026-04-08" },
+  { id: "d4", kind: "pdf",    name: "AMG-23-EKIT General.pdf",     bytes: 10370416,  type: "PDF", added: "2026-04-08" },
+  { id: "d5", kind: "pdf",    name: "AMP-23-EKIT Powerplant.pdf",  bytes: 12897484,  type: "PDF", added: "2026-04-08" },
+  { id: "d6", kind: "pdf",    name: "FAA-H-8083-31B Vol 2.pdf",    bytes: 74973184,  type: "PDF", added: "2026-03-19" },
+];
+
+const LIB_MEDIA = [
+  { id: "m0", kind: "folder", name: "walkthroughs",                bytes: 0,        type: "",     added: "2026-02-02",
+    children: [
+      { id: "m0a", kind: "video", name: "Engine Start Walkthrough.mp4", bytes: 157286400, type: "MP4", added: "2026-02-02" },
+      { id: "m0b", kind: "video", name: "Pitot Static Check.mp4",       bytes: 73400320,  type: "MP4", added: "2026-02-04" },
+    ] },
+  { id: "m1", kind: "video",  name: "Turbine Teardown Walkthrough.mp4", bytes: 486539264, type: "MP4",  added: "2026-04-02" },
+  { id: "m2", kind: "video",  name: "Rivet Inspection Demo.mp4",   bytes: 214748364, type: "MP4",  added: "2026-03-27" },
+  { id: "m3", kind: "image",  name: "Airframe Panel Reference.jpg", bytes: 3355443,  type: "JPG",  added: "2026-03-11" },
+  { id: "m4", kind: "image",  name: "Torque Wrench Callouts.png",  bytes: 1258291,  type: "PNG",  added: "2026-02-19" },
+  { id: "m5", kind: "video",  name: "Bus Architecture Overview.mp4", bytes: 98566144, type: "MP4",  added: "2026-01-30" },
+];
+
+// Some models ship scenes / animations authored inside the file; those rows expand.
+// A model with none is a plain row (no disclosure control).
+const LIB_MODEL_CFM56 = { id: "t1", kind: "model", name: "CFM56 Compressor Section.glb", bytes: 62914560, type: "GLB", added: "2026-05-04",
+    children: [
+      { id: "t1s1", kind: "scene",     name: "Full Assembly",        added: "2026-05-04" },
+      { id: "t1s2", kind: "scene",     name: "Stage 3 Cutaway",      added: "2026-05-04" },
+      { id: "t1a1", kind: "animation", name: "Exploded View",        added: "2026-05-06", duration: "0:12", steps: 6 },
+      { id: "t1a2", kind: "animation", name: "Rotor Spin Cycle",     added: "2026-05-06", duration: "0:08", steps: 3 },
+    ] };
+const LIB_MODEL_CESSNA = { id: "t2", kind: "model", name: "Cessna 172 Landing Gear.glb",  bytes: 18874368, type: "GLB", added: "2026-04-21",
+    children: [
+      { id: "t2s1", kind: "scene",     name: "Gear Down",            added: "2026-04-21" },
+      { id: "t2s2", kind: "scene",     name: "Gear Retracted",       added: "2026-04-21" },
+      { id: "t2a1", kind: "animation", name: "Retraction Sequence",  added: "2026-04-22", duration: "0:06", steps: 4 },
+    ] };
+
+const LIB_MODELS = [
+  { id: "tf1", kind: "folder", name: "engines", bytes: 0, type: "", added: "2026-05-04",
+    children: [
+      LIB_MODEL_CFM56,
+      { id: "t5", kind: "model", name: "PT6A Turboprop.glb", bytes: 41943040, type: "GLB", added: "2026-04-30" },
+    ] },
+  { id: "tf2", kind: "folder", name: "airframe", bytes: 0, type: "", added: "2026-04-21",
+    children: [LIB_MODEL_CESSNA] },
+  { id: "t3", kind: "model", name: "Hydraulic Actuator.obj",       bytes: 8912896,  type: "OBJ", added: "2026-03-15" },
+  { id: "t4", kind: "model", name: "Fuel Pump Assembly.glb",       bytes: 24117248, type: "GLB", added: "2026-02-08",
+    children: [
+      { id: "t4a1", kind: "animation", name: "Flow Cycle",           added: "2026-02-10", duration: "0:15", steps: 8 },
+    ] },
+];
+
+const LIB_SECTIONS = [
+  { key: "files",  label: "Files",     icon: "itemList", items: LIB_ITEMS,  empty: "No files yet",     hint: "Upload documents to make them available across the workspace." },
+  { key: "media",  label: "Media",     icon: "image",    items: LIB_MEDIA,  empty: "No media yet",     hint: "Upload video and imagery students can reference." },
+  { key: "models", label: "3D Models", icon: "cube",     items: LIB_MODELS, empty: "No 3D models yet", hint: "Upload GLB or OBJ models to use in modules." },
+];
+
+const LIB_KINDS = {
+  folder: { icon: "filetypes/folder", color: "var(--kls-accent-7)" },
+  pdf:    { icon: "filetypes/pdf",    color: "var(--kls-error)" },
+  doc:    { icon: "filetypes/doc",    color: "var(--kls-accent-7)" },
+  video:  { icon: "filetypes/playMovie", color: "var(--kls-accent-12)" },
+  image:  { icon: "image",            color: "var(--kls-success)" },
+  model:  { icon: "cube",             color: "var(--kls-accent-4)" },
+  scene:      { icon: "stack", color: "var(--kls-on-surface-variant)", label: "Scene" },
+  animation:  { icon: "play",  color: "var(--kls-on-surface-variant)", label: "Animation" },
+  txt:    { icon: "filetypes/txt",    color: "var(--kls-on-surface-variant)" },
+};
+
+// Folders report the rolled-up size of everything inside them (scenes/animations
+// carry no bytes of their own — they live inside the parent model's file).
+function libBytes(item) {
+  const kids = item.children || [];
+  if (item.kind === "folder") return kids.reduce((n, c) => n + libBytes(c), 0);
+  return item.bytes || 0;
+}
+function libSize(b) {
+  if (b === 0) return "0 B";
+  if (b < 1024) return b + " B";
+  if (b < 1024 * 1024) return (b / 1024).toFixed(2) + " KB";
+  if (b < 1024 * 1024 * 1024) return (b / 1048576).toFixed(2) + " MB";
+  return (b / 1073741824).toFixed(2) + " GB";
+}
+const LIB_DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const LIB_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function libDate(iso) {
+  const p = iso.split("-").map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  return LIB_DOW[d.getDay()] + ". " + String(p[2]).padStart(2, "0") + " " + LIB_MON[p[1] - 1] + " " + p[0];
+}
+
+const LIB_TH_BASE = { textAlign: "left", padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)",
+  fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)",
+  borderBottom: "1px solid var(--kls-outline-variant)", whiteSpace: "nowrap", background: "var(--kls-surface)" };
+const LIB_TD = { padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 14,
+  fontWeight: 500, color: "var(--kls-on-surface)", borderBottom: "1px solid var(--kls-outline-variant)", verticalAlign: "middle" };
+
+function LibSortHeader({ label, col, sort, onSort, style }) {
+  const [hover, setHover] = useState(false);
+  const on = sort.col === col;
+  return (
+    <th style={{ ...LIB_TH_BASE, ...(style || {}) }}>
+      <button onClick={() => onSort(col)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", border: "none", background: "transparent",
+          padding: 0, cursor: "pointer", font: "inherit", letterSpacing: "inherit", textTransform: "inherit",
+          color: on || hover ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", transition: "color 125ms var(--kls-ease-standard)" }}>
+        {label}
+        <KlsIcon name="chevronDown" size={14} rotate={on && sort.dir === "asc" ? 180 : 0}
+          color={on ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)"}
+          style={{ opacity: on || hover ? 1 : 0.35 }} />
+      </button>
+    </th>
+  );
+}
+
+// 2×2 ring grid — the DS ships no four-circles glyph (circles.png is a single ring).
+function LibGridGlyph({ size = 18, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flex: "none" }}>
+      <circle cx="6.5" cy="6.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="13.5" cy="6.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="6.5" cy="13.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="13.5" cy="13.5" r="3.4" stroke={color} strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function LibToggleBtn({ icon, glyph, label, active, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 36, width: 44, borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: active ? "var(--kls-surface)" : "transparent",
+        boxShadow: active ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      {glyph
+        ? <LibGridGlyph size={18} color={active || hover ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />
+        : <KlsIcon name={icon} size={18} color={active ? "var(--kls-on-surface)" : hover ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />}
+    </button>
+  );
+}
+
+function LibIconBtn({ icon, label, onClick, spin }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 40, height: 40, borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={24} color="var(--kls-on-surface-variant)"
+        style={spin ? { animation: "int-spin 900ms linear infinite" } : undefined} />
+    </button>
+  );
+}
+
+function LibOpenBtn({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label}
+      onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name="chevronRight" size={15} color={hover ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)"} />
+    </button>
+  );
+}
+
+function LibRow({ item, depth = 0, indent, onOpen }) {
+  const [hover, setHover] = useState(false);
+  const [open, setOpen] = useState(false);
+  const k = LIB_KINDS[item.kind] || LIB_KINDS.txt;
+  const kids = item.children || [];
+  const expandable = kids.length > 0;
+  const leafMeta = k.label ? (item.duration || "—") : libSize(libBytes(item));
+  const nested = depth > 0;
+  const openable = item.kind === "model" || item.kind === "scene" || item.kind === "animation";
+  const bottom = open ? "none" : LIB_TD.borderBottom;
+  const td = { ...LIB_TD, borderBottom: bottom, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" };
+  return (
+    <>
+      <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        onClick={expandable ? () => setOpen((o) => !o) : (openable && onOpen ? () => onOpen(item) : undefined)}
+        style={{ background: hover || open ? "var(--kls-surface-container-low)" : nested ? "var(--kls-surface-container-lowest)" : "transparent",
+          cursor: "pointer", transition: "background 125ms var(--kls-ease-standard)" }}>
+        <td style={{ ...LIB_TD, borderBottom: bottom }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0, paddingLeft: depth * 32 }}>
+            {expandable ? (
+              <span aria-hidden="true" style={{ width: 20, height: 20, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                <KlsIcon name="chevronRight" size={14} rotate={open ? 90 : 0} color="var(--kls-on-surface-variant)" />
+              </span>
+            ) : indent ? <span style={{ width: 20, flex: "none" }} /> : null}
+            <KlsIcon name={k.icon} size={k.label ? 16 : 20} color={k.color} />
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+            {expandable && (
+              <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 8, background: "var(--kls-tertiary)",
+                fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary)", whiteSpace: "nowrap", flex: "none" }}>{kids.length}</span>
+            )}
+          </div>
+        </td>
+        <td style={td}>{leafMeta}</td>
+        <td style={{ ...td, whiteSpace: "normal" }}>{k.label || item.type || ""}</td>
+        <td style={td}>{libDate(item.added)}</td>
+        <td style={{ ...td, padding: "var(--kls-space-small) var(--kls-space-small)", textAlign: "right" }}>
+          {item.kind === "model" && <LibOpenBtn label={"Open " + item.name + " in the model editor"} onClick={() => onOpen && onOpen(item)} />}
+        </td>
+      </tr>
+      {open && kids.map((c) => (
+        <LibRow key={c.id} item={c} depth={depth + 1} indent onOpen={onOpen} />
+      ))}
+    </>
+  );
+}
+
+function LibTile({ item }) {
+  const [hover, setHover] = useState(false);
+  const k = LIB_KINDS[item.kind] || LIB_KINDS.txt;
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ padding: "var(--kls-space-med)", borderRadius: 12, cursor: "pointer",
+        border: "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-surface-container-low)" : "var(--kls-surface)",
+        display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", minWidth: 0,
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={k.icon} size={28} color={k.color} />
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+        {item.kind === "folder" ? "Folder · " + libSize(libBytes(item)) : libSize(libBytes(item))} · {libDate(item.added)}
+      </div>
+      {(item.children || []).length > 0 && (
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          {item.children.filter((c) => c.kind === "scene").length} scenes · {item.children.filter((c) => c.kind === "animation").length} animations
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Library({ query = "", onOpen }) {
+  const [section, setSection] = useState("files");
+  const [view, setView] = useState("list");
+  const [sort, setSort] = useState({ col: "name", dir: "asc" });
+  const [refreshing, setRefreshing] = useState(false);
+  const term = query.trim().toLowerCase();
+
+  const onSort = (col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
+
+  const current = LIB_SECTIONS.find((x) => x.key === section) || LIB_SECTIONS[0];
+  const anyExpandable = current.items.some((i) => (i.children || []).length > 0);
+
+  const items = current.items
+    .filter((i) => !term || i.name.toLowerCase().includes(term))
+    .slice()
+    .sort((a, b) => {
+      if ((a.kind === "folder") !== (b.kind === "folder")) return a.kind === "folder" ? -1 : 1;
+      let d = 0;
+      if (sort.col === "name") d = a.name.localeCompare(b.name);
+      else if (sort.col === "size") d = libBytes(a) - libBytes(b);
+      else if (sort.col === "type") d = (a.type || "").localeCompare(b.type || "");
+      else d = a.added.localeCompare(b.added);
+      return sort.dir === "asc" ? d : -d;
+    });
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Library</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Manage files and folders in your workspace.</p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <SegmentedTabs tabs={LIB_SECTIONS} value={section} onChange={setSection} />
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+            {section === "media" && (
+              <div style={{ height: 40, padding: 2, borderRadius: 8, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+                display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", boxSizing: "border-box" }}>
+                <LibToggleBtn icon="itemList" label="List view" active={view === "list"} onClick={() => setView("list")} />
+                <LibToggleBtn glyph label="Grid view" active={view === "grid"} onClick={() => setView("grid")} />
+              </div>
+            )}
+            <LibIconBtn icon="refresh" label="Refresh" onClick={refresh} spin={refreshing} />
+          </div>
+          <div style={{ flex: 1 }} />
+          <button style={{ ...ctPrimaryBtn, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 500 }}>+</span>Add
+          </button>
+        </div>
+
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+
+          {items.length === 0 ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+                <KlsIcon name={current.icon} size={26} color="var(--kls-on-surface-variant)" />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{current.items.length === 0 ? current.empty : "Nothing matches"}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>{current.items.length === 0 ? current.hint : "Try a different search."}</div>
+            </div>
+          ) : (view === "grid" && section === "media") ? (
+            <div style={{ padding: "var(--kls-space-med)", display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "var(--kls-space-small)" }}>
+              {items.map((i) => <LibTile key={i.id} item={i} />)}
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <LibSortHeader label="Name" col="name" sort={sort} onSort={onSort} />
+                  <LibSortHeader label="Size" col="size" sort={sort} onSort={onSort} style={{ width: 96 }} />
+                  <LibSortHeader label="Type" col="type" sort={sort} onSort={onSort} style={{ width: 84 }} />
+                  <LibSortHeader label="Date Added" col="added" sort={sort} onSort={onSort} style={{ width: 152 }} />
+                  <th style={{ ...LIB_TH_BASE, width: 48 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Open</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((i) => <LibRow key={i.id} item={i} indent={anyExpandable} onOpen={onOpen} />)}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MODEL EDITOR (web, full screen — no sidebar, no global header)
+// Opened from Library → 3D Models: the ⤢ control on a model row, or a
+// scene / animation row. Layout: top bar · left tree · viewport · inspector.
+// Part 1: scenes + annotations. Animations are entities with a
+// preview only — keyframe timeline lands in part 2.
+// ════════════════════════════════════════════════════════════════════
+
+const ME_PART_SETS = {
+  t1: [
+    { id: "p1", name: "Inlet Cone",     geom: "cone",     color: "#8A94A6", pos: [0, 0, 2.6],  dir: [0, 0, 1],  group: "Static structure" },
+    { id: "p2", name: "Housing",        geom: "shell",    color: "#5C6675", pos: [0, 0, 0],    dir: [0, 1, 0],  group: "Static structure" },
+    { id: "p3", name: "Rotor Shaft",    geom: "shaft",    color: "#C9CFD8", pos: [0, 0, 0],    dir: [0, 0, -1], group: "Rotating assembly" },
+    { id: "p4", name: "Stage 1 Blades", geom: "blades",   color: "#7FB2E5", pos: [0, 0, 1.1],  dir: [0, 0, 1],  group: "Rotating assembly" },
+    { id: "p5", name: "Stage 2 Blades", geom: "blades",   color: "#6BA0D6", pos: [0, 0, 0],    dir: [0, 0, 1],  group: "Rotating assembly" },
+    { id: "p6", name: "Stage 3 Blades", geom: "blades",   color: "#5A8FC7", pos: [0, 0, -1.1], dir: [0, 0, -1], group: "Rotating assembly" },
+  ],
+  t2: [
+    { id: "p1", name: "Strut",         geom: "shaft",  color: "#9AA3B0", pos: [0, 1.1, 0],   dir: [0, 1, 0],   group: "Strut assembly" },
+    { id: "p2", name: "Wheel Hub",     geom: "hub",    color: "#C9CFD8", pos: [0, -0.6, 0],  dir: [1, 0, 0],   group: "Wheel assembly" },
+    { id: "p3", name: "Tire",          geom: "tire",   color: "#3A3F47", pos: [0, -0.6, 0],  dir: [-1, 0, 0],  group: "Wheel assembly" },
+    { id: "p4", name: "Brake Caliper", geom: "box",    color: "#D08A4F", pos: [0.9, -0.2, 0], dir: [1, 0.4, 0], group: "Wheel assembly" },
+    { id: "p5", name: "Actuator Arm",  geom: "arm",    color: "#7FB2E5", pos: [-0.8, 0.6, 0], dir: [-1, 0.6, 0], group: "Strut assembly" },
+  ],
+  default: [
+    { id: "p1", name: "Body",         geom: "shell", color: "#5C6675", pos: [0, 0, 0],    dir: [0, 1, 0],  group: "Housing" },
+    { id: "p2", name: "Cover",        geom: "hub",   color: "#9AA3B0", pos: [0, 1.0, 0],  dir: [0, 1, 0],  group: "Housing" },
+    { id: "p3", name: "Mount",        geom: "box",   color: "#C9CFD8", pos: [0, -1.0, 0], dir: [0, -1, 0], group: "Mounting" },
+    { id: "p4", name: "Fastener Set", geom: "blades", color: "#D08A4F", pos: [0, 0, 1.0], dir: [0, 0, 1], group: "Mounting" },
+  ],
+};
+const mePartsFor = (id) => ME_PART_SETS[id] || ME_PART_SETS.default;
+
+const ME_SEED_EXTRAS = {
+  t1s1: {
+    annotations: [{ id: "a1", partId: "p4", text: "Stage 1 blades are the wear item — check leading edges." }],
+  },
+};
+
+function meSeedScene(sc, modelId) {
+  const extra = ME_SEED_EXTRAS[sc.id] || {};
+  return {
+    id: sc.id, name: sc.name,
+    hidden: [], explode: 0, cutaway: false, wireframe: false,
+    showAnnotations: true, isolate: false,
+    bg: "var(--kls-surface-container-lowest)", ambient: 0.5, directional: 0.75,
+    camera: { az: 0.9, el: 0.5, dist: 9 },
+    annotations: (extra.annotations || []).slice(),
+  };
+}
+const ME_MOTIONS = { "Exploded View": "explode", "Rotor Spin Cycle": "spin", "Retraction Sequence": "retract", "Flow Cycle": "spin" };
+
+// find the model that owns a scene/animation row
+function meOwnerModel(node) {
+  const walk = (list) => {
+    for (const it of list) {
+      const kids = it.children || [];
+      if (it.kind === "model" && kids.some((c) => c.id === node.id)) return it;
+      const found = walk(kids);
+      if (found) return found;
+    }
+    return null;
+  };
+  return node.kind === "model" ? node : walk(LIB_MODELS);
+}
+
+const ME_LABEL = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+  textTransform: "uppercase", color: "var(--kls-on-surface-variant)" };
+
+function meStepCount(a) { return typeof a.steps === "number" ? a.steps : 0; }
+
+function MeSectionLabel({ children, action }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", minHeight: 24 }}>
+      <span style={ME_LABEL}>{children}</span>
+      <div style={{ flex: 1 }} />
+      {action}
+    </div>
+  );
+}
+
+function MeTreeRow({ icon, label, sub, active, muted, indent, onClick, trailing }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        minHeight: 36, padding: sub ? "var(--kls-space-xsmall) var(--kls-space-small)" : "0 var(--kls-space-small)",
+        borderRadius: 8, cursor: "pointer",
+        paddingLeft: indent ? "var(--kls-space-med)" : "var(--kls-space-small)",
+        background: active ? "var(--kls-surface-container-lowest)" : hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={15} color={active ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: active ? 600 : 500,
+          color: muted ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>{label}</div>
+        {sub && (
+          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{sub}</div>
+        )}
+      </div>
+      {trailing}
+    </div>
+  );
+}
+
+function MeAddBtn({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label}
+      onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, lineHeight: 1,
+        color: "var(--kls-on-surface-variant)",
+        background: hover ? "var(--kls-tertiary)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>+</button>
+  );
+}
+
+function MeDeleteBtn({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label}
+      onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-error-container)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name="trash" size={14} color={hover ? "var(--kls-error)" : "var(--kls-on-surface-variant)"} />
+    </button>
+  );
+}
+
+// DS ships no eye/visibility glyph (logged in DS-UPDATES item 6) — drawn inline.
+function MeEyeGlyph({ on, size = 15, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flex: "none" }}>
+      <path d="M1.8 10S4.8 4.6 10 4.6 18.2 10 18.2 10 15.2 15.4 10 15.4 1.8 10 1.8 10Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="10" cy="10" r="2.5" stroke={color} strokeWidth="1.5" />
+      {!on && <path d="M3.5 3.5 16.5 16.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />}
+    </svg>
+  );
+}
+
+function MeEyeBtn({ on, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={on ? "Hide part" : "Show part"} title={on ? "Hide part" : "Show part"}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", opacity: on ? 1 : 0.55 }}>
+      <MeEyeGlyph on={on} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+}
+
+function MeField({ label, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+      <span style={ME_LABEL}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function MeInput({ value, onChange, placeholder }) {
+  const [focus, setFocus] = useState(false);
+  return (
+    <input value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+      style={{ height: 48, boxSizing: "border-box", width: "100%", padding: "0 var(--kls-space-small)", borderRadius: 8,
+        border: "1px solid " + (focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
+        background: "transparent", outline: "none", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+        color: "var(--kls-on-surface)", transition: "border-color 125ms var(--kls-ease-standard)" }} />
+  );
+}
+
+function MeToggle({ label, on, onChange }) {
+  return (
+    <div onClick={() => onChange(!on)} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", cursor: "pointer" }}>
+      <span style={{ width: 44, height: 26, borderRadius: 999, flex: "none", padding: 2, boxSizing: "border-box",
+        background: on ? "var(--kls-primary)" : "var(--kls-outline-variant)",
+        transition: "background var(--kls-dur-fade-animation) var(--kls-ease-standard)", display: "inline-flex" }}>
+        <span style={{ width: 22, height: 22, borderRadius: 999, background: "var(--kls-surface)",
+          transform: on ? "translateX(18px)" : "translateX(0)",
+          transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }} />
+      </span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{label}</span>
+    </div>
+  );
+}
+
+function MePanelSection({ title, trailing, collapsible, open, onToggle, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div onClick={collapsible ? onToggle : undefined}
+        style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", cursor: collapsible ? "pointer" : "default" }}>
+        {collapsible && <KlsIcon name="chevronDown" size={16} rotate={open ? 180 : 0} color="var(--kls-on-surface-variant)" />}
+        <span style={ME_LABEL}>{title}</span>
+        <div style={{ flex: 1 }} />
+        {trailing}
+      </div>
+      {(!collapsible || open) && children}
+    </div>
+  );
+}
+
+function MeSwitch({ on, onChange, label }) {
+  return (
+    <span onClick={(e) => { e.stopPropagation(); onChange(!on); }}
+      style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer" }}>
+      {label && <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{label}</span>}
+      <span style={{ width: 36, height: 20, borderRadius: 999, flex: "none", padding: 2, boxSizing: "border-box",
+        background: on ? "var(--kls-primary)" : "var(--kls-outline-variant)",
+        transition: "background var(--kls-dur-fade-animation) var(--kls-ease-standard)", display: "inline-flex" }}>
+        <span style={{ width: 16, height: 16, borderRadius: 999, background: "var(--kls-surface)",
+          transform: on ? "translateX(16px)" : "translateX(0)",
+          transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }} />
+      </span>
+    </span>
+  );
+}
+
+function MeMetricRow({ label, value }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: "var(--kls-space-small)" }}>
+      <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+}
+
+function MeSlider({ label, value, onChange }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+      <span style={{ textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <input type="range" min="0" max="100" value={Math.round(value * 100)}
+        onChange={(e) => onChange(Number(e.target.value) / 100)}
+        style={{ width: "100%", accentColor: "var(--kls-primary)" }} />
+    </div>
+  );
+}
+
+const ME_BGS = [
+  { value: "var(--kls-surface-container-lowest)", label: "Studio" },
+  { value: "#0B1030", label: "Navy" },
+  { value: "#0E0F11", label: "Black" },
+  { value: "#E8EAED", label: "Paper" },
+];
+
+function MeSwatch({ value, label, active, onClick }) {
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      style={{ width: 32, height: 32, borderRadius: 8, cursor: "pointer", padding: 0, flex: "none", background: value,
+        border: "2px solid " + (active ? "var(--kls-primary)" : "var(--kls-outline-variant)") }} />
+  );
+}
+
+function MeButton({ children, onClick, tone }) {
+  const [hover, setHover] = useState(false);
+  const primary = tone === "primary";
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+        border: primary ? "none" : "1px solid var(--kls-outline-variant)",
+        background: primary ? "var(--kls-tertiary-container)" : hover ? "var(--kls-tertiary)" : "transparent",
+        color: primary ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, gap: "var(--kls-space-xsmall)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap",
+        opacity: primary && hover ? 0.92 : 1, transition: "background 125ms var(--kls-ease-standard)" }}>{children}</button>
+  );
+}
+
+function MeIconBtn({ icon, label, onClick, rotate }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={16} rotate={rotate || 0} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+}
+
+// ── three.js viewport ────────────────────────────────────────────────
+function MeViewport({ parts, scene: sc, playing, motion, onPickPart, selectedPart, onCamera, onMetrics, resetKey }) {
+  const hostRef = useRef(null);
+  const stateRef = useRef({});
+  const scRef = useRef(sc);
+  const playRef = useRef({ playing, motion });
+  scRef.current = sc; playRef.current = { playing, motion };
+  const partsRef = useRef(parts); partsRef.current = parts;
+  const pickRef = useRef(onPickPart); pickRef.current = onPickPart;
+  const selRef = useRef(selectedPart); selRef.current = selectedPart;
+  const camRef = useRef(onCamera); camRef.current = onCamera;
+  const metricsRef = useRef(onMetrics); metricsRef.current = onMetrics;
+
+  useEffect(() => {
+    const THREE = window.THREE;
+    const host = hostRef.current;
+    if (!THREE || !host) return;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    host.appendChild(renderer.domElement);
+    renderer.domElement.style.display = "block";
+    renderer.domElement.style.cursor = "grab";
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x30343c, 1.05); scene.add(hemi);
+    const key = new THREE.DirectionalLight(0xffffff, 1.15); key.position.set(5, 8, 6); scene.add(key);
+    const fill = new THREE.DirectionalLight(0x9db6d8, 0.45); fill.position.set(-6, -2, -4); scene.add(fill);
+    const grid = new THREE.GridHelper(16, 16, 0x3a4048, 0x2a2f36);
+    grid.position.y = -2.4; scene.add(grid);
+
+    const group = new THREE.Group(); scene.add(group);
+    const meshes = {};
+    const geomFor = (p) => {
+      if (p.geom === "cone")   return new THREE.ConeGeometry(0.75, 1.4, 28);
+      if (p.geom === "shell")  return new THREE.CylinderGeometry(1.5, 1.5, 3.4, 40, 1, true);
+      if (p.geom === "shaft")  return new THREE.CylinderGeometry(0.28, 0.28, 4.4, 20);
+      if (p.geom === "blades") return new THREE.TorusGeometry(1.05, 0.24, 12, 28);
+      if (p.geom === "hub")    return new THREE.CylinderGeometry(0.7, 0.7, 0.5, 26);
+      if (p.geom === "tire")   return new THREE.TorusGeometry(0.95, 0.34, 14, 30);
+      if (p.geom === "arm")    return new THREE.BoxGeometry(1.6, 0.22, 0.22);
+      return new THREE.BoxGeometry(0.9, 0.6, 0.9);
+    };
+    partsRef.current.forEach((p) => {
+      const g = geomFor(p);
+      const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(p.color), roughness: 0.55, metalness: 0.35, side: THREE.DoubleSide });
+      const mesh = new THREE.Mesh(g, m);
+      if (p.geom === "cone") mesh.rotation.x = Math.PI / 2;
+      if (p.geom === "shell" || p.geom === "shaft") mesh.rotation.x = Math.PI / 2;
+      if (p.geom === "arm") mesh.rotation.z = Math.PI / 5;
+      mesh.userData.part = p;
+      mesh.userData.base = new THREE.Vector3(p.pos[0], p.pos[1], p.pos[2]);
+      mesh.userData.dir = new THREE.Vector3(p.dir[0], p.dir[1], p.dir[2]).normalize();
+      mesh.position.copy(mesh.userData.base);
+      group.add(mesh); meshes[p.id] = mesh;
+    });
+
+    const pins = new THREE.Group(); scene.add(pins);
+
+    // hand-rolled orbit (no OrbitControls in the UMD build)
+    let drag = null;
+    const cam = { ...scRef.current.camera };
+    let fitDist = 9;
+    const applyCam = () => {
+      const d = cam.dist * (fitDist / 9);
+      camera.position.set(
+        d * Math.cos(cam.el) * Math.sin(cam.az),
+        d * Math.sin(cam.el),
+        d * Math.cos(cam.el) * Math.cos(cam.az));
+      camera.lookAt(0, 0, 0);
+    };
+    const onDown = (e) => { drag = { x: e.clientX, y: e.clientY, moved: false }; renderer.domElement.style.cursor = "grabbing"; };
+    const onMove = (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      drag.x = e.clientX; drag.y = e.clientY;
+      cam.az -= dx * 0.006;
+      cam.el = Math.max(-1.35, Math.min(1.35, cam.el + dy * 0.006));
+      applyCam();
+    };
+    const onUp = (e) => {
+      if (!drag) return; // only respond to gestures that began on the canvas
+      const wasDrag = drag.moved;
+      drag = null; renderer.domElement.style.cursor = "grab";
+      if (wasDrag) { camRef.current && camRef.current({ ...cam }); return; }
+      const r = renderer.domElement.getBoundingClientRect();
+      const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      const ray = new THREE.Raycaster(); ray.setFromCamera(ndc, camera);
+      const hits = ray.intersectObjects(group.children.filter((m) => m.visible), false);
+      pickRef.current && pickRef.current(hits.length ? hits[0].object.userData.part.id : null);
+    };
+    const onWheel = (e) => { e.preventDefault(); cam.dist = Math.max(4, Math.min(20, cam.dist + e.deltaY * 0.01)); applyCam(); camRef.current && camRef.current({ ...cam }); };
+    renderer.domElement.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
+
+    const resize = () => {
+      const w = host.clientWidth, h = host.clientHeight;
+      renderer.setSize(w, h); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+      fitDist = 9 * Math.max(1, 1.35 / Math.max(0.55, camera.aspect)); applyCam();
+    };
+    const ro = new ResizeObserver(resize); ro.observe(host); resize(); applyCam();
+
+    let raf = 0, t0 = performance.now(), spin = 0, anim = 0, lastMetrics = "";
+    const tick = () => {
+      const now = performance.now(), dt = (now - t0) / 1000; t0 = now;
+      const s = scRef.current, play = playRef.current;
+      if (play.playing) {
+        anim = Math.min(1, anim + dt / 3);
+        if (play.motion === "spin") spin += dt * 1.6;
+      } else { anim = 0; }
+      hemi.intensity = 0.35 + (s.ambient == null ? 0.5 : s.ambient) * 1.6;
+      key.intensity = 0.2 + (s.directional == null ? 0.75 : s.directional) * 1.8;
+      const explodeAmt = play.playing && play.motion !== "spin" ? anim : s.explode;
+      group.rotation.y = play.motion === "spin" ? spin : 0;
+      Object.keys(meshes).forEach((id) => {
+        const mesh = meshes[id];
+        const isolated = s.isolate && selRef.current && selRef.current !== id;
+        const hidden = s.hidden.indexOf(id) >= 0 || isolated;
+        mesh.visible = !hidden;
+        mesh.position.copy(mesh.userData.base).addScaledVector(mesh.userData.dir, explodeAmt * 2.6);
+        const isShell = mesh.userData.part.geom === "shell";
+        mesh.material.wireframe = !!s.wireframe;
+        mesh.material.transparent = s.cutaway && isShell;
+        mesh.material.opacity = s.cutaway && isShell ? 0.18 : 1;
+        const sel = selRef.current === id;
+        mesh.material.emissive = mesh.material.emissive || new THREE.Color(0, 0, 0);
+        mesh.material.emissive.setHex(sel ? 0x2b4f77 : 0x000000);
+      });
+      // measured dimensions of the current selection (or the whole model)
+      const key2 = (selRef.current || "all") + "|" + s.hidden.join(",") + "|" + (s.isolate ? 1 : 0);
+      if (key2 !== lastMetrics) {
+        lastMetrics = key2;
+        const box = new THREE.Box3();
+        const target = selRef.current && meshes[selRef.current] ? [meshes[selRef.current]] : group.children.filter((m) => m.visible);
+        target.forEach((m) => box.expandByObject(m));
+        if (!box.isEmpty()) {
+          const size = box.getSize(new THREE.Vector3());
+          metricsRef.current && metricsRef.current({ w: size.x * 100, h: size.y * 100, d: size.z * 100 });
+        }
+      }
+      // hotspot pins, anchored to their part
+      while (pins.children.length) pins.remove(pins.children[0]);
+      (s.showAnnotations === false ? [] : (s.annotations || [])).forEach((h) => {
+        const anchor = meshes[h.partId];
+        if (!anchor || !anchor.visible) return;
+        const pin = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12),
+          new THREE.MeshBasicMaterial({ color: 0xf0a13c }));
+        pin.position.copy(anchor.position).add(new THREE.Vector3(0, 1.25, 0));
+        pins.add(pin);
+      });
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+
+    stateRef.current = { setCam: (c) => { cam.az = c.az; cam.el = c.el; cam.dist = c.dist; applyCam(); } };
+
+    return () => {
+      cancelAnimationFrame(raf); ro.disconnect();
+      renderer.domElement.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      renderer.domElement.removeEventListener("wheel", onWheel);
+      renderer.dispose();
+      if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+    };
+  }, []);
+
+  // external camera changes (loading a saved view / Reset View)
+  useEffect(() => { stateRef.current.setCam && stateRef.current.setCam(sc.camera); }, [sc.id, sc.camera.az, sc.camera.el, sc.camera.dist, resetKey]);
+
+  return <div ref={hostRef} style={{ position: "absolute", inset: 0, background: sc.bg || "var(--kls-surface-container-lowest)", transition: "background 250ms var(--kls-ease-standard)" }} />;
+}
+
+function MeSceneDialog({ draft, onChange, onCancel, onSave }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center",
+      background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+          background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Edit Scene</div>
+
+        <MeField label="Scene Name">
+          <MeInput value={draft.name} onChange={(v) => onChange({ ...draft, name: v })} />
+        </MeField>
+
+        <MeField label="Description (optional)">
+          <textarea value={draft.description || ""} rows={3} placeholder="Enter description"
+            onChange={(e) => onChange({ ...draft, description: e.target.value })}
+            style={{ width: "100%", boxSizing: "border-box", padding: "var(--kls-space-small)", borderRadius: 8, resize: "vertical",
+              border: "1px solid var(--kls-outline-variant)", background: "transparent", outline: "none", lineHeight: 1.45,
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+        </MeField>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <MeButton tone="primary" onClick={onSave}>Save</MeButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MeAnnotationDialog({ draft, onChange, onCancel, onAdd }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center",
+      background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+          background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Add Annotation</div>
+
+        <MeField label="Label">
+          <MeInput value={draft.label} placeholder="Enter annotation label" onChange={(v) => onChange({ ...draft, label: v })} />
+        </MeField>
+
+        <MeField label="Description (optional)">
+          <textarea value={draft.text || ""} rows={3} placeholder="Enter description"
+            onChange={(e) => onChange({ ...draft, text: e.target.value })}
+            style={{ width: "100%", boxSizing: "border-box", padding: "var(--kls-space-small)", borderRadius: 8, resize: "vertical",
+              border: "1px solid var(--kls-outline-variant)", background: "transparent", outline: "none", lineHeight: 1.45,
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+        </MeField>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <MeButton tone="primary" onClick={onAdd}>Add</MeButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModelEditor({ node, onClose }) {
+  const model = meOwnerModel(node) || node;
+  const parts = mePartsFor(model.id);
+  const kids = model.children || [];
+  const sceneDefs = kids.filter((c) => c.kind === "scene");
+  const animDefs = kids.filter((c) => c.kind === "animation");
+
+  const seed = () => (sceneDefs.length ? sceneDefs : [{ id: model.id + "-base", name: "Base view" }]).map((sc) => meSeedScene(sc, model.id));
+  const [scenes, setScenes] = useState(seed);
+  const seedAnims = () => animDefs.map((a) => ({ ...a }));
+  const [anims, setAnims] = useState(seedAnims);
+  const addAnim = () => {
+    const a = { id: model.id + "-a" + Date.now(), kind: "animation", name: "New animation", duration: "0:00", steps: 0 };
+    setAnims((cur) => cur.concat([a]));
+    setDirty(true);
+    setSel({ type: "animation", id: a.id });
+    setPlaying(false);
+  };
+  const removeAnim = (id) => {
+    setAnims((cur) => cur.filter((a) => a.id !== id));
+    setDirty(true);
+    setSel((cur) => (cur.type === "animation" && cur.id === id ? { type: "scene", id: scenes[0].id } : cur));
+    setPlaying(false);
+  };
+  const [dirty, setDirty] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [selPart, setSelPart] = useState(null);
+  const liveCam = useRef(null);
+  const [metrics, setMetrics] = useState(null);
+  const [groupsOpen, setGroupsOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(true);
+  const [annOpen, setAnnOpen] = useState(true);
+  const [selOpen, setSelOpen] = useState(true);
+  const [dimOpen, setDimOpen] = useState(true);
+  const [resetKey, setResetKey] = useState(0);
+  const [sceneDraft, setSceneDraft] = useState(null);
+  const [annDraft, setAnnDraft] = useState(null);
+  const [sel, setSel] = useState(() => {
+    if (node.kind === "animation") return { type: "animation", id: node.id };
+    if (node.kind === "scene") return { type: "scene", id: node.id };
+    return { type: "scene", id: sceneDefs.length ? sceneDefs[0].id : model.id + "-base" };
+  });
+
+  const activeSceneId = sel.type === "scene" ? sel.id : (scenes[0] ? scenes[0].id : null);
+  const activeScene = scenes.find((s) => s.id === activeSceneId) || scenes[0] || meSeedScene({ id: "none", name: model.name }, model.id);
+  const activeAnim = sel.type === "animation" ? anims.find((a) => a.id === sel.id) : null;
+  const motion = activeAnim ? (ME_MOTIONS[activeAnim.name] || "explode") : "explode";
+
+  const patch = (fn) => { setScenes((prev) => prev.map((s) => (s.id === activeScene.id ? { ...s, ...fn(s) } : s))); setDirty(true); setSaved(false); };
+  const save = () => { setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2400); };
+  const discard = () => { setScenes(seed()); setAnims(seedAnims()); setDirty(false); setSelPart(null); };
+
+  const selectedPartDef = parts.find((p) => p.id === selPart) || null;
+
+  const addAnnotation = () => {
+    if (!selectedPartDef) return;
+    setAnnDraft({ partId: selectedPartDef.id, label: "", text: "" });
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--kls-scaffold-bg)", display: "flex", flexDirection: "column" }}>
+
+      {/* top bar */}
+      <div style={{ height: 64, flex: "none", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        padding: "0 var(--kls-space-med)", background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <MeIconBtn icon="chevronRight" rotate={180} label="Back to Library" onClick={onClose} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{model.name}</span>
+            {dirty && <span title="Unsaved changes" style={{ width: 8, height: 8, borderRadius: 999, background: "var(--kls-primary)", flex: "none" }} />}
+          </div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+            Library · 3D Models · {sel.type === "animation" && activeAnim ? activeAnim.name : activeScene.name}
+          </div>
+        </div>
+        <div style={{ flex: 1 }} />
+        {saved && (
+          <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary-container)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary-container)" }}>Saved</span>
+        )}
+        <MeButton onClick={discard}>Discard</MeButton>
+        <MeButton tone="primary" onClick={save}>Save</MeButton>
+      </div>
+
+      <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+
+        {/* left: tree */}
+        <div style={{ width: 264, flex: "none", boxSizing: "border-box", overflowY: "auto", background: "var(--kls-surface)",
+          borderRight: "1px solid var(--kls-outline-variant)", padding: "var(--kls-space-small)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <MeSectionLabel>Scenes</MeSectionLabel>
+            {scenes.map((s) => (
+              <MeTreeRow key={s.id} icon="stack" label={s.name} active={sel.type === "scene" && sel.id === s.id}
+                onClick={() => { setSel({ type: "scene", id: s.id }); setPlaying(false); }}
+                trailing={<MeIconBtn icon="pencil" label={"Edit " + s.name}
+                  onClick={(e) => { if (e) e.stopPropagation(); setSceneDraft({ id: s.id, name: s.name, description: s.description || "" }); }} />} />
+            ))}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <MeSectionLabel action={<MeAddBtn label="Add animation" onClick={addAnim} />}>Animations</MeSectionLabel>
+            {anims.length === 0 && <div style={{ padding: "0 var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 13, color: "var(--kls-on-surface-variant)" }}>None defined</div>}
+            {anims.map((a) => (
+              <MeTreeRow key={a.id} icon="play" label={a.name} sub={meStepCount(a) + (meStepCount(a) === 1 ? " step" : " steps")}
+                active={sel.type === "animation" && sel.id === a.id}
+                onClick={() => { setSel({ type: "animation", id: a.id }); setPlaying(false); }}
+                trailing={<MeDeleteBtn label={"Delete " + a.name} onClick={() => removeAnim(a.id)} />} />
+            ))}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <MeSectionLabel>Parts</MeSectionLabel>
+            {parts.map((p) => {
+              const hidden = activeScene.hidden.indexOf(p.id) >= 0;
+              return (
+                <MeTreeRow key={p.id} icon="cube" label={p.name} indent muted={hidden} active={selPart === p.id}
+                  onClick={() => setSelPart(selPart === p.id ? null : p.id)}
+                  trailing={<MeEyeBtn on={!hidden} onClick={() => patch((s) => ({ hidden: hidden ? s.hidden.filter((x) => x !== p.id) : s.hidden.concat([p.id]) }))} />} />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* center: viewport */}
+        <div style={{ flex: 1, minWidth: 0, position: "relative", overflow: "hidden", background: "var(--kls-surface-container-lowest)" }}>
+          <MeViewport parts={parts} scene={activeScene} playing={playing} motion={motion}
+            selectedPart={selPart} onPickPart={setSelPart}
+            onCamera={(c) => { liveCam.current = c; }} onMetrics={setMetrics} resetKey={resetKey} />
+
+          <div style={{ position: "absolute", left: "var(--kls-space-med)", bottom: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+            {sel.type === "animation" && (
+              <MeButton onClick={() => setPlaying((p) => !p)}>{playing ? "Pause preview" : "Play preview"}</MeButton>
+            )}
+            <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-tertiary)" }}>
+              Drag to orbit · scroll to zoom · click a part to select
+            </span>
+          </div>
+
+          {selectedPartDef && (
+            <div style={{ position: "absolute", right: "var(--kls-space-med)", top: "var(--kls-space-med)",
+              padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-surface)",
+              border: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+              color: "var(--kls-on-surface)" }}>{selectedPartDef.name}</div>
+          )}
+        </div>
+
+        {/* right: inspector */}
+        <div style={{ width: 320, flex: "none", boxSizing: "border-box", overflowY: "auto", background: "var(--kls-surface)",
+          borderLeft: "1px solid var(--kls-outline-variant)", padding: "var(--kls-space-med)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+          {sel.type === "animation" && activeAnim ? (
+            <>
+              <MeField label="Animation name">
+                <MeInput value={activeAnim.name}
+                  onChange={(v) => { setAnims((prev) => prev.map((a) => (a.id === activeAnim.id ? { ...a, name: v } : a))); setDirty(true); setSaved(false); }} />
+              </MeField>
+              <MeField label="Duration">
+                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{activeAnim.duration || "—"}</div>
+              </MeField>
+              <MeField label="Base scene">
+                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{activeScene.name}</div>
+              </MeField>
+              <div style={{ padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
+                fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-tertiary)", lineHeight: 1.5 }}>
+                Keyframe editing lands in part 2. For now this previews the motion against the selected scene.
+              </div>
+            </>
+          ) : (
+            <>
+              <MeField label={"Explode — " + Math.round(activeScene.explode * 100) + "%"}>
+                <input type="range" min="0" max="100" value={Math.round(activeScene.explode * 100)}
+                  onChange={(e) => patch(() => ({ explode: Number(e.target.value) / 100 }))}
+                  style={{ width: "100%", accentColor: "var(--kls-primary)" }} />
+              </MeField>
+
+              <MePanelSection title="Annotations" collapsible open={annOpen} onToggle={() => setAnnOpen((o) => !o)}
+                trailing={<MeSwitch on={activeScene.showAnnotations !== false} onChange={(v) => patch(() => ({ showAnnotations: v }))} />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+                  {activeScene.annotations.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)",
+                      fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No Annotations Yet</div>
+                  )}
+                  {activeScene.annotations.map((a) => (
+                    <div key={a.id} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", padding: "var(--kls-space-small)",
+                      borderRadius: 8, border: "1px solid var(--kls-outline-variant)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                        <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+                          textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{(parts.find((p) => p.id === a.partId) || {}).name || "Model"}</span>
+                        <MeIconBtn icon="trash" label="Remove annotation" onClick={() => patch((s) => ({ annotations: s.annotations.filter((x) => x.id !== a.id) }))} />
+                      </div>
+                      {a.label && (
+                        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{a.label}</div>
+                      )}
+                      <textarea value={a.text} rows={2} placeholder="What should the student notice?"
+                        onChange={(e) => patch((s) => ({ annotations: s.annotations.map((x) => (x.id === a.id ? { ...x, text: e.target.value } : x)) }))}
+                        style={{ border: "none", outline: "none", background: "transparent", resize: "vertical", lineHeight: 1.45,
+                          fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+                    </div>
+                  ))}
+                  <MeButton onClick={addAnnotation}>{selectedPartDef ? "Annotate " + selectedPartDef.name : "Select a part to annotate"}</MeButton>
+                </div>
+              </MePanelSection>
+
+              <MePanelSection title="Selected" collapsible open={selOpen} onToggle={() => setSelOpen((o) => !o)}
+                trailing={<MeSwitch label="Isolate" on={!!activeScene.isolate} onChange={(v) => patch(() => ({ isolate: v }))} />}>
+                <div style={{ textAlign: "center", padding: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+                  color: selectedPartDef ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
+                  {selectedPartDef ? selectedPartDef.name : "Nothing selected"}
+                </div>
+              </MePanelSection>
+
+              <MePanelSection title="Dimensions" collapsible open={dimOpen} onToggle={() => setDimOpen((o) => !o)}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                  <MeMetricRow label="Width"  value={metrics ? metrics.w.toFixed(2) : "—"} />
+                  <MeMetricRow label="Height" value={metrics ? metrics.h.toFixed(2) : "—"} />
+                  <MeMetricRow label="Depth"  value={metrics ? metrics.d.toFixed(2) : "—"} />
+                </div>
+              </MePanelSection>
+
+              <MePanelSection title="Object Groups" collapsible open={groupsOpen} onToggle={() => setGroupsOpen((o) => !o)}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+                  {[...new Set(parts.map((p) => p.group))].map((g) => {
+                    const members = parts.filter((p) => p.group === g);
+                    const ids = members.map((p) => p.id);
+                    const allHidden = ids.every((id) => activeScene.hidden.indexOf(id) >= 0);
+                    return (
+                      <div key={g} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 32 }}>
+                          <span style={{ width: 16, height: 16, borderRadius: 999, flex: "none",
+                            border: "1.5px solid var(--kls-on-surface-variant)" }} />
+                          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+                            color: allHidden ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>{g}</span>
+                          <MeSwitch on={!allHidden} onChange={() => patch((sc2) => ({
+                            hidden: allHidden ? sc2.hidden.filter((x) => ids.indexOf(x) < 0) : [...new Set(sc2.hidden.concat(ids))] }))} />
+                        </div>
+                        {members.map((p) => {
+                          const hidden = activeScene.hidden.indexOf(p.id) >= 0;
+                          return (
+                            <div key={p.id} onClick={() => setSelPart(selPart === p.id ? null : p.id)}
+                              style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 32,
+                                paddingLeft: "var(--kls-space-med)", cursor: "pointer" }}>
+                              <KlsIcon name="stack" size={15} color="var(--kls-on-surface-variant)" />
+                              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: selPart === p.id ? 600 : 500,
+                                color: hidden ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>{p.name}</span>
+                              <MeSwitch on={!hidden} onChange={() => patch((sc2) => ({
+                                hidden: hidden ? sc2.hidden.filter((x) => x !== p.id) : sc2.hidden.concat([p.id]) }))} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </MePanelSection>
+
+              <MePanelSection title="View Options" collapsible open={viewOpen} onToggle={() => setViewOpen((o) => !o)}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+                    <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+                      {ME_BGS.map((b) => (
+                        <MeSwatch key={b.value} value={b.value} label={b.label + " background"}
+                          active={(activeScene.bg || ME_BGS[0].value) === b.value} onClick={() => patch(() => ({ bg: b.value }))} />
+                      ))}
+                    </div>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>Background Color</span>
+                  </div>
+                  <MeSlider label="Ambient Light" value={activeScene.ambient == null ? 0.5 : activeScene.ambient}
+                    onChange={(v) => patch(() => ({ ambient: v }))} />
+                  <MeSlider label="Directional Light" value={activeScene.directional == null ? 0.75 : activeScene.directional}
+                    onChange={(v) => patch(() => ({ directional: v }))} />
+                  <div style={{ display: "flex" }}>
+                    <button onClick={() => { patch(() => ({ camera: { az: 0.9, el: 0.5, dist: 9 } })); setResetKey((k) => k + 1); }}
+                      style={{ flex: 1, height: 40, borderRadius: 8, cursor: "pointer", border: "1px solid var(--kls-outline-variant)",
+                        background: "transparent", color: "var(--kls-on-surface)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+                        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)" }}>
+                      <KlsIcon name="refresh" size={15} color="var(--kls-on-surface)" />Reset View
+                    </button>
+                  </div>
+                </div>
+              </MePanelSection>
+            </>
+          )}
+        </div>
+      </div>
+
+      {annDraft && (
+        <MeAnnotationDialog draft={annDraft} onChange={setAnnDraft} onCancel={() => setAnnDraft(null)}
+          onAdd={() => {
+            patch((s) => ({ annotations: s.annotations.concat([{ id: "a" + Date.now(), partId: annDraft.partId, label: annDraft.label, text: annDraft.text }]) }));
+            setAnnDraft(null);
+          }} />
+      )}
+
+      {sceneDraft && (
+        <MeSceneDialog draft={sceneDraft} onChange={setSceneDraft} onCancel={() => setSceneDraft(null)}
+          onSave={() => {
+            setScenes((prev) => prev.map((s) => (s.id === sceneDraft.id ? { ...s, name: sceneDraft.name, description: sceneDraft.description } : s)));
+            setDirty(true); setSaved(false); setSceneDraft(null);
+          }} />
+      )}
+    </div>
+  );
+}
