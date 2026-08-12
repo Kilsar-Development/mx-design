@@ -494,6 +494,8 @@ function SidebarOption({ icon, glyph, symbol, label, isActive, showLabel, onClic
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
+            lineHeight: 1.5,
+            paddingBottom: 1,
           }}
         >
           {label}
@@ -4391,6 +4393,7 @@ function WebApp(props) {
   const [query, setQuery] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
   const [editing3D, setEditing3D] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const flags = { name: true, email: false, title: true, role: true, status: false, avatar: true };
   const onSelect = (key) => {
@@ -4405,10 +4408,11 @@ function WebApp(props) {
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
   else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
   else if (active === "integrations") content = <Integrations query={query} />;
-  else if (active === "terms") content = <Blocks query={query} />;
+  else if (active === "terms") content = <Blocks query={query} onOpenTask={setEditingTask} />;
   else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
   else content = <WebPlaceholder tabKey={active} />;
   if (editing3D) return <ModelEditor node={editing3D} onClose={() => setEditing3D(null)} />;
+  if (editingTask) return <TaskEditor task={editingTask} onClose={() => setEditingTask(null)} />;
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--kls-scaffold-bg)", overflow: "hidden" }}>
       <NavSidebar active={active} workspaceName="EduDev" version="2.16.5" flavor="education" onSelect={onSelect} />
@@ -6818,8 +6822,8 @@ const LIB_KINDS = {
   video:  { icon: "filetypes/playMovie", color: "var(--kls-accent-12)" },
   image:  { icon: "image",            color: "var(--kls-success)" },
   model:  { icon: "cube",             color: "var(--kls-accent-4)" },
-  scene:      { icon: "stack", color: "var(--kls-on-surface-variant)", label: "Scene" },
-  animation:  { icon: "play",  color: "var(--kls-on-surface-variant)", label: "Animation" },
+  scene:      { icon: "scene",     color: "var(--kls-accent-7)",  label: "Scene" },
+  animation:  { icon: "animation", color: "var(--kls-accent-12)", label: "Animation" },
   txt:    { icon: "filetypes/txt",    color: "var(--kls-on-surface-variant)" },
 };
 
@@ -7099,12 +7103,12 @@ function CatalogFilterCheck({ label, checked, onClick }) {
 
 const CATALOG_KIND_PILL = { Task: "var(--kls-accent-1)", Scenario: "var(--kls-accent-7)", Subtask: "var(--kls-accent-12)" };
 
-function CatalogTaskRow({ row, onFav }) {
+function CatalogTaskRow({ row, onFav, onOpen }) {
   const [hover, setHover] = useState(false);
   const td = { ...LIB_TD, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", verticalAlign: "middle" };
   const pillFg = CATALOG_KIND_PILL[row.kind] || "var(--kls-on-tertiary)";
   return (
-    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+    <tr onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ cursor: "pointer", background: hover ? "var(--kls-surface-container-low)" : "transparent",
         transition: "background 125ms var(--kls-ease-standard)" }}>
       <td style={{ ...LIB_TD, verticalAlign: "middle" }}>
@@ -7131,13 +7135,13 @@ function CatalogTaskRow({ row, onFav }) {
       <td style={{ ...td, width: 88 }}>{row.steps}</td>
       <td style={{ ...td, width: 168, whiteSpace: "normal" }}>{row.category}</td>
       <td style={{ ...LIB_TD, width: 56, textAlign: "right", verticalAlign: "middle" }}>
-        <CatalogStarBtn on={row.fav} label={(row.fav ? "Unfavorite " : "Favorite ") + row.name} onClick={onFav} />
+        <CatalogStarBtn on={row.fav} label={(row.fav ? "Unfavorite " : "Favorite ") + row.name} onClick={(e) => { if (e && e.stopPropagation) e.stopPropagation(); onFav(); }} />
       </td>
     </tr>
   );
 }
 
-function CatalogTasks({ term, favOnly, onFavOnly }) {
+function CatalogTasks({ term, favOnly, onFavOnly, onOpenTask }) {
   const [sort, setSort] = useState({ col: "name", dir: "asc" });
   const [kinds, setKinds] = useState({ Task: true, Scenario: true, Subtask: true });
   const [block, setBlock] = useState("Any block");
@@ -7197,7 +7201,7 @@ function CatalogTasks({ term, favOnly, onFavOnly }) {
               <th style={{ ...LIB_TH_BASE, width: 56 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Favorite</span></th>
             </tr>
           </thead>
-          <tbody>{rows.map((r) => <CatalogTaskRow key={r.id} row={r} onFav={() => toggleFav(r.id)} />)}</tbody>
+          <tbody>{rows.map((r) => <CatalogTaskRow key={r.id} row={r} onFav={() => toggleFav(r.id)} onOpen={() => onOpenTask && onOpenTask(r)} />)}</tbody>
         </table>
       )}
     </>
@@ -7222,11 +7226,12 @@ function BlocksRow({ row }) {
   );
 }
 
-function Blocks({ query = "" }) {
+function Blocks({ query = "", onOpenTask }) {
   const [tab, setTab] = useState("blocks");
   const [sort, setSort] = useState({ col: "name", dir: "asc" });
   const [refreshing, setRefreshing] = useState(false);
   const [favOnly, setFavOnly] = useState(false);
+  const [expanded, setExpanded] = useState([]);
   const term = query.trim().toLowerCase();
   const onSort = (col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
   const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
@@ -7265,7 +7270,7 @@ function Blocks({ query = "" }) {
 
         <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
           {tab === "tasks" ? (
-            <CatalogTasks term={term} favOnly={favOnly} onFavOnly={setFavOnly} />
+            <CatalogTasks term={term} favOnly={favOnly} onFavOnly={setFavOnly} onOpenTask={onOpenTask} />
           ) : tab !== "blocks" ? (
             <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
               <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
@@ -7906,7 +7911,7 @@ function MeButton({ children, onClick, tone, full }) {
   );
 }
 
-function MeCircleBtn({ label, onClick, children, size = 36 }) {
+function MeCircleBtn({ label, onClick, children, size = 36, bordered = true }) {
   const [hover, setHover] = useState(false);
   return (
     <button aria-label={label} title={label} onClick={onClick}
@@ -7914,7 +7919,7 @@ function MeCircleBtn({ label, onClick, children, size = 36 }) {
       style={{ width: size, height: size, borderRadius: 9999, flex: "none", padding: 0, cursor: "pointer",
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         background: hover ? "var(--kls-tertiary)" : "var(--kls-surface)",
-        border: "1px solid var(--kls-outline)", color: "var(--kls-on-surface)",
+        border: bordered ? "1px solid var(--kls-outline)" : "none", color: "var(--kls-on-surface)",
         transition: "background 125ms var(--kls-ease-standard)" }}>
       <svg viewBox="0 0 24 24" style={{ width: size / 2, height: size / 2, stroke: "currentColor", fill: "none", strokeWidth: 1.6 }}>{children}</svg>
     </button>
@@ -8179,7 +8184,7 @@ function MeAnnotationDialog({ draft, onChange, onCancel, onAdd }) {
   );
 }
 
-function ModelEditor({ node, onClose }) {
+function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
   const model = meOwnerModel(node) || node;
   const parts = mePartsFor(model.id);
   const kids = model.children || [];
@@ -8200,6 +8205,7 @@ function ModelEditor({ node, onClose }) {
   const versionsFor = (key) => verMap[key] || meSeedVersions(key);
   const setVersionsFor = (key, list) => setVerMap((m) => ({ ...m, [key]: list }));
   const addAnim = () => {
+    if (locked) return;
     const a = { id: model.id + "-a" + Date.now(), kind: "animation", name: "New animation", duration: "0:00", steps: 0 };
     setAnims((cur) => cur.concat([a]));
     setDirty(true);
@@ -8208,7 +8214,7 @@ function ModelEditor({ node, onClose }) {
   };
   const [generating, setGenerating] = useState(false);
   const generateAnim = () => {
-    if (generating) return;
+    if (locked || generating) return;
     setGenerating(true);
     setTimeout(() => {
       const n = anims.length + 1;
@@ -8222,11 +8228,17 @@ function ModelEditor({ node, onClose }) {
     }, 900);
   };
   const removeAnim = (id) => {
+    if (locked) return;
     setAnims((cur) => cur.filter((a) => a.id !== id));
     setDirty(true);
     setSel((cur) => (cur.type === "animation" && cur.id === id ? { type: "scene", id: scenes[0].id } : cur));
     setPlaying(false);
   };
+  // Linked scenes are published versions: viewing is allowed, editing requires a new draft.
+  const [mode, setMode] = useState(readOnly ? "view" : "edit");
+  const locked = mode === "view";
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [leaveNote, setLeaveNote] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -8251,7 +8263,10 @@ function ModelEditor({ node, onClose }) {
   const activeAnim = sel.type === "animation" ? anims.find((a) => a.id === sel.id) : null;
   const motion = activeAnim ? (ME_MOTIONS[activeAnim.name] || "explode") : "explode";
 
-  const patch = (fn) => { setScenes((prev) => prev.map((s) => (s.id === activeScene.id ? { ...s, ...fn(s) } : s))); setDirty(true); setSaved(false); };
+  const patch = (fn) => {
+    if (locked) return;
+    setScenes((prev) => prev.map((s) => (s.id === activeScene.id ? { ...s, ...fn(s) } : s))); setDirty(true); setSaved(false);
+  };
   // Isolation has ONE source of truth: activeScene.isolate + the selected part
   // (the viewport already reads both). The tree button and the inspector's
   // Isolate switch are two views of that same state.
@@ -8265,7 +8280,29 @@ function ModelEditor({ node, onClose }) {
   };
   const toggleIsolate = (id) => { if (!(isoIds.length === 1 && isoIds[0] === id)) setSelPart(id); isolateSet([id]); };
   const groupIsolated = (ids) => activeScene.isolate && sameSet(isoIds, ids);
-  const save = () => { setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2400); };
+  const save = () => {
+    if (locked) return;
+    setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2400);
+    if (readOnly) setDraftSaved(true);
+  };
+  // Leaving a saved draft: the task still points at the published version.
+  const requestClose = () => {
+    if (readOnly && mode === "draft" && (draftSaved || dirty)) { setLeaveNote(true); return; }
+    onClose();
+  };
+  const startDraft = () => { setMode("draft"); setVerOpen(false); };
+  // Publishing from the leave dialog: the draft becomes the released version and the
+  // task picks it up — no version-history detour.
+  const publishDraft = () => {
+    const target = sel.type === "animation" && activeAnim ? activeAnim : activeScene;
+    const list = versionsFor(target.id);
+    const next = "v" + (list.length + 1);
+    setVersionsFor(target.id, [{ id: target.id + "-" + next, label: next, ts: Date.now(),
+      author: "You", released: true }].concat(list.map((x) => ({ ...x, released: false }))));
+    setDirty(false); setLeaveNote(false);
+    if (onPublished) onPublished({ node: target, version: next });
+    onClose();
+  };
   const discard = () => { setScenes(seed()); setAnims(seedAnims()); setDirty(false); setSelPart(null); setSelGroup(null); };
 
   const selectedPartDef = parts.find((p) => p.id === selPart) || null;
@@ -8281,7 +8318,7 @@ function ModelEditor({ node, onClose }) {
       {/* top bar */}
       <div style={{ height: 64, flex: "none", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
         padding: "0 var(--kls-space-med)", background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
-        <MeCircleBtn label="Back to Library" onClick={onClose}>
+        <MeCircleBtn label={backLabel || "Back to Library"} onClick={requestClose}>
           <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
         </MeCircleBtn>
         <div style={{ minWidth: 0 }}>
@@ -8300,8 +8337,22 @@ function ModelEditor({ node, onClose }) {
             fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary-container)" }}>Saved</span>
         )}
         <MeIconBtn icon="clock" size={20} label="Version history" onClick={() => setVerOpen(true)} />
-        <MeButton onClick={discard}>Discard</MeButton>
-        <MeButton tone="primary" onClick={save}>Save</MeButton>
+        {locked ? (
+          <>
+            <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary)" }}>Read only · Published</span>
+            <MeButton tone="primary" onClick={startDraft}>Create new draft</MeButton>
+          </>
+        ) : (
+          <>
+            {readOnly && (
+              <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-primary-container)",
+                fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-primary-container)" }}>Editing new draft</span>
+            )}
+            <MeButton onClick={discard}>Discard</MeButton>
+            <MeButton tone="primary" onClick={save}>Save</MeButton>
+          </>
+        )}
       </div>
 
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
@@ -8316,22 +8367,22 @@ function ModelEditor({ node, onClose }) {
             {scenesOpen && scenes.map((s) => (
               <MeTreeRow key={s.id} icon="stack" label={s.name} active={sel.type === "scene" && sel.id === s.id}
                 onClick={() => { setSel({ type: "scene", id: s.id }); setPlaying(false); }}
-                trailing={<MeIconBtn icon="pencil" label={"Edit " + s.name}
+                trailing={locked ? null : <MeIconBtn icon="pencil" label={"Edit " + s.name}
                   onClick={(e) => { if (e) e.stopPropagation(); setSceneDraft({ id: s.id, name: s.name, description: s.description || "" }); }} />} />
             ))}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
             <MeSectionLabel collapsible open={animsOpen} onToggle={() => setAnimsOpen((o) => !o)}
-              action={<MeAddBtn label="Add animation" onClick={addAnim} />}>Animations</MeSectionLabel>
+              action={locked ? null : <MeAddBtn label="Add animation" onClick={addAnim} />}>Animations</MeSectionLabel>
             {animsOpen && anims.length === 0 && <div style={{ padding: "0 var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 13, color: "var(--kls-on-surface-variant)" }}>None defined</div>}
             {animsOpen && anims.map((a) => (
               <MeTreeRow key={a.id} icon="play" label={a.name} sub={meStepCount(a) + (meStepCount(a) === 1 ? " step" : " steps")}
                 active={sel.type === "animation" && sel.id === a.id}
                 onClick={() => { setSel({ type: "animation", id: a.id }); setPlaying(false); }}
-                trailing={<MeDeleteBtn label={"Delete " + a.name} onClick={() => removeAnim(a.id)} />} />
+                trailing={locked ? null : <MeDeleteBtn label={"Delete " + a.name} onClick={() => removeAnim(a.id)} />} />
             ))}
-            {animsOpen && <div style={{ paddingTop: "var(--kls-space-tiny)" }}>
+            {animsOpen && !locked && <div style={{ paddingTop: "var(--kls-space-tiny)" }}>
               <MeButton tone="primary" full onClick={generateAnim}>
                 {generating ? <KlsIcon name="refresh" size={16} color="currentColor" style={{ animation: "int-spin 900ms linear infinite" }} /> : <MeSparkleGlyph />}
                 {generating ? "Generating…" : "Generate"}
@@ -8369,7 +8420,15 @@ function ModelEditor({ node, onClose }) {
         {/* right: inspector */}
         <div style={{ width: 320, flex: "none", boxSizing: "border-box", overflowY: "auto", background: "var(--kls-surface)",
           borderLeft: "1px solid var(--kls-outline-variant)", padding: "var(--kls-space-med)",
-          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)",
+          pointerEvents: locked ? "none" : "auto", opacity: locked ? 0.72 : 1 }}>
+
+          {locked && (
+            <div style={{ padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-tertiary)", lineHeight: 1.5 }}>
+              This is the published version linked to the task. Create a new draft to make changes.
+            </div>
+          )}
 
           {sel.type === "animation" && activeAnim ? (
             <>
@@ -8522,6 +8581,30 @@ function ModelEditor({ node, onClose }) {
           }} />
       )}
 
+      {leaveNote && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "var(--kls-space-med)" }}>
+          <div style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+          <div style={{ position: "relative", width: "min(460px, 100%)", background: "var(--kls-surface)", borderRadius: 8,
+            boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column",
+            gap: "var(--kls-space-small)" }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+              {dirty ? "You have unsaved draft changes" : "Draft saved"}
+            </div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.55 }}>
+              {dirty
+                ? "Save the draft before leaving. Saved draft changes won’t be available in the task until the scene is published."
+                : "Your draft changes are saved, but they won’t be available in the task until this scene is published."}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-xsmall)", paddingTop: "var(--kls-space-tiny)" }}>
+              <MeButton onClick={() => setLeaveNote(false)}>Keep editing</MeButton>
+              <MeButton onClick={publishDraft}>Publish</MeButton>
+              <MeButton tone="primary" onClick={onClose}>{backLabel || "Back to Library"}</MeButton>
+            </div>
+          </div>
+        </div>
+      )}
+
       {verOpen && (() => {
         const isAnim = sel.type === "animation" && activeAnim;
         const key = isAnim ? activeAnim.id : activeScene.id;
@@ -8537,6 +8620,1011 @@ function ModelEditor({ node, onClose }) {
             onUnpublish={() => setVersionsFor(key, list.map((x) => ({ ...x, released: false })))} />
         );
       })()}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// TASK EDITOR (web) — full-screen editor opened from a Catalog task row.
+// Steps rail · step canvas (instructions / notes / actions) · resources rail.
+// ════════════════════════════════════════════════════════════════════
+const TE_PATHS = {
+  back:    "M15 6l-6 6 6 6",
+  gear:    "M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM19.4 15a1.7 1.7 0 00.3 1.9l.1.1a1.6 1.6 0 11-2.3 2.3l-.1-.1a1.7 1.7 0 00-2.8 1.2v.2a1.6 1.6 0 11-3.2 0v-.1a1.7 1.7 0 00-2.9-1.2l-.1.1a1.6 1.6 0 11-2.3-2.3l.1-.1A1.7 1.7 0 003.9 14H3.7a1.6 1.6 0 110-3.2h.2A1.7 1.7 0 005 8l-.1-.1a1.6 1.6 0 112.3-2.3l.1.1a1.7 1.7 0 001.9.3h.1a1.7 1.7 0 001-1.5V4.3a1.6 1.6 0 013.2 0v.2a1.7 1.7 0 001 1.5h.1a1.7 1.7 0 001.9-.3l.1-.1a1.6 1.6 0 112.3 2.3l-.1.1a1.7 1.7 0 00-.3 1.9v.1a1.7 1.7 0 001.5 1h.2a1.6 1.6 0 010 3.2h-.2a1.7 1.7 0 00-1.5 1z",
+  draft:   "M14 3H6a1 1 0 00-1 1v16a1 1 0 001 1h12a1 1 0 001-1V8zM14 3v5h5M12 12v5M9.5 14.5h5",
+  history: "M3.5 12a8.5 8.5 0 1114.6 6M3.5 12l-.5-3.5M3.5 12H7M12 8v4.5l3 1.8",
+  save:    "M5 3h11l3 3v15H5zM8 3v6h8V3M8 21v-6h8v6",
+  undo:    "M9 10H5V6M5 10a8 8 0 1114 5",
+  redo:    "M15 10h4V6M19 10a8 8 0 10-14 5",
+  copy:    "M9 9h11v11H9zM15 5H4v11h3",
+  trash:   "M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6",
+  book:    "M3 5.5h6.5a2.5 2.5 0 012.5 2.5v11a2.5 2.5 0 00-2.5-2.5H3zM21 5.5h-6.5A2.5 2.5 0 0012 8v11a2.5 2.5 0 012.5-2.5H21z",
+  chat:    "M4 5h16v11H9l-5 4z",
+  playc:   "M12 3a9 9 0 100 18 9 9 0 000-18zM10.5 8.5l5 3.5-5 3.5z",
+  checkc:  "M12 3a9 9 0 100 18 9 9 0 000-18zM8.5 12.2l2.5 2.5 4.5-5",
+  camera:  "M4 8h3l1.5-2h7L17 8h3v11H4zM12 16.5a3.2 3.2 0 100-6.5 3.2 3.2 0 000 6.5z",
+  image:   "M4 5h16v14H4zM4 15.5l4.5-4 4 3.5 3-2.5L20 16M15.5 9.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4",
+  quiz:    "M5 4h14v14l-3 3H5zM9.5 9a2.5 2.5 0 114 2c-.9.7-1.5 1.2-1.5 2.3M12 16.4v.2",
+  link:    "M10.5 13.5a3.5 3.5 0 000 5l1.5-1.5M13.5 10.5a3.5 3.5 0 000-5L12 7M8.5 15.5l7-7",
+  doc:     "M14 3H6v18h12V8zM14 3v5h5M9 13h6M9 17h4",
+  cube:    "M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5",
+  plus:    "M12 5v14M5 12h14",
+  close:   "M6 6l12 12M18 6L6 18",
+  globe:   "M12 3a9 9 0 100 18 9 9 0 000-18zM3.5 9.5h17M3.5 14.5h17M12 3c2.2 2.4 3.2 5.5 3.2 9s-1 6.6-3.2 9c-2.2-2.4-3.2-5.5-3.2-9s1-6.6 3.2-9z",
+};
+
+// Glyphs that exist as canonical DS icon assets — render them via KlsIcon (masked
+// PNG, tints from a color token). Everything else falls back to an inline path.
+const TE_ASSET_ICONS = { trash: "trash", history: "clock", cube: "cube", image: "image",
+  camera: "camera", chat: "chatBubble", playc: "play", doc: "filetypes/pdf" };
+
+function TeIcon({ name, size = 18, color = "currentColor", strokeWidth = 1.6 }) {
+  const asset = TE_ASSET_ICONS[name];
+  if (asset) return <KlsIcon name={asset} size={size} color={color} />;
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true"
+      style={{ width: size, height: size, flex: "none", display: "block", stroke: color, fill: "none",
+        strokeWidth, strokeLinecap: "round", strokeLinejoin: "round" }}>
+      <path d={TE_PATHS[name]} />
+    </svg>
+  );
+}
+
+function TeIconBtn({ name, label, onClick, size = 20, disabled, box = 40 }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick} disabled={disabled}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: box, height: box, borderRadius: 8, border: "none", padding: 0, flex: "none",
+        cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover && !disabled ? "var(--kls-tertiary)" : "transparent",
+        color: "var(--kls-on-surface-variant)", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <TeIcon name={name} size={size} />
+    </button>
+  );
+}
+
+const TE_STEPS_SEED = [
+  { id: "s1", name: "New step",
+    instructions: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam mollis egestas felis at interdum. Nullam sollicitudin tellus viverra, commodo turpis sed, porta metus. Phasellus porta massa in augue varius, a sagittis enim facilisis. Proin id nisi enim. Pellentesque consectetur lorem tincidunt odio maximus dignissim. Integer",
+    notes: "In vel erat malesuada, facilisis enim ac, dignissim dolor. Suspendisse pharetra elit vitae eros egestas, id vestibulum mauris condimentum. Vivamus turpis ligula, fringilla vitae metus ac, ornare accumsan dolor. Aenean nec enim nunc. Sed placerat risus nec mattis pretium. Nam finibus tortor quis urna pellentesque convallis. Nulla",
+    actions: [{ id: "a1", type: "simple", value: "test" }] },
+  { id: "s2", name: "the 2nd step", instructions: "", notes: "", actions: [] },
+  { id: "s3", name: "simple 1", instructions: "", notes: "", actions: [] },
+  { id: "s4", name: "simple 2", instructions: "", notes: "", actions: [] },
+  { id: "s5", name: "simple 3", instructions: "", notes: "", actions: [] },
+  { id: "s6", name: "New step", instructions: "", notes: "", actions: [] },
+];
+
+const TE_ACTION_TYPES = [
+  { key: "simple", icon: "camera", title: "Step Action",      hint: "Add a custom action prompt", value: "New action" },
+  { key: "photo",  icon: "image",  title: "Photo/File",       hint: "Require photo or file submission", value: "Submit a photo of the completed step" },
+  { key: "choice", icon: "quiz",   title: "Multiple Choice",  hint: "Add a multiple choice question", value: "New question" },
+  { key: "subtask", icon: "link",  title: "Link to Subtask",  hint: "Only scenarios can link to subtask", soon: true },
+  { key: "summary", icon: "doc",   title: "Summary",          hint: "Ask for a written summary of work", soon: true },
+];
+const teActionLabel = (t) => (TE_ACTION_TYPES.find((x) => x.key === t) || TE_ACTION_TYPES[0]).title;
+
+const teReleased = (node) => {
+  if (!node) return "v1";
+  const rel = meSeedVersions(node.id).find((v) => v.released);
+  return rel ? rel.label : "v1";
+};
+const TE_MEDIA_SEED = [
+  { id: "m1", kind: "image", name: "Cessna 172 – right main gear", src: "assets/images/placeholderImage.jpg", version: "v2" },
+  { id: "m2", kind: "scene", name: "Cessna 172 Landing Gear.glb · Gear Down", node: LIB_MODEL_CESSNA.children[0],
+    version: "v1" },
+];
+const TE_DOCS_SEED = [{ id: "d1", kind: "pdf", name: "AMM 32-11-00 Rev C.pdf" }];
+const TE_LINKS_SEED = [{ id: "l1", name: "Google", url: "https://google.com" }];
+
+// Media / document glyphs match the Library exactly — same icon asset, same color.
+const teKind = (kind) => LIB_KINDS[kind] || LIB_KINDS.txt;
+const TE_MODEL_KINDS = ["model", "scene", "animation"];
+const teStale = (item) => !!(item.node && item.version && teReleased(item.node) !== item.version);
+
+const TE_CARD = { background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+  padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" };
+
+function TeCardHead({ icon, children }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", color: "var(--kls-on-surface-variant)" }}>
+      <TeIcon name={icon} size={16} />
+      <span style={ME_LABEL}>{children}</span>
+    </div>
+  );
+}
+
+function TeTextArea({ value, onChange, placeholder, rows = 4 }) {
+  const [focus, setFocus] = useState(false);
+  return (
+    <textarea value={value} rows={rows} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+      style={{ width: "100%", boxSizing: "border-box", resize: "vertical", padding: "var(--kls-space-small)",
+        borderRadius: 8, border: "1px solid " + (focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
+        background: "var(--kls-surface-container-lowest)",
+        outline: "none", fontFamily: "var(--kls-font-sans)",
+        fontSize: 14, fontWeight: 500, lineHeight: 1.55, color: "var(--kls-on-surface)",
+        transition: "border-color 125ms var(--kls-ease-standard)" }} />
+  );
+}
+
+function TeStepRow({ step, index, active, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 48, width: "100%", boxSizing: "border-box", textAlign: "left", cursor: "pointer",
+        padding: "0 var(--kls-space-small)", borderRadius: 8, border: "none", display: "flex", alignItems: "center",
+        gap: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 16,
+        fontWeight: active ? 600 : 500,
+        color: active ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)",
+        background: active ? "var(--kls-surface-container-lowest)" : hover ? "var(--kls-tertiary)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{index + 1}. {step.name}</span>
+    </button>
+  );
+}
+
+// Right-rail resource section: uppercase label, tiles/rows, per-section Add.
+function TeResourceSection({ title, children, onAdd, addLabel }) {
+  return (
+    <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+      padding: "var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginRight: "calc(-1 * var(--kls-space-tiny))" }}>
+        <span style={ME_LABEL}>{title}</span>
+        <div style={{ flex: 1 }} />
+        <TeIconBtn name="plus" size={16} box={24} label={addLabel} onClick={onAdd} />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function TeRemoveBtn({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={(e) => onClick(e)}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 999, border: "none", padding: 0, flex: "none", cursor: "pointer",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-error-container)" : "transparent",
+        color: hover ? "var(--kls-on-error-container)" : "var(--kls-on-surface-variant)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <TeIcon name="close" size={14} strokeWidth={1.8} />
+    </button>
+  );
+}
+
+function TeMediaTile({ item, onRemove, onOpen }) {
+  const [hover, setHover] = useState(false);
+  const openable = !!(onOpen && item.node);
+  const stale = teStale(item);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      onClick={openable ? onOpen : undefined}
+      title={openable ? "Open " + item.name + " in the 3D editor" : item.name}
+      style={{ position: "relative", width: 72, height: 72, borderRadius: 8, flex: "none", overflow: "hidden",
+        cursor: openable ? "pointer" : "default",
+        border: "1px solid " + (openable && hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"),
+        background: "var(--kls-surface-container-lowest)",
+        outline: stale ? "1px solid var(--kls-error)" : "none",
+        display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {item.kind === "image" && item.src
+        ? <img src={item.src} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        : <KlsIcon name={teKind(item.kind).icon} size={28} color={teKind(item.kind).color} />}
+      {stale && (
+        <span title="A newer released version is available"
+          style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 999,
+            background: "var(--kls-error-container)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <KlsIcon name="warning" size={12} color="var(--kls-on-error-container)" />
+        </span>
+      )}
+      <span style={{ position: "absolute", left: 3, bottom: 3, padding: "0 var(--kls-space-tiny)", borderRadius: 999,
+          background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 10, fontWeight: 600, lineHeight: "16px" }}>{item.version || "v1"}</span>
+      {hover && (
+        <span style={{ position: "absolute", top: 3, left: 3 }}>
+          <TeRemoveBtn label={"Remove " + item.name}
+            onClick={(e) => { if (e && e.stopPropagation) e.stopPropagation(); onRemove(); }} />
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TeAddTile({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 72, height: 72, borderRadius: 8, flex: "none", cursor: "pointer", padding: 0,
+        border: "1px dashed var(--kls-outline)", background: hover ? "var(--kls-tertiary)" : "transparent",
+        color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <TeIcon name="plus" size={20} />
+    </button>
+  );
+}
+
+function TeResourceRow({ icon, iconColor, name, meta, onRemove, removeLabel }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 48,
+        padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8,
+        background: hover ? "var(--kls-tertiary)" : "var(--kls-surface-container-lowest)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ color: "var(--kls-on-surface-variant)", display: "inline-flex" }}>
+        {iconColor ? <KlsIcon name={icon} size={20} color={iconColor} /> : <TeIcon name={icon} size={20} />}
+      </span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+        {meta && <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta}</div>}
+      </div>
+      <TeRemoveBtn label={removeLabel} onClick={onRemove} />
+    </div>
+  );
+}
+
+const TE_EMPTY = { fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+  padding: "var(--kls-space-xsmall) var(--kls-space-tiny)" };
+
+// ── Add action dialog ───────────────────────────────────────────────
+function TeAddActionDialog({ onPick, onClose }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "var(--kls-space-med)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+      <div style={{ position: "relative", width: "min(520px, 100%)", maxHeight: "80vh", background: "var(--kls-surface)",
+        borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Add action</span>
+          <div style={{ flex: 1 }} />
+          <TeIconBtn name="close" size={18} label="Close" onClick={onClose} />
+        </div>
+        <div style={{ padding: "var(--kls-space-med)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          {TE_ACTION_TYPES.map((t) => <TeActionTypeRow key={t.key} type={t} onClick={() => !t.soon && onPick(t)} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeActionTypeRow({ type, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} disabled={type.soon}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", width: "100%", boxSizing: "border-box",
+        textAlign: "left", padding: "var(--kls-space-small)", borderRadius: 12, cursor: type.soon ? "default" : "pointer",
+        border: "1px solid var(--kls-outline-variant)",
+        background: hover && !type.soon ? "var(--kls-surface-container-low)" : "var(--kls-surface-container-lowest)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 48, height: 48, borderRadius: 8, flex: "none", background: "var(--kls-tertiary)",
+        color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <TeIcon name={type.icon} size={22} />
+      </span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600,
+          color: type.soon ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>{type.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{type.hint}</div>
+      </div>
+      {type.soon ? (
+        <span style={{ flex: "none", padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+          background: "var(--kls-error-container)", color: "var(--kls-on-error-container)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Not available</span>
+      ) : (
+        <span style={{ color: "var(--kls-on-surface-variant)", flex: "none", display: "inline-flex" }}>
+          <TeIcon name="back" size={18} strokeWidth={1.8} />
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ── Task settings drawer ────────────────────────────────────────────
+const TE_MODULES = ["ACS Code Test", "Econ 101", "Econ102", "Powerplant Basics", "Sheet Metal I"];
+
+function TeReadonlyField({ icon, children }) {
+  return (
+    <div style={{ height: 48, boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+      padding: "0 var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>
+      {icon && <span style={{ color: "var(--kls-on-surface-variant)", display: "inline-flex" }}><TeIcon name={icon} size={18} /></span>}
+      {children}
+    </div>
+  );
+}
+
+function TeSettingsDrawer({ task, draft, onDraft, onClose }) {
+  const [shown, setShown] = useState(false);
+  const [modules, setModules] = useState(["ACS Code Test"]);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  const toggleModule = (m) => setModules((cur) => (cur.indexOf(m) >= 0 ? cur.filter((x) => x !== m) : cur.concat([m])));
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)",
+        opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: "min(426px, calc(100vw - 24px))",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600,
+            color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{draft.title}</span>
+          <MeCircleBtn size={36} label="Close" onClick={onClose}>
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </MeCircleBtn>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column",
+          gap: "var(--kls-space-med)" }}>
+          <MeField label="Type"><TeReadonlyField icon="cube">{task.kind || "Task"}</TeReadonlyField></MeField>
+          <MeField label="Title"><MeInput value={draft.title} onChange={(v) => onDraft({ ...draft, title: v })} /></MeField>
+          <MeField label="Category">
+            <MeInput value={draft.category} placeholder="none" onChange={(v) => onDraft({ ...draft, category: v })} />
+          </MeField>
+          <MeField label="Description">
+            <TeTextArea value={draft.description} rows={3} placeholder="Enter a description ( optional )"
+              onChange={(v) => onDraft({ ...draft, description: v })} />
+          </MeField>
+          <MeField label="Linked media">
+            <TeReadonlyField>{draft.mediaCount ? draft.mediaCount + " linked" : "None"}</TeReadonlyField>
+          </MeField>
+          <MeField label="Links">
+            <TeReadonlyField>{draft.linkCount ? draft.linkCount + " linked" : "None"}</TeReadonlyField>
+          </MeField>
+          <MeField label="ACS Codes">
+            <TeReadonlyField>{(task.acs && task.acs.length) ? task.acs.join(", ") : "None"}</TeReadonlyField>
+          </MeField>
+          <MeField label="Add to modules">
+            <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 8, overflow: "hidden" }}>
+              {TE_MODULES.map((m, i) => (
+                <TeModuleRow key={m} name={m} on={modules.indexOf(m) >= 0} first={i === 0} onClick={() => toggleModule(m)} />
+              ))}
+            </div>
+          </MeField>
+        </div>
+
+        <div style={{ padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)",
+          display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ ...ctPrimaryBtn, background: "var(--kls-tertiary)", color: "var(--kls-on-tertiary)" }}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeModuleRow({ name, on, first, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: "100%", boxSizing: "border-box", height: 48, textAlign: "left", cursor: "pointer",
+        padding: "0 var(--kls-space-small)", border: "none",
+        borderTop: first ? "none" : "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 22, height: 22, borderRadius: 6, flex: "none", boxSizing: "border-box",
+        border: "1.5px solid " + (on ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"),
+        background: on ? "var(--kls-primary)" : "transparent",
+        display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        {on && (
+          <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-primary)", fill: "none", strokeWidth: 2.4 }}>
+            <path d="M5 12.5l4.5 4.5L19 7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+    </button>
+  );
+}
+
+// ── Change history drawer ───────────────────────────────────────────
+const TE_HISTORY = [
+  { id: "h1", label: "Draft 4", when: "Today, 9:41 AM", who: "You", what: "Edited step 1 instructions", current: true },
+  { id: "h2", label: "Draft 3", when: "Yesterday, 4:02 PM", who: "M. Rivera", what: "Added step action to step 1" },
+  { id: "h3", label: "Draft 2", when: "Aug 8, 11:17 AM", who: "You", what: "Linked landing gear model" },
+  { id: "h4", label: "Published 1.0", when: "Aug 4, 8:30 AM", who: "D. Chen", what: "Published to Catalog", released: true },
+];
+
+function TeHistoryDrawer({ taskName, onClose }) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)",
+        opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: "min(426px, calc(100vw - 24px))",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Change history</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Task · {taskName}</div>
+          </div>
+          <MeCircleBtn size={36} label="Close" onClick={onClose}>
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </MeCircleBtn>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)" }}>
+          <div style={{ position: "relative", paddingLeft: "var(--kls-space-med)", display: "flex", flexDirection: "column",
+            gap: "var(--kls-space-small)" }}>
+            <div style={{ position: "absolute", left: 3, top: 10, bottom: 10, width: 1, background: "var(--kls-outline-variant)" }} />
+            {TE_HISTORY.map((h) => (
+              <div key={h.id} style={{ position: "relative" }}>
+                <div style={{ position: "absolute", left: -21, top: 7, width: 7, height: 7, borderRadius: 999,
+                  background: h.current ? "var(--kls-primary)" : "var(--kls-outline)" }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)",
+                  padding: "var(--kls-space-small)", borderRadius: 12,
+                  border: "1px solid " + (h.current ? "var(--kls-primary)" : "var(--kls-outline-variant)"),
+                  background: "var(--kls-surface-container-lowest)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{h.label}</span>
+                    {h.released && (
+                      <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 8,
+                        background: "var(--kls-success-container)", color: "var(--kls-on-success-container)",
+                        fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Released</span>
+                    )}
+                    {h.current && (
+                      <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 8,
+                        background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+                        fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Current draft</span>
+                    )}
+                  </div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{h.what}</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{h.when} · {h.who}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Link picker ─────────────────────────────────────────────────────
+// One dialog, scoped to what is being linked: media (image / video),
+// 3D models, or documents. Source of truth is the Library's own index.
+const TE_PICKER_SCOPES = {
+  media:  { title: "Select media to link", items: LIB_MEDIA,  kinds: ["image", "video"], favs: ["m3", "m1"] },
+  models: { title: "Select a scene or animation to link", items: LIB_MODELS, kinds: ["model"], favs: ["t2", "t3"] },
+  modelsOnly: { title: "Select a model to animate", items: LIB_MODELS, kinds: ["model"], favs: ["t2", "t3"], flat: true },
+  docs:   { title: "Select a file to link", items: LIB_ITEMS,  kinds: ["pdf", "doc", "txt"], favs: ["d1", "d3"] },
+};
+
+function teFlatten(items) {
+  return items.reduce((out, it) => out.concat(it.kind === "folder" ? teFlatten(it.children || []) : [it]), []);
+}
+function teUpdated(iso) {
+  const p = iso.split("-").map(Number);
+  return LIB_MON[p[1] - 1] + " " + p[2] + ", " + p[0];
+}
+
+function TePickerRow({ item, fav, onFav, onPick, expandable, open, onToggle }) {
+  const [hover, setHover] = useState(false);
+  const k = teKind(item.kind);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        padding: "var(--kls-space-small)", borderRadius: 12, cursor: "pointer",
+        background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      {expandable && (
+        <button aria-label={(open ? "Collapse " : "Expand ") + item.name} onClick={onToggle}
+          style={{ width: 24, height: 24, borderRadius: 8, border: "none", background: "transparent", padding: 0,
+            cursor: "pointer", flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <KlsIcon name="chevronRight" size={14} rotate={open ? 90 : 0} color="var(--kls-on-surface-variant)" />
+        </button>
+      )}
+      <button onClick={expandable ? onToggle : onPick} style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center",
+        gap: "var(--kls-space-small)", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
+        <KlsIcon name={k.icon} size={36} color={k.color} />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600,
+            color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500,
+            color: "var(--kls-on-surface-variant)" }}>Last updated: {teUpdated(item.added)}</span>
+        </span>
+      </button>
+      <CatalogStarBtn on={fav} label={(fav ? "Unfavorite " : "Favorite ") + item.name} onClick={onFav} />
+    </div>
+  );
+}
+
+function TePickerChildRow({ item, fav, onFav, onPick }) {
+  const [hover, setHover] = useState(false);
+  const k = teKind(item.kind);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8,
+        paddingLeft: "calc(var(--kls-space-small) + var(--kls-space-large))",
+        background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <button onClick={onPick} style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", minHeight: 40,
+        gap: "var(--kls-space-small)", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
+        <span aria-hidden="true" style={{ width: 24, flex: "none" }} />
+        <KlsIcon name={k.icon} size={20} color={k.color} />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+            color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500,
+            color: "var(--kls-on-surface-variant)" }}>
+            {k.label}{item.duration ? " · " + item.duration : ""}{typeof item.steps === "number" ? " · " + item.steps + " steps" : ""}
+          </span>
+        </span>
+      </button>
+      <CatalogStarBtn on={fav} label={(fav ? "Unfavorite " : "Favorite ") + item.name} onClick={onFav} />
+    </div>
+  );
+}
+
+function TeLinkPicker({ scope, onPick, onClose }) {
+  const cfg = TE_PICKER_SCOPES[scope] || TE_PICKER_SCOPES.docs;
+  const [term, setTerm] = useState("");
+  const [favs, setFavs] = useState(cfg.favs || []);
+  const [favOnly, setFavOnly] = useState(false);
+  const [expanded, setExpanded] = useState([]);
+  const [focus, setFocus] = useState(false);
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  const all = teFlatten(cfg.items).filter((i) => cfg.kinds.indexOf(i.kind) >= 0);
+  const q = term.trim().toLowerCase();
+  const rows = all
+    .filter((i) => !q || i.name.toLowerCase().includes(q)
+      || (i.children || []).some((c) => c.name.toLowerCase().includes(q)))
+    .filter((i) => !favOnly || favs.indexOf(i.id) >= 0);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "var(--kls-space-med)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+      <div style={{ position: "relative", width: "min(620px, 100%)", maxHeight: "80vh", background: "var(--kls-surface)",
+        borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>{cfg.title}</span>
+          <TeIconBtn name="close" size={18} label="Close" onClick={onClose} />
+        </div>
+
+        <div style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)",
+          minHeight: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flex: "none" }}>
+          <label style={{ height: 48, flex: 1, minWidth: 0, boxSizing: "border-box", display: "flex", alignItems: "center",
+            gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", borderRadius: 8,
+            border: "1px solid " + (focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
+            transition: "border-color 125ms var(--kls-ease-standard)" }}>
+            <KlsIcon name="search" size={20} color="var(--kls-on-surface-variant)" />
+            <input value={term} placeholder="Search" onChange={(e) => setTerm(e.target.value)}
+              onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+              style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+                fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+          </label>
+            <CatalogStarBtn on={favOnly} label="Show favorites only" onClick={() => setFavOnly((v) => !v)} />
+          </div>
+
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            {rows.length === 0 ? (
+              <div style={TE_EMPTY}>{favOnly && !q ? "No favorites yet — star an item to keep it here." : "Nothing matches “" + term + "”."}</div>
+            ) : rows.map((i) => {
+              const authored = cfg.flat ? [] : (i.children || []).filter((c) => c.kind === "scene" || c.kind === "animation");
+              // Every model has a Base Scene.
+              const kids = i.kind === "model" && !cfg.flat
+                ? [{ id: i.id + "-base", kind: "scene", name: "Base Scene", base: true }].concat(authored)
+                : authored;
+              const open = kids.length > 0 && (expanded.indexOf(i.id) >= 0 || !!q);
+              return (
+                <React.Fragment key={i.id}>
+                  <TePickerRow item={i} fav={favs.indexOf(i.id) >= 0}
+                    expandable={kids.length > 0} open={open}
+                    onToggle={() => setExpanded((cur) => (cur.indexOf(i.id) >= 0 ? cur.filter((x) => x !== i.id) : cur.concat([i.id])))}
+                    onFav={() => setFavs((cur) => (cur.indexOf(i.id) >= 0 ? cur.filter((x) => x !== i.id) : cur.concat([i.id])))}
+                    onPick={() => onPick(i)} />
+                  {open && kids.map((c) => (
+                    <TePickerChildRow key={c.id} item={c} fav={favs.indexOf(c.id) >= 0}
+                      onFav={() => setFavs((cur) => (cur.indexOf(c.id) >= 0 ? cur.filter((x) => x !== c.id) : cur.concat([c.id])))}
+                      onPick={() => onPick(c, i)} />
+                  ))}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Orion drawer (task assistant) ───────────────────────────────────
+const TE_ORION_SUGGESTIONS = [
+  { icon: "animation", tint: "var(--kls-accent-12)", label: "Animate a model",
+    hint: "Generate an animation based on this Task", prompt: "Animate a model", action: "pickModel" },
+  { icon: "filetypes/pdf", tint: "var(--kls-accent-15)", label: "Update this Task from a doc",
+    hint: "Pull steps out of a manual or work card", prompt: "Update this Task from a doc" },
+  { icon: "orionLogo", tint: "var(--kls-accent-7)", label: "Make changes to this Task",
+    hint: "Rewrite, reorder, or add steps", prompt: "Make changes to this Task" },
+];
+
+function TeOrionSuggestion({ item, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", width: "100%", boxSizing: "border-box",
+        textAlign: "left", padding: "var(--kls-space-small)", borderRadius: 12, cursor: "pointer",
+        border: "1px solid " + (hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"),
+        background: hover ? "var(--kls-surface-container-low)" : "var(--kls-surface-container-lowest)",
+        transition: "background 125ms var(--kls-ease-standard), border-color 125ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 36, height: 36, borderRadius: 8, flex: "none", background: "var(--kls-tertiary)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name={item.icon} size={18} color={item.tint} />
+      </span>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600,
+          color: "var(--kls-on-surface)" }}>{item.label}</span>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500,
+          color: "var(--kls-on-surface-variant)" }}>{item.hint}</span>
+      </span>
+      <span style={{ flex: "none", display: "inline-flex" }}>
+        <KlsIcon name="chevronRight" size={14} color="var(--kls-on-surface-variant)" />
+      </span>
+    </button>
+  );
+}
+
+function TeOrionDrawer({ onClose, onAction }) {
+  const [shown, setShown] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [focus, setFocus] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1550 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)",
+        opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: "min(426px, calc(100vw - 24px))",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <KlsIcon name="orionLogo" size={22} color="var(--kls-on-surface)" />
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Task Assistant</span>
+          <TeResetBtn onClick={() => setMsg("")} />
+          <div style={{ flex: 1 }} />
+          <MeCircleBtn size={36} label="Close" bordered={false} onClick={onClose}>
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </MeCircleBtn>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)",
+          display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: "var(--kls-space-med)" }}>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
+            lineHeight: 1.5, textWrap: "pretty" }}>
+            Hi, what can I help you with today?  Ask me to create, update, or remove task steps
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <span style={ME_LABEL}>Try one of these</span>
+            {TE_ORION_SUGGESTIONS.map((s) => (
+              <TeOrionSuggestion key={s.label} item={s}
+                onClick={() => (s.action && onAction ? onAction(s.action) : setMsg(s.prompt))} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          <button style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+            background: "transparent", border: "none", padding: 0, cursor: "pointer", color: "var(--kls-on-surface)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+            <PlusGlyph size={16} />Add files for context
+          </button>
+          <label style={{ minHeight: 48, boxSizing: "border-box", display: "flex", alignItems: "center",
+            gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", borderRadius: 8,
+            border: "1px solid " + (focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
+            transition: "border-color 125ms var(--kls-ease-standard)" }}>
+            <span style={{ flex: "none", fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600,
+              color: "var(--kls-on-surface-variant)" }}>?</span>
+            <input value={msg} placeholder="ex: I need help with…" onChange={(e) => setMsg(e.target.value)}
+              onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+              style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+                fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeResetBtn({ onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", flex: "none",
+        border: "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent",
+        color: "var(--kls-on-surface-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+        transition: "background 125ms var(--kls-ease-standard)" }}>Reset</button>
+  );
+}
+
+function TeOrionFab({ onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label="Open Task Assistant" title="Task Assistant" onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ position: "absolute", right: "var(--kls-space-med)", bottom: "var(--kls-space-med)", zIndex: 20,
+        width: 52, height: 52, borderRadius: 999, border: "1px solid var(--kls-outline-variant)", cursor: "pointer", padding: 0,
+        background: hover ? "var(--kls-surface)" : "var(--kls-surface-container-lowest)",
+        boxShadow: "var(--kls-drop-shadow)", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name="orionLogo" size={24} color="var(--kls-on-surface)" />
+    </button>
+  );
+}
+
+// ── the screen ──────────────────────────────────────────────────────
+function TaskEditor({ task, onClose }) {
+  const [steps, setSteps] = useState(TE_STEPS_SEED);
+  const [selId, setSelId] = useState(TE_STEPS_SEED[0].id);
+  const [media, setMedia] = useState(TE_MEDIA_SEED);
+  const [docs, setDocs] = useState(TE_DOCS_SEED);
+  const [links, setLinks] = useState(TE_LINKS_SEED);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [addAction, setAddAction] = useState(false);
+  const [note, setNote] = useState("");
+  const [draft, setDraft] = useState({ title: "AI Test", category: "", description: "", mediaCount: 2, linkCount: 1 });
+
+  useEffect(() => { if (!note) return; const t = setTimeout(() => setNote(""), 2000); return () => clearTimeout(t); }, [note]);
+
+  const [picker, setPicker] = useState(null);
+  const [open3D, setOpen3D] = useState(null);
+  const [orion, setOrion] = useState(false);
+  const linkItem = (item, parent) => {
+    if (picker === "docs") setDocs((cur) => cur.concat([{ id: "d" + Date.now(), kind: item.kind, name: item.name }]));
+    else {
+      const node = item.base ? parent : item;
+      setMedia((cur) => cur.concat([{ id: "m" + Date.now(), kind: item.kind, node, version: teReleased(node),
+        name: parent ? parent.name + " · " + item.name : item.name,
+        src: item.kind === "image" ? "assets/images/placeholderImage.jpg" : null }]));
+    }
+    setPicker(null);
+  };
+
+  const idx = Math.max(0, steps.findIndex((s) => s.id === selId));
+  const step = steps[idx];
+  const patch = (fields) => setSteps((cur) => cur.map((s) => (s.id === step.id ? { ...s, ...fields } : s)));
+
+  if (open3D) return <ModelEditor node={open3D} backLabel="Back to task" readOnly
+    onPublished={({ node, version }) => setMedia((cur) => cur.map((m) => (m.node && m.node.id === node.id
+      ? { ...m, version } : m)))}
+    onClose={() => setOpen3D(null)} />;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--kls-scaffold-bg)", display: "flex", flexDirection: "column" }}>
+
+      {/* top bar — no global header / nav in this screen */}
+      <div style={{ height: 64, flex: "none", boxSizing: "border-box", display: "flex", alignItems: "center",
+        gap: "var(--kls-space-small)", padding: "0 var(--kls-space-med)", background: "var(--kls-surface)",
+        borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <MeCircleBtn label="Back to Catalog" onClick={onClose}>
+          <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{draft.title}</span>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", flex: "none" }}>
+          ({task.status || "Published"})
+        </span>
+        <MeCircleBtn label="Task settings" bordered={false} onClick={() => setSettingsOpen(true)}>
+          <path d={TE_PATHS.gear} strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        <div style={{ flex: 1 }} />
+        {note && (
+          <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>{note}</span>
+        )}
+        <TeIconBtn name="draft" label="Create a new draft" onClick={() => setNote("New draft created")} />
+        <TeIconBtn name="history" label="Change history" onClick={() => setHistoryOpen(true)} />
+        <button onClick={() => setNote("Task saved")}
+          style={{ ...ctPrimaryBtn, flex: "none", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center",
+            gap: "var(--kls-space-xsmall)" }}>
+          <TeIcon name="save" size={18} />Save task
+        </button>
+      </div>
+
+      <div style={{ flex: 1, minHeight: 0, display: "flex", overflowX: "auto" }}>
+
+        {/* steps rail */}
+        <div style={{ width: 300, flex: "none", boxSizing: "border-box", borderRight: "1px solid var(--kls-outline-variant)",
+          padding: "var(--kls-space-med) var(--kls-space-small)", overflowY: "auto",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <div style={{ display: "flex", alignItems: "center", paddingLeft: "var(--kls-space-small)" }}>
+            <span style={ME_LABEL}>Steps ({steps.length})</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            {steps.map((s, i) => (
+              <TeStepRow key={s.id} step={s} index={i} active={s.id === selId} onClick={() => setSelId(s.id)} />
+            ))}
+          </div>
+        </div>
+
+        {/* step canvas */}
+        <div style={{ flex: 1, minWidth: 560, overflowY: "auto" }}>
+          <div style={{ padding: "var(--kls-space-med) var(--kls-space-small) var(--kls-space-large)",
+            display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)", flex: "none" }}>
+                Step {idx + 1}:
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <MeInput value={step.name} onChange={(v) => patch({ name: v })} placeholder="Step name" />
+              </div>
+              <TeIconBtn name="undo" label="Undo" disabled />
+              <TeIconBtn name="redo" label="Redo" disabled />
+            </div>
+
+            <div style={TE_CARD}>
+              <TeCardHead icon="book">Step instructions</TeCardHead>
+              <TeTextArea value={step.instructions} rows={5} placeholder="What the student should do in this step"
+                onChange={(v) => patch({ instructions: v })} />
+            </div>
+
+            <div style={TE_CARD}>
+              <TeCardHead icon="chat">Senior mechanic notes</TeCardHead>
+              <TeTextArea value={step.notes} rows={5} placeholder="Context an instructor would add over the shoulder"
+                onChange={(v) => patch({ notes: v })} />
+            </div>
+
+            <div style={TE_CARD}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                <TeCardHead icon="playc">Step actions</TeCardHead>
+                <div style={{ flex: 1 }} />
+                <TeIconBtn name="plus" size={16} box={24} label="Add action" onClick={() => setAddAction(true)} />
+              </div>
+              {step.actions.length === 0 ? (
+                <div style={TE_EMPTY}>No actions yet — actions become the student's to-do list for this step.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                  {step.actions.map((a) => (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+                      padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-surface-container-lowest)",
+                      border: "1px solid var(--kls-outline-variant)" }}>
+                      <span style={{ color: "var(--kls-on-surface)", display: "inline-flex" }}><TeIcon name="checkc" size={24} /></span>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={ME_LABEL}>{teActionLabel(a.type)}</div>
+                        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{a.value}</div>
+                      </div>
+                      <TeRemoveBtn label={"Remove " + teActionLabel(a.type)}
+                        onClick={() => patch({ actions: step.actions.filter((x) => x.id !== a.id) })} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-tiny)" }}>
+              <TeIconBtn name="copy" label="Duplicate step" disabled />
+              <TeIconBtn name="trash" label="Delete step" disabled />
+            </div>
+          </div>
+        </div>
+
+        {/* resources rail */}
+        <div style={{ width: 340, flex: "none", boxSizing: "border-box", borderLeft: "1px solid var(--kls-outline-variant)",
+          padding: "var(--kls-space-med) var(--kls-space-small)", overflowY: "auto",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <div style={{ display: "flex", alignItems: "center", paddingLeft: "var(--kls-space-small)" }}>
+            <span style={ME_LABEL}>Resources</span>
+          </div>
+
+          <TeResourceSection title="Linked media" addLabel="Add media" onAdd={() => setPicker("media")}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-small)" }}>
+              {media.filter((m) => !TE_MODEL_KINDS.includes(m.kind)).map((m) => (
+                <TeMediaTile key={m.id} item={m} onRemove={() => setMedia((cur) => cur.filter((x) => x.id !== m.id))} />
+              ))}
+              <TeAddTile label="Add media" onClick={() => setPicker("media")} />
+            </div>
+          </TeResourceSection>
+
+          <TeResourceSection title="3D models" addLabel="Add 3D model" onAdd={() => setPicker("models")}>
+            {media.some(teStale) && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-xsmall)",
+                padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-error-container)",
+                color: "var(--kls-on-error-container)", fontFamily: "var(--kls-font-sans)", fontSize: 13,
+                fontWeight: 500, lineHeight: 1.45 }}>
+                <span style={{ flex: "none", display: "inline-flex", paddingTop: 1 }}>
+                  <KlsIcon name="warning" size={16} color="var(--kls-on-error-container)" />
+                </span>
+                <span style={{ minWidth: 0, textWrap: "pretty" }}>One or more of your linked models has a newer released version.</span>
+              </div>
+            )}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-small)" }}>
+              {media.filter((m) => TE_MODEL_KINDS.includes(m.kind)).map((m) => (
+                <TeMediaTile key={m.id} item={m} onOpen={() => setOpen3D(m.node)}
+                  onRemove={() => setMedia((cur) => cur.filter((x) => x.id !== m.id))} />
+              ))}
+              <TeAddTile label="Add 3D model" onClick={() => setPicker("models")} />
+            </div>
+          </TeResourceSection>
+
+          <TeResourceSection title="Documents" addLabel="Add document"
+            onAdd={() => setPicker("docs")}>
+            {docs.length === 0 ? <div style={TE_EMPTY}>None</div> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                {docs.map((d) => (
+                  <TeResourceRow key={d.id} icon={teKind(d.kind).icon} iconColor={teKind(d.kind).color} name={d.name} meta={(d.kind || "pdf").toUpperCase()}
+                    removeLabel={"Remove " + d.name} onRemove={() => setDocs((cur) => cur.filter((x) => x.id !== d.id))} />
+                ))}
+              </div>
+            )}
+          </TeResourceSection>
+
+          <TeResourceSection title="Links" addLabel="Add link"
+            onAdd={() => setLinks((cur) => cur.concat([{ id: "l" + Date.now(), name: "Untitled link", url: "https://" }]))}>
+            {links.length === 0 ? <div style={TE_EMPTY}>None</div> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                {links.map((l) => (
+                  <TeResourceRow key={l.id} icon="globe" name={l.name} meta={l.url}
+                    removeLabel={"Remove " + l.name} onRemove={() => setLinks((cur) => cur.filter((x) => x.id !== l.id))} />
+                ))}
+              </div>
+            )}
+          </TeResourceSection>
+        </div>
+      </div>
+
+      {addAction && (
+        <TeAddActionDialog onClose={() => setAddAction(false)}
+          onPick={(t) => { patch({ actions: step.actions.concat([{ id: "a" + Date.now(), type: t.key, value: t.value }]) }); setAddAction(false); }} />
+      )}
+      <TeOrionFab onClick={() => setOrion(true)} />
+      {orion && <TeOrionDrawer onClose={() => setOrion(false)}
+        onAction={(a) => { if (a === "pickModel") { setOrion(false); setPicker("modelsOnly"); } }} />}
+      {picker && <TeLinkPicker scope={picker} onPick={linkItem} onClose={() => setPicker(null)} />}
+      {settingsOpen && (
+        <TeSettingsDrawer task={task} draft={draft} onDraft={setDraft} onClose={() => setSettingsOpen(false)} />
+      )}
+      {historyOpen && <TeHistoryDrawer taskName={draft.title} onClose={() => setHistoryOpen(false)} />}
     </div>
   );
 }
