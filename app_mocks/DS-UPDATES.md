@@ -138,3 +138,84 @@ fade-animation + ease-standard transitions. Form-level toggles keep the canonica
 
 **Ask of the DS:** add a documented `sm` size to `switch.html` (proposed 36×20 / knob 16 / travel 16)
 for dense list rows, so this isn't a per-app improvisation.
+
+---
+
+## 8. 🔵 Add an **isolate / bring-to-foreground** icon — no asset exists
+**Found:** 2026-08 · Model editor (web) — per-part Isolate control in the Parts tree
+
+Each part row now carries an **Isolate** button (hides every other part in the active scene) to the
+left of its visibility toggle. The DS icon set has no glyph for it; the closest assets (`stack`,
+`cube`) both read as "collection," not "bring this one forward."
+
+Local call: `MeIsolateGlyph` (`web-app.jsx`) draws it inline — two overlapping rounded squares on a
+20×20 box, the **front** one diagonally hatched, 1.5 stroke (1.1 for the hatch), `currentColor`.
+Active state fills the 24px button with `tertiary-container` / `on-tertiary-container`.
+
+**Ask of the DS:** ship a canonical `isolate` (or `foreground`) PNG in `assets/icons/`, mask-
+compatible like the rest. Third glyph gap in this class after items 5 and 6.
+
+---
+
+## 9. 🔵 Add a **sparkle / generate** glyph — no asset exists
+**Found:** 2026-08 · Model editor (web) — "Generate" action at the bottom of the Animations list
+
+The Animations section's generate action needs the conventional AI/generate mark (a large
+four-point star with two smaller ones). No DS icon comes close (`star`/`starFilled` are single
+five-point stars, semantically "favorite").
+
+Local call: `MeSparkleGlyph` (`web-app.jsx`) draws it inline — three filled four-point stars on a
+20×20 box, `currentColor`, sized 16 inside a full-width PrimaryActionButton.
+
+**Ask of the DS:** ship a canonical `sparkle` (or `generate`) PNG in `assets/icons/`, mask-
+compatible like the rest. Fourth glyph gap in this class after items 5, 6 and 8.
+
+---
+
+## 10. 🔵 Canonical **"Add <thing>" action button** — leading plus GLYPH, not a "+" character
+**Found:** 2026-08 · Blocks screen (web); applied across Control Tower / Library / Team Workspace
+
+Every primary create action in the app was hand-writing its plus as a text character
+(`<span style={{fontSize:18,lineHeight:1,marginTop:-1}}>+</span>`). As a glyph that is wrong: the
+"+" of Plus Jakarta Sans sits on the math axis, so it renders visually small and low against a
+14/700 label, and each site was nudging it with its own `marginTop` hack.
+
+Local call: a single `PlusGlyph` component (`web-app.jsx`) draws it as an inline SVG — 18×18 box
+(16 for dense/text buttons), cross at `M9 3.25v11.5 M3.25 9h11.5`, `stroke: currentColor`,
+`stroke-width: 1.9`, round caps — placed as the **leading** child of the button, before the label,
+with the button's `gap: var(--kls-space-xsmall)` doing the spacing. Copy pattern is
+**"Add <thing>"** (`Add block`, `Add task`), not "New <thing>".
+
+**Ask of the DS:** add this to `buttons-primary.html` as the canonical create-action variant —
+leading 18px plus glyph (optically centered on the label, no baseline nudge) + `Add <thing>` copy —
+and ship the mark as a mask-compatible `plus` PNG in `assets/icons/` so apps don't inline SVG.
+Fifth glyph gap in this class after items 5, 6, 8 and 9.
+
+---
+
+## 11. 🟡 **CompoundSwitch: spec the iconless tile** (label must optically center)
+**Found:** 2026-08 · Catalog screen segmented tabs (Blocks / Block Templates / Modules / Tasks)
+
+`preview/compound-switch.html` only shows tiles WITH a leading icon, so the spec is silent on the
+text-only case. Naive implementations keep the icon slot + its 8px gap in the flex row, which pushes
+every label off-center by ~12px — it reads as a missing icon. Local fix: render the icon and its gap
+only when the tab defines one, and `justify-content: center` the tile.
+
+**Ask of the DS:** add a text-only row to the CompoundSwitch card and state it — tile is
+`justify-content: center`; the 16px icon and `--kls-space-xsmall` gap exist only when an icon is
+supplied. Also worth stating on the same card: tiles are `flex: none` + `white-space: nowrap` and
+the TRACK doesn't shrink — labels should never wrap or squeeze; a tight toolbar scrolls the track
+instead.
+
+## 12. 🟢 **Labeled filter checkbox** (checkbox + text, inline filter bar)
+**Found:** 2026-08 · Catalog → Tasks filter bar
+
+The Tasks filter bar needs checkbox + label pairs inline (Task / Scenario / Subtask). The DS defines
+the checkbox mark (`preview/checkbox.html`) but not the labeled, clickable pair, so each app invents
+the hit target and label style. Local build: whole pair is one `<button aria-pressed>`, h40 (min hit
+target), `gap: var(--kls-space-xsmall)`, label `labelLarge` (14/500) `on-surface`, 18px mark.
+
+**Ask of the DS:** ship a `CheckboxField` (mark + label, h40 target, aria-pressed) on the checkbox
+card. Note the size question it also resolves: the card's 22×22 mark is right for selection rows but
+optically heavy next to a 14px filter label — 18×18 with a 14px check is the inline-filter size, so
+the card should state both sizes rather than leaving apps to shrink it by feel.

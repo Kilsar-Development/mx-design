@@ -269,7 +269,7 @@ function Header({ systemMessage = null, unread = 0, onAvatar, onBell, onSearch, 
 // `flavor` swaps labels via WorkspaceSettings overrides (termsKey / ticketsKey
 // / coursesKey / assignmentsKey). The icon set is identical across flavors.
 const FLAVOR_LABELS = {
-  education:  { terms: "Courses",   tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
+  education:  { terms: "Catalog",   tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
   commercial: { terms: "Cases",     tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
 };
 
@@ -316,7 +316,7 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
       }}
     >
       {/* TOP */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden", scrollbarWidth: "thin" }}>
         {/* Workspace logo (Kilsar mark) */}
         <div style={{ display: "flex", justifyContent: "center", height: 40, alignItems: "center" }}>
           {showLabels ? (
@@ -418,7 +418,7 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
       </div>
 
       {/* BOTTOM */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", flexDirection: "column", flex: "none" }}>
         <SidebarOption
           icon="group"
           label="Workspace"
@@ -731,6 +731,15 @@ window.CT = {
 // Student-centric list with roll-up; click a student for per-assignment detail.
 // Loads after control-tower-data.jsx, teammate-picker.jsx, ct-student-drawer.jsx, ct-assign-drawer.jsx.
 const { useState: useCtState, useMemo: useCtMemo } = React;
+
+// Canonical leading "+" for Add actions — an aligned glyph, not a text character.
+function PlusGlyph({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" aria-hidden="true" style={{ flex: "none", display: "block" }}>
+      <path d="M9 3.25v11.5M3.25 9h11.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 const ctPrimaryBtn = {
   height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
@@ -1138,7 +1147,7 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
             <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Assign tasks and exams, and track what your students have done.</p>
           </div>
           <button style={ctPrimaryBtn} onClick={() => { setAssignPreset([]); setAssignOpen(true); }}>
-            <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> Assign
+            <PlusGlyph />Assign
           </button>
         </div>
 
@@ -3226,19 +3235,19 @@ function SegmentedTabs({ tabs, value, onChange, variant }) {
   // pill segmented — canonical CompoundSwitch (compound-switch.html):
   // track h40 · pad 2 · gap 4 · radius 8 · tertiary · active tile surface · labelMediumSemiBold (12/600)
   return (
-    <div style={{ display: "inline-flex", height: 40, padding: 2, gap: 4, borderRadius: 8,
+    <div style={{ display: "inline-flex", flex: "none", height: 40, padding: 2, gap: 4, borderRadius: 8,
       background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
       {tabs.map((t) => {
         const active = t.key === value;
         const fg = active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)";
         return (
           <button key={t.key} onClick={() => onChange(t.key)}
-            style={{ height: 36, padding: "0 18px", borderRadius: 8, border: 0, cursor: "pointer",
+            style={{ height: 36, flex: "none", whiteSpace: "nowrap", padding: "0 18px", borderRadius: 8, border: 0, cursor: "pointer",
               background: active ? "var(--kls-surface)" : "transparent",
               boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
               color: fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
-              display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <KlsIcon name={t.icon} size={16} color={fg} />
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {t.icon && <KlsIcon name={t.icon} size={16} color={fg} />}
             {t.label}
           </button>
         );
@@ -3391,7 +3400,7 @@ function GroupsBody({ groups, setGroups, members, editor, setEditor, deleteId, s
           <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>No groups yet</div>
           <div style={{ fontSize: 14, color: "var(--kls-on-surface-variant)", marginTop: 4, maxWidth: 320, marginInline: "auto" }}>Organize members into cohorts, teams, or labs. Create your first group to get started.</div>
           <button style={{ ...primaryBtn, marginTop: 16 }} onClick={() => setEditor({ mode: "create" })}>
-            <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> New group
+            <PlusGlyph />New group
           </button>
         </div>
       ) : (
@@ -3572,10 +3581,10 @@ function WorkspaceMembers({ flags, surface = "tabs" }) {
   ];
 
   const inviteBtn = (
-    <button style={primaryBtn}><span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> Invite</button>
+    <button style={primaryBtn}><PlusGlyph />Invite</button>
   );
   const newGroupBtn = (
-    <button style={primaryBtn} onClick={() => setGroupEditor({ mode: "create" })}><span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span> New group</button>
+    <button style={primaryBtn} onClick={() => setGroupEditor({ mode: "create" })}><PlusGlyph />New group</button>
   );
 
   const membersBody = <MembersBody members={members} setMembers={setMembers} flags={flags} />;
@@ -4396,6 +4405,7 @@ function WebApp(props) {
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
   else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
   else if (active === "integrations") content = <Integrations query={query} />;
+  else if (active === "terms") content = <Blocks query={query} />;
   else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
   else content = <WebPlaceholder tabKey={active} />;
   if (editing3D) return <ModelEditor node={editing3D} onClose={() => setEditing3D(null)} />;
@@ -4672,7 +4682,7 @@ function IntegrationDrawer({ draft, onChange, onSave, onDelete, onClose }) {
           )}
           <span style={{ flex: 1 }} />
           <button onClick={onClose}
-            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", border: "1px solid var(--kls-outline-variant)",
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", width: full ? "100%" : undefined, border: "1px solid var(--kls-outline-variant)",
               background: "transparent", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>Cancel</button>
           <button disabled={!canSave} onClick={() => onSave({ ...draft, url })}
             style={{ ...ctPrimaryBtn, opacity: canSave ? 1 : 0.4, cursor: canSave ? "pointer" : "not-allowed" }}>Save pairing</button>
@@ -6849,10 +6859,10 @@ function LibSortHeader({ label, col, sort, onSort, style }) {
       <button onClick={() => onSort(col)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
         style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", border: "none", background: "transparent",
           padding: 0, cursor: "pointer", font: "inherit", letterSpacing: "inherit", textTransform: "inherit",
-          color: on || hover ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", transition: "color 125ms var(--kls-ease-standard)" }}>
+          color: hover ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", transition: "color 125ms var(--kls-ease-standard)" }}>
         {label}
         <KlsIcon name="chevronDown" size={14} rotate={on && sort.dir === "asc" ? 180 : 0}
-          color={on ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)"}
+          color="var(--kls-on-surface-variant)"
           style={{ opacity: on || hover ? 1 : 0.35 }} />
       </button>
     </th>
@@ -6893,7 +6903,7 @@ function LibIconBtn({ icon, label, onClick, spin }) {
   return (
     <button aria-label={label} title={label} onClick={onClick}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ width: 40, height: 40, borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+      style={{ width: 40, height: 40, flex: "none", boxSizing: "border-box", borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
       <KlsIcon name={icon} size={24} color="var(--kls-on-surface-variant)"
@@ -6922,7 +6932,9 @@ function LibRow({ item, depth = 0, indent, onOpen }) {
   const [open, setOpen] = useState(false);
   const k = LIB_KINDS[item.kind] || LIB_KINDS.txt;
   const kids = item.children || [];
-  const expandable = kids.length > 0;
+  // Models no longer expand in the library — their scenes/animations are only
+  // reachable inside the model editor.
+  const expandable = kids.length > 0 && item.kind !== "model";
   const leafMeta = k.label ? (item.duration || "—") : libSize(libBytes(item));
   const nested = depth > 0;
   const openable = item.kind === "model" || item.kind === "scene" || item.kind === "animation";
@@ -6953,7 +6965,6 @@ function LibRow({ item, depth = 0, indent, onOpen }) {
         <td style={{ ...td, whiteSpace: "normal" }}>{k.label || item.type || ""}</td>
         <td style={td}>{libDate(item.added)}</td>
         <td style={{ ...td, padding: "var(--kls-space-small) var(--kls-space-small)", textAlign: "right" }}>
-          {item.kind === "model" && <LibOpenBtn label={"Open " + item.name + " in the model editor"} onClick={() => onOpen && onOpen(item)} />}
         </td>
       </tr>
       {open && kids.map((c) => (
@@ -6984,6 +6995,306 @@ function LibTile({ item }) {
           {item.children.filter((c) => c.kind === "scene").length} scenes · {item.children.filter((c) => c.kind === "animation").length} animations
         </div>
       )}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════
+// BLOCKS (web) — content-pane paradigm: page header + segmented tabs + table card
+// ═════════════════════════════════════════════════════════════════
+const BLOCKS_TABS = [
+  { key: "blocks",    label: "Blocks" },
+  { key: "templates", label: "Block Templates" },
+  { key: "modules",   label: "Modules" },
+  { key: "tasks",     label: "Tasks" },
+];
+
+const blocksPeople = (...names) => names.map((n, i) => ({ id: "bp" + i + "-" + n, name: n }));
+
+const BLOCKS_ROWS = [
+  { id: "b1", name: "124498.3938",    people: blocksPeople("Joel Frank", "Amara Diaz", "Ken Ito"), start: "07/18/2025", end: "11/28/2025" },
+  { id: "b2", name: "edit test",      people: [],                                    start: "08/01/2025", end: "08/05/2025" },
+  { id: "b3", name: "sfsef",          people: blocksPeople("Joel Frank"),                          start: "N/A",        end: "08/07/2025" },
+  { id: "b4", name: "Summer ThreeD",  people: blocksPeople("Amara Diaz", "Ken Ito"),               start: "N/A",        end: "N/A" },
+  { id: "b5", name: "test block 010826", people: blocksPeople("Joel Frank", "Priya Rao", "Ken Ito"), start: "01/08/2026", end: "03/31/2026" },
+  { id: "b6", name: "Three D Block Fall", people: blocksPeople("Joel Frank", "Marcus Webb"),       start: "N/A",        end: "N/A" },
+];
+
+const BLOCKS_EMPTY = {
+  templates: { icon: "stack",    title: "No block templates yet",  hint: "Save a block as a template to reuse its modules and schedule." },
+  modules:   { icon: "itemList", title: "No modules yet",          hint: "Modules group the tasks students work through inside a block." },
+  tasks:     { icon: "worklog",  title: "No tasks yet",            hint: "Tasks are the individual items students complete in a module." },
+};
+
+const CATALOG_TASKS = [
+  { id: "k1", name: "0129 Test Task", kind: "Task", desc: null, acs: [], status: "Published", steps: 4, category: "Uncategorized", fav: false },
+  { id: "k2", name: "0330 Task", kind: "Task", desc: null, acs: [], status: "Published", steps: 3, category: "Uncategorized", fav: false },
+  { id: "k3", name: "0331 Task -  with a long title with a long title with a long title with a long title with a long title",
+    kind: "Task",
+    desc: "and a long description and a long description and a long description and a long description and a long description and a long description and a long description and a long description and a long description",
+    acs: ["AM.I.A.K1", "AM.I.A.K10", "AM.I.A.K11", "AM.I.A.K11a", "AM.I.A.K11b", "AM.I.A.K11c", "AM.I.A.K11d", "AM.I.A.K12", "AM.I.A.K13", "AM.I.A.K14", "AM.I.A.K15", "AM.I.A.K16", "AM.I.A.K17", "AM.I.A.K18", "AM.I.A.K19", "AM.I.A.K2"],
+    status: "Published", steps: 4, category: "Uncategorized", fav: false },
+  { id: "k4", name: "0409 Task", kind: "Task", desc: null, acs: [], status: "Published", steps: 5, category: "Uncategorized", fav: false },
+  { id: "k5", name: "0717 Task", kind: "Task", desc: null, acs: [], status: "Published", steps: 2, category: "Uncategorized", fav: false },
+  { id: "k6", name: "Compressor wash — line procedure", kind: "Scenario", desc: "Run a full motoring wash on a CFM56 and record the rinse cycle.", acs: ["PA.I.A", "PA.I.B"], status: "Draft", steps: 7, category: "Powerplant", fav: true },
+  { id: "k7", name: "Torque check — nose gear actuator", kind: "Subtask", desc: null, acs: ["AM.II.C.K4"], status: "Published", steps: 3, category: "Airframe", fav: false },
+];
+
+const CATALOG_BLOCK_OPTIONS = ["Any block", "124498.3938", "edit test", "sfsef", "Summer ThreeD", "test block 010826", "Three D Block Fall"];
+
+// Star: outline when off, filled when on — favorites marker on the task rows + toolbar filter.
+function CatalogStar({ on, size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none", display: "block" }}>
+      <path d="M12 3.6l2.6 5.3 5.8.85-4.2 4.1 1 5.75L12 16.9l-5.2 2.7 1-5.75-4.2-4.1 5.8-.85z"
+        fill={on ? "var(--kls-primary)" : "none"} stroke="var(--kls-primary)" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CatalogStarBtn({ on, label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} aria-pressed={on}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 40, height: 40, flex: "none", boxSizing: "border-box", borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <CatalogStar on={on} />
+    </button>
+  );
+}
+
+// DS checkbox — canonical M3 green-check (standalone form) variant, preview/checkbox.html:
+// 22×22 · radius 6 · 1.5px border on-surface-variant (checked: on-surface) · transparent fill ·
+// check stroked in --kls-checkbox-check · svg 16 · stroke 3 · bg transition 80ms.
+function DsCheckbox({ checked, label }) {
+  return (
+    <span aria-hidden="true" style={{ width: 18, height: 18, flex: "none", boxSizing: "border-box", borderRadius: 6,
+      border: "1.5px solid var(--kls-checkbox-side)",
+      background: "var(--kls-checkbox-fill)", display: "inline-flex", alignItems: "center", justifyContent: "center",
+      transition: "background-color var(--kls-dur-fast-animation) var(--kls-ease-standard)" }} title={label}>
+      {checked && (
+        <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: "none", stroke: "var(--kls-checkbox-check)",
+          strokeWidth: 3, strokeLinecap: "round", strokeLinejoin: "round" }}>
+          <path d="M5 12l4.5 4.5L20 6" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+// Filter checkbox with label — DS checkbox in a ≥40px inline hit target.
+function CatalogFilterCheck({ label, checked, onClick }) {
+  return (
+    <button onClick={onClick} aria-pressed={checked}
+      style={{ height: 40, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+        border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
+      <DsCheckbox checked={checked} label={label} />
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{label}</span>
+    </button>
+  );
+}
+
+const CATALOG_KIND_PILL = { Task: "var(--kls-accent-1)", Scenario: "var(--kls-accent-7)", Subtask: "var(--kls-accent-12)" };
+
+function CatalogTaskRow({ row, onFav }) {
+  const [hover, setHover] = useState(false);
+  const td = { ...LIB_TD, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", verticalAlign: "middle" };
+  const pillFg = CATALOG_KIND_PILL[row.kind] || "var(--kls-on-tertiary)";
+  return (
+    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <td style={{ ...LIB_TD, verticalAlign: "middle" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+            <span style={{ flex: "none", padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 4,
+              background: "var(--kls-tertiary)", border: "1px solid " + pillFg, color: pillFg,
+              fontSize: 12, fontWeight: 500, whiteSpace: "nowrap" }}>{row.kind}</span>
+          </div>
+          <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", color: "var(--kls-on-surface-variant)", minWidth: 0 }}>
+            <span style={{ flex: "none", opacity: 0.7 }}>↳</span>
+            <span style={{ fontSize: 14, fontWeight: 500, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+              {row.desc || "No description"}
+            </span>
+          </div>
+          <div style={{ paddingLeft: "var(--kls-space-med)", fontSize: 13, fontWeight: 500, color: "var(--kls-outline)",
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {row.acs.length ? row.acs.join(", ") : "No associated ACS codes"}
+          </div>
+        </div>
+      </td>
+      <td style={{ ...td, width: 140, color: row.status === "Published" ? "var(--kls-success)" : "var(--kls-on-surface-variant)", fontWeight: 600 }}>{row.status}</td>
+      <td style={{ ...td, width: 88 }}>{row.steps}</td>
+      <td style={{ ...td, width: 168, whiteSpace: "normal" }}>{row.category}</td>
+      <td style={{ ...LIB_TD, width: 56, textAlign: "right", verticalAlign: "middle" }}>
+        <CatalogStarBtn on={row.fav} label={(row.fav ? "Unfavorite " : "Favorite ") + row.name} onClick={onFav} />
+      </td>
+    </tr>
+  );
+}
+
+function CatalogTasks({ term, favOnly, onFavOnly }) {
+  const [sort, setSort] = useState({ col: "name", dir: "asc" });
+  const [kinds, setKinds] = useState({ Task: true, Scenario: true, Subtask: true });
+  const [block, setBlock] = useState("Any block");
+  const [favs, setFavs] = useState(() => CATALOG_TASKS.filter((t) => t.fav).map((t) => t.id));
+  const onSort = (col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  const toggleFav = (id) => setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : f.concat([id])));
+
+  const rows = CATALOG_TASKS
+    .map((t) => ({ ...t, fav: favs.includes(t.id) }))
+    .filter((t) => kinds[t.kind])
+    .filter((t) => !favOnly || t.fav)
+    .filter((t) => !term || t.name.toLowerCase().includes(term))
+    .slice()
+    .sort((a, b) => {
+      let d = 0;
+      if (sort.col === "name") d = a.name.localeCompare(b.name, undefined, { numeric: true });
+      else if (sort.col === "steps") d = a.steps - b.steps;
+      else if (sort.col === "status") d = a.status.localeCompare(b.status);
+      else d = a.category.localeCompare(b.category);
+      return sort.dir === "asc" ? d : -d;
+    });
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)", flexWrap: "wrap",
+        padding: "var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+          textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>Filters</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          {["Task", "Scenario", "Subtask"].map((k) => (
+            <CatalogFilterCheck key={k} label={k} checked={kinds[k]} onClick={() => setKinds((v) => ({ ...v, [k]: !v[k] }))} />
+          ))}
+        </div>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>Block</span>
+          <div style={{ width: 220 }}>
+            <CTSelect value={block} options={CATALOG_BLOCK_OPTIONS} placeholder="Any block" onChange={setBlock} />
+          </div>
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Adjust the filters or clear the search.</div>
+        </div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <thead>
+            <tr>
+              <LibSortHeader label="Task" col="name" sort={sort} onSort={onSort} />
+              <LibSortHeader label="Status" col="status" sort={sort} onSort={onSort} style={{ width: 140 }} />
+              <LibSortHeader label="Steps" col="steps" sort={sort} onSort={onSort} style={{ width: 88 }} />
+              <LibSortHeader label="Category" col="category" sort={sort} onSort={onSort} style={{ width: 168 }} />
+              <th style={{ ...LIB_TH_BASE, width: 56 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Favorite</span></th>
+            </tr>
+          </thead>
+          <tbody>{rows.map((r) => <CatalogTaskRow key={r.id} row={r} onFav={() => toggleFav(r.id)} />)}</tbody>
+        </table>
+      )}
+    </>
+  );
+}
+
+function BlocksRow({ row }) {
+  const [hover, setHover] = useState(false);
+  const td = { ...LIB_TD, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" };
+  return (
+    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <td style={LIB_TD}>{row.name}</td>
+      <td style={{ ...LIB_TD, width: 140 }}><CTAvatarStack students={row.people} max={3} /></td>
+      <td style={{ ...td, width: 140 }}>{row.start}</td>
+      <td style={{ ...td, width: 140 }}>{row.end}</td>
+      <td style={{ ...LIB_TD, width: 56, textAlign: "right" }}>
+        <LibIconBtn icon="chevronDown" label={"Actions for " + row.name} onClick={() => {}} />
+      </td>
+    </tr>
+  );
+}
+
+function Blocks({ query = "" }) {
+  const [tab, setTab] = useState("blocks");
+  const [sort, setSort] = useState({ col: "name", dir: "asc" });
+  const [refreshing, setRefreshing] = useState(false);
+  const [favOnly, setFavOnly] = useState(false);
+  const term = query.trim().toLowerCase();
+  const onSort = (col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
+
+  const rows = BLOCKS_ROWS
+    .filter((r) => !term || r.name.toLowerCase().includes(term))
+    .slice()
+    .sort((a, b) => {
+      let d = 0;
+      if (sort.col === "name") d = a.name.localeCompare(b.name, undefined, { numeric: true });
+      else if (sort.col === "people") d = a.people.length - b.people.length;
+      else d = String(a[sort.col === "start" ? "start" : "end"]).localeCompare(String(b[sort.col === "start" ? "start" : "end"]));
+      return sort.dir === "asc" ? d : -d;
+    });
+
+  const empty = BLOCKS_EMPTY[tab];
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Catalog</h1>
+          <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Browse and manage your Blocks, Modules, and Tasks</p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ minWidth: 0, overflowX: "auto" }}><SegmentedTabs tabs={BLOCKS_TABS} value={tab} onChange={setTab} /></div>
+          <LibIconBtn icon="refresh" label="Refresh" onClick={refresh} spin={refreshing} />
+          <div style={{ flex: 1 }} />
+          {tab === "tasks" && <CatalogStarBtn on={favOnly} label="Show favorites only" onClick={() => setFavOnly((v) => !v)} />}
+          <button style={{ ...ctPrimaryBtn, flex: "none", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            <PlusGlyph />{tab === "tasks" ? "Add task" : "Add block"}
+          </button>
+        </div>
+
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {tab === "tasks" ? (
+            <CatalogTasks term={term} favOnly={favOnly} onFavOnly={setFavOnly} />
+          ) : tab !== "blocks" ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+                <KlsIcon name={empty.icon} size={26} color="var(--kls-on-surface-variant)" />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{empty.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>{empty.hint}</div>
+            </div>
+          ) : rows.length === 0 ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try a different search.</div>
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <LibSortHeader label="Block" col="name" sort={sort} onSort={onSort} />
+                  <LibSortHeader label="Participants" col="people" sort={sort} onSort={onSort} style={{ width: 140 }} />
+                  <LibSortHeader label="Start date" col="start" sort={sort} onSort={onSort} style={{ width: 140 }} />
+                  <LibSortHeader label="End date" col="end" sort={sort} onSort={onSort} style={{ width: 140 }} />
+                  <th style={{ ...LIB_TH_BASE, width: 56 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>{rows.map((r) => <BlocksRow key={r.id} row={r} />)}</tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -7039,7 +7350,7 @@ function Library({ query = "", onOpen }) {
           </div>
           <div style={{ flex: 1 }} />
           <button style={{ ...ctPrimaryBtn, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
-            <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 500 }}>+</span>Add
+            <PlusGlyph />Add
           </button>
         </div>
 
@@ -7124,7 +7435,7 @@ function meSeedScene(sc, modelId) {
   return {
     id: sc.id, name: sc.name,
     hidden: [], explode: 0, cutaway: false, wireframe: false,
-    showAnnotations: true, isolate: false,
+    showAnnotations: true, isolate: false, isolateIds: [],
     bg: "var(--kls-surface-container-lowest)", ambient: 0.5, directional: 0.75,
     camera: { az: 0.9, el: 0.5, dist: 9 },
     annotations: (extra.annotations || []).slice(),
@@ -7149,11 +7460,188 @@ function meOwnerModel(node) {
 const ME_LABEL = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
   textTransform: "uppercase", color: "var(--kls-on-surface-variant)" };
 
+// ── Version history (scenes + animations) ────────────────────────────
+// Mock history seeded deterministically per entity id. One optional released
+// version pinned at the top; the rest are drafts on a timeline rail.
+const ME_VER_AUTHORS = ["Melodie Harris", "Dwayne Cobb", "Priya Raman"];
+function meHash(key) { let h = 0; const t = String(key); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; }
+function meSeedVersions(key) {
+  const h = meHash(key);
+  const n = 3 + (h % 3);
+  const base = Date.UTC(2026, 6, 28, 17, 49);
+  const out = [];
+  let t = base;
+  for (let i = 0; i < n; i++) {
+    out.push({ id: key + "-v" + (n - i), label: "v" + (n - i), ts: t, author: ME_VER_AUTHORS[(h + i) % 3], released: i === 0 });
+    t -= (2 + ((h >> (i * 2)) & 7)) * 86400000 + ((h >> i) & 15) * 3600000;
+  }
+  return out;
+}
+const ME_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+function meVerTime(ts) {
+  const d = new Date(ts);
+  let hr = d.getHours(); const ap = hr >= 12 ? "PM" : "AM"; hr = hr % 12 || 12;
+  const mn = String(d.getMinutes()).padStart(2, "0");
+  return hr + ":" + mn + " " + ap + ", " + d.getDate() + " " + ME_MONTHS[d.getMonth()] + " " + d.getFullYear();
+}
+function meVerInitials(name) { return name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join(""); }
+
+function MeVerBtn({ children, onClick, tone }) {
+  const [hover, setHover] = useState(false);
+  const danger = tone === "danger";
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer",
+        border: "1px solid " + (danger && hover ? "var(--kls-error)" : "var(--kls-outline-variant)"),
+        background: hover ? (danger ? "var(--kls-error-container)" : "var(--kls-tertiary)") : "transparent",
+        color: danger && hover ? "var(--kls-error)" : "var(--kls-on-surface)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-tiny)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>{children}</button>
+  );
+}
+
+function MeVerMeta({ version }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+        <KlsIcon name="clock" size={14} color="var(--kls-on-surface-variant)" />{meVerTime(version.ts)}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+        <WSAvatar initials={meVerInitials(version.author)} size={20} />{version.author}
+      </div>
+    </div>
+  );
+}
+
+function MeVersionDrawer({ entity, versions, previewId, onPreview, onRestore, onPublish, onUnpublish, onClose }) {
+  const [shown, setShown] = useState(false);
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  useEffect(() => { if (!note) return; const t = setTimeout(() => setNote(""), 2000); return () => clearTimeout(t); }, [note]);
+
+  const released = versions.find((v) => v.released);
+  const drafts = versions.filter((v) => !v.released);
+  const flash = (msg, fn) => { fn(); setNote(msg); };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)",
+        opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: "min(426px, calc(100vw - 24px))",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+          padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Version history</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entity.kindLabel} · {entity.name}</div>
+          </div>
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 32, height: 32, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {note && (
+          <div style={{ margin: "var(--kls-space-small) var(--kls-space-med) 0", padding: "var(--kls-space-xsmall) var(--kls-space-small)",
+            borderRadius: 8, background: "var(--kls-tertiary-container)", fontFamily: "var(--kls-font-sans)",
+            fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary-container)" }}>{note}</div>
+        )}
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+          {released ? (
+            <div style={{ border: "1px solid var(--kls-primary)", borderRadius: 12, padding: "var(--kls-space-small)",
+              background: "var(--kls-surface-container-lowest)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+                  background: "var(--kls-success-container)", color: "var(--kls-on-success-container)",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Released</span>
+                <div style={{ flex: 1 }} />
+                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{released.label}</span>
+              </div>
+              <MeVerMeta version={released} />
+              <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+                <MeVerBtn onClick={() => flash("Previewing " + released.label, () => onPreview(released))}>Preview</MeVerBtn>
+                <MeVerBtn tone="danger" onClick={() => flash("Unpublished " + released.label, () => onUnpublish(released))}>Unpublish</MeVerBtn>
+              </div>
+            </div>
+          ) : (
+            <div style={{ borderRadius: 12, padding: "var(--kls-space-small)", border: "1px dashed var(--kls-outline-variant)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+              No released version — publish a draft to make it available to students.
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <span style={ME_LABEL}>Draft versions</span>
+            {drafts.length === 0 ? (
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No drafts.</div>
+            ) : (
+              <div style={{ position: "relative", paddingLeft: "var(--kls-space-med)",
+                display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                <div style={{ position: "absolute", left: 3, top: 10, bottom: 10, width: 1, background: "var(--kls-outline-variant)" }} />
+                {drafts.map((v) => {
+                  const previewing = previewId === v.id;
+                  return (
+                    <div key={v.id} style={{ position: "relative" }}>
+                      <div style={{ position: "absolute", left: -21, top: 7, width: 7, height: 7, borderRadius: 999,
+                        background: previewing ? "var(--kls-primary)" : "var(--kls-outline)" }} />
+                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)",
+                        padding: "var(--kls-space-small)", borderRadius: 12,
+                        border: "1px solid " + (previewing ? "var(--kls-primary)" : "var(--kls-outline-variant)"),
+                        background: "var(--kls-surface)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{v.label}</span>
+                          {previewing && (
+                            <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 8,
+                              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+                              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Previewing</span>
+                          )}
+                        </div>
+                        <MeVerMeta version={v} />
+                        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+                          <MeVerBtn onClick={() => flash("Previewing " + v.label, () => onPreview(v))}>Preview</MeVerBtn>
+                          <MeVerBtn onClick={() => flash("Restored " + v.label, () => onRestore(v))}>Restore</MeVerBtn>
+                          <MeVerBtn onClick={() => flash("Published " + v.label, () => onPublish(v))}>Publish</MeVerBtn>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function meStepCount(a) { return typeof a.steps === "number" ? a.steps : 0; }
 
-function MeSectionLabel({ children, action }) {
+function MeSectionLabel({ children, action, collapsible, open, onToggle }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", minHeight: 24 }}>
+    <div onClick={collapsible ? onToggle : undefined}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", minHeight: 24,
+        cursor: collapsible ? "pointer" : "default" }}>
+      {collapsible && <KlsIcon name="chevronDown" size={16} rotate={open ? 180 : 0} color="var(--kls-on-surface-variant)" />}
       <span style={ME_LABEL}>{children}</span>
       <div style={{ flex: 1 }} />
       {action}
@@ -7192,12 +7680,14 @@ function MeAddBtn({ label, onClick }) {
     <button aria-label={label} title={label}
       onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
-        display: "inline-flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, lineHeight: 1,
-        color: "var(--kls-on-surface-variant)",
+      style={{ height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, border: "none", cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, lineHeight: 1,
+        color: "var(--kls-on-surface)",
         background: hover ? "var(--kls-tertiary)" : "transparent",
-        transition: "background 125ms var(--kls-ease-standard)" }}>+</button>
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <PlusGlyph size={16} />Add
+    </button>
   );
 }
 
@@ -7227,10 +7717,68 @@ function MeEyeGlyph({ on, size = 15, color }) {
   );
 }
 
-function MeEyeBtn({ on, onClick }) {
+// DS ships no isolate/foreground glyph (see DS-UPDATES item 8) — drawn inline: two
+// overlapping rounded squares, the front one hatched.
+function MeIsolateGlyph({ size = 15, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flex: "none" }}>
+      <defs>
+        <clipPath id="me-iso-clip"><rect x="1.5" y="1.5" width="11" height="11" rx="2.5" /></clipPath>
+      </defs>
+      <g clipPath="url(#me-iso-clip)" stroke={color} strokeWidth="1.1">
+        <path d="M-2 6 6 -2M-2 11 11 -2M-2 16 16 -2M3 16 16 3M8 16 16 8" />
+      </g>
+      <rect x="1.5" y="1.5" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.5" />
+      <path d="M7.5 12.5v3.5a2.5 2.5 0 0 0 2.5 2.5h6a2.5 2.5 0 0 0 2.5-2.5v-6a2.5 2.5 0 0 0-2.5-2.5h-3.5"
+        stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// DS ships no sparkle / generate glyph (see DS-UPDATES) — drawn inline.
+function MeSparkleGlyph({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill={color} aria-hidden="true" style={{ flex: "none" }}>
+      <path d="M7.4 2.2 8.7 6 12.5 7.3 8.7 8.6 7.4 12.4 6.1 8.6 2.3 7.3 6.1 6z" />
+      <path d="M14.4 2 15 3.9 16.9 4.5 15 5.1 14.4 7 13.8 5.1 11.9 4.5 13.8 3.9z" />
+      <path d="M13.7 11.6 14.4 13.6 16.4 14.3 14.4 15 13.7 17 13 15 11 14.3 13 13.6z" />
+    </svg>
+  );
+}
+
+function MeChevronBtn({ open, onClick }) {
   const [hover, setHover] = useState(false);
   return (
-    <button aria-label={on ? "Hide part" : "Show part"} title={on ? "Hide part" : "Show part"}
+    <button aria-label={open ? "Collapse" : "Expand"} title={open ? "Collapse" : "Expand"}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name="chevronRight" size={14} rotate={open ? 90 : 0} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+}
+
+function MeIsolateBtn({ on, onClick, scope = "part" }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={on ? "Exit " + scope + " isolation" : "Isolate " + scope} title={on ? "Exit " + scope + " isolation" : "Isolate " + scope}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: on ? "var(--kls-tertiary-container)" : hover ? "var(--kls-tertiary)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <MeIsolateGlyph color={on ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)"} />
+    </button>
+  );
+}
+
+function MeEyeBtn({ on, onClick, scope = "part" }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={on ? "Hide " + scope : "Show " + scope} title={on ? "Hide " + scope : "Show " + scope}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
@@ -7343,12 +7891,12 @@ function MeSwatch({ value, label, active, onClick }) {
   );
 }
 
-function MeButton({ children, onClick, tone }) {
+function MeButton({ children, onClick, tone, full }) {
   const [hover, setHover] = useState(false);
   const primary = tone === "primary";
   return (
     <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+      style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", width: full ? "100%" : undefined,
         border: primary ? "none" : "1px solid var(--kls-outline-variant)",
         background: primary ? "var(--kls-tertiary-container)" : hover ? "var(--kls-tertiary)" : "transparent",
         color: primary ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface)",
@@ -7358,21 +7906,37 @@ function MeButton({ children, onClick, tone }) {
   );
 }
 
-function MeIconBtn({ icon, label, onClick, rotate }) {
+function MeCircleBtn({ label, onClick, children, size = 36 }) {
   const [hover, setHover] = useState(false);
   return (
     <button aria-label={label} title={label} onClick={onClick}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ width: 32, height: 32, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+      style={{ width: size, height: size, borderRadius: 9999, flex: "none", padding: 0, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "var(--kls-surface)",
+        border: "1px solid var(--kls-outline)", color: "var(--kls-on-surface)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <svg viewBox="0 0 24 24" style={{ width: size / 2, height: size / 2, stroke: "currentColor", fill: "none", strokeWidth: 1.6 }}>{children}</svg>
+    </button>
+  );
+}
+
+function MeIconBtn({ icon, label, onClick, rotate, size }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: (size || 16) >= 20 ? 40 : 32, height: (size || 16) >= 20 ? 40 : 32,
+        borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
-      <KlsIcon name={icon} size={16} rotate={rotate || 0} color="var(--kls-on-surface-variant)" />
+      <KlsIcon name={icon} size={size || 16} rotate={rotate || 0} color="var(--kls-on-surface-variant)" />
     </button>
   );
 }
 
 // ── three.js viewport ────────────────────────────────────────────────
-function MeViewport({ parts, scene: sc, playing, motion, onPickPart, selectedPart, onCamera, onMetrics, resetKey }) {
+function MeViewport({ parts, scene: sc, playing, motion, onPickPart, selectedPart, selectedIds, onCamera, onMetrics, resetKey }) {
   const hostRef = useRef(null);
   const stateRef = useRef({});
   const scRef = useRef(sc);
@@ -7381,6 +7945,7 @@ function MeViewport({ parts, scene: sc, playing, motion, onPickPart, selectedPar
   const partsRef = useRef(parts); partsRef.current = parts;
   const pickRef = useRef(onPickPart); pickRef.current = onPickPart;
   const selRef = useRef(selectedPart); selRef.current = selectedPart;
+  const selIdsRef = useRef(selectedIds || []); selIdsRef.current = selectedIds || [];
   const camRef = useRef(onCamera); camRef.current = onCamera;
   const metricsRef = useRef(onMetrics); metricsRef.current = onMetrics;
 
@@ -7490,7 +8055,8 @@ function MeViewport({ parts, scene: sc, playing, motion, onPickPart, selectedPar
       group.rotation.y = play.motion === "spin" ? spin : 0;
       Object.keys(meshes).forEach((id) => {
         const mesh = meshes[id];
-        const isolated = s.isolate && selRef.current && selRef.current !== id;
+        const iso = s.isolate ? (s.isolateIds && s.isolateIds.length ? s.isolateIds : (selRef.current ? [selRef.current] : null)) : null;
+        const isolated = !!iso && iso.indexOf(id) < 0;
         const hidden = s.hidden.indexOf(id) >= 0 || isolated;
         mesh.visible = !hidden;
         mesh.position.copy(mesh.userData.base).addScaledVector(mesh.userData.dir, explodeAmt * 2.6);
@@ -7498,16 +8064,19 @@ function MeViewport({ parts, scene: sc, playing, motion, onPickPart, selectedPar
         mesh.material.wireframe = !!s.wireframe;
         mesh.material.transparent = s.cutaway && isShell;
         mesh.material.opacity = s.cutaway && isShell ? 0.18 : 1;
-        const sel = selRef.current === id;
+        const sel = selRef.current === id || selIdsRef.current.indexOf(id) >= 0;
         mesh.material.emissive = mesh.material.emissive || new THREE.Color(0, 0, 0);
         mesh.material.emissive.setHex(sel ? 0x2b4f77 : 0x000000);
       });
       // measured dimensions of the current selection (or the whole model)
-      const key2 = (selRef.current || "all") + "|" + s.hidden.join(",") + "|" + (s.isolate ? 1 : 0);
+      const key2 = (selRef.current || selIdsRef.current.join("+") || "all") + "|" + s.hidden.join(",")
+        + "|" + (s.isolate ? 1 : 0) + "|" + ((s.isolateIds || []).join(","));
       if (key2 !== lastMetrics) {
         lastMetrics = key2;
         const box = new THREE.Box3();
-        const target = selRef.current && meshes[selRef.current] ? [meshes[selRef.current]] : group.children.filter((m) => m.visible);
+        const selIds = selRef.current ? [selRef.current] : selIdsRef.current;
+        const picked = selIds.map((id) => meshes[id]).filter(Boolean);
+        const target = picked.length ? picked : group.children.filter((m) => m.visible);
         target.forEach((m) => box.expandByObject(m));
         if (!box.isEmpty()) {
           const size = box.getSize(new THREE.Vector3());
@@ -7621,12 +8190,36 @@ function ModelEditor({ node, onClose }) {
   const [scenes, setScenes] = useState(seed);
   const seedAnims = () => animDefs.map((a) => ({ ...a }));
   const [anims, setAnims] = useState(seedAnims);
+  const [scenesOpen, setScenesOpen] = useState(true);
+  const [animsOpen, setAnimsOpen] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+  const [selGroup, setSelGroup] = useState(null);
+  const [verOpen, setVerOpen] = useState(false);
+  const [verMap, setVerMap] = useState({});
+  const [verPreview, setVerPreview] = useState(null);
+  const versionsFor = (key) => verMap[key] || meSeedVersions(key);
+  const setVersionsFor = (key, list) => setVerMap((m) => ({ ...m, [key]: list }));
   const addAnim = () => {
     const a = { id: model.id + "-a" + Date.now(), kind: "animation", name: "New animation", duration: "0:00", steps: 0 };
     setAnims((cur) => cur.concat([a]));
     setDirty(true);
     setSel({ type: "animation", id: a.id });
     setPlaying(false);
+  };
+  const [generating, setGenerating] = useState(false);
+  const generateAnim = () => {
+    if (generating) return;
+    setGenerating(true);
+    setTimeout(() => {
+      const n = anims.length + 1;
+      const a = { id: model.id + "-gen" + Date.now(), kind: "animation", name: "Generated sequence " + n,
+        duration: "0:" + String(6 + parts.length).padStart(2, "0"), steps: parts.length };
+      setAnims((cur) => cur.concat([a]));
+      setDirty(true); setSaved(false);
+      setSel({ type: "animation", id: a.id });
+      setPlaying(false);
+      setGenerating(false);
+    }, 900);
   };
   const removeAnim = (id) => {
     setAnims((cur) => cur.filter((a) => a.id !== id));
@@ -7640,10 +8233,9 @@ function ModelEditor({ node, onClose }) {
   const [selPart, setSelPart] = useState(null);
   const liveCam = useRef(null);
   const [metrics, setMetrics] = useState(null);
-  const [groupsOpen, setGroupsOpen] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(true);
   const [viewOpen, setViewOpen] = useState(true);
   const [annOpen, setAnnOpen] = useState(true);
-  const [selOpen, setSelOpen] = useState(true);
   const [dimOpen, setDimOpen] = useState(true);
   const [resetKey, setResetKey] = useState(0);
   const [sceneDraft, setSceneDraft] = useState(null);
@@ -7660,8 +8252,21 @@ function ModelEditor({ node, onClose }) {
   const motion = activeAnim ? (ME_MOTIONS[activeAnim.name] || "explode") : "explode";
 
   const patch = (fn) => { setScenes((prev) => prev.map((s) => (s.id === activeScene.id ? { ...s, ...fn(s) } : s))); setDirty(true); setSaved(false); };
+  // Isolation has ONE source of truth: activeScene.isolate + the selected part
+  // (the viewport already reads both). The tree button and the inspector's
+  // Isolate switch are two views of that same state.
+  const isoIds = activeScene.isolate ? (activeScene.isolateIds && activeScene.isolateIds.length
+    ? activeScene.isolateIds : (selPart ? [selPart] : [])) : [];
+  const isolatedId = isoIds.length === 1 ? isoIds[0] : null;
+  const sameSet = (a, b) => a.length === b.length && a.every((x) => b.indexOf(x) >= 0);
+  const isolateSet = (ids) => {
+    if (activeScene.isolate && sameSet(isoIds, ids)) { patch(() => ({ isolate: false, isolateIds: [] })); return; }
+    patch(() => ({ isolate: true, isolateIds: ids }));
+  };
+  const toggleIsolate = (id) => { if (!(isoIds.length === 1 && isoIds[0] === id)) setSelPart(id); isolateSet([id]); };
+  const groupIsolated = (ids) => activeScene.isolate && sameSet(isoIds, ids);
   const save = () => { setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2400); };
-  const discard = () => { setScenes(seed()); setAnims(seedAnims()); setDirty(false); setSelPart(null); };
+  const discard = () => { setScenes(seed()); setAnims(seedAnims()); setDirty(false); setSelPart(null); setSelGroup(null); };
 
   const selectedPartDef = parts.find((p) => p.id === selPart) || null;
 
@@ -7676,7 +8281,9 @@ function ModelEditor({ node, onClose }) {
       {/* top bar */}
       <div style={{ height: 64, flex: "none", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
         padding: "0 var(--kls-space-med)", background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
-        <MeIconBtn icon="chevronRight" rotate={180} label="Back to Library" onClick={onClose} />
+        <MeCircleBtn label="Back to Library" onClick={onClose}>
+          <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
             <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)",
@@ -7692,6 +8299,7 @@ function ModelEditor({ node, onClose }) {
           <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary-container)",
             fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary-container)" }}>Saved</span>
         )}
+        <MeIconBtn icon="clock" size={20} label="Version history" onClick={() => setVerOpen(true)} />
         <MeButton onClick={discard}>Discard</MeButton>
         <MeButton tone="primary" onClick={save}>Save</MeButton>
       </div>
@@ -7699,13 +8307,13 @@ function ModelEditor({ node, onClose }) {
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
 
         {/* left: tree */}
-        <div style={{ width: 264, flex: "none", boxSizing: "border-box", overflowY: "auto", background: "var(--kls-surface)",
+        <div style={{ width: 320, flex: "none", boxSizing: "border-box", overflowY: "auto", background: "var(--kls-surface)",
           borderRight: "1px solid var(--kls-outline-variant)", padding: "var(--kls-space-small)",
           display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
-            <MeSectionLabel>Scenes</MeSectionLabel>
-            {scenes.map((s) => (
+            <MeSectionLabel collapsible open={scenesOpen} onToggle={() => setScenesOpen((o) => !o)}>Scenes</MeSectionLabel>
+            {scenesOpen && scenes.map((s) => (
               <MeTreeRow key={s.id} icon="stack" label={s.name} active={sel.type === "scene" && sel.id === s.id}
                 onClick={() => { setSel({ type: "scene", id: s.id }); setPlaying(false); }}
                 trailing={<MeIconBtn icon="pencil" label={"Edit " + s.name}
@@ -7714,33 +8322,30 @@ function ModelEditor({ node, onClose }) {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
-            <MeSectionLabel action={<MeAddBtn label="Add animation" onClick={addAnim} />}>Animations</MeSectionLabel>
-            {anims.length === 0 && <div style={{ padding: "0 var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 13, color: "var(--kls-on-surface-variant)" }}>None defined</div>}
-            {anims.map((a) => (
+            <MeSectionLabel collapsible open={animsOpen} onToggle={() => setAnimsOpen((o) => !o)}
+              action={<MeAddBtn label="Add animation" onClick={addAnim} />}>Animations</MeSectionLabel>
+            {animsOpen && anims.length === 0 && <div style={{ padding: "0 var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 13, color: "var(--kls-on-surface-variant)" }}>None defined</div>}
+            {animsOpen && anims.map((a) => (
               <MeTreeRow key={a.id} icon="play" label={a.name} sub={meStepCount(a) + (meStepCount(a) === 1 ? " step" : " steps")}
                 active={sel.type === "animation" && sel.id === a.id}
                 onClick={() => { setSel({ type: "animation", id: a.id }); setPlaying(false); }}
                 trailing={<MeDeleteBtn label={"Delete " + a.name} onClick={() => removeAnim(a.id)} />} />
             ))}
+            {animsOpen && <div style={{ paddingTop: "var(--kls-space-tiny)" }}>
+              <MeButton tone="primary" full onClick={generateAnim}>
+                {generating ? <KlsIcon name="refresh" size={16} color="currentColor" style={{ animation: "int-spin 900ms linear infinite" }} /> : <MeSparkleGlyph />}
+                {generating ? "Generating…" : "Generate"}
+              </MeButton>
+            </div>}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
-            <MeSectionLabel>Parts</MeSectionLabel>
-            {parts.map((p) => {
-              const hidden = activeScene.hidden.indexOf(p.id) >= 0;
-              return (
-                <MeTreeRow key={p.id} icon="cube" label={p.name} indent muted={hidden} active={selPart === p.id}
-                  onClick={() => setSelPart(selPart === p.id ? null : p.id)}
-                  trailing={<MeEyeBtn on={!hidden} onClick={() => patch((s) => ({ hidden: hidden ? s.hidden.filter((x) => x !== p.id) : s.hidden.concat([p.id]) }))} />} />
-              );
-            })}
-          </div>
         </div>
 
         {/* center: viewport */}
         <div style={{ flex: 1, minWidth: 0, position: "relative", overflow: "hidden", background: "var(--kls-surface-container-lowest)" }}>
           <MeViewport parts={parts} scene={activeScene} playing={playing} motion={motion}
-            selectedPart={selPart} onPickPart={setSelPart}
+            selectedPart={selPart} selectedIds={selGroup ? parts.filter((p) => p.group === selGroup).map((p) => p.id) : []}
+            onPickPart={(id) => { setSelPart(id); setSelGroup(null); }}
             onCamera={(c) => { liveCam.current = c; }} onMetrics={setMetrics} resetKey={resetKey} />
 
           <div style={{ position: "absolute", left: "var(--kls-space-med)", bottom: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
@@ -7819,52 +8424,42 @@ function ModelEditor({ node, onClose }) {
                 </div>
               </MePanelSection>
 
-              <MePanelSection title="Selected" collapsible open={selOpen} onToggle={() => setSelOpen((o) => !o)}
-                trailing={<MeSwitch label="Isolate" on={!!activeScene.isolate} onChange={(v) => patch(() => ({ isolate: v }))} />}>
-                <div style={{ textAlign: "center", padding: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
-                  color: selectedPartDef ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
-                  {selectedPartDef ? selectedPartDef.name : "Nothing selected"}
-                </div>
-              </MePanelSection>
 
-              <MePanelSection title="Dimensions" collapsible open={dimOpen} onToggle={() => setDimOpen((o) => !o)}>
+              <MePanelSection title="Parts" collapsible open={groupsOpen} onToggle={() => setGroupsOpen((o) => !o)}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
-                  <MeMetricRow label="Width"  value={metrics ? metrics.w.toFixed(2) : "—"} />
-                  <MeMetricRow label="Height" value={metrics ? metrics.h.toFixed(2) : "—"} />
-                  <MeMetricRow label="Depth"  value={metrics ? metrics.d.toFixed(2) : "—"} />
-                </div>
-              </MePanelSection>
-
-              <MePanelSection title="Object Groups" collapsible open={groupsOpen} onToggle={() => setGroupsOpen((o) => !o)}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
                   {[...new Set(parts.map((p) => p.group))].map((g) => {
                     const members = parts.filter((p) => p.group === g);
                     const ids = members.map((p) => p.id);
                     const allHidden = ids.every((id) => activeScene.hidden.indexOf(id) >= 0);
+                    const gIsolated = groupIsolated(ids);
+                    const collapsed = !!collapsedGroups[g];
+                    const gDimmed = allHidden || (activeScene.isolate && !gIsolated && !ids.some((id) => isoIds.indexOf(id) >= 0));
                     return (
-                      <div key={g} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 32 }}>
-                          <span style={{ width: 16, height: 16, borderRadius: 999, flex: "none",
-                            border: "1.5px solid var(--kls-on-surface-variant)" }} />
-                          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
-                            color: allHidden ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>{g}</span>
-                          <MeSwitch on={!allHidden} onChange={() => patch((sc2) => ({
-                            hidden: allHidden ? sc2.hidden.filter((x) => ids.indexOf(x) < 0) : [...new Set(sc2.hidden.concat(ids))] }))} />
-                        </div>
-                        {members.map((p) => {
-                          const hidden = activeScene.hidden.indexOf(p.id) >= 0;
-                          return (
-                            <div key={p.id} onClick={() => setSelPart(selPart === p.id ? null : p.id)}
-                              style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 32,
-                                paddingLeft: "var(--kls-space-med)", cursor: "pointer" }}>
-                              <KlsIcon name="stack" size={15} color="var(--kls-on-surface-variant)" />
-                              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                                fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: selPart === p.id ? 600 : 500,
-                                color: hidden ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>{p.name}</span>
-                              <MeSwitch on={!hidden} onChange={() => patch((sc2) => ({
-                                hidden: hidden ? sc2.hidden.filter((x) => x !== p.id) : sc2.hidden.concat([p.id]) }))} />
+                      <div key={g} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                        <MeTreeRow icon="stack" label={g} muted={gDimmed} active={selGroup === g}
+                          sub={members.length === 1 ? "1 part" : members.length + " parts"}
+                          onClick={() => { setSelGroup(selGroup === g ? null : g); setSelPart(null); }}
+                          trailing={
+                            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-tiny)", flex: "none" }}>
+                              <MeChevronBtn open={!collapsed} onClick={() => setCollapsedGroups((c) => ({ ...c, [g]: !c[g] }))} />
+                              <MeIsolateBtn scope="group" on={gIsolated} onClick={() => { setSelGroup(g); setSelPart(null); isolateSet(ids); }} />
+                              <MeEyeBtn scope="group" on={!allHidden} onClick={() => patch((sc2) => ({
+                                hidden: allHidden ? sc2.hidden.filter((x) => ids.indexOf(x) < 0) : [...new Set(sc2.hidden.concat(ids))] }))} />
                             </div>
+                          } />
+                        {!collapsed && members.map((p) => {
+                          const hidden = activeScene.hidden.indexOf(p.id) >= 0;
+                          const dimmed = hidden || (activeScene.isolate && isoIds.indexOf(p.id) < 0);
+                          return (
+                            <MeTreeRow key={p.id} icon="cube" label={p.name} indent muted={dimmed} active={selPart === p.id}
+                              onClick={() => { setSelPart(selPart === p.id ? null : p.id); setSelGroup(null); }}
+                              trailing={
+                                <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-tiny)", flex: "none" }}>
+                                  <MeIsolateBtn on={isolatedId === p.id} onClick={() => { setSelGroup(null); toggleIsolate(p.id); }} />
+                                  <MeEyeBtn on={!hidden} onClick={() => patch((sc2) => ({
+                                    hidden: hidden ? sc2.hidden.filter((x) => x !== p.id) : sc2.hidden.concat([p.id]) }))} />
+                                </div>
+                              } />
                           );
                         })}
                       </div>
@@ -7898,6 +8493,14 @@ function ModelEditor({ node, onClose }) {
                   </div>
                 </div>
               </MePanelSection>
+
+              <MePanelSection title="Dimensions" collapsible open={dimOpen} onToggle={() => setDimOpen((o) => !o)}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                  <MeMetricRow label="Width"  value={metrics ? metrics.w.toFixed(2) : "—"} />
+                  <MeMetricRow label="Height" value={metrics ? metrics.h.toFixed(2) : "—"} />
+                  <MeMetricRow label="Depth"  value={metrics ? metrics.d.toFixed(2) : "—"} />
+                </div>
+              </MePanelSection>
             </>
           )}
         </div>
@@ -7918,6 +8521,22 @@ function ModelEditor({ node, onClose }) {
             setDirty(true); setSaved(false); setSceneDraft(null);
           }} />
       )}
+
+      {verOpen && (() => {
+        const isAnim = sel.type === "animation" && activeAnim;
+        const key = isAnim ? activeAnim.id : activeScene.id;
+        const entity = { kindLabel: isAnim ? "Animation" : "Scene", name: isAnim ? activeAnim.name : activeScene.name };
+        const list = versionsFor(key);
+        return (
+          <MeVersionDrawer
+            entity={entity} versions={list} previewId={verPreview}
+            onClose={() => setVerOpen(false)}
+            onPreview={(v) => { setVerPreview(v.id); if (isAnim) setPlaying(true); }}
+            onRestore={(v) => { setDirty(true); setSaved(false); setVerPreview(v.id); }}
+            onPublish={(v) => setVersionsFor(key, list.map((x) => ({ ...x, released: x.id === v.id })))}
+            onUnpublish={() => setVersionsFor(key, list.map((x) => ({ ...x, released: false })))} />
+        );
+      })()}
     </div>
   );
 }
