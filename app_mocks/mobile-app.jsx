@@ -1064,8 +1064,96 @@ const sheetBtnStyle = {
   fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)",
 };
 
+/* ── FAQs (ported from web) ───────────────────────────────────────────────── */
+const M_FAQ_SECTIONS = [
+  { id: "start", title: "Getting started", items: [
+    { q: "How do I find my courses?", a: "Open Workspace → Courses. Every course you're enrolled in or teaching appears there, grouped by term. Archived terms are hidden until you switch the term filter." },
+    { q: "Why can't I see a module a student mentioned?", a: "Modules are visible once the course they belong to is published and the module itself is Available. Draft and Building modules stay hidden from students until they're released." },
+    { q: "Can I use the platform on a tablet or phone?", a: "Yes. The mobile app carries Home, Workspace, and Written Exams. Authoring tools — module editing and integrations — are web only." },
+  ]},
+  { id: "assignments", title: "Assignments & grading", items: [
+    { q: "How do I assign a module to a group?", a: "In Control Tower, choose Assign, pick the module, then select students or a group. Assigning to a group keeps it as a single assignment — adding a student to that group later gives them the assignment automatically." },
+    { q: "What does Needs Assistance mean?", a: "A student flagged themselves as stuck, or an attempt failed twice on the same step. The row stays flagged until an instructor clears it or the student completes the step." },
+    { q: "Can I change a due date after assigning?", a: "Yes. Open the assignment from Control Tower and edit the due date. Students see the new date immediately; past submissions are not re-graded." },
+  ]},
+  { id: "exams", title: "Written exams", items: [
+    { q: "What's the difference between Practice and Exam mode?", a: "Practice shows the correct answer and rationale after each question and isn't recorded. Exam mode records a single scored attempt and reveals results only at the end." },
+    { q: "Can a student retake an exam?", a: "Instructors can grant one retake per attempt. The most recent attempt becomes the score of record; earlier attempts stay in History." },
+    { q: "How is the passing score set?", a: "The default is 70%. Program admins can override it per exam in the exam setup screen." },
+  ]},
+  { id: "team", title: "Team & access", items: [
+    { q: "Who can add or remove students?", a: "Admins and instructors with roster permission. Removing a student keeps their completed work in reporting but revokes access to open assignments." },
+    { q: "How do groups work?", a: "A group is a named set of students you can assign to as a single entity. A student can belong to more than one group." },
+    { q: "How do I change someone's role?", a: "Team Workspace → open the member → Role. Role changes take effect the next time they load the app." },
+  ]},
+  { id: "account", title: "Account & notifications", items: [
+    { q: "How do I turn on dark mode?", a: "Profile → Enable dark mode. The setting follows your account across web and mobile." },
+    { q: "Why am I not getting notifications?", a: "Push notifications are still rolling out. In the meantime, notifications appear in the bell menu in the header." },
+    { q: "How do I reset my password?", a: "Use Forgot password on the sign-in screen. If your workspace uses single sign-on, reset through your school's identity provider instead." },
+  ]},
+];
+
+function MFaqRow({ item, open, onToggle }) {
+  return (
+    <div style={{ borderBottom: "1px solid var(--kls-outline-variant)" }}>
+      <button onClick={onToggle} aria-expanded={open}
+        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+          padding: "var(--kls-space-small)", border: "none", background: "transparent", cursor: "pointer",
+          fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+        <span style={{ flex: 1, minWidth: 0 }}>{item.q}</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+          style={{ flex: "none", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+          <path d="M6 9.5l6 6 6-6" stroke="var(--kls-on-surface-variant)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div style={{ padding: "0 var(--kls-space-small) var(--kls-space-small)", fontFamily: "var(--kls-font-sans)",
+          fontSize: 14, fontWeight: 500, lineHeight: 1.6, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+          {item.a}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FaqSheet({ open, onClose }) {
+  const [openIds, setOpenIds] = useState([]);
+  const toggle = (id) => setOpenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev.concat([id])));
+  return (
+    <Sheet open={open} onClose={onClose} label="FAQs">
+      <div style={{ padding: "28px 24px var(--kls-space-small)", display: "flex", alignItems: "center", gap: 12 }}>
+        <h1 style={{ flex: 1, margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 700, color: "var(--kls-on-surface)" }}>FAQs</h1>
+        <button onClick={() => window.open(FEEDBACK_FORM_URL, "_blank", "noopener,noreferrer")} aria-label="Open form" style={{
+          width: 44, height: 44, borderRadius: "50%", flex: "none", cursor: "pointer",
+          border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)",
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 5h5v5M19 5l-8 8M11 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="var(--kls-on-surface)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <SheetCloseBtn onClose={onClose} />
+      </div>
+      <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
+      <div style={{ overflow: "auto", padding: "var(--kls-space-med) 24px var(--kls-space-tiny)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        {M_FAQ_SECTIONS.map((s) => (
+          <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+              textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{s.title}</div>
+            <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+              {s.items.map((item, i) => {
+                const id = s.id + ":" + i;
+                return <MFaqRow key={id} item={item} open={openIds.includes(id)} onToggle={() => toggle(id)} />;
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding: "16px 24px 28px" }} />
+    </Sheet>
+  );
+}
+
 /* ── Help & Feedback sheet ────────────────────────────────────────────────── */
-function FeedbackSheet({ open, onClose }) {
+function FeedbackSheet({ open, onClose, onBrowseFaqs }) {
   const openForm = () => window.open(FEEDBACK_FORM_URL, "_blank", "noopener,noreferrer");
   return (
     <Sheet open={open} onClose={onClose} label="Help & Feedback">
@@ -1095,6 +1183,14 @@ function FeedbackSheet({ open, onClose }) {
       </div>
 
       <div style={{ padding: "16px 24px 28px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <button onClick={onBrowseFaqs} style={{
+          height: 52, width: "100%", borderRadius: 12, cursor: "pointer",
+          border: "1px solid var(--kls-outline-variant)", background: "transparent", color: "var(--kls-on-surface)",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 700,
+        }}>
+          Browse FAQs
+        </button>
         <button onClick={openForm} style={{
           height: 52, width: "100%", borderRadius: 12, border: "1px solid transparent", cursor: "pointer",
           background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
@@ -3758,7 +3854,8 @@ function MobileApp(props) {
   const [wsScreen, setWsScreen] = useState("workspace");
   const [profileOpen, setProfileOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const openFeedback = () => { setProfileOpen(false); setFeedbackOpen(true); };
+  const [faqOpen, setFaqOpen] = useState(false);
+  const openFeedback = () => { setProfileOpen(false); setFaqOpen(false); setFeedbackOpen(true); };
   const inTeam = (tab === "workspace" && wsScreen === "team");
   const inWritten = (tab === "workspace" && wsScreen === "writtenExams");
   const inControlTower = (tab === "workspace" && wsScreen === "controlTower");
@@ -3783,12 +3880,13 @@ function MobileApp(props) {
           <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>{body}</div>
           {showNav && (
             <div style={{ flex: "none", paddingBottom: 18 }}>
-              <BottomNav active={tab} unread={40} onChange={(id) => { setTab(id); setWsScreen("workspace"); setProfileOpen(false); setFeedbackOpen(false); }} />
+              <BottomNav active={tab} unread={40} onChange={(id) => { setTab(id); setWsScreen("workspace"); setProfileOpen(false); setFeedbackOpen(false); setFaqOpen(false); }} />
             </div>
           )}
         </div>
         <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} showHelpRow={true} newBadge={true} onHelp={openFeedback} />
-        <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+        <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} onBrowseFaqs={() => { setFeedbackOpen(false); setFaqOpen(true); }} />
+        <FaqSheet open={faqOpen} onClose={() => setFaqOpen(false)} />
       </div>
     </IOSDevice>
   );

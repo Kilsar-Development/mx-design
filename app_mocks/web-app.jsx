@@ -302,7 +302,7 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
   return (
     <div
       style={{
-        width: collapsed ? "var(--kls-sidebar-width-collapsed)" : "var(--kls-sidebar-width-expanded)",
+        width: collapsed ? "var(--kls-sidebar-width-collapsed)" : "calc(var(--kls-sidebar-width-expanded) + var(--kls-space-large))",
         background: "var(--kls-sidebar-bg)",
         padding: "var(--kls-sidebar-padding)",
         borderRight: "var(--kls-sidebar-border)",
@@ -324,7 +324,7 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
             <img
               src="assets/images/splashLogo.png"
               alt="Kilsar"
-              style={{ height: 28, width: "auto", display: "block" }}
+              style={{ height: 28, width: "auto", display: "block", filter: "brightness(0) invert(1)" }}
             />
           ) : (
             // Collapsed: K mark only
@@ -4408,6 +4408,7 @@ function WebApp(props) {
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
   else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
   else if (active === "integrations") content = <Integrations query={query} />;
+  else if (active === "faq") content = <FaqScreen query={query} onFeedback={() => setHelpOpen(true)} />;
   else if (active === "terms") content = <Blocks query={query} onOpenTask={setEditingTask} />;
   else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
   else content = <WebPlaceholder tabKey={active} />;
@@ -4417,11 +4418,11 @@ function WebApp(props) {
     <div style={{ height: "100vh", display: "flex", background: "var(--kls-scaffold-bg)", overflow: "hidden" }}>
       <NavSidebar active={active} workspaceName="EduDev" version="2.16.5" flavor="education" onSelect={onSelect} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <Header unread={47} onSearch={setQuery} onAvatar={() => setProfileOpen(true)} searchPlaceholder={active === "controlTower" ? (ctRole === "student" ? "Search assignments" : "Search students") : "Search"} />
+        <Header unread={47} onSearch={setQuery} onAvatar={() => setProfileOpen(true)} searchPlaceholder={active === "controlTower" ? (ctRole === "student" ? "Search assignments" : "Search students") : active === "faq" ? "Search FAQs" : "Search"} />
         {content}
       </div>
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} onHelp={() => { setProfileOpen(false); setHelpOpen(true); }} />
-      <FeedbackDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <FeedbackDialog open={helpOpen} onClose={() => setHelpOpen(false)} onBrowseFaqs={() => { setHelpOpen(false); setActive("faq"); }} />
     </div>
   );
 }
@@ -4783,9 +4784,10 @@ const helpSectionLabel = {
   letterSpacing: ".08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)",
 };
 
-function FeedbackDialog({ open, onClose }) {
+function FeedbackDialog({ open, onClose, onBrowseFaqs }) {
   const [closeHover, setCloseHover] = useState(false);
   const [btnHover, setBtnHover] = useState(false);
+  const [faqHover, setFaqHover] = useState(false);
   const cardRef = useRef(null);
   useEffect(() => {
     if (!open) return;
@@ -4831,13 +4833,152 @@ function FeedbackDialog({ open, onClose }) {
           </p>
         </div>
         <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Opens in a new tab</span>
+          <button onClick={() => { if (onBrowseFaqs) onBrowseFaqs(); }} onMouseEnter={() => setFaqHover(true)} onMouseLeave={() => setFaqHover(false)}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+              background: faqHover ? "color-mix(in oklab, var(--kls-on-surface) 6%, transparent)" : "transparent", color: "var(--kls-on-surface)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+              cursor: "pointer", transition: "background 120ms var(--kls-ease-standard)" }}>
+            Browse FAQs
+          </button>
           <button onClick={openForm} onMouseEnter={() => setBtnHover(true)} onMouseLeave={() => setBtnHover(false)}
             style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
               fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer",
               filter: btnHover ? "brightness(1.06)" : "none", transition: "filter 120ms var(--kls-ease-standard)" }}>
             Open form
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 5h5v5M19 5l-8 8M11 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── FAQ screen (reached from the Help & Feedback dialog) ──────────────
+const FAQ_SECTIONS = [
+  { id: "start", title: "Getting started", items: [
+    { q: "How do I find my courses?", a: "Open Workspace → Courses. Every course you're enrolled in or teaching appears there, grouped by term. Archived terms are hidden until you switch the term filter." },
+    { q: "Why can't I see a module a student mentioned?", a: "Modules are visible once the course they belong to is published and the module itself is Available. Draft and Building modules stay hidden from students until they're released." },
+    { q: "Can I use the platform on a tablet or phone?", a: "Yes. The mobile app carries Home, Workspace, and Written Exams. Authoring tools — module editing and integrations — are web only." },
+  ]},
+  { id: "assignments", title: "Assignments & grading", items: [
+    { q: "How do I assign a module to a group?", a: "In Control Tower, choose Assign, pick the module, then select students or a group. Assigning to a group keeps it as a single assignment — adding a student to that group later gives them the assignment automatically." },
+    { q: "What does Needs Assistance mean?", a: "A student flagged themselves as stuck, or an attempt failed twice on the same step. The row stays flagged until an instructor clears it or the student completes the step." },
+    { q: "Can I change a due date after assigning?", a: "Yes. Open the assignment from Control Tower and edit the due date. Students see the new date immediately; past submissions are not re-graded." },
+  ]},
+  { id: "exams", title: "Written exams", items: [
+    { q: "What's the difference between Practice and Exam mode?", a: "Practice shows the correct answer and rationale after each question and isn't recorded. Exam mode records a single scored attempt and reveals results only at the end." },
+    { q: "Can a student retake an exam?", a: "Instructors can grant one retake per attempt. The most recent attempt becomes the score of record; earlier attempts stay in History." },
+    { q: "How is the passing score set?", a: "The default is 70%. Program admins can override it per exam in the exam setup screen." },
+  ]},
+  { id: "team", title: "Team & access", items: [
+    { q: "Who can add or remove students?", a: "Admins and instructors with roster permission. Removing a student keeps their completed work in reporting but revokes access to open assignments." },
+    { q: "How do groups work?", a: "A group is a named set of students you can assign to as a single entity. A student can belong to more than one group." },
+    { q: "How do I change someone's role?", a: "Team Workspace → open the member → Role. Role changes take effect the next time they load the app." },
+  ]},
+  { id: "account", title: "Account & notifications", items: [
+    { q: "How do I turn on dark mode?", a: "Profile → Enable dark mode. The setting follows your account across web and mobile." },
+    { q: "Why am I not getting notifications?", a: "Push notifications are still rolling out. In the meantime, notifications appear in the bell menu in the header." },
+    { q: "How do I reset my password?", a: "Use Forgot password on the sign-in screen. If your workspace uses single sign-on, reset through your school's identity provider instead." },
+  ]},
+];
+
+function FaqChevron({ open }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      style={{ flex: "none", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+      <path d="M6 9.5l6 6 6-6" stroke="var(--kls-on-surface-variant)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FaqRow({ item, open, onToggle }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div style={{ borderBottom: "1px solid var(--kls-outline-variant)" }}>
+      <button onClick={onToggle} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        aria-expanded={open}
+        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+          padding: "var(--kls-space-small) var(--kls-space-med)", border: "none", cursor: "pointer",
+          background: hover ? "color-mix(in oklab, var(--kls-on-surface) 4%, transparent)" : "transparent",
+          fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
+          transition: "background 120ms var(--kls-ease-standard)" }}>
+        <span style={{ flex: 1, minWidth: 0 }}>{item.q}</span>
+        <FaqChevron open={open} />
+      </button>
+      {open && (
+        <div style={{ padding: "0 56px var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)",
+          fontSize: 14, fontWeight: 500, lineHeight: 1.6, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+          {item.a}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FaqScreen({ onFeedback, query = "" }) {
+  const term = query;
+  const [openIds, setOpenIds] = useState([]);
+  const [ctaHover, setCtaHover] = useState(false);
+  const [topHover, setTopHover] = useState(false);
+  const q = term.trim().toLowerCase();
+  const sections = FAQ_SECTIONS
+    .map((s) => ({ ...s, items: s.items.filter((i) => !q || i.q.toLowerCase().includes(q) || i.a.toLowerCase().includes(q)) }))
+    .filter((s) => s.items.length > 0);
+  const toggle = (id) => setOpenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev.concat([id])));
+  const total = sections.reduce((n, s) => n + s.items.length, 0);
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>FAQs</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Answers to the questions we get most often. Can't find yours? Send it to the team.</p>
+          </div>
+          <button onClick={onFeedback} onMouseEnter={() => setTopHover(true)} onMouseLeave={() => setTopHover(false)}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", flex: "none",
+              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", fontFamily: "var(--kls-font-sans)",
+              fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer",
+              filter: topHover ? "brightness(1.06)" : "none", transition: "filter 120ms var(--kls-ease-standard)" }}>
+            Send feedback
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M11 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        </div>
+
+        {total === 0 ? (
+          <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+            padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)" }}>No matching questions</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try a different word, or send the question to the team.</div>
+          </div>
+        ) : sections.map((s) => (
+          <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+              textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{s.title}</div>
+            <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+              {s.items.map((item, i) => {
+                const id = s.id + ":" + i;
+                return <FaqRow key={id} item={item} open={openIds.includes(id) || (!!q && true)} onToggle={() => toggle(id)} />;
+              })}
+            </div>
+          </div>
+        ))}
+
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+          padding: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)" }}>Still need help?</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>A real person reads every submission — we typically follow up within two business days.</div>
+          </div>
+          <button onClick={onFeedback} onMouseEnter={() => setCtaHover(true)} onMouseLeave={() => setCtaHover(false)}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent",
+              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", fontFamily: "var(--kls-font-sans)",
+              fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer", flex: "none",
+              filter: ctaHover ? "brightness(1.06)" : "none", transition: "filter 120ms var(--kls-ease-standard)" }}>
+            Send feedback
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M11 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>
       </div>
@@ -7472,15 +7613,27 @@ const ME_VER_AUTHORS = ["Melodie Harris", "Dwayne Cobb", "Priya Raman"];
 function meHash(key) { let h = 0; const t = String(key); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; }
 function meSeedVersions(key) {
   const h = meHash(key);
-  const n = 3 + (h % 3);
-  const base = Date.UTC(2026, 6, 28, 17, 49);
-  const out = [];
-  let t = base;
-  for (let i = 0; i < n; i++) {
-    out.push({ id: key + "-v" + (n - i), label: "v" + (n - i), ts: t, author: ME_VER_AUTHORS[(h + i) % 3], released: i === 0 });
+  // v3 released · one open draft (internal name draft-4) · v2 + v1 archived
+  const spec = [
+    { n: 4, released: false, wasReleased: false, isDraft: true, draftNo: 1, desc: "Cutaway on the accessory gearbox" },
+    { n: 3, released: true,  wasReleased: false, desc: "Exploded view timing tightened; annotations reviewed" },
+    { n: 2, released: false, wasReleased: true, desc: "Added rotor spin cycle and part labels" },
+    { n: 1, released: false, wasReleased: true, desc: "Initial import from the CAD assembly" },
+  ];
+  let t = Date.UTC(2026, 6, 28, 17, 49);
+  return spec.map((s, i) => {
+    const v = { id: key + "-v" + s.n, label: s.isDraft ? "draft-" + s.draftNo : "v" + s.n, isDraft: !!s.isDraft,
+      desc: s.desc || "", ts: t, author: ME_VER_AUTHORS[(h + i) % 3],
+      released: s.released, wasReleased: s.wasReleased };
     t -= (2 + ((h >> (i * 2)) & 7)) * 86400000 + ((h >> i) & 15) * 3600000;
-  }
-  return out;
+    return v;
+  });
+}
+// Drafts never surface their internal draft-N name — the description is their title.
+function meVerTitle(v) { return v.isDraft ? String(v.label).replace(/^draft-/, "Draft-") : v.label; }
+function meNextVersionLabel(list) {
+  const nums = list.filter((x) => !x.isDraft).map((x) => parseInt(String(x.label).replace(/^v/, ""), 10) || 0);
+  return "v" + ((nums.length ? Math.max.apply(null, nums) : 0) + 1);
 }
 const ME_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 function meVerTime(ts) {
@@ -7506,6 +7659,36 @@ function MeVerBtn({ children, onClick, tone }) {
   );
 }
 
+/* SecondaryActionButton — preview/buttons-variants.html: h40 · radius 8 (web) · bg surface ·
+   text on-surface labelLargeBold (14/700) · border outline-variant · pad-x med. */
+function MeVerSecondaryBtn({ children, onClick, full }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: full ? "100%" : "auto", height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+        border: "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-tertiary)" : "var(--kls-surface)", color: "var(--kls-on-surface)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>{children}</button>
+  );
+}
+
+/* PrimaryActionButton — preview/buttons-primary.html: h40 · radius 8 (web) · pad-x med ·
+   gap xSmall · bg tertiary-container · fg on-tertiary-container · labelLargeBold (14/700). */
+function MeVerPrimaryBtn({ children, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+        border: "1px solid transparent", background: "var(--kls-tertiary-container)",
+        color: "var(--kls-on-tertiary-container)", opacity: hover ? 0.88 : 1,
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+        transition: "opacity 125ms var(--kls-ease-standard)" }}>{children}</button>
+  );
+}
+
 function MeVerMeta({ version }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
@@ -7521,9 +7704,57 @@ function MeVerMeta({ version }) {
   );
 }
 
-function MeVersionDrawer({ entity, versions, previewId, onPreview, onRestore, onPublish, onUnpublish, onClose }) {
+function MeVerCard({ v, previewing, pill, secondaryAction, onPreview, onPublish, onDelete, onEdit }) {
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ position: "absolute", left: -21, top: 7, width: 7, height: 7, borderRadius: 999,
+        background: previewing ? "var(--kls-primary)" : "var(--kls-outline)" }} />
+      <div onClick={() => { if (!previewing) onPreview(v); }}
+        style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)",
+        padding: "var(--kls-space-small)", borderRadius: 12, cursor: previewing ? "default" : "pointer",
+        border: "1px solid " + (previewing ? "var(--kls-primary)" : "var(--kls-outline-variant)"),
+        background: "var(--kls-surface)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{meVerTitle(v)}</span>
+          <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+            background: pill.bg, color: pill.fg,
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{pill.label}</span>
+        </div>
+        {v.desc && (
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{v.desc}</div>
+        )}
+        <MeVerMeta version={v} />
+        <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+          {secondaryAction
+            ? <MeVerSecondaryBtn onClick={() => onPublish(v)}>Republish</MeVerSecondaryBtn>
+            : <MeVerPrimaryBtn onClick={() => onPublish(v)}>Publish</MeVerPrimaryBtn>}
+          <div style={{ flex: 1 }} />
+          {onEdit && <MeIconBtn icon="pencil" label="Edit description" onClick={() => onEdit(v)} />}
+          <MeIconBtn icon="trash" label={"Delete " + meVerTitle(v)} onClick={() => onDelete(v)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MeVerSection({ title, count, open, onToggle, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer", minHeight: 24 }}>
+        <KlsIcon name="chevronDown" size={16} rotate={open ? 180 : 0} color="var(--kls-on-surface-variant)" />
+        <span style={ME_LABEL}>{title}</span>
+        <span style={{ ...ME_LABEL, letterSpacing: "normal" }}>{count}</span>
+      </div>
+      {open && children}
+    </div>
+  );
+}
+
+function MeVersionDrawer({ entity, versions, previewId, onPreview, onDelete, onPublish, onUnpublish, onEditDraft, onClose }) {
   const [shown, setShown] = useState(false);
   const [note, setNote] = useState("");
+  const [draftsOpen, setDraftsOpen] = useState(true);
+  const [pastOpen, setPastOpen] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     function onKey(e) { if (e.key === "Escape") onClose(); }
@@ -7533,7 +7764,9 @@ function MeVersionDrawer({ entity, versions, previewId, onPreview, onRestore, on
   useEffect(() => { if (!note) return; const t = setTimeout(() => setNote(""), 2000); return () => clearTimeout(t); }, [note]);
 
   const released = versions.find((v) => v.released);
-  const drafts = versions.filter((v) => !v.released);
+  const drafts = versions.filter((v) => !v.released && !v.wasReleased);
+  const past = versions.filter((v) => !v.released && v.wasReleased).slice().sort((a, b) => b.ts - a.ts);
+  const viewingId = previewId || (released ? released.id : null);
   const flash = (msg, fn) => { fn(); setNote(msg); };
 
   return (
@@ -7572,19 +7805,23 @@ function MeVersionDrawer({ entity, versions, previewId, onPreview, onRestore, on
           display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
 
           {released ? (
-            <div style={{ border: "1px solid var(--kls-primary)", borderRadius: 12, padding: "var(--kls-space-small)",
+            <div onClick={() => { if (viewingId !== released.id) onPreview(released); }}
+              style={{ border: "1px solid " + (viewingId === released.id ? "var(--kls-primary)" : "var(--kls-outline-variant)"), borderRadius: 12, padding: "var(--kls-space-small)",
+              cursor: viewingId === released.id ? "default" : "pointer",
               background: "var(--kls-surface-container-lowest)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{released.label}</span>
+                <div style={{ flex: 1 }} />
                 <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
                   background: "var(--kls-success-container)", color: "var(--kls-on-success-container)",
                   fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Released</span>
-                <div style={{ flex: 1 }} />
-                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{released.label}</span>
               </div>
+              {released.desc && (
+                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{released.desc}</div>
+              )}
               <MeVerMeta version={released} />
-              <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
-                <MeVerBtn onClick={() => flash("Previewing " + released.label, () => onPreview(released))}>Preview</MeVerBtn>
-                <MeVerBtn tone="danger" onClick={() => flash("Unpublished " + released.label, () => onUnpublish(released))}>Unpublish</MeVerBtn>
+              <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+                <MeVerSecondaryBtn full onClick={() => flash("Unpublished " + released.label, () => onUnpublish(released))}>Unpublish</MeVerSecondaryBtn>
               </div>
             </div>
           ) : (
@@ -7594,52 +7831,50 @@ function MeVersionDrawer({ entity, versions, previewId, onPreview, onRestore, on
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
-            <span style={ME_LABEL}>Draft versions</span>
+          <MeVerSection title="Draft versions" count={drafts.length} open={draftsOpen} onToggle={() => setDraftsOpen((o) => !o)}>
             {drafts.length === 0 ? (
               <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No drafts.</div>
             ) : (
               <div style={{ position: "relative", paddingLeft: "var(--kls-space-med)",
                 display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
                 <div style={{ position: "absolute", left: 3, top: 10, bottom: 10, width: 1, background: "var(--kls-outline-variant)" }} />
-                {drafts.map((v) => {
-                  const previewing = previewId === v.id;
-                  return (
-                    <div key={v.id} style={{ position: "relative" }}>
-                      <div style={{ position: "absolute", left: -21, top: 7, width: 7, height: 7, borderRadius: 999,
-                        background: previewing ? "var(--kls-primary)" : "var(--kls-outline)" }} />
-                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)",
-                        padding: "var(--kls-space-small)", borderRadius: 12,
-                        border: "1px solid " + (previewing ? "var(--kls-primary)" : "var(--kls-outline-variant)"),
-                        background: "var(--kls-surface)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
-                          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{v.label}</span>
-                          {previewing && (
-                            <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 8,
-                              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
-                              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Previewing</span>
-                          )}
-                        </div>
-                        <MeVerMeta version={v} />
-                        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
-                          <MeVerBtn onClick={() => flash("Previewing " + v.label, () => onPreview(v))}>Preview</MeVerBtn>
-                          <MeVerBtn onClick={() => flash("Restored " + v.label, () => onRestore(v))}>Restore</MeVerBtn>
-                          <MeVerBtn onClick={() => flash("Published " + v.label, () => onPublish(v))}>Publish</MeVerBtn>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {drafts.map((v) => (
+                  <MeVerCard key={v.id} v={v} previewing={viewingId === v.id}
+                    pill={{ label: "Draft", bg: "var(--kls-accent-5)", fg: "var(--kls-accent-4)" }}
+                    onPreview={onPreview}
+                    onEdit={onEditDraft}
+                    onPublish={(x) => flash("Published " + meVerTitle(x), () => onPublish(x))}
+                    onDelete={(x) => flash("Deleted " + meVerTitle(x), () => onDelete(x))} />
+                ))}
               </div>
             )}
-          </div>
+          </MeVerSection>
+
+          <MeVerSection title="Previous releases" count={past.length} open={pastOpen} onToggle={() => setPastOpen((o) => !o)}>
+            {past.length === 0 ? (
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No previous releases.</div>
+            ) : (
+              <div style={{ position: "relative", paddingLeft: "var(--kls-space-med)",
+                display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                <div style={{ position: "absolute", left: 3, top: 10, bottom: 10, width: 1, background: "var(--kls-outline-variant)" }} />
+                {past.map((v) => (
+                  <MeVerCard key={v.id} v={v} previewing={viewingId === v.id}
+                    pill={{ label: "Archived", bg: "var(--kls-tertiary)", fg: "var(--kls-on-tertiary)" }} secondaryAction
+                    onPreview={onPreview}
+                    onPublish={(x) => flash("Published " + meVerTitle(x), () => onPublish(x))}
+                    onDelete={(x) => flash("Deleted " + meVerTitle(x), () => onDelete(x))} />
+                ))}
+              </div>
+            )}
+          </MeVerSection>
         </div>
       </div>
     </div>
   );
 }
 
-function meStepCount(a) { return typeof a.steps === "number" ? a.steps : 0; }
+function meStepCount(a) { return meAnimSteps(ME_MOTIONS[a.name] || "explode").length; }
+function isDefaultScene(s) { return !!s && s.name === "Default view"; }
 
 function MeSectionLabel({ children, action, collapsible, open, onToggle }) {
   return (
@@ -7926,16 +8161,18 @@ function MeCircleBtn({ label, onClick, children, size = 36, bordered = true }) {
   );
 }
 
-function MeIconBtn({ icon, label, onClick, rotate, size }) {
+function MeIconBtn({ icon, label, onClick, rotate, size, surface }) {
   const [hover, setHover] = useState(false);
   return (
     <button aria-label={label} title={label} onClick={onClick}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ width: (size || 16) >= 20 ? 40 : 32, height: (size || 16) >= 20 ? 40 : 32,
-        borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        borderRadius: 8, border: surface ? "1px solid transparent" : "none", padding: 0, cursor: "pointer", flex: "none",
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
-      <KlsIcon name={icon} size={size || 16} rotate={rotate || 0} color="var(--kls-on-surface-variant)" />
+        background: surface ? "var(--kls-tertiary-container)" : (hover ? "var(--kls-tertiary)" : "transparent"),
+        opacity: surface && hover ? 0.88 : 1,
+        transition: "background 125ms var(--kls-ease-standard), opacity 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={size || 16} rotate={rotate || 0} color={surface ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)"} />
     </button>
   );
 }
@@ -8122,6 +8359,42 @@ function MeViewport({ parts, scene: sc, playing, motion, onPickPart, selectedPar
   return <div ref={hostRef} style={{ position: "absolute", inset: 0, background: sc.bg || "var(--kls-surface-container-lowest)", transition: "background 250ms var(--kls-ease-standard)" }} />;
 }
 
+function MeDraftDialog({ draft, onChange, onCancel, onSave }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1800, display: "flex", alignItems: "center", justifyContent: "center",
+      background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+          background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>
+          {draft.mode === "create" ? "Create new draft" : "Edit draft description"}
+        </div>
+
+        {draft.mode === "create" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <span style={ME_LABEL}>Forked from</span>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{draft.base}</span>
+          </div>
+        )}
+
+        <MeField label="Description (optional)">
+          <textarea value={draft.desc || ""} rows={3} placeholder="What changes in this draft?"
+            onChange={(e) => onChange({ ...draft, desc: e.target.value })}
+            style={{ width: "100%", boxSizing: "border-box", padding: "var(--kls-space-small)", borderRadius: 8, resize: "vertical",
+              border: "1px solid var(--kls-outline-variant)", background: "transparent", outline: "none", lineHeight: 1.45,
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+        </MeField>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <MeButton tone="primary" onClick={onSave}>{draft.mode === "create" ? "Create draft" : "Save"}</MeButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MeSceneDialog({ draft, onChange, onCancel, onSave }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center",
@@ -8184,6 +8457,64 @@ function MeAnnotationDialog({ draft, onChange, onCancel, onAdd }) {
   );
 }
 
+// Animation steps — an animation is a sequence of staged moments over the model.
+const ME_ANIM_STEP_SETS = {
+  explode: [
+    { name: "Hold assembled", desc: "Full assembly at rest, camera framed on the model" },
+    { name: "Separate outer housing", desc: "Covers and fairings translate clear of the core" },
+    { name: "Expand mid stage", desc: "Mid-stage assemblies fan out along their axes" },
+    { name: "Reveal core", desc: "Inner components settle at full separation" },
+    { name: "Reassemble", desc: "Every assembly returns to its seated position" },
+  ],
+  spin: [
+    { name: "Spin up", desc: "Rotating assembly accelerates to working speed" },
+    { name: "Steady state", desc: "Constant rotation — the working condition" },
+    { name: "Highlight drive path", desc: "Driven components isolate against the housing" },
+    { name: "Spin down", desc: "Rotation decays back to rest" },
+  ],
+  retract: [
+    { name: "Unlock", desc: "Downlocks release and the actuator pressurizes" },
+    { name: "Retract", desc: "Assembly travels through the full retraction arc" },
+    { name: "Stow and lock", desc: "Uplocks engage; doors close over the bay" },
+    { name: "Extend", desc: "Sequence reverses to the extended position" },
+  ],
+};
+function meAnimSteps(motion) { return ME_ANIM_STEP_SETS[motion] || ME_ANIM_STEP_SETS.explode; }
+
+function MeStepList({ steps, active }) {
+  return (
+    <div style={{ position: "absolute", left: "var(--kls-space-med)", top: "var(--kls-space-med)", width: 264,
+      background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+      boxShadow: "var(--kls-drop-shadow)", overflow: "hidden" }}>
+      <div style={{ padding: "var(--kls-space-small)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <span style={ME_LABEL}>Animation steps</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", padding: "var(--kls-space-xsmall)", gap: 2 }}>
+        {steps.map((s, i) => {
+          const on = i === active;
+          return (
+            <div key={s.name} style={{ display: "flex", gap: "var(--kls-space-xsmall)", padding: "var(--kls-space-xsmall)",
+              borderRadius: 8, background: on ? "var(--kls-surface-container-low)" : "transparent",
+              transition: "background 125ms var(--kls-ease-standard)" }}>
+              <span style={{ flex: "none", width: 20, height: 20, borderRadius: 999, marginTop: 1,
+                background: on ? "var(--kls-primary)" : "var(--kls-tertiary)",
+                color: on ? "var(--kls-on-primary)" : "var(--kls-on-surface-variant)",
+                fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+                display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600,
+                  color: on ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>{s.name}</span>
+                <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.45,
+                  color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{s.desc}</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
   const model = meOwnerModel(node) || node;
   const parts = mePartsFor(model.id);
@@ -8191,7 +8522,7 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
   const sceneDefs = kids.filter((c) => c.kind === "scene");
   const animDefs = kids.filter((c) => c.kind === "animation");
 
-  const seed = () => (sceneDefs.length ? sceneDefs : [{ id: model.id + "-base", name: "Base view" }]).map((sc) => meSeedScene(sc, model.id));
+  const seed = () => (sceneDefs.length ? sceneDefs : [{ id: model.id + "-base", name: "Default view" }]).map((sc) => meSeedScene(sc, model.id));
   const [scenes, setScenes] = useState(seed);
   const seedAnims = () => animDefs.map((a) => ({ ...a }));
   const [anims, setAnims] = useState(seedAnims);
@@ -8202,8 +8533,17 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
   const [verOpen, setVerOpen] = useState(false);
   const [verMap, setVerMap] = useState({});
   const [verPreview, setVerPreview] = useState(null);
+  const [verDraft, setVerDraft] = useState(null);
+  const [orion, setOrion] = useState(false);
   const versionsFor = (key) => verMap[key] || meSeedVersions(key);
   const setVersionsFor = (key, list) => setVerMap((m) => ({ ...m, [key]: list }));
+  const addScene = () => {
+    const s = meSeedScene({ id: model.id + "-s" + Date.now(), name: "New scene" }, model.id);
+    setScenes((cur) => cur.concat([s]));
+    setDirty(true);
+    setSel({ type: "scene", id: s.id });
+    setPlaying(false);
+  };
   const addAnim = () => {
     if (locked) return;
     const a = { id: model.id + "-a" + Date.now(), kind: "animation", name: "New animation", duration: "0:00", steps: 0 };
@@ -8235,13 +8575,16 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
     setPlaying(false);
   };
   // Linked scenes are published versions: viewing is allowed, editing requires a new draft.
-  const [mode, setMode] = useState(readOnly ? "view" : "edit");
+  const [mode, setMode] = useState("view");
   const locked = mode === "view";
   const [draftSaved, setDraftSaved] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(false);
+  const [publishAsk, setPublishAsk] = useState(false);
   const [leaveNote, setLeaveNote] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [stepIdx, setStepIdx] = useState(0);
   const [selPart, setSelPart] = useState(null);
   const liveCam = useRef(null);
   const [metrics, setMetrics] = useState(null);
@@ -8262,6 +8605,13 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
   const activeScene = scenes.find((s) => s.id === activeSceneId) || scenes[0] || meSeedScene({ id: "none", name: model.name }, model.id);
   const activeAnim = sel.type === "animation" ? anims.find((a) => a.id === sel.id) : null;
   const motion = activeAnim ? (ME_MOTIONS[activeAnim.name] || "explode") : "explode";
+  const animSteps = meAnimSteps(motion);
+  useEffect(() => { setStepIdx(0); }, [sel.id, playing]);
+  useEffect(() => {
+    if (!playing || sel.type !== "animation") return;
+    const id = setInterval(() => setStepIdx((i) => (i + 1) % animSteps.length), 1800);
+    return () => clearInterval(id);
+  }, [playing, sel.type, sel.id, animSteps.length]);
 
   const patch = (fn) => {
     if (locked) return;
@@ -8282,15 +8632,66 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
   const groupIsolated = (ids) => activeScene.isolate && sameSet(isoIds, ids);
   const save = () => {
     if (locked) return;
-    setDirty(false); setSaved(true); setTimeout(() => setSaved(false), 2400);
+    setDirty(false); setSaved(true); setSavedOnce(true); setTimeout(() => setSaved(false), 2400);
     if (readOnly) setDraftSaved(true);
+  };
+  // Publishing from the top bar: the draft in view becomes the released version.
+  const publishNow = () => {
+    const target = sel.type === "animation" && activeAnim ? activeAnim : activeScene;
+    const list = versionsFor(target.id);
+    const cur = list.find((x) => x.id === verPreview && x.isDraft) || list.find((x) => x.isDraft);
+    const next = meNextVersionLabel(list);
+    if (cur) {
+      setVersionsFor(target.id, list.map((x) => (x.id === cur.id
+        ? { ...x, released: true, isDraft: false, wasReleased: false, label: next, ts: Date.now() }
+        : { ...x, released: false, wasReleased: x.wasReleased || x.released })));
+      setVerPreview(cur.id);
+    } else {
+      const v = { id: target.id + "-" + next, label: next, isDraft: false, desc: "", ts: Date.now(),
+        author: "You", released: true, wasReleased: false };
+      setVersionsFor(target.id, [v].concat(list.map((x) => ({ ...x, released: false, wasReleased: x.wasReleased || x.released }))));
+      setVerPreview(v.id);
+    }
+    setSavedOnce(false); setMode("view");
+    if (onPublished) onPublished({ node: target, version: next });
   };
   // Leaving a saved draft: the task still points at the published version.
   const requestClose = () => {
     if (readOnly && mode === "draft" && (draftSaved || dirty)) { setLeaveNote(true); return; }
     onClose();
   };
-  const startDraft = () => { setMode("draft"); setVerOpen(false); };
+  const startDraft = () => {
+    const key = sel.type === "animation" && activeAnim ? activeAnim.id : activeScene.id;
+    const list = versionsFor(key);
+    const viewed = list.find((x) => x.id === verPreview) || list.find((x) => x.released) || list[0];
+    setVerDraft({ mode: "create", key, base: viewed ? meVerTitle(viewed) : "", desc: "" });
+  };
+  const saveVerDraft = () => {
+    let key = verDraft.key;
+    let list = versionsFor(key);
+    if (verDraft.mode === "edit") {
+      setVersionsFor(key, list.map((x) => (x.id === verDraft.id ? { ...x, desc: verDraft.desc } : x)));
+      setVerDraft(null);
+      return;
+    }
+    // The Default view is immutable — drafting from it spawns a new scene instead.
+    if (isDefaultScene(activeScene) && sel.type === "scene") {
+      const s = { ...activeScene, id: model.id + "-s" + Date.now(), name: verDraft.desc || "New scene" };
+      setScenes((cur) => cur.concat([s]));
+      setSel({ type: "scene", id: s.id });
+      key = s.id;
+      list = [];
+    }
+    const nums = list.filter((x) => x.isDraft).map((x) => parseInt(String(x.label).replace(/^draft-/, ""), 10) || 0);
+    const n = (nums.length ? Math.max.apply(null, nums) : 0) + 1;
+    const v = { id: key + "-draft-" + Date.now(), label: "draft-" + n, isDraft: true, desc: verDraft.desc,
+      ts: Date.now(), author: "You", released: false, wasReleased: false };
+    setVersionsFor(key, [v].concat(list));
+    setVerPreview(v.id);
+    setMode("draft");
+    setVerDraft(null);
+    setVerOpen(false);
+  };
   // Publishing from the leave dialog: the draft becomes the released version and the
   // task picks it up — no version-history detour.
   const publishDraft = () => {
@@ -8303,7 +8704,7 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
     if (onPublished) onPublished({ node: target, version: next });
     onClose();
   };
-  const discard = () => { setScenes(seed()); setAnims(seedAnims()); setDirty(false); setSelPart(null); setSelGroup(null); };
+
 
   const selectedPartDef = parts.find((p) => p.id === selPart) || null;
 
@@ -8331,26 +8732,29 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
             Library · 3D Models · {sel.type === "animation" && activeAnim ? activeAnim.name : activeScene.name}
           </div>
         </div>
-        <div style={{ flex: 1 }} />
         {saved && (
           <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary-container)",
-            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary-container)" }}>Saved</span>
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary-container)", flex: "none" }}>Saved</span>
         )}
-        <MeIconBtn icon="clock" size={20} label="Version history" onClick={() => setVerOpen(true)} />
+        <div style={{ flex: 1 }} />
+        {locked && (
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-accent-4)" }}>Read only · Published</span>
+        )}
+        <MeCircleBtn size={40} label="Version history" onClick={() => setVerOpen(true)}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7.5V12l3 1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
         {locked ? (
-          <>
-            <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
-              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary)" }}>Read only · Published</span>
-            <MeButton tone="primary" onClick={startDraft}>Create new draft</MeButton>
-          </>
+          <MeButton tone="primary" onClick={startDraft}>Create new draft</MeButton>
         ) : (
           <>
             {readOnly && (
               <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-primary-container)",
                 fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-primary-container)" }}>Editing new draft</span>
             )}
-            <MeButton onClick={discard}>Discard</MeButton>
-            <MeButton tone="primary" onClick={save}>Save</MeButton>
+            {savedOnce && !dirty
+              ? <MeButton tone="primary" onClick={() => setPublishAsk(true)}>Publish</MeButton>
+              : <MeButton tone="primary" onClick={save}>Save</MeButton>}
           </>
         )}
       </div>
@@ -8363,18 +8767,19 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
           display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
-            <MeSectionLabel collapsible open={scenesOpen} onToggle={() => setScenesOpen((o) => !o)}>Scenes</MeSectionLabel>
+            <MeSectionLabel collapsible open={scenesOpen} onToggle={() => setScenesOpen((o) => !o)}
+              action={<MeAddBtn label="Add scene" onClick={addScene} />}>Scenes</MeSectionLabel>
             {scenesOpen && scenes.map((s) => (
               <MeTreeRow key={s.id} icon="stack" label={s.name} active={sel.type === "scene" && sel.id === s.id}
                 onClick={() => { setSel({ type: "scene", id: s.id }); setPlaying(false); }}
-                trailing={locked ? null : <MeIconBtn icon="pencil" label={"Edit " + s.name}
+                trailing={locked || isDefaultScene(s) ? null : <MeIconBtn icon="pencil" label={"Edit " + s.name}
                   onClick={(e) => { if (e) e.stopPropagation(); setSceneDraft({ id: s.id, name: s.name, description: s.description || "" }); }} />} />
             ))}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
             <MeSectionLabel collapsible open={animsOpen} onToggle={() => setAnimsOpen((o) => !o)}
-              action={locked ? null : <MeAddBtn label="Add animation" onClick={addAnim} />}>Animations</MeSectionLabel>
+              action={<MeAddBtn label="Add animation" onClick={() => setOrion({ prefill: "Create a new animation" })} />}>Animations</MeSectionLabel>
             {animsOpen && anims.length === 0 && <div style={{ padding: "0 var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 13, color: "var(--kls-on-surface-variant)" }}>None defined</div>}
             {animsOpen && anims.map((a) => (
               <MeTreeRow key={a.id} icon="play" label={a.name} sub={meStepCount(a) + (meStepCount(a) === 1 ? " step" : " steps")}
@@ -8382,11 +8787,17 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
                 onClick={() => { setSel({ type: "animation", id: a.id }); setPlaying(false); }}
                 trailing={locked ? null : <MeDeleteBtn label={"Delete " + a.name} onClick={() => removeAnim(a.id)} />} />
             ))}
-            {animsOpen && !locked && <div style={{ paddingTop: "var(--kls-space-tiny)" }}>
-              <MeButton tone="primary" full onClick={generateAnim}>
-                {generating ? <KlsIcon name="refresh" size={16} color="currentColor" style={{ animation: "int-spin 900ms linear infinite" }} /> : <MeSparkleGlyph />}
-                {generating ? "Generating…" : "Generate"}
-              </MeButton>
+            {animsOpen && <div style={{ marginTop: "var(--kls-space-xsmall)", paddingTop: "var(--kls-space-small)",
+              borderTop: "1px solid var(--kls-outline-variant)" }}>
+              <div style={{ padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)" }}>
+                <span style={{ float: "left", marginRight: "var(--kls-space-xsmall)", display: "inline-flex", alignItems: "center" }}>
+                  <KlsIcon name="orionLogo" size={16} color="var(--kls-on-surface)" />
+                </span>
+                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.5,
+                  color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+                  Tip: Orion can build these for you. Ask it for a new scene, an exploded or cutaway view, or a full animation sequence — then refine it here.
+                </span>
+              </div>
             </div>}
           </div>
 
@@ -8409,6 +8820,10 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
             </span>
           </div>
 
+          {sel.type === "animation" && activeAnim && (
+            <MeStepList steps={animSteps} active={stepIdx} />
+          )}
+
           {selectedPartDef && (
             <div style={{ position: "absolute", right: "var(--kls-space-med)", top: "var(--kls-space-med)",
               padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-surface)",
@@ -8423,15 +8838,13 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
           display: "flex", flexDirection: "column", gap: "var(--kls-space-med)",
           pointerEvents: locked ? "none" : "auto", opacity: locked ? 0.72 : 1 }}>
 
-          {locked && (
-            <div style={{ padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
-              fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-tertiary)", lineHeight: 1.5 }}>
-              This is the published version linked to the task. Create a new draft to make changes.
-            </div>
-          )}
-
           {sel.type === "animation" && activeAnim ? (
             <>
+              {!locked && (
+                <MeButton tone="primary" full onClick={() => setOrion({ prefill: "Make changes to " + activeAnim.name })}>
+                  <KlsIcon name="orionLogo" size={16} color="currentColor" />Edit with Orion
+                </MeButton>
+              )}
               <MeField label="Animation name">
                 <MeInput value={activeAnim.name}
                   onChange={(v) => { setAnims((prev) => prev.map((a) => (a.id === activeAnim.id ? { ...a, name: v } : a))); setDirty(true); setSaved(false); }} />
@@ -8444,7 +8857,7 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
               </MeField>
               <div style={{ padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
                 fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-tertiary)", lineHeight: 1.5 }}>
-                Keyframe editing lands in part 2. For now this previews the motion against the selected scene.
+                Ask Orion to retime, reorder, or restage this sequence. Keyframe editing lands in part 2 — for now this previews the motion against the selected scene.
               </div>
             </>
           ) : (
@@ -8484,7 +8897,7 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
               </MePanelSection>
 
 
-              <MePanelSection title="Parts" collapsible open={groupsOpen} onToggle={() => setGroupsOpen((o) => !o)}>
+              <MePanelSection title="Assemblies" collapsible open={groupsOpen} onToggle={() => setGroupsOpen((o) => !o)}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
                   {[...new Set(parts.map((p) => p.group))].map((g) => {
                     const members = parts.filter((p) => p.group === g);
@@ -8581,6 +8994,45 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
           }} />
       )}
 
+      <TeOrionFab label="Model Assistant" onClick={() => setOrion(true)} />
+      {orion && (
+        <TeOrionDrawer onClose={() => setOrion(false)} title="Model Assistant"
+          initialMsg={orion && orion.prefill ? orion.prefill : ""}
+          greeting="Hi, what can I help you with today?  Ask me to create scenes and animations, or change the one you're viewing"
+          suggestions={ME_ORION_SUGGESTIONS.map((s) => (s.label === "Make changes to the current scene" && sel.type === "animation"
+            ? { ...s, label: "Make changes to the current animation", hint: "Retime, reorder, or restage the sequence", prompt: "Make changes to the current animation" }
+            : s))} />
+      )}
+
+      {publishAsk && (() => {
+        const isAnim = sel.type === "animation" && activeAnim;
+        const kind = isAnim ? "animation" : "scene";
+        const name = isAnim ? activeAnim.name : activeScene.name;
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1800, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={() => setPublishAsk(false)}>
+            <div onClick={(e) => e.stopPropagation()}
+              style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+                background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+                display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Publish {kind}?</div>
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5,
+                color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+                {name} will be published as the released version of this {kind}. It becomes available in the Library and can be linked to Tasks.
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+                <MeButton onClick={() => setPublishAsk(false)}>Cancel</MeButton>
+                <MeButton tone="primary" onClick={() => { setPublishAsk(false); publishNow(); }}>Publish</MeButton>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {verDraft && (
+        <MeDraftDialog draft={verDraft} onChange={setVerDraft} onCancel={() => setVerDraft(null)} onSave={saveVerDraft} />
+      )}
+
       {leaveNote && (
         <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "flex", alignItems: "center", justifyContent: "center",
           padding: "var(--kls-space-med)" }}>
@@ -8614,10 +9066,13 @@ function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
           <MeVersionDrawer
             entity={entity} versions={list} previewId={verPreview}
             onClose={() => setVerOpen(false)}
-            onPreview={(v) => { setVerPreview(v.id); if (isAnim) setPlaying(true); }}
-            onRestore={(v) => { setDirty(true); setSaved(false); setVerPreview(v.id); }}
-            onPublish={(v) => setVersionsFor(key, list.map((x) => ({ ...x, released: x.id === v.id })))}
-            onUnpublish={() => setVersionsFor(key, list.map((x) => ({ ...x, released: false })))} />
+            onPreview={(v) => { setVerPreview(v.id); setMode(v.released ? "view" : (readOnly ? "draft" : "edit")); }}
+            onDelete={(v) => { setVersionsFor(key, list.filter((x) => x.id !== v.id)); if (verPreview === v.id) setVerPreview(null); }}
+            onEditDraft={(v) => setVerDraft({ mode: "edit", id: v.id, key, desc: v.desc || "" })}
+            onPublish={(v) => setVersionsFor(key, list.map((x) => (x.id === v.id
+              ? { ...x, released: true, wasReleased: false, isDraft: false, label: x.isDraft ? meNextVersionLabel(list) : x.label }
+              : { ...x, released: false, wasReleased: x.wasReleased || x.released })))}
+            onUnpublish={() => setVersionsFor(key, list.map((x) => ({ ...x, released: false, wasReleased: x.wasReleased || x.released })))} />
         );
       })()}
     </div>
@@ -9305,9 +9760,18 @@ function TeOrionSuggestion({ item, onClick }) {
   );
 }
 
-function TeOrionDrawer({ onClose, onAction }) {
+const ME_ORION_SUGGESTIONS = [
+  { icon: "scene", tint: "var(--kls-accent-7)", label: "Create a new scene",
+    hint: "Set up a new view state of this model", prompt: "Create a new scene" },
+  { icon: "animation", tint: "var(--kls-accent-12)", label: "Create a new animation",
+    hint: "Generate a motion sequence from the assemblies", prompt: "Create a new animation" },
+  { icon: "orionLogo", tint: "var(--kls-accent-7)", label: "Make changes to the current scene",
+    hint: "Explode, isolate, cut away, or annotate", prompt: "Make changes to the current scene" },
+];
+
+function TeOrionDrawer({ onClose, onAction, title, greeting, suggestions, initialMsg }) {
   const [shown, setShown] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState(initialMsg || "");
   const [focus, setFocus] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
@@ -9328,7 +9792,7 @@ function TeOrionDrawer({ onClose, onAction }) {
         <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
           borderBottom: "1px solid var(--kls-outline-variant)" }}>
           <KlsIcon name="orionLogo" size={22} color="var(--kls-on-surface)" />
-          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Task Assistant</span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>{title || "Task Assistant"}</span>
           <TeResetBtn onClick={() => setMsg("")} />
           <div style={{ flex: 1 }} />
           <MeCircleBtn size={36} label="Close" bordered={false} onClick={onClose}>
@@ -9340,11 +9804,11 @@ function TeOrionDrawer({ onClose, onAction }) {
           display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: "var(--kls-space-med)" }}>
           <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
             lineHeight: 1.5, textWrap: "pretty" }}>
-            Hi, what can I help you with today?  Ask me to create, update, or remove task steps
+            {greeting || "Hi, what can I help you with today?  Ask me to create, update, or remove task steps"}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
             <span style={ME_LABEL}>Try one of these</span>
-            {TE_ORION_SUGGESTIONS.map((s) => (
+            {(suggestions || TE_ORION_SUGGESTIONS).map((s) => (
               <TeOrionSuggestion key={s.label} item={s}
                 onClick={() => (s.action && onAction ? onAction(s.action) : setMsg(s.prompt))} />
             ))}
@@ -9385,10 +9849,10 @@ function TeResetBtn({ onClick }) {
   );
 }
 
-function TeOrionFab({ onClick }) {
+function TeOrionFab({ onClick, label }) {
   const [hover, setHover] = useState(false);
   return (
-    <button aria-label="Open Task Assistant" title="Task Assistant" onClick={onClick}
+    <button aria-label={"Open " + (label || "Task Assistant")} title={label || "Task Assistant"} onClick={onClick}
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ position: "absolute", right: "var(--kls-space-med)", bottom: "var(--kls-space-med)", zIndex: 20,
         width: 52, height: 52, borderRadius: 999, border: "1px solid var(--kls-outline-variant)", cursor: "pointer", padding: 0,
