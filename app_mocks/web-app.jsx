@@ -7367,8 +7367,19 @@ function BlocksRow({ row }) {
   );
 }
 
+// Catalog-flavored Orion suggestions — same list on every tab.
+const CATALOG_ORION_SUGGESTIONS = [
+  { icon: "orionLogo", tint: "var(--kls-accent-7)", label: "Where do I start?",
+    hint: "Get some ideas of what you can do here", prompt: "Where do I start?" },
+  { icon: "itemList", tint: "var(--kls-accent-1)", label: "Can you explain this for me?",
+    hint: "Detailed answers and their sources at your fingertips", prompt: "Can you explain this for me?" },
+  { icon: "chatBubbles", tint: "var(--kls-accent-12)", label: "Where can I get help?",
+    hint: "Find guides, or reach a person", prompt: "Where can I get help?" },
+];
+
 function Blocks({ query = "", onOpenTask }) {
   const [tab, setTab] = useState("blocks");
+  const [orion, setOrion] = useState(false);
   const [sort, setSort] = useState({ col: "name", dir: "asc" });
   const [refreshing, setRefreshing] = useState(false);
   const [favOnly, setFavOnly] = useState(false);
@@ -7391,6 +7402,7 @@ function Blocks({ query = "", onOpenTask }) {
   const empty = BLOCKS_EMPTY[tab];
 
   return (
+    <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
     <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
       <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
 
@@ -7441,6 +7453,14 @@ function Blocks({ query = "", onOpenTask }) {
           )}
         </div>
       </div>
+    </div>
+
+      <TeOrionFab label="Orion" onClick={() => setOrion(true)} />
+      {orion && (
+        <TeOrionDrawer onClose={() => setOrion(false)} title="Orion"
+          greeting="Hi, what can I help you with today?  Ask me to create Blocks, Modules, or Tasks, or find something in the Catalog"
+          suggestions={CATALOG_ORION_SUGGESTIONS} addFiles={false} />
+      )}
     </div>
   );
 }
@@ -9769,7 +9789,7 @@ const ME_ORION_SUGGESTIONS = [
     hint: "Explode, isolate, cut away, or annotate", prompt: "Make changes to the current scene" },
 ];
 
-function TeOrionDrawer({ onClose, onAction, title, greeting, suggestions, initialMsg }) {
+function TeOrionDrawer({ onClose, onAction, title, greeting, suggestions, initialMsg, addFiles = true }) {
   const [shown, setShown] = useState(false);
   const [msg, setMsg] = useState(initialMsg || "");
   const [focus, setFocus] = useState(false);
@@ -9816,11 +9836,13 @@ function TeOrionDrawer({ onClose, onAction, title, greeting, suggestions, initia
         </div>
 
         <div style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
-          <button style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
-            background: "transparent", border: "none", padding: 0, cursor: "pointer", color: "var(--kls-on-surface)",
-            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
-            <PlusGlyph size={16} />Add files for context
-          </button>
+          {addFiles && (
+            <button style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+              background: "transparent", border: "none", padding: 0, cursor: "pointer", color: "var(--kls-on-surface)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+              <PlusGlyph size={16} />Add files for context
+            </button>
+          )}
           <label style={{ minHeight: 48, boxSizing: "border-box", display: "flex", alignItems: "center",
             gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", borderRadius: 8,
             border: "1px solid " + (focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
@@ -9832,6 +9854,8 @@ function TeOrionDrawer({ onClose, onAction, title, greeting, suggestions, initia
               style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
                 fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }} />
           </label>
+          <span style={{ alignSelf: "flex-end", textAlign: "right", fontFamily: "var(--kls-font-sans)", fontSize: 10, fontWeight: 600, lineHeight: 1.4,
+            color: "var(--kls-on-surface-variant)" }}>Orion is an AI and can make mistakes.  Please double-check responses.</span>
         </div>
       </div>
     </div>
