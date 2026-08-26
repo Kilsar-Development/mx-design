@@ -2171,7 +2171,7 @@ function WorkspaceScreen({ go }) {
           onClickCapture={(e) => { if (e.currentTarget.dataset.moved === "1") { e.stopPropagation(); e.preventDefault(); } }}
           style={{ display: "flex", gap: 12, overflowX: "auto", padding: "var(--kls-space-xsmall) var(--kls-space-med) var(--kls-space-med)", touchAction: "pan-x", cursor: "grab", userSelect: "none" }}>
           {WM_DESTINATIONS.map((d) => (
-            <DestinationCard key={d.key} icon={d.icon} label={d.label} onClick={() => { if (d.key === "team") go("team"); else if (d.key === "written") go("writtenExams"); else if (d.key === "controlTower") go("controlTower"); }} />
+            <DestinationCard key={d.key} icon={d.icon} label={d.label} onClick={() => { if (d.key === "team") go("team"); else if (d.key === "written") go("writtenExams"); else if (d.key === "controlTower") go("controlTower"); else if (d.key === "library") go("library"); }} />
           ))}
         </div>
 
@@ -2195,6 +2195,312 @@ function WorkspaceScreen({ go }) {
   );
 }
 
+
+
+// ── library-mobile.jsx — Mobile Library (Workspace drill-in) ──────────────────
+// Mobile port of the web Library (web-app.jsx): three sections — Files / Media /
+// 3D Models — over the same index. Chrome follows TeamScreen (back header ·
+// CompoundSwitch tabs · scrollable body · nav hidden). Folders drill in (the back
+// button pops one level); models list their scene / animation counts.
+const MLIB_FILES = [
+  { id: "f1", kind: "folder", name: "domjan", type: "", added: "2025-07-25",
+    children: [
+      { id: "f1a", kind: "pdf", name: "Torque Sequence Worksheet.pdf", bytes: 486400, type: "PDF", added: "2025-07-25" },
+      { id: "f1b", kind: "pdf", name: "Shop Safety Briefing.pdf", bytes: 1258291, type: "PDF", added: "2025-07-26" },
+    ] },
+  { id: "f2", kind: "folder", name: "joel", type: "", added: "2025-06-23",
+    children: [
+      { id: "f2a", kind: "pdf", name: "Rivet Inspection Log.pdf", bytes: 204800, type: "PDF", added: "2025-06-23" },
+    ] },
+  { id: "f3", kind: "folder", name: "test_pagination", type: "", added: "2025-09-12",
+    children: [
+      { id: "f3a", kind: "pdf", name: "Page Set 001.pdf", bytes: 1048576, type: "PDF", added: "2025-09-12" },
+      { id: "f3b", kind: "pdf", name: "Page Set 002.pdf", bytes: 1153434, type: "PDF", added: "2025-09-12" },
+      { id: "f3c", kind: "pdf", name: "Page Set 003.pdf", bytes: 999424, type: "PDF", added: "2025-09-13" },
+    ] },
+  { id: "f4", kind: "folder", name: "testfolder", type: "", added: "2026-05-11",
+    children: [
+      { id: "f4a", kind: "doc", name: "Module Outline.docx", bytes: 65536, type: "DOCX", added: "2026-05-11" },
+      { id: "f4b", kind: "txt", name: "notes.txt", bytes: 2048, type: "TXT", added: "2026-05-12" },
+    ] },
+  { id: "d1", kind: "pdf", name: "8083-30A-AIM (General).pdf", bytes: 128278528, type: "PDF", added: "2026-04-08", fav: true },
+  { id: "d2", kind: "pdf", name: "ACS_Code_Descriptions_Mapped.pdf", bytes: 22538, type: "PDF", added: "2026-04-08" },
+  { id: "d3", kind: "pdf", name: "AMA-23-EKIT Airframe.pdf", bytes: 11053384, type: "PDF", added: "2026-04-08" },
+  { id: "d4", kind: "pdf", name: "AMG-23-EKIT General.pdf", bytes: 10370416, type: "PDF", added: "2026-04-08" },
+  { id: "d5", kind: "pdf", name: "AMP-23-EKIT Powerplant.pdf", bytes: 12897484, type: "PDF", added: "2026-04-08" },
+  { id: "d6", kind: "pdf", name: "FAA-H-8083-31B Vol 2.pdf", bytes: 74973184, type: "PDF", added: "2026-03-19", fav: true },
+];
+const MLIB_MEDIA = [
+  { id: "m0", kind: "folder", name: "walkthroughs", type: "", added: "2026-02-02",
+    children: [
+      { id: "m0a", kind: "video", name: "Engine Start Walkthrough.mp4", bytes: 157286400, type: "MP4", added: "2026-02-02" },
+      { id: "m0b", kind: "video", name: "Pitot Static Check.mp4", bytes: 73400320, type: "MP4", added: "2026-02-04" },
+    ] },
+  { id: "m1", kind: "video", name: "Turbine Teardown Walkthrough.mp4", bytes: 486539264, type: "MP4", added: "2026-04-02", fav: true },
+  { id: "m2", kind: "video", name: "Rivet Inspection Demo.mp4", bytes: 214748364, type: "MP4", added: "2026-03-27" },
+  { id: "m3", kind: "image", name: "Airframe Panel Reference.jpg", bytes: 3355443, type: "JPG", added: "2026-03-11" },
+  { id: "m4", kind: "image", name: "Torque Wrench Callouts.png", bytes: 1258291, type: "PNG", added: "2026-02-19", fav: true },
+  { id: "m5", kind: "video", name: "Bus Architecture Overview.mp4", bytes: 98566144, type: "MP4", added: "2026-01-30" },
+];
+const MLIB_MODELS = [
+  { id: "tf1", kind: "folder", name: "engines", type: "", added: "2026-05-04",
+    children: [
+      { id: "t1", kind: "model", name: "CFM56 Compressor Section.glb", bytes: 62914560, type: "GLB", added: "2026-05-04",
+        children: [
+          { id: "t1s1", kind: "scene", name: "Full Assembly", added: "2026-05-04" },
+          { id: "t1s2", kind: "scene", name: "Stage 3 Cutaway", added: "2026-05-04" },
+          { id: "t1a1", kind: "animation", name: "Exploded View", added: "2026-05-06", duration: "0:12" },
+          { id: "t1a2", kind: "animation", name: "Rotor Spin Cycle", added: "2026-05-06", duration: "0:08" },
+        ] },
+      { id: "t5", kind: "model", name: "PT6A Turboprop.glb", bytes: 41943040, type: "GLB", added: "2026-04-30" },
+    ] },
+  { id: "tf2", kind: "folder", name: "airframe", type: "", added: "2026-04-21",
+    children: [
+      { id: "t2", kind: "model", name: "Cessna 172 Landing Gear.glb", bytes: 18874368, type: "GLB", added: "2026-04-21",
+        children: [
+          { id: "t2s1", kind: "scene", name: "Gear Down", added: "2026-04-21" },
+          { id: "t2s2", kind: "scene", name: "Gear Retracted", added: "2026-04-21" },
+          { id: "t2a1", kind: "animation", name: "Retraction Sequence", added: "2026-04-22", duration: "0:06" },
+        ] },
+    ] },
+  { id: "t3", kind: "model", name: "Hydraulic Actuator.obj", bytes: 8912896, type: "OBJ", added: "2026-03-15", fav: true },
+  { id: "t4", kind: "model", name: "Fuel Pump Assembly.glb", bytes: 24117248, type: "GLB", added: "2026-02-08",
+    children: [
+      { id: "t4a1", kind: "animation", name: "Flow Cycle", added: "2026-02-10", duration: "0:15" },
+    ] },
+];
+const MLIB_SECTIONS = [
+  { key: "files",  label: "Files",     icon: "itemList", items: MLIB_FILES,  empty: "No files yet",     hint: "Upload documents to make them available across the workspace." },
+  { key: "media",  label: "Media",     icon: "image",    items: MLIB_MEDIA,  empty: "No media yet",     hint: "Upload video and imagery students can reference." },
+  { key: "models", label: "3D Models", icon: "cube",     items: MLIB_MODELS, empty: "No 3D models yet", hint: "Upload GLB or OBJ models to use in modules." },
+];
+const MLIB_KINDS = {
+  folder:    { icon: "filetypes/folder", color: "var(--kls-accent-7)" },
+  pdf:       { icon: "filetypes/pdf", color: "var(--kls-error)" },
+  doc:       { icon: "filetypes/doc", color: "var(--kls-accent-7)" },
+  txt:       { icon: "filetypes/txt", color: "var(--kls-on-surface-variant)" },
+  video:     { icon: "filetypes/playMovie", color: "var(--kls-accent-12)" },
+  image:     { icon: "image", color: "var(--kls-success)" },
+  model:     { icon: "cube", color: "var(--kls-accent-4)" },
+  scene:     { icon: "scene", color: "var(--kls-accent-7)", label: "Scene" },
+  animation: { icon: "animation", color: "var(--kls-accent-12)", label: "Animation" },
+};
+function mlibBytes(item) {
+  if (item.kind === "folder") return (item.children || []).reduce((n, c) => n + mlibBytes(c), 0);
+  return item.bytes || 0;
+}
+function mlibSize(b) {
+  if (!b) return "0 B";
+  if (b < 1024) return b + " B";
+  if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + " MB";
+  return (b / 1073741824).toFixed(2) + " GB";
+}
+const MLIB_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function mlibDate(iso) {
+  const p = iso.split("-").map(Number);
+  return String(p[2]).padStart(2, "0") + " " + MLIB_MON[p[1] - 1] + " " + p[0];
+}
+// Label-only CompoundSwitch — three labels don't fit the 18px icon+pad variant at 402w.
+function MLibTabs({ tabs, value, onChange }) {
+  return (
+    <div style={{ display: "flex", height: 40, padding: 2, gap: "var(--kls-space-tiny)", borderRadius: "var(--kls-radius-small)",
+      background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", boxSizing: "border-box" }}>
+      {tabs.map((t) => {
+        const active = t.key === value;
+        return (
+          <button key={t.key} onClick={() => onChange(t.key)}
+            style={{ height: 36, padding: 0, borderRadius: "var(--kls-radius-small)", border: 0, cursor: "pointer", flex: 1, minWidth: 0,
+              background: active ? "var(--kls-surface)" : "transparent",
+              boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+              color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>{t.label}</button>
+        );
+      })}
+    </div>
+  );
+}
+// 2×2 ring grid — the DS ships no four-circles glyph (circles.png is a single ring).
+function MLibGridGlyph({ size = 18, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flex: "none" }}>
+      <circle cx="6.5" cy="6.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="13.5" cy="6.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="6.5" cy="13.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="13.5" cy="13.5" r="3.4" stroke={color} strokeWidth="1.6" />
+    </svg>
+  );
+}
+// List / grid view toggle — CompoundSwitch track, icon-only tiles (Media tab only).
+function MLibViewToggle({ value, onChange }) {
+  const tile = (active) => ({ width: 40, height: 36, padding: 0, borderRadius: "var(--kls-radius-small)", border: 0, cursor: "pointer",
+    background: active ? "var(--kls-surface)" : "transparent", boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+    display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" });
+  return (
+    <div style={{ display: "inline-flex", height: 40, padding: 2, gap: "var(--kls-space-tiny)", borderRadius: "var(--kls-radius-small)",
+      background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", boxSizing: "border-box", flex: "none" }}>
+      <button aria-label="List view" onClick={() => onChange("list")} style={tile(value === "list")}>
+        <KlsIcon name="itemList" size={18} color={value === "list" ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />
+      </button>
+      <button aria-label="Grid view" onClick={() => onChange("grid")} style={tile(value === "grid")}>
+        <MLibGridGlyph size={18} color={value === "grid" ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />
+      </button>
+    </div>
+  );
+}
+function MLibTile({ item, onOpen }) {
+  const k = MLIB_KINDS[item.kind] || MLIB_KINDS.txt;
+  const navigable = item.kind === "folder";
+  return (
+    <div onClick={navigable ? () => onOpen(item) : undefined}
+      style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)",
+        display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", minWidth: 0,
+        cursor: navigable ? "pointer" : "default" }}>
+      <KlsIcon name={k.icon} size={28} color={k.color} />
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+        {item.kind === "folder"
+          ? "Folder · " + mlibSize(mlibBytes(item))
+          : mlibSize(mlibBytes(item)) + " · " + mlibDate(item.added)}
+      </div>
+    </div>
+  );
+}
+function mlibHasFav(item) {
+  return !!item.fav || (item.children || []).some(mlibHasFav);
+}
+function MLibRow({ item, isLast, onOpen }) {
+  const k = MLIB_KINDS[item.kind] || MLIB_KINDS.txt;
+  const kids = item.children || [];
+  const navigable = item.kind === "folder";
+  const meta = item.kind === "folder"
+    ? kids.length + (kids.length === 1 ? " item · " : " items · ") + mlibSize(mlibBytes(item))
+    : k.label
+      ? k.label + (item.duration ? " · " + item.duration : "")
+      : (item.type ? item.type + " · " : "") + mlibSize(mlibBytes(item));
+  const models = item.kind === "model" ? kids : [];
+  const scenes = models.filter((c) => c.kind === "scene").length;
+  const anims = models.filter((c) => c.kind === "animation").length;
+  return (
+    <div onClick={navigable ? () => onOpen(item) : undefined}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)",
+        cursor: navigable ? "pointer" : "default", minHeight: 44, boxSizing: "border-box",
+        borderBottom: isLast ? "none" : "1px solid var(--kls-outline-variant)" }}>
+      <KlsIcon name={k.icon} size={24} color={k.color} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 1 }}>
+          {meta}{item.kind !== "folder" && !k.label ? " · " + mlibDate(item.added) : ""}
+        </div>
+        {(scenes > 0 || anims > 0) && (
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 1 }}>
+            {scenes} scenes · {anims} animations
+          </div>
+        )}
+      </div>
+      {item.fav && <KlsIcon name="starFilled" size={16} color="var(--kls-accent-4)" />}
+      {navigable && <KlsIcon name="chevronRight" size={18} color="var(--kls-on-surface-variant)" />}
+    </div>
+  );
+}
+function MLibraryScreen({ go }) {
+  const [section, setSection] = useState("files");
+  const [view, setView] = useState("list");        // Media only: list | grid
+  const [query, setQuery] = useState("");
+  const [favOnly, setFavOnly] = useState(false);
+  const [path, setPath] = useState([]);            // folder stack inside the active section
+  const current = MLIB_SECTIONS.find((s) => s.key === section) || MLIB_SECTIONS[0];
+  const folder = path.length ? path[path.length - 1] : null;
+  const q = query.trim().toLowerCase();
+  const matches = (i) => {
+    if (favOnly && !mlibHasFav(i)) return false;
+    if (!q) return true;
+    if (i.name.toLowerCase().includes(q)) return true;
+    return (i.children || []).some(matches);
+  };
+  const items = (folder ? folder.children || [] : current.items).filter(matches).slice().sort((a, b) => {
+    if ((a.kind === "folder") !== (b.kind === "folder")) return a.kind === "folder" ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  const back = () => (path.length ? setPath((p) => p.slice(0, -1)) : go("workspace"));
+  return (
+    <div data-screen-label="library" style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+      {/* PageHeader: back + title */}
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-xsmall) var(--kls-space-med) var(--kls-space-xsmall) var(--kls-space-small)", flex: "none" }}>
+        <button onClick={back} aria-label="Back"
+          style={{ width: 36, height: 36, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--kls-on-surface)", flexShrink: 0 }}>
+          <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}><path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, color: "var(--kls-on-surface)",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{folder ? folder.name : "Library"}</div>
+        <button onClick={() => setFavOnly((v) => !v)} aria-label="Show favorites only" aria-pressed={favOnly}
+          style={{ width: 36, height: 36, borderRadius: "var(--kls-radius-pill)",
+            background: favOnly ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+            border: "1px solid " + (favOnly ? "var(--kls-tertiary-container)" : "var(--kls-outline-variant)"),
+            display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <KlsIcon name={favOnly ? "starFilled" : "star"} size={18} color={favOnly ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface)"} />
+        </button>
+      </div>
+
+      {/* Search — IconTextField: h48 · radius small · outline-variant */}
+      <div style={{ padding: "var(--kls-space-tiny) var(--kls-space-med) 0", flex: "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", height: 48, padding: "0 var(--kls-space-small)",
+          background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: "var(--kls-radius-small)", boxSizing: "border-box" }}>
+          <KlsIcon name="search" size={20} color="var(--kls-on-surface-variant)" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search"
+            style={{ flex: 1, minWidth: 0, border: 0, outline: "none", background: "transparent", color: "var(--kls-on-surface)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500 }} />
+          {query && (
+            <button onClick={() => setQuery("")} aria-label="Clear search"
+              style={{ width: 24, height: 24, border: 0, background: "transparent", cursor: "pointer", color: "var(--kls-on-surface-variant)", padding: 0,
+                display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, stroke: "currentColor", fill: "none", strokeWidth: 2 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Section tabs — Files / Media / 3D Models · view toggle on Media */}
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)", flex: "none" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <MLibTabs tabs={MLIB_SECTIONS} value={section} onChange={(k) => { setSection(k); setPath([]); }} />
+        </div>
+        {section === "media" && <MLibViewToggle value={view} onChange={setView} />}
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 var(--kls-space-med) var(--kls-space-large)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
+          color: "var(--kls-on-surface-variant)", margin: "var(--kls-space-tiny) var(--kls-space-tiny) var(--kls-space-small)" }}>
+          {folder ? "Library · " + current.label
+            : items.length + " " + current.label.toLowerCase() + (q || favOnly ? " found" : "")}</div>
+        {items.length === 0 ? (
+          <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-large) var(--kls-space-med)", textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)",
+              display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+              <KlsIcon name={q || favOnly ? "search" : current.icon} size={26} color="var(--kls-on-surface-variant)" />
+            </div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{q || favOnly ? "No matches" : folder ? "This folder is empty" : current.empty}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)", lineHeight: 1.5 }}>{q || favOnly ? "Try a different search, or turn off the favorites filter." : folder ? "Nothing has been uploaded here." : current.hint}</div>
+          </div>
+        ) : (section === "media" && view === "grid") ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--kls-space-small)" }}>
+            {items.map((i) => <MLibTile key={i.id} item={i} onOpen={(f) => setPath((p) => p.concat([f]))} />)}
+          </div>
+        ) : (
+          <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", overflow: "hidden" }}>
+            {items.map((i, idx) => (
+              <MLibRow key={i.id} item={i} isLast={idx === items.length - 1} onOpen={(f) => setPath((p) => p.concat([f]))} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+window.MLibraryScreen = MLibraryScreen;
 
 
 // ── control-tower-mobile.jsx — Mobile Control Tower (Workspace drill-in) ──────
@@ -3859,6 +4165,7 @@ function MobileApp(props) {
   const inTeam = (tab === "workspace" && wsScreen === "team");
   const inWritten = (tab === "workspace" && wsScreen === "writtenExams");
   const inControlTower = (tab === "workspace" && wsScreen === "controlTower");
+  const inLibrary = (tab === "workspace" && wsScreen === "library");
   let body;
   if (tab === "home") body = <HomeScreen showHelpButton={true} onHelp={openFeedback} onProfile={() => setProfileOpen(true)} />;
   else if (tab === "workspace") {
@@ -3866,13 +4173,14 @@ function MobileApp(props) {
     else body = (
       <div style={{ height: "100%", paddingTop: 54, boxSizing: "border-box", background: "var(--kls-surface-variant)" }}>
         {inTeam ? <TeamScreen go={(s) => setWsScreen(s)} />
+          : inLibrary ? <MLibraryScreen go={(s) => setWsScreen(s)} />
           : inControlTower ? (ctRole === "student" ? <StudentControlTowerScreen go={(s) => setWsScreen(s)} /> : <ControlTowerScreen go={(s) => setWsScreen(s)} />)
           : <WorkspaceScreen go={(s) => setWsScreen(s)} />}
       </div>
     );
   }
   else body = <MobilePlaceholder label={tab === "orion" ? "Orion" : "Notifications"} icon={tab === "orion" ? "orionOutline" : "bell"} />;
-  const showNav = !inTeam && !inWritten && !inControlTower;
+  const showNav = !inTeam && !inWritten && !inControlTower && !inLibrary;
   return (
     <IOSDevice width={402} height={874}>
       <div style={{ position: "relative", height: "100%", overflow: "hidden" }}>
