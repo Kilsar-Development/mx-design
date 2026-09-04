@@ -1109,7 +1109,7 @@ function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
     } else {
       const inst = updated.instances[0] || {};
       setAssignments((cur) => cur.map((a) => (a.id === updated.id
-        ? { ...a, due: updated.due, title: updated.title, course: updated.course, term: updated.term, instructions: updated.instructions, status: inst.status, score: inst.score } : a)));
+        ? { ...a, due: updated.due, title: updated.title, defaultTitle: updated.defaultTitle, customTitle: updated.customTitle, examMode: updated.examMode, examSubject: updated.examSubject, course: updated.course, term: updated.term, instructions: updated.instructions, status: inst.status, score: inst.score } : a)));
     }
     setOpenAllocId(null);
     setToast(`Updated “${updated.title}”.`);
@@ -1786,13 +1786,18 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
   const [due, setDue] = useCtldState(allocation.due);
   const [term, setTerm] = useCtldState(allocation.term || "");
   const [course, setCourse] = useCtldState(allocation.type === "task" ? (allocation.course || "") : "");
-  const [task, setTask] = useCtldState(allocation.type === "task" ? allocation.title : "");
+  const [task, setTask] = useCtldState(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
   const [studentDefined, setStudentDefined] = useCtldState(!!allocation.studentDefined);
   const [topic, setTopic] = useCtldState(allocation.topic || "");
   const [qCount, setQCount] = useCtldState(String(allocation.qCount || 20));
   const [difficulty, setDifficulty] = useCtldState(allocation.difficulty || "Medium");
   const [selModules, setSelModules] = useCtldState(() => new Set(allocation.selModules || []));
   const [instructions, setInstructions] = useCtldState(allocation.instructions || "");
+  const [orion, setOrion] = useCtldState(allocation.orion !== false);
+  const [randomized, setRandomized] = useCtldState(!!allocation.randomized);
+  const [customTitle, setCustomTitle] = useCtldState(allocation.customTitle || "");
+  const [examMode, setExamMode] = useCtldState(allocation.examMode || "study");
+  const [examSubject, setExamSubject] = useCtldState(allocation.examSubject || "general");
   const [assignees, setAssignees] = useCtldState(initialAssignees);
   const [pickerOpen, setPickerOpen] = useCtldState(false);
 
@@ -1812,19 +1817,24 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
     if (s.type === "group") { const g = (roster.groups || []).find((x) => x.id === s.id); return { ...s, label: g && g.name, color: g && g.color }; }
     const p = (roster.people || []).find((x) => x.id === s.id); return { ...s, label: p && p.name };
   }).filter((c) => c.label);
-  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : (studentDefined || selModules.size > 0));
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   function cancelEdit() {
     setDue(allocation.due);
     setTerm(allocation.term || "");
     setCourse(allocation.type === "task" ? (allocation.course || "") : "");
-    setTask(allocation.type === "task" ? allocation.title : "");
+    setTask(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
     setStudentDefined(!!allocation.studentDefined);
     setTopic(allocation.topic || "");
     setQCount(String(allocation.qCount || 20));
     setDifficulty(allocation.difficulty || "Medium");
     setSelModules(new Set(allocation.selModules || []));
     setInstructions(allocation.instructions || "");
+    setOrion(allocation.orion !== false);
+    setRandomized(!!allocation.randomized);
+    setCustomTitle(allocation.customTitle || "");
+    setExamMode(allocation.examMode || "study");
+    setExamSubject(allocation.examSubject || "general");
     setAssignees(initialAssignees);
     setEditing(false);
   }
@@ -1837,11 +1847,16 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
     const instances = studentIds.length
       ? studentIds.map((id) => prev[id] || { studentId: id, status: "not_started", score: null })
       : allocation.instances;
-    return { ...allocation, due,
-      title: allocation.type === "task" ? (task || allocation.title) : allocation.title,
+    const base = allocation.defaultTitle || allocation.title;
+    const examSubjectName = ((FAA_EXAMS.find((e) => e.id === examSubject) || FAA_EXAMS[0]) || {}).subject || "";
+    const defaultTitle = allocation.type === "task" ? (task || base)
+      : (allocation.type === "written" && examMode === "exam") ? examSubjectName + " Exam" : base;
+    const ct = customTitle.trim();
+    return { ...allocation, due, defaultTitle, customTitle: ct, examMode, examSubject,
+      title: ct || defaultTitle,
       course: allocation.type === "task" ? course : allocation.course,
       term: term || allocation.term,
-      studentDefined, topic, qCount, difficulty, selModules: [...selModules], instructions, instances };
+      studentDefined, topic, qCount, difficulty, selModules: [...selModules], orion, randomized, instructions, instances };
   }
 
   const stat = (label, value, tone) => (
@@ -1912,6 +1927,12 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
 
           {editing ? (
             <>
+              {/* Title (optional) */}
+              <div>
+                <CTLabel>Title (optional)</CTLabel>
+                <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)}
+                  placeholder="Add a title (optional)" style={ctInput} />
+              </div>
               {/* Type (locked) */}
               <div>
                 <CTLabel>Type</CTLabel>
@@ -1940,10 +1961,13 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
                 </>
               ) : (
                 <>
+                  <CTExamModeCards mode={examMode} setMode={setExamMode} />
                   <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
-                    <CTToggleRow label="Let the student choose parameters" hint="Student sets topic, length, and scope when they begin." checked={studentDefined} onChange={setStudentDefined} />
+                    <CTToggleRow label="Let the student choose parameters" hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope when they begin."} checked={studentDefined} onChange={setStudentDefined} />
                   </div>
-                  {!studentDefined && (<WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} />)}
+                  {!studentDefined && (examMode === "exam"
+                    ? <CTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />
+                    : <WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />)}
                 </>
               )}
 
@@ -2192,8 +2216,90 @@ const CT_POOL = [
   ]},
 ];
 
+// Radio dot — no canonical DS radio; built to the DS checkbox spec (18 · 1.5px · outline/primary).
+function CTRadio({ checked }) {
+  return (
+    <span style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, boxSizing: "border-box",
+      border: checked ? "1.5px solid var(--kls-primary)" : "1.5px solid var(--kls-outline)",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {checked && <span style={{ width: 9, height: 9, borderRadius: 999, background: "var(--kls-primary)" }} />}
+    </span>
+  );
+}
+
+// Exam-mode picker for the Written exam assign flow: FAA subject (fixed count + time)
+// + the read-only settings summary. Subjects come from FAA_EXAMS (single source).
+function CTExamSubjectPicker({ subject, setSubject }) {
+  const exams = FAA_EXAMS;
+  const active = exams.find((e) => e.id === subject) || exams[0];
+  const hours = (e) => Math.round((e.duration || 7200) / 3600) + "h";
+  const metaLabel = { fontFamily: "var(--kls-font-sans)", fontSize: 11, fontWeight: 500, color: "var(--kls-on-surface-variant)" };
+  const metaValue = { fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" };
+  const cfgRow = (label, value) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+  return (
+    <>
+      <div>
+        <CTLabel>Topics</CTLabel>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-small)" }}>Question count and time limit are fixed by the FAA.</div>
+        <div style={{ borderRadius: 8, border: "1px solid var(--kls-outline-variant)", overflow: "hidden" }}>
+          {exams.map((e, i) => {
+            const sel = e.id === active.id;
+            return (
+              <div key={e.id} onClick={() => setSubject(e.id)} style={{
+                display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", cursor: "pointer",
+                borderTop: i ? "1px solid var(--kls-outline-variant)" : "none",
+                background: sel ? "color-mix(in srgb, var(--kls-accent-12) 10%, transparent)" : "var(--kls-surface)" }}>
+                <span style={{ paddingTop: 2 }}><CTRadio checked={sel} /></span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{e.subject}</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.45, marginTop: 2, textWrap: "pretty" }}>{e.blurb}</div>
+                </div>
+                <div style={{ flexShrink: 0, textAlign: "right", display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={metaLabel}>Questions</span>
+                  <span style={metaValue}>{e.count}</span>
+                  <span style={{ ...metaLabel, marginTop: "var(--kls-space-tiny)" }}>Time</span>
+                  <span style={metaValue}>{hours(e)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+        {cfgRow("Subject", active.subject)}
+        {cfgRow("Questions", active.count)}
+        {cfgRow("Time", hours(active))}
+        {cfgRow("Passing score", "70%")}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-xsmall)" }}>
+          <span style={{ flexShrink: 0, marginTop: 1 }}><KlsIcon name="orionOutline" size={16} color="var(--kls-on-surface-variant)" /></span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface)", lineHeight: 1.45 }}>Orion AI assistance unavailable during exam.</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Study | Exam mode cards for the Written exam assign flow.
+function CTExamModeCards({ mode, setMode }) {
+  return (
+    <div>
+      <CTLabel>Mode</CTLabel>
+      <div style={{ display: "flex", gap: 8 }}>
+        <CTTypeCard active={mode === "study"} icon="itemList" label="Study" sub="AI enabled · feedback after each Q" accent="var(--kls-info)" onClick={() => setMode("study")} />
+        <CTTypeCard active={mode === "exam"} icon="checkpoint" label="Exam" sub="FAA simulation · AI locked" accent="var(--kls-accent-12)" onClick={() => setMode("exam")} />
+      </div>
+    </div>
+  );
+}
+
 // Study-mode question-pool picker (Term → Course → ACS code) for the Written exam assign flow.
-function WrittenTopicPicker({ selModules, setSelModules, count, setCount }) {
+function WrittenTopicPicker({ selModules, setSelModules, count, setCount, orion, setOrion, randomized, setRandomized }) {
   const [expanded, setExpanded] = useCtadState({});
   const [subj, setSubj] = useCtadState("All");
   const subjects = ["All", "Powerplant", "Airframe", "General"];
@@ -2310,6 +2416,14 @@ function WrittenTopicPicker({ selModules, setSelModules, count, setCount }) {
         </div>
         {cfgRow("Pool", `${pool} question${pool === 1 ? "" : "s"}`)}
         {cfgRow("Drawing", `${drawing} question${drawing === 1 ? "" : "s"}`)}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Orion Enabled</span>
+          <CTToggle checked={orion} onChange={setOrion} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Randomized</span>
+          <CTToggle checked={randomized} onChange={setRandomized} />
+        </div>
       </div>
     </>
   );
@@ -2344,6 +2458,11 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
   const [passScore, setPassScore] = useCtadState("70");
   const [instructions, setInstructions] = useCtadState("");
   const [selModules, setSelModules] = useCtadState(() => new Set());
+  const [orion, setOrion] = useCtadState(true);
+  const [randomized, setRandomized] = useCtadState(false);
+  const [customTitle, setCustomTitle] = useCtadState("");
+  const [examMode, setExamMode] = useCtadState("study"); // study|exam (written only)
+  const [examSubject, setExamSubject] = useCtadState("general");
   // shared
   const [assignees, setAssignees] = useCtadState(presetAssignees); // [{type,id}]
   const [due, setDue] = useCtadState("");
@@ -2369,7 +2488,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
     const p = roster.people.find((x) => x.id === s.id); return { ...s, label: p?.name };
   }).filter((c) => c.label);
 
-  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (studentDefined || selModules.size > 0));
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   function buildAndAssign() {
     if (!valid) return;
@@ -2379,12 +2498,18 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
       return [a.id];
     });
     const studentIds = [...new Set(expanded)];
-    const title = type === "task" ? task : type === "written" ? "Written Exam" : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
+    const examSubjectName = ((FAA_EXAMS.find((e) => e.id === examSubject) || FAA_EXAMS[0]) || {}).subject || "";
+    const defaultTitle = type === "task" ? task
+      : type === "written" ? (examMode === "exam" ? examSubjectName + " Exam" : "Written Exam")
+      : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
+    const ct = customTitle.trim();
+    const title = ct || defaultTitle;
     const created = studentIds.map((sid, i) => ({
       id: "n" + Date.now() + "_" + i, studentId: sid, type,
-      title, course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || CT.TERMS[0]),
+      title, defaultTitle, customTitle: ct, course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || CT.TERMS[0]),
       due: dueLabel, status: "not_started", score: null,
       ...(type === "oral" ? { difficulty, qCount: Number(qCount) } : {}),
+      ...(type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, orion, randomized }) : {}),
     }));
     onAssign && onAssign(created);
   }
@@ -2421,6 +2546,12 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          {/* Title (optional) */}
+          <div>
+            <CTLabel>Title (optional)</CTLabel>
+            <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)}
+              placeholder="Add a title (optional)" style={ctInput} />
+          </div>
           {/* Type */}
           <div>
             <CTLabel>Type</CTLabel>
@@ -2469,14 +2600,16 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
             </>
           ) : (
             <>
+              <CTExamModeCards mode={examMode} setMode={setExamMode} />
               <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
                 <CTToggleRow label="Let the student choose parameters"
-                  hint="Student sets topic, length, and scope when they begin."
+                  hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope when they begin."}
                   checked={studentDefined} onChange={setStudentDefined} />
               </div>
 
-              {!studentDefined && (
-                <WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} />
+              {!studentDefined && (examMode === "exam"
+                ? <CTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />
+                : <WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />
               )}
             </>
           )}
@@ -5628,7 +5761,96 @@ const FAA_EXAMS = [
   },
 ];
 
-const PracticeSetup = ({ tweaks, onStart }) => {
+// In-progress STUDY sessions. Up to WE_SESSION_CAP at a time; `source` is
+// 'self' (student started it) or 'assigned' (came from a Control Tower assignment,
+// which the student can't end — Continue only). Exam mode stays single-session.
+const WE_SESSION_CAP = 3;
+const WE_SESSIONS = [
+  { id: 'ws1', source: 'assigned', mode: 'study', title: 'Magnetos & Ignition Timing', assigner: 'R. Alvarez', due: 'Nov 14', topics: 3, total: 40, answered: 8, modules: ['pp3a'] },
+  { id: 'ws2', source: 'self', mode: 'study', title: 'Practice session', topics: 2, total: 25, answered: 12, modules: ['pp1a', 'pp1b'] },
+  { id: 'ws3', source: 'self', mode: 'study', title: 'Practice session', topics: 1, total: 15, answered: 3, modules: ['af1a'] },
+  { id: 'ws4', source: 'assigned', mode: 'exam', title: 'General Exam', assigner: 'R. Alvarez', due: 'Nov 21', subject: 'General', total: 60, time: '2h', answered: 0 },
+  { id: 'ws5', source: 'assigned', mode: 'study', title: 'Landing Gear Systems', assigner: 'M. Chen', due: 'Dec 03', topics: 2, total: 30, answered: 0, modules: ['af2b'] },
+];
+
+// Sort key for "Mon DD" due labels — soonest first; sessions with no due date last.
+const WE_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function WE_dueKey(s) {
+  if (!s.due) return Infinity;
+  const p = String(s.due).trim().split(/\s+/);
+  const mi = WE_MONTHS.indexOf(p[0]);
+  if (mi < 0) return Infinity;
+  return mi * 100 + (parseInt(p[1], 10) || 0);
+}
+function WE_sortByDue(list) {
+  return (list || []).slice().sort((a, b) => WE_dueKey(a) - WE_dueKey(b));
+}
+
+/* ---------- In-progress study sessions (above the setup grid) ---------- */
+
+const InProgressSessions = ({ sessions: unsorted, onResume, onEnd }) => {
+  if (!unsorted || !unsorted.length) return null;
+  const sessions = WE_sortByDue(unsorted);
+  // Medallion = the session's MODE (study blue / exam purple). The pill = its SOURCE,
+  // in its own hues (orange = assigned, neutral tertiary = self-started) so source and
+  // mode never read as the same axis.
+  const primaryBtn = {
+    height: 40, padding: '0 var(--kls-space-med)', borderRadius: 8, border: '1px solid transparent',
+    background: 'var(--pa-bg)', color: 'var(--pa-fg)',
+    fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', flexShrink: 0,
+  };
+  const secondaryBtn = {
+    height: 40, padding: '0 var(--kls-space-med)', borderRadius: 8, border: '1px solid var(--sa-line)',
+    background: 'var(--sa-bg)', color: 'var(--sa-fg)',
+    fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', flexShrink: 0,
+  };
+  const pill = (bg, fg) => ({
+    display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999,
+    background: bg, color: fg, fontFamily: 'var(--kls-font-sans)', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap',
+  });
+  return (
+    <div style={{gridColumn: '1 / -1', marginBottom: 22}}>
+      <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10}}>
+        <span style={{fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)'}}>In progress ({sessions.length})</span>
+      </div>
+      <div className="card" style={{padding: 0, overflow: 'hidden'}}>
+        {sessions.map((s, i) => {
+          const assigned = s.source === 'assigned';
+          const isExam = s.mode === 'exam';
+          const tone = isExam ? 'var(--ink)' : 'var(--accent)';
+          const toneSoft = isExam ? 'var(--lock-soft)' : 'var(--accent-soft)';
+          return (
+            <div key={s.id} style={{display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? '1px solid var(--line)' : 'none', flexWrap: 'wrap'}}>
+              <span style={{width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: toneSoft, color: tone, display: 'grid', placeItems: 'center'}}>
+                <Icon name={isExam ? 'exam' : 'book'} size={16} />
+              </span>
+              <div style={{flex: 1, minWidth: 160}}>
+                <div style={{fontSize: 14.5, fontWeight: 600, color: 'var(--ink)'}}>{s.title}</div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 3, fontSize: 12.5, color: 'var(--ink-3)'}}>
+                  <span style={assigned ? pill('var(--src-assigned-bg)', 'var(--src-assigned-fg)') : pill('var(--src-self-bg)', 'var(--src-self-fg)')}>{assigned ? 'Assigned' : 'Self-started'}</span>
+                  {assigned && <span>from {s.assigner} · Due {s.due}</span>}
+                  <span>{isExam
+                    ? `${s.subject} · ${s.total} questions · ${s.time}`
+                    : s.answered > 0
+                      ? `${s.topics} topic${s.topics === 1 ? '' : 's'} · ${s.answered} of ${s.total} answered`
+                      : `${s.topics} topic${s.topics === 1 ? '' : 's'} · ${s.total} questions · Not started`}</span>
+                </div>
+              </div>
+              {!assigned && <button style={secondaryBtn} onClick={() => onEnd && onEnd(s)}>End Exam</button>}
+              <button style={primaryBtn} onClick={() => onResume && onResume(s)}>
+                {isExam || !s.answered ? 'Start' : 'Continue'} <Icon name="arrow-r" size={14} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const PracticeSetup = ({ tweaks, onStart, sessions, onResume, onEndSession }) => {
   const D = window.KILSAR_DATA;
   const [expanded, setExpanded] = React.useState({ 't-f24': true, 'c-pp1': true });
   const [selectedModules, setSelectedModules] = React.useState(new Set(['pp1a', 'pp1b']));
@@ -5676,7 +5898,12 @@ const PracticeSetup = ({ tweaks, onStart }) => {
   const beginStudy = () => onStart({ mode: 'study', count, random, orionEnabled, modules: [...selectedModules] });
 
   return (
-    <div className="setup-grid">
+    <>
+      <InProgressSessions sessions={sessions} onResume={onResume} onEnd={onEndSession} />
+      {sessions && sessions.length > 0 && (
+        <div style={{fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 10}}>Start a new exam</div>
+      )}
+      <div className="setup-grid">
       {/* LEFT: topic picker (Study) or exam chooser (Exam) */}
       {mode === 'study' ? (
         <div className="card" style={{padding: 0, minWidth: 0}}>
@@ -5830,7 +6057,8 @@ const PracticeSetup = ({ tweaks, onStart }) => {
           })()}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
@@ -6827,6 +7055,7 @@ function WrittenExams({ role = "instructor", summaryMode = "From attempt" }) {
   const [historyAttempt, setHistoryAttempt] = React.useState(null);
   const [viewingStudentId, setViewingStudentId] = React.useState("u-1");
   const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [sessions, setSessions] = React.useState(WE_SESSIONS);
   const viewingStudent = D.students.find((s) => s.id === viewingStudentId);
 
   const handleStart = (session) => {
@@ -6834,6 +7063,16 @@ function WrittenExams({ role = "instructor", summaryMode = "From attempt" }) {
     else { setActiveSession(session); setScreen("running"); }
   };
   const proceedExam = () => { setActiveSession(pendingSession); setScreen("running"); };
+  const resumeSession = (s) => {
+    if (s.mode === "exam") {
+      const e = FAA_EXAMS.find((x) => x.subject === s.subject) || FAA_EXAMS[0];
+      handleStart({ mode: "exam", subject: e.subject, short: e.short, count: e.count, duration: e.duration, acs: e.acs, modules: [] });
+      return;
+    }
+    setActiveSession({ mode: "study", count: s.total, modules: s.modules || [], orionEnabled: true, resuming: s.id });
+    setScreen("running");
+  };
+  const endSession = (s) => setSessions((cur) => cur.filter((x) => x.id !== s.id));
   const finish = (r) => { setResult(r); setActiveSession(null); setScreen("results"); };
   const exitRunning = () => { setActiveSession(null); setScreen("main"); };
   const startMissedDrill = () => { setActiveSession({ mode: "study", count: (result.questions.filter((q) => !q.isCorrect).length) || 5, modules: [] }); setScreen("running"); };
@@ -6863,7 +7102,7 @@ function WrittenExams({ role = "instructor", summaryMode = "From attempt" }) {
           <button className="compound-switch__option" role="tab" data-active={internalTab === "history"} onClick={() => setInternalTab("history")}><Icon name="history" size={14} />Exam History<span className="count">{D.history.length}</span></button>
           <button className="compound-switch__option" role="tab" data-active={internalTab === "progress"} onClick={() => setInternalTab("progress")}><Icon name="chart" size={14} />Progress</button>
         </div>
-        {internalTab === "practice" && <PracticeSetup tweaks={tw} onStart={handleStart} />}
+        {internalTab === "practice" && <PracticeSetup tweaks={tw} onStart={handleStart} sessions={sessions} onResume={resumeSession} onEndSession={endSession} />}
         {internalTab === "history" && !historyAttempt && <HistoryTab tweaks={tw} student={role === "instructor" ? viewingStudent : null} onOpenAttempt={(a) => setHistoryAttempt(a)} />}
         {internalTab === "history" && historyAttempt && <HistoryDetail attempt={historyAttempt} summaryMode={summaryMode} onBack={() => setHistoryAttempt(null)} />}
         {internalTab === "progress" && <Dashboard tweaks={tw} student={role === "instructor" ? viewingStudent : null} onJumpToWeak={() => setInternalTab("practice")} />}

@@ -219,3 +219,22 @@ target), `gap: var(--kls-space-xsmall)`, label `labelLarge` (14/500) `on-surface
 card. Note the size question it also resolves: the card's 22×22 mark is right for selection rows but
 optically heavy next to a 14px filter label — 18×18 with a 14px check is the inline-filter size, so
 the card should state both sizes rather than leaving apps to shrink it by feel.
+
+---
+
+## 13. 🔵 Add a **Radio** primitive — the DS has a Checkbox but no single-select control
+**Found:** 2026-09 · Control Tower assign / edit drawer + mobile sheet (Written exam → Exam mode
+FAA subject picker)
+
+The FAA subject picker is single-select (General / Airframe / Powerplant, one at a time).
+`preview/checkbox.html` covers multi-select; there is no canonical radio, so the picker
+derived one from the checkbox spec:
+
+> **Radio** — 18 (web) / 22 (mobile) circle · `border-radius: pill` · `1.5px` border ·
+> unselected border `outline` (web) / `on-surface-variant` (mobile) · selected border
+> `primary` with a centered filled dot at ~50% of the outer size in `primary` ·
+> transparent fill (matches Checkbox's transparent-fill behavior).
+
+Proposal: promote this as `preview/radio.html` alongside `checkbox.html`, with the same
+two variants the checkbox card carries (inverted for selection rows, M3 for forms), so
+single-select rows stop being a per-screen call.

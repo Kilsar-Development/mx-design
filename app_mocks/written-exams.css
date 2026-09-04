@@ -30,6 +30,21 @@
   --lock: var(--kls-accent-12);
   --lock-soft: var(--kls-accent-13);
 
+  /* Assignment-source pills + DS action buttons.
+     Declared here (at :root, i.e. the document theme) on purpose: the mobile shell
+     scopes an inner data-theme="light", so raw var(--kls-*) used inside a screen would
+     resolve to the light palette while every alias above resolves dark. Routing these
+     through aliases keeps web and mobile identical. */
+  --pa-bg: var(--kls-tertiary-container);
+  --pa-fg: var(--kls-on-tertiary-container);
+  --sa-bg: var(--kls-surface);
+  --sa-fg: var(--kls-on-surface);
+  --sa-line: var(--kls-outline-variant);
+  --src-assigned-bg: var(--kls-accent-5);
+  --src-assigned-fg: var(--kls-accent-6);
+  --src-self-bg: var(--kls-tertiary);
+  --src-self-fg: var(--kls-on-surface);
+
   --r-1: 4px;
   --r-2: 6px;
   --r-3: 10px;

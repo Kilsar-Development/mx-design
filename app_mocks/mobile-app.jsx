@@ -2332,18 +2332,19 @@ function MLibGridGlyph({ size = 18, color }) {
   );
 }
 // List / grid view toggle — CompoundSwitch track, icon-only tiles (Media tab only).
+// Compact 32-track variant so it sits inline with the section-label row.
 function MLibViewToggle({ value, onChange }) {
-  const tile = (active) => ({ width: 40, height: 36, padding: 0, borderRadius: "var(--kls-radius-small)", border: 0, cursor: "pointer",
+  const tile = (active) => ({ width: 36, height: 28, padding: 0, borderRadius: "var(--kls-radius-xsmall)", border: 0, cursor: "pointer",
     background: active ? "var(--kls-surface)" : "transparent", boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
     display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" });
   return (
-    <div style={{ display: "inline-flex", height: 40, padding: 2, gap: "var(--kls-space-tiny)", borderRadius: "var(--kls-radius-small)",
+    <div style={{ display: "inline-flex", height: 32, padding: 2, gap: "var(--kls-space-tiny)", borderRadius: "var(--kls-radius-small)",
       background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", boxSizing: "border-box", flex: "none" }}>
       <button aria-label="List view" onClick={() => onChange("list")} style={tile(value === "list")}>
-        <KlsIcon name="itemList" size={18} color={value === "list" ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />
+        <KlsIcon name="itemList" size={16} color={value === "list" ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />
       </button>
       <button aria-label="Grid view" onClick={() => onChange("grid")} style={tile(value === "grid")}>
-        <MLibGridGlyph size={18} color={value === "grid" ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />
+        <MLibGridGlyph size={16} color={value === "grid" ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />
       </button>
     </div>
   );
@@ -2463,19 +2464,21 @@ function MLibraryScreen({ go }) {
         </div>
       </div>
 
-      {/* Section tabs — Files / Media / 3D Models · view toggle on Media */}
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)", flex: "none" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <MLibTabs tabs={MLIB_SECTIONS} value={section} onChange={(k) => { setSection(k); setPath([]); }} />
-        </div>
-        {section === "media" && <MLibViewToggle value={view} onChange={setView} />}
+      {/* Section tabs — Files / Media / 3D Models */}
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)", flex: "none" }}>
+        <MLibTabs tabs={MLIB_SECTIONS} value={section} onChange={(k) => { setSection(k); setPath([]); }} />
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 var(--kls-space-med) var(--kls-space-large)" }}>
-        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
-          color: "var(--kls-on-surface-variant)", margin: "var(--kls-space-tiny) var(--kls-space-tiny) var(--kls-space-small)" }}>
-          {folder ? "Library · " + current.label
-            : items.length + " " + current.label.toLowerCase() + (q || favOnly ? " found" : "")}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 32,
+          margin: "var(--kls-space-tiny) var(--kls-space-tiny) var(--kls-space-small)" }}>
+          <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
+            color: "var(--kls-on-surface-variant)" }}>
+            {folder ? "Library · " + current.label
+              : items.length + " " + current.label.toLowerCase() + (q || favOnly ? " found" : "")}
+          </div>
+          {section === "media" && <MLibViewToggle value={view} onChange={setView} />}
+        </div>
         {items.length === 0 ? (
           <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-large) var(--kls-space-med)", textAlign: "center" }}>
             <div style={{ width: 56, height: 56, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)",
@@ -3044,12 +3047,17 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
   const [instructions, setInstructions] = useTM(allocation.instructions || "");
   const [term, setTerm] = useTM(allocation.term || "");
   const [course, setCourse] = useTM(allocation.type === "task" ? (allocation.course || "") : "");
-  const [task, setTask] = useTM(allocation.type === "task" ? allocation.title : "");
+  const [task, setTask] = useTM(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
   const [studentDefined, setStudentDefined] = useTM(!!allocation.studentDefined);
   const [topic, setTopic] = useTM(allocation.topic || "");
   const [qCount, setQCount] = useTM(allocation.qCount || 20);
   const [difficulty, setDifficulty] = useTM(allocation.difficulty || "Medium");
   const [selModules, setSelModules] = useTM(() => new Set(allocation.selModules || []));
+  const [orion, setOrion] = useTM(allocation.orion !== false);
+  const [randomized, setRandomized] = useTM(!!allocation.randomized);
+  const [customTitle, setCustomTitle] = useTM(allocation.customTitle || "");
+  const [examMode, setExamMode] = useTM(allocation.examMode || "study");
+  const [examSubject, setExamSubject] = useTM(allocation.examSubject || "general");
   const [assignees, setAssignees] = useTM(initialAssignees);
   const [pickerOpen, setPickerOpen] = useTM(false);
 
@@ -3060,19 +3068,24 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
     if (s.type === "group") { const g = roster.groups.find((x) => x.id === s.id); return g && { ...s, label: g.name, color: g.color }; }
     const p = roster.people.find((x) => x.id === s.id); return p && { ...s, label: p.name };
   }).filter(Boolean);
-  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : (studentDefined || selModules.size > 0));
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   const cancelEdit = () => {
     setDue(allocation.due);
     setInstructions(allocation.instructions || "");
     setTerm(allocation.term || "");
     setCourse(allocation.type === "task" ? (allocation.course || "") : "");
-    setTask(allocation.type === "task" ? allocation.title : "");
+    setTask(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
     setStudentDefined(!!allocation.studentDefined);
     setTopic(allocation.topic || "");
     setQCount(allocation.qCount || 20);
     setDifficulty(allocation.difficulty || "Medium");
     setSelModules(new Set(allocation.selModules || []));
+    setOrion(allocation.orion !== false);
+    setRandomized(!!allocation.randomized);
+    setCustomTitle(allocation.customTitle || "");
+    setExamMode(allocation.examMode || "study");
+    setExamSubject(allocation.examSubject || "general");
     setAssignees(initialAssignees);
     setEditing(false);
   };
@@ -3085,11 +3098,16 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
     const instances = studentIds.length
       ? studentIds.map((id) => prev[id] || { studentId: id, status: "not_started", score: null })
       : allocation.instances;
-    return { ...allocation, due,
-      title: allocation.type === "task" ? (task || allocation.title) : allocation.title,
+    const base = allocation.defaultTitle || allocation.title;
+    const examSubjectName = ((FAA_EXAMS_M.find((e) => e.id === examSubject) || FAA_EXAMS_M[0]) || {}).subject || "";
+    const defaultTitle = allocation.type === "task" ? (task || base)
+      : (allocation.type === "written" && examMode === "exam") ? examSubjectName + " Exam" : base;
+    const ct = customTitle.trim();
+    return { ...allocation, due, defaultTitle, customTitle: ct, examMode, examSubject,
+      title: ct || defaultTitle,
       course: allocation.type === "task" ? course : allocation.course,
       term: term || allocation.term,
-      studentDefined, topic, qCount, difficulty, selModules: [...selModules], instructions, instances };
+      studentDefined, topic, qCount, difficulty, selModules: [...selModules], orion, randomized, instructions, instances };
   };
 
   const sectionLabel = (t) => (
@@ -3142,6 +3160,12 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
         </div>
         {editing ? (
           <>
+            {/* Title (optional) */}
+            <div>
+              <MCTLabel>Title (optional)</MCTLabel>
+              <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)}
+                placeholder="Add a title (optional)" style={mctInput} />
+            </div>
             {/* Type (locked) */}
             <div>
               <MCTLabel>Type</MCTLabel>
@@ -3169,10 +3193,12 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
               </>
             ) : (
               <>
+                <MCTExamModeCards mode={examMode} setMode={setExamMode} />
                 <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
-                  <MCTToggleRow label="Let the student choose parameters" hint="Student sets topic, length, and scope." checked={studentDefined} onChange={setStudentDefined} />
+                  <MCTToggleRow label="Let the student choose parameters" hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope."} checked={studentDefined} onChange={setStudentDefined} />
                 </div>
-                {!studentDefined && <MCTWrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} />}
+                {!studentDefined && examMode === "exam" && <MCTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />}
+                {!studentDefined && examMode === "study" && <MCTWrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />}
               </>
             )}
             {/* Instructions */}
@@ -3346,8 +3372,98 @@ function MCTStepper({ value, setValue, min = 1, max = 200, label = "Question cou
     </div>
   );
 }
+// Radio dot — no canonical DS radio; built to the DS checkbox spec (22 · 1.5px · on-surface-variant/primary).
+function MCTRadio({ checked }) {
+  return (
+    <span style={{ width: 22, height: 22, borderRadius: "var(--kls-radius-pill)", flexShrink: 0, boxSizing: "border-box",
+      border: checked ? "1.5px solid var(--kls-primary)" : "1.5px solid var(--kls-on-surface-variant)",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {checked && <span style={{ width: 11, height: 11, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-primary)" }} />}
+    </span>
+  );
+}
+// Study | Exam mode cards for the Written exam flow. Mirrors web CTExamModeCards.
+function MCTExamModeCards({ mode, setMode }) {
+  const card = (id, icon, label, sub, accent) => (
+    <button onClick={() => setMode(id)} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", textAlign: "left", cursor: "pointer",
+      padding: "var(--kls-space-small)", borderRadius: "var(--kls-radius-small)",
+      border: mode === id ? ("2px solid " + accent) : "1.5px solid var(--kls-outline-variant)",
+      background: mode === id ? ("color-mix(in srgb, " + accent + " 8%, transparent)") : "var(--kls-surface)",
+      transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <span style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <KlsIcon name={icon} size={18} color={mode === id ? accent : "var(--kls-on-surface)"} />
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</span>
+      </span>
+      <span style={{ marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.45 }}>{sub}</span>
+    </button>
+  );
+  return (
+    <div>
+      <MCTLabel>Mode</MCTLabel>
+      <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+        {card("study", "itemList", "Study", "AI enabled · feedback after each Q", "var(--kls-info)")}
+        {card("exam", "checkpoint", "Exam", "FAA simulation · AI locked", "var(--kls-accent-12)")}
+      </div>
+    </div>
+  );
+}
+// Exam-mode picker: FAA subject (fixed count + time) + read-only settings summary.
+// Subjects come from FAA_EXAMS_M (single source). Mirrors web CTExamSubjectPicker.
+function MCTExamSubjectPicker({ subject, setSubject }) {
+  const exams = FAA_EXAMS_M;
+  const active = exams.find((e) => e.id === subject) || exams[0];
+  const metaLabel = { fontFamily: "var(--kls-font-sans)", fontSize: 11, fontWeight: 500, color: "var(--kls-on-surface-variant)" };
+  const metaValue = { fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" };
+  const cfgRow = (label, value) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+  return (
+    <>
+      <div>
+        <MCTLabel>Topics</MCTLabel>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-small)" }}>Question count and time limit are fixed by the FAA.</div>
+        <div style={{ borderRadius: "var(--kls-radius-small)", border: "1px solid var(--kls-outline-variant)", overflow: "hidden" }}>
+          {exams.map((e, i) => {
+            const sel = e.id === active.id;
+            return (
+              <div key={e.id} onClick={() => setSubject(e.id)} style={{
+                display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", cursor: "pointer",
+                borderTop: i ? "1px solid var(--kls-outline-variant)" : "none",
+                background: sel ? "color-mix(in srgb, var(--kls-accent-12) 10%, transparent)" : "var(--kls-surface)" }}>
+                <span style={{ paddingTop: 2 }}><MCTRadio checked={sel} /></span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{e.subject}</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.45, marginTop: 2, textWrap: "pretty" }}>{e.blurb}</div>
+                </div>
+                <div style={{ flexShrink: 0, textAlign: "right", display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={metaLabel}>Questions</span>
+                  <span style={metaValue}>{e.count}</span>
+                  <span style={{ ...metaLabel, marginTop: "var(--kls-space-tiny)" }}>Time</span>
+                  <span style={metaValue}>2h</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+        {cfgRow("Subject", active.subject)}
+        {cfgRow("Questions", active.count)}
+        {cfgRow("Time", "2h")}
+        {cfgRow("Passing score", "70%")}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-xsmall)" }}>
+          <span style={{ flexShrink: 0, marginTop: 1 }}><KlsIcon name="orionOutline" size={16} color="var(--kls-on-surface-variant)" /></span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface)", lineHeight: 1.45 }}>Orion AI assistance unavailable during exam.</span>
+        </div>
+      </div>
+    </>
+  );
+}
 // Study-mode question-pool picker (Term → Course → ACS code) for the Written exam flow. Mirrors web WrittenTopicPicker.
-function MCTWrittenTopicPicker({ selModules, setSelModules, count, setCount }) {
+function MCTWrittenTopicPicker({ selModules, setSelModules, count, setCount, orion, setOrion, randomized, setRandomized }) {
   const [expanded, setExpanded] = useTM({});
   const [subj, setSubj] = useTM("All");
   const subjects = ["All", "Powerplant", "Airframe", "General"];
@@ -3458,6 +3574,14 @@ function MCTWrittenTopicPicker({ selModules, setSelModules, count, setCount }) {
         </div>
         {cfgRow("Pool", pool + " question" + (pool === 1 ? "" : "s"))}
         {cfgRow("Drawing", drawing + " question" + (drawing === 1 ? "" : "s"))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Orion Enabled</span>
+          <MCTToggle checked={orion} onChange={setOrion} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Randomized</span>
+          <MCTToggle checked={randomized} onChange={setRandomized} />
+        </div>
       </div>
     </>
   );
@@ -3555,6 +3679,11 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
   const [qCount, setQCount] = useTM(20);
   const [difficulty, setDifficulty] = useTM("Medium");
   const [selModules, setSelModules] = useTM(() => new Set());
+  const [orion, setOrion] = useTM(true);
+  const [randomized, setRandomized] = useTM(false);
+  const [customTitle, setCustomTitle] = useTM("");
+  const [examMode, setExamMode] = useTM("study"); // study|exam (written only)
+  const [examSubject, setExamSubject] = useTM("general");
   const [instructions, setInstructions] = useTM("");
   const [assignees, setAssignees] = useTM(presetAssignees || []);
   const [due, setDue] = useTM("");
@@ -3568,7 +3697,7 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
     if (s.type === "group") { const g = roster.groups.find((x) => x.id === s.id); return g && { ...s, label: g.name, color: g.color }; }
     const p = roster.people.find((x) => x.id === s.id); return p && { ...s, label: p.name };
   }).filter(Boolean);
-  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (studentDefined || selModules.size > 0));
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   function buildAndAssign() {
     if (!valid) return;
@@ -3577,13 +3706,18 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
       return [a.id];
     });
     const studentIds = [...new Set(expanded)];
-    const title = type === "task" ? task : type === "written" ? "Written Exam" : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
+    const examSubjectName = ((FAA_EXAMS_M.find((e) => e.id === examSubject) || FAA_EXAMS_M[0]) || {}).subject || "";
+    const defaultTitle = type === "task" ? task
+      : type === "written" ? (examMode === "exam" ? examSubjectName + " Exam" : "Written Exam")
+      : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
+    const ct = customTitle.trim();
+    const title = ct || defaultTitle;
     const dueLabel = due ? new Date(due + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit" }) : null;
     const created = studentIds.map((sid, i) => ({
-      id: "n" + Date.now() + "_" + i, studentId: sid, type, title,
+      id: "n" + Date.now() + "_" + i, studentId: sid, type, title, defaultTitle, customTitle: ct,
       course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || MCT_TERMS[0]),
       due: dueLabel, status: "not_started", score: null, instructions,
-      ...(type === "oral" ? { difficulty, qCount } : type === "written" ? { selModules: [...selModules], qCount } : {}),
+      ...(type === "oral" ? { difficulty, qCount } : type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, selModules: [...selModules], qCount, orion, randomized }) : {}),
     }));
     onAssign(created, title);
   }
@@ -3601,6 +3735,12 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
       </div>
       {/* Body */}
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        {/* Title (optional) */}
+        <div>
+          <MCTLabel>Title (optional)</MCTLabel>
+          <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)}
+            placeholder="Add a title (optional)" style={mctInput} />
+        </div>
         {/* Type */}
         <div>
           <MCTLabel>Type</MCTLabel>
@@ -3628,10 +3768,12 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
           </>
         ) : (
           <>
-            <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", marginTop: "calc(-1 * var(--kls-space-small))" }}>
-              <MCTToggleRow label="Let the student choose parameters" hint="Student sets topic, length, and scope." checked={studentDefined} onChange={setStudentDefined} />
+            <MCTExamModeCards mode={examMode} setMode={setExamMode} />
+            <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
+              <MCTToggleRow label="Let the student choose parameters" hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope."} checked={studentDefined} onChange={setStudentDefined} />
             </div>
-            {!studentDefined && <MCTWrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} />}
+            {!studentDefined && examMode === "exam" && <MCTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />}
+            {!studentDefined && examMode === "study" && <MCTWrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />}
           </>
         )}
         {/* Assignees */}
@@ -3745,7 +3887,7 @@ function ControlTowerScreen({ go }) {
     else setAssignments((cur) => cur.map((a) => {
       if (a.id !== updated.id) return a;
       const inst = updated.instances[0] || {};
-      return { ...a, due: updated.due, instructions: updated.instructions, title: updated.title, course: updated.course, term: updated.term, status: inst.status, score: inst.score };
+      return { ...a, due: updated.due, instructions: updated.instructions, title: updated.title, defaultTitle: updated.defaultTitle, customTitle: updated.customTitle, examMode: updated.examMode, examSubject: updated.examSubject, course: updated.course, term: updated.term, status: inst.status, score: inst.score };
     }));
     setOpenAllocId(null);
     setToast("Updated “" + updated.title + "”.");
@@ -4647,18 +4789,21 @@ const MobileNav = ({ title, large = true, back = false, onBack, trailing = null,
   </div>
 );
 
-const Segment = ({ value, onChange, options }) => (
+const Segment = ({ value, onChange, options, inline }) => (
   <div style={{
-    display: 'grid', gridTemplateColumns: `repeat(${options.length}, 1fr)`,
-    gap: 2, padding: 2,
-    background: 'var(--bg-sunken)', borderRadius: 9,
-    margin: '0 16px',
+    display: inline ? 'inline-grid' : 'grid',
+    gridTemplateColumns: inline ? `repeat(${options.length}, auto)` : `repeat(${options.length}, 1fr)`,
+    gap: inline ? 4 : 2, padding: 2,
+    background: 'var(--bg-sunken)', borderRadius: inline ? 8 : 9,
+    margin: inline ? 0 : '0 16px',
   }}>
     {options.map(o => {
       const active = value === o.v;
       return (
         <div key={o.v} onClick={() => onChange && onChange(o.v)} style={{ cursor: 'pointer',
-          padding: '7px 10px', borderRadius: 7, textAlign: 'center',
+          padding: inline ? '0 18px' : '7px 10px', height: inline ? 36 : undefined,
+          display: inline ? 'grid' : undefined, placeItems: inline ? 'center' : undefined,
+          borderRadius: inline ? 8 : 7, textAlign: 'center',
           background: active ? 'var(--bg-elev)' : 'transparent',
           boxShadow: active ? '0 1px 2px rgba(11,15,20,0.08)' : 'none',
           fontSize: 13.5, fontWeight: active ? 600 : 500,
@@ -4719,6 +4864,100 @@ const Sparkline = ({ data, width = 180, height = 44, color = 'var(--good)' }) =>
   );
 };
 
+// In-progress STUDY sessions. Up to MWE_SESSION_CAP at a time; `source` is 'self'
+// (student started it) or 'assigned' (from a Control Tower assignment — Continue only,
+// can't be ended). Exam mode stays single-session. Mirrors web WE_SESSIONS.
+const MWE_SESSION_CAP = 3;
+const MWE_SESSIONS = [
+  { id: 'ws1', source: 'assigned', mode: 'study', title: 'Magnetos & Ignition Timing', assigner: 'R. Alvarez', due: 'Nov 14', topics: 3, total: 40, answered: 8 },
+  { id: 'ws2', source: 'self', mode: 'study', title: 'Practice session', topics: 2, total: 25, answered: 12 },
+  { id: 'ws3', source: 'self', mode: 'study', title: 'Practice session', topics: 1, total: 15, answered: 3 },
+  { id: 'ws4', source: 'assigned', mode: 'exam', title: 'General Exam', assigner: 'R. Alvarez', due: 'Nov 21', subject: 'General', total: 60, time: '2h', answered: 0 },
+  { id: 'ws5', source: 'assigned', mode: 'study', title: 'Landing Gear Systems', assigner: 'M. Chen', due: 'Dec 03', topics: 2, total: 30, answered: 0 },
+];
+
+// Sort key for "Mon DD" due labels — soonest first; sessions with no due date last.
+const MWE_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function MWE_dueKey(s) {
+  if (!s.due) return Infinity;
+  const p = String(s.due).trim().split(/\s+/);
+  const mi = MWE_MONTHS.indexOf(p[0]);
+  if (mi < 0) return Infinity;
+  return mi * 100 + (parseInt(p[1], 10) || 0);
+}
+function MWE_sortByDue(list) {
+  return (list || []).slice().sort((a, b) => MWE_dueKey(a) - MWE_dueKey(b));
+}
+
+// The in-progress list is independent of the new-exam mode selector, so both setup
+// screens render it off one store (ending a session sticks across a mode switch).
+let MWE_SESSION_STORE = MWE_SESSIONS;
+const MWEInProgressSection = ({ mode, onModeChange, onBegin }) => {
+  const [sessions, setSessions] = React.useState(MWE_SESSION_STORE);
+  const end = (id) => { MWE_SESSION_STORE = MWE_SESSION_STORE.filter((x) => x.id !== id); setSessions(MWE_SESSION_STORE); };
+  return (
+    <>
+      {sessions.length > 0 && (
+        <>
+          <WESectionHead title={"In progress (" + sessions.length + ")"} />
+          <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {MWE_sortByDue(sessions).map((s) => (
+              <MWEInProgressRow key={s.id} session={s} onResume={() => onBegin && onBegin()} onEnd={() => end(s.id)} />
+            ))}
+          </div>
+        </>
+      )}
+      <WESectionHead title="Start a new exam" />
+      <div style={{ padding: '0 16px 4px' }}>
+        <Segment inline value={mode} onChange={onModeChange} options={[{v:'study', l:'Study'}, {v:'exam', l:'Exam'}]} />
+      </div>
+    </>
+  );
+};
+
+const MWEInProgressRow = ({ session, onResume, onEnd }) => {
+  const assigned = session.source === 'assigned';
+  const isExam = session.mode === 'exam';
+  // Medallion = MODE (study blue / exam purple); pill = SOURCE (orange assigned /
+  // neutral self-started) so the two axes never share a hue.
+  const tone = isExam ? 'var(--ink)' : 'var(--accent)';
+  const toneSoft = isExam ? 'var(--lock-soft)' : 'var(--accent-soft)';
+  const btnBase = {
+    height: 40, padding: '0 var(--kls-space-med)', borderRadius: 'var(--kls-radius-med)',
+    fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)',
+  };
+  const pill = (bg, fg) => ({
+    display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999,
+    background: bg, color: fg, fontFamily: 'var(--kls-font-sans)', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap',
+  });
+  return (
+    <WECard style={{ padding: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: toneSoft, color: tone, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+          <WEIcon name={isExam ? 'exam' : 'book'} size={18} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.25 }}>{session.title}</div>
+        <span style={assigned ? pill('var(--src-assigned-bg)', 'var(--src-assigned-fg)') : pill('var(--src-self-bg)', 'var(--src-self-fg)')}>{assigned ? 'Assigned' : 'Self-started'}</span>
+      </div>
+      <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--ink-3)' }}>
+        <div>{isExam
+          ? session.subject + ' · ' + session.total + ' questions · ' + session.time
+          : session.answered > 0
+            ? session.topics + ' topic' + (session.topics === 1 ? '' : 's') + ' · ' + session.answered + ' of ' + session.total + ' answered'
+            : session.topics + ' topic' + (session.topics === 1 ? '' : 's') + ' · ' + session.total + ' questions · Not started'}</div>
+        {assigned && <div style={{ marginTop: 2 }}>from {session.assigner} · Due {session.due}</div>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--kls-space-xsmall)', marginTop: 12 }}>
+        {!assigned && (
+          <button onClick={onEnd} style={{ ...btnBase, background: 'var(--sa-bg)', color: 'var(--sa-fg)', border: '1px solid var(--sa-line)' }}>End Exam</button>
+        )}
+        <button onClick={onResume} style={{ ...btnBase, background: 'var(--pa-bg)', color: 'var(--pa-fg)', border: '1px solid transparent' }}>{isExam || !session.answered ? 'Start' : 'Continue'}</button>
+      </div>
+    </WECard>
+  );
+};
+
 /* ─────────────────────────────────────────────────────────────
    Screen 1 — Practice home (Study mode default)
    ───────────────────────────────────────────────────────────── */
@@ -4740,31 +4979,9 @@ const MSetupStudy = ({ tab, onTab, onModeChange, onBegin, onBack, onGoHistory, o
         }
       />
 
-      <div style={{ padding: '8px 16px 0' }}>
-        <Segment value="study" onChange={onModeChange} options={[{v:'study', l:'Study'}, {v:'exam', l:'Exam'}]} />
-      </div>
-
-      <WESectionHead title="Continue" />
-      <div style={{ padding: '0 16px' }}>
-        <WECard style={{ padding: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center' }}>
-              <WEIcon name="book" size={18} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600 }}>Pistons & Theory</div>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>2 modules · 43 questions</div>
-            </div>
-            <button style={{
-              background: 'var(--ink)', color: 'var(--bg-elev)', border: 0,
-              borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600,
-            }}>Resume</button>
-          </div>
-        </WECard>
-      </div>
+      <MWEInProgressSection mode="study" onModeChange={onModeChange} onBegin={onBegin} />
 
       <div style={{ padding: '20px 16px 0' }}>
-        <div style={{ fontSize: 12, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 8 }}>Configuration</div>
         <WECard>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}>
             <span style={{ fontSize: 15 }}>Question count</span>
@@ -4839,9 +5056,7 @@ const MSetupExam = ({ selected = 'airframe', tab, onTab, onModeChange, onBegin, 
   <MobileShell tab={tab} onTab={onTab}>
     <MobileNav title="Written Exams" subtitle="Choose your FAA written exam." back="Home" onBack={onBack} />
 
-    <div style={{ padding: '8px 16px 0' }}>
-      <Segment value="exam" onChange={onModeChange} options={[{v:'study', l:'Study'}, {v:'exam', l:'Exam'}]} />
-    </div>
+    <MWEInProgressSection mode="exam" onModeChange={onModeChange} onBegin={onBegin} />
 
     <div style={{ padding: '20px 16px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       {FAA_EXAMS_M.map(e => {
