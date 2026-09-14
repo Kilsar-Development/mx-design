@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="Icon assets" subtitle="The shipped Kilsar mask set in assets/icons — recolored via mask-image" viewport="1000x1140" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Icon assets</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;font-family:var(--kls-font-sans);background:var(--kls-scaffold-bg);color:var(--kls-on-surface)}
+  .wrap{padding:var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge);display:flex;flex-direction:column;gap:var(--kls-space-med)}
+  h1{font-size:var(--kls-page-header-title-size);line-height:var(--kls-page-header-title-line);font-weight:var(--kls-page-header-title-weight);letter-spacing:var(--kls-page-header-title-tracking);margin:0 0 var(--kls-space-tiny)}
+  .sub{font-size:var(--kls-page-header-subtitle-size);line-height:var(--kls-page-header-subtitle-line);font-weight:var(--kls-page-header-subtitle-weight);color:var(--kls-on-surface-variant);margin:0}
+  h2{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--kls-on-surface-variant);margin:0}
+  .panel{background:var(--kls-surface);border:1px solid var(--kls-outline-variant);border-radius:var(--kls-radius-med);padding:var(--kls-space-med);display:flex;flex-direction:column;gap:var(--kls-space-small)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:var(--kls-space-small)}
+  .ic{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .m{width:24px;height:24px;background:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
+  .nm{font-size:10.5px;color:var(--kls-on-surface-variant);word-break:break-word;line-height:1.3}
+  .new .m{color:var(--kls-primary)}
+  .note{font-size:12px;color:var(--kls-on-surface-variant);line-height:1.5;margin:0}
+  .note code{font-size:11.5px}
+</style></head>
+<body><div class="wrap">
+
+  <div>
+    <h1>Icon assets</h1>
+    <p class="sub">Everything in <code>assets/icons/</code>. Rendered as a CSS mask so any glyph takes a token color.</p>
+  </div>
+
+  <div class="panel new">
+    <h2>Added for app gaps</h2>
+    <div class="grid" id="added"></div>
+    <p class="note">Shipped to close DS-UPDATES items 5, 6, 8, 9, 10, 14 and 15, where apps were inlining SVG or masking a semantically wrong glyph. <b>These ten are SVG, not PNG</b> — same <code>mask-image</code> contract, so <code>KlsIcon</code> consumes them unchanged, but pass the <code>.svg</code> extension. <code>plus</code> is the canonical leading glyph for <b>Add &lt;thing&gt;</b> actions (see buttons-primary.html) — never a "+" text character.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Core set</h2>
+    <div class="grid" id="core"></div>
+  </div>
+
+  <p class="note">Usage — mask the asset and set <code>background: currentColor</code> (or a token) so one file serves every theme and state:<br>
+  <code>-webkit-mask: url(assets/icons/eye.svg) no-repeat center / contain; background: var(--kls-on-surface);</code><br>
+  Default render is 24px at the icon's own stroke weight; 18px is the dense/in-button size, 16px for text buttons. Only <code>chevronDown</code> ships — rotate it for the other three directions.</p>
+
+</div>
+<script>
+  const added = ['plus.svg','fourCircles.svg','isolate.svg','sparkle.svg','eye.svg','eyeOff.svg','check.svg','download.svg','downloaded.svg','changeHistory.svg'];
+  const core = ['archive.png','bell.png','camera.png','chat.png','chatBubble.png','chatBubbles.png','checkpoint.png','chevronDown.png','chevronRight.png','circles.png','clock.png','cube.png','date.png','dots.png','downRightArrow.png','expand.png','filter.png','flag.png','flipCamera.png','folder.png','fourDots.png','group.png','history.png','image.png','info.png','itemList.png','kilsar.png','list.png','listen.png','modules.png','mountains.png','msWordDoc.png','orionOutline.png','pause.png','pencil.png','people.png','person.png','pin.png','play.png','processing.png','raisedHand.png','record.png','redo.png','refresh.png','search.png','send.png','shoe.png','sidebar-collapse.png','sortAsc.png','stack.png','star.png','starFilled.png','talk.png','think.png','tower.png','trash.png','undo.png','upload.png','videoBubble.png','worklog.png','animation.png','scene.png','warning.png','orionLogo.png'];
+  function fill(id, list){
+    const g = document.getElementById(id);
+    for(const f of list){
+      const w = document.createElement('div'); w.className = 'ic';
+      const m = document.createElement('div'); m.className = 'm';
+      const url = 'url(../assets/icons/' + f + ')';
+      m.style.webkitMaskImage = url; m.style.maskImage = url;
+      const t = document.createElement('div'); t.className = 'nm'; t.textContent = f.replace(/\.(png|svg)$/, '');
+      w.appendChild(m); w.appendChild(t); g.appendChild(w);
+    }
+  }
+  fill('added', added); fill('core', core);
+</script>
+</body></html>

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- @dsCard group="Colors" name="Colors — Accents" subtitle="blue / green / red / orange / purple + transparent — from ColorPalette (Dart)" viewport="700x460" -->
+<!-- @dsCard group="Colors" name="Colors — Accents" subtitle="blue / green / red / orange / purple / teal + transparent — from ColorPalette (Dart)" viewport="700x520" -->
 <html><head><meta charset="utf-8"><title>Colors — Accents</title>
 <link rel="stylesheet" href="../colors_and_type.css">
 <style>
@@ -17,6 +17,7 @@
   <div><p class="head">red</p><div class="grid" id="red"></div></div>
   <div><p class="head">orange</p><div class="grid" id="orange"></div></div>
   <div><p class="head">purple</p><div class="grid" id="purple"></div></div>
+  <div><p class="head">teal <span style="font-weight:400;opacity:.7">— fills the cool-green/blue-green gap; use for categorical coding that must not collide with the semantic hues</span></p><div class="grid" id="teal"></div></div>
   <div><p class="head">transparent (black @ alpha)</p><div class="grid" id="transp"></div></div>
   <script>
     const sets = {
@@ -39,6 +40,10 @@
       purple: [
         ['purple/50','#F5F3FF'],['purple/100','#C4B5FD'],['purple/200','#8B5CF6'],['purple/300','#7C3AED'],
         ['purple/400','#6D28D9'],['purple/500','#5B21B6'],['purple/600','#4C1D95'],['purple/700','#2E1065'],
+      ],
+      teal: [
+        ['teal/50','#F0FDFA'],['teal/100','#5EEAD4'],['teal/200','#2DD4BF'],['teal/300','#14B8A6'],
+        ['teal/400','#0D9488'],['teal/500','#0F766E'],['teal/600','#115E59'],['teal/700','#134E4A'],
       ],
       transp: [
         ['transparent/20','rgba(0,0,0,.20)'],

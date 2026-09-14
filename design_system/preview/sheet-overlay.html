@@ -54,7 +54,10 @@
     font:inherit;font-size:13px;font-weight:600;cursor:pointer;
   }
   .gap{ height:var(--kls-space-med); }                  /* med = 20 between header and body */
-  .body{ display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.4;color:var(--kls-on-surface-variant); }
+  /* Form/section stack inside a sheet body: space-small (12), NOT med (20) —
+     a section heading and the field it labels belong together. Matches the
+     drawer body (see drawer-overlay.html). */
+  .body{ display:flex;flex-direction:column;gap:var(--kls-space-small);font-size:14px;line-height:1.4;color:var(--kls-on-surface-variant); }
 
   /* Realistic body content — list rows */
   .row-item{display:flex;align-items:center;gap:12px;padding:10px 0}
@@ -130,6 +133,7 @@
       bg <b>primaryContainer</b> · radius <b>24</b> top only · padding <b>20</b><br>
       title <b>h2</b> (24 / SemiBold) · close <b>CircleButton size 40</b><br>
       header→body gap <b>20</b> · close button <b>always present</b><br>
+      body sections / field groups stack at <b>space-small (12)</b>, not med<br>
       drag handle off by default (theme); opt-in per route<br>
       adds <b>MediaQuery.viewInsets.bottom</b> for keyboard avoidance
     </p>

@@ -18,9 +18,10 @@
      - row: 12px gap, padding 12/20 mobile · 20/32 tablet
      - no background fill, no border-bottom — sits on scaffold bg
      - leading slot (back / avatar), trailing slot (1–2 circle buttons)
-     - NOTE: the DESKTOP content-pane page header (see content-pane.html / G2)
-       uses h1 (32/700) and sits directly on the scaffold; this card is the
-       mobile/tablet screen header. */
+     - NOTE: the DESKTOP content-pane page header (see content-pane.html) is a
+       DIFFERENT pattern: h1 24/600 with letter-spacing -0.025em plus a 13.5/400
+       on-surface-variant subtitle, sitting directly on the scaffold. This card
+       is the mobile/tablet screen header (no subtitle, larger title). */
   .ph {
     display: flex; align-items: center; gap: 12px;
     padding: 12px 20px 8px;
@@ -97,7 +98,7 @@
       <div class="body-stub">12 files · v3 · updated 2 days ago</div>
     </div>
 
-    <div class="caption">Spec — title h2 (24/600 mobile · 28/600 tablet) · gap 12 · pad 12×20 mobile · 20×32 tablet · NO fill, NO border-bottom · trailing: 1–2 CircleButton(36) on the right · leading: optional back / avatar. Desktop content-pane header uses h1 (32/700) — see content-pane.html.</div>
+    <div class="caption">Spec — title h2 (24/600 mobile · 28/600 tablet) · gap 12 · pad 12×20 mobile · 20×32 tablet · NO fill, NO border-bottom · trailing: 1–2 CircleButton(36) on the right · leading: optional back / avatar. Desktop content-pane header is a different pattern — h1 24/600 (-0.025em) + 13.5 subtitle; see content-pane.html.</div>
   </template>
 
   <div class="pane" data-theme="light"><div class="label">Light</div></div>

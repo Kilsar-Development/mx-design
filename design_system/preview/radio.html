@@ -1,0 +1,127 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="radio" subtitle="Single-select control — 18 web / 22 mobile · RadioField labelled pair" viewport="1200x860" -->
+<html lang="en"><head>
+<meta charset="utf-8"><title>Radio — canonical</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Plus Jakarta Sans'; background: var(--kls-color-neutral-700); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  .pane { padding: 32px; background: var(--kls-scaffold-bg); color: var(--kls-on-surface); display: flex; flex-direction: column; gap: 18px; }
+  .pane[data-theme="dark"] { color-scheme: dark; }
+  .pane[data-theme="light"] { color-scheme: light; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .caption { font-size: 12px; color: var(--kls-on-surface-variant); }
+  .row { display: flex; gap: 22px; align-items: center; }
+  .cell { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; min-width: 64px; }
+  .cell small { font-size: 11px; color: var(--kls-on-surface-variant); }
+
+  /* Radio — the single-select counterpart to preview/checkbox.html.
+     Derived from the Checkbox spec, so the two read as one family: same
+     1.5px border, same transparent fill, circle instead of a 6px-radius
+     square, a filled dot instead of a check.
+
+     - 18px on web, 22px on mobile (matches Checkbox's 22 selection mark;
+       web trims to 18 for the same reason the inline-filter checkbox does —
+       it sits beside a 14px label).
+     - Unselected border: on-surface-variant, both platforms.
+       NOT `outline`: at #E2E2E2 that measures 1.30:1 on surface and 1.22:1
+       on the scaffold, below the 3:1 floor for non-text UI boundaries, and
+       the mark reads as blank space. on-surface-variant clears it at 3.79:1.
+     - Selected border: primary, with a centred filled dot at ~50% of the
+       outer size, also primary.
+     - Fill stays transparent in every state, like Checkbox. */
+  .rb {
+    width: 18px; height: 18px;
+    border-radius: var(--kls-radius-pill);
+    border: 1.5px solid var(--kls-on-surface-variant);
+    background: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; flex: none;
+    transition: border-color 80ms;
+  }
+  .rb .dot { width: 9px; height: 9px; border-radius: 999px; background: var(--kls-primary); display: none; }
+  .rb.on { border-color: var(--kls-primary); }
+  .rb.on .dot { display: block; }
+  .rb[disabled] { opacity: .4; cursor: not-allowed; }
+
+  /* Mobile — 22px outer, 11px dot; same border tokens as web */
+  .rb.mob { width: 22px; height: 22px; }
+  .rb.mob .dot { width: 11px; height: 11px; }
+  .rb.mob.on { border-color: var(--kls-primary); }
+
+  /* RadioField — labelled pair, one hit target. Same contract as
+     CheckboxField (see preview/checkbox.html): the whole pair is one
+     button[role=radio], h40, mark is pointer-events:none. */
+  .rbfield {
+    display: inline-flex; align-items: center; gap: var(--kls-space-xsmall);
+    height: 40px; padding: 0; border: 0; background: transparent; cursor: pointer;
+    font-family: 'Plus Jakarta Sans';
+    font-size: var(--kls-label-large-size); line-height: var(--kls-label-large-line);
+    font-weight: var(--kls-label-large-weight);
+    color: var(--kls-on-surface);
+  }
+  .rbfield .rb { pointer-events: none; }
+  .rbgroup { display: flex; align-items: center; gap: var(--kls-space-med); flex-wrap: wrap; }
+
+  /* Selection row — the inverted usage, matching Checkbox's .listrow */
+  .listrow {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px;
+    background: var(--kls-surface);
+    border: 1px solid var(--kls-outline-variant);
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .listrow .meta { display: flex; flex-direction: column; gap: 2px; }
+  .listrow .name { font-size: 15px; font-weight: 600; color: var(--kls-on-surface); }
+  .listrow .sub  { font-size: 12px; color: var(--kls-on-surface-variant); }
+</style></head>
+<body><div class="grid">
+
+  <template id="card">
+    <div class="caption">States — web (18px)</div>
+    <div class="row">
+      <div class="cell"><button class="rb" aria-label="Unselected"><span class="dot"></span></button><small>Unselected</small></div>
+      <div class="cell"><button class="rb on" aria-label="Selected"><span class="dot"></span></button><small>Selected</small></div>
+      <div class="cell"><button class="rb" disabled aria-label="Disabled"><span class="dot"></span></button><small>Disabled</small></div>
+    </div>
+
+    <div class="caption">States — mobile (22px)</div>
+    <div class="row">
+      <div class="cell"><button class="rb mob" aria-label="Unselected"><span class="dot"></span></button><small>Unselected</small></div>
+      <div class="cell"><button class="rb mob on" aria-label="Selected"><span class="dot"></span></button><small>Selected</small></div>
+    </div>
+
+    <div class="caption">RadioField — labelled pair, one hit target (FAA subject picker)</div>
+    <div class="rbgroup" role="radiogroup" aria-label="Exam subject">
+      <button class="rbfield" role="radio" aria-checked="true"><span class="rb on"><span class="dot"></span></span>General</button>
+      <button class="rbfield" role="radio" aria-checked="false"><span class="rb"><span class="dot"></span></span>Airframe</button>
+      <button class="rbfield" role="radio" aria-checked="false"><span class="rb"><span class="dot"></span></span>Powerplant</button>
+    </div>
+
+    <div class="caption">In a selection row</div>
+    <div class="listrow">
+      <button class="rb mob on"><span class="dot"></span></button>
+      <div class="meta">
+        <span class="name">Powerplant</span>
+        <span class="sub">FAA subject · 100 questions · 120 min</span>
+      </div>
+    </div>
+
+    <div class="caption">Spec — circle, <b>18px web / 22px mobile</b> · <code>border-radius: pill</code> · <b>1.5px</b> border · transparent fill in every state (matches Checkbox). Unselected border <b>on-surface-variant</b> on both platforms; selected border <b>primary</b> with a centred filled dot at <b>~50% of the outer size</b> (9px at 18, 11px at 22) in <b>primary</b>. Border-color transition 80ms. Size is the only web/mobile difference, mirroring the Checkbox card's two mark sizes.<br><b>Do not use <code>outline</code> for the unselected border</b> — at #E2E2E2 it measures 1.30:1 on <code>surface</code> and 1.22:1 on the scaffold, under the 3:1 floor for non-text UI boundaries, and the mark reads as blank space next to its label. <code>on-surface-variant</code> clears it at 3.79:1.<br><b>RadioField</b> — the labelled pair is ONE <code>&lt;button role="radio"&gt;</code> wrapping mark + text inside a <code>role="radiogroup"</code>: height <b>40</b>, <code>gap: var(--kls-space-xsmall)</code>, label <b>labelLarge</b> (14/500) <code>on-surface</code>, mark <code>pointer-events: none</code>. Same contract as CheckboxField.<br><b>Which control</b> — Radio for single-select, Checkbox for multi. Use the inverted mark for selection rows and the plain form mark in drawers and sheets, mirroring the two variants on the Checkbox card.</div>
+  </template>
+
+  <div class="pane" data-theme="light"><div class="label">Light</div></div>
+  <div class="pane" data-theme="dark"><div class="label">Dark</div></div>
+
+  <script>
+    const tpl = document.getElementById('card').content;
+    document.querySelectorAll('.pane').forEach(p => p.appendChild(tpl.cloneNode(true)));
+    document.querySelectorAll('.rbgroup').forEach(g => {
+      g.querySelectorAll('.rbfield').forEach(f => f.addEventListener('click', () => {
+        g.querySelectorAll('.rbfield').forEach(o => { o.setAttribute('aria-checked', 'false'); o.querySelector('.rb').classList.remove('on'); });
+        f.setAttribute('aria-checked', 'true'); f.querySelector('.rb').classList.add('on');
+      }));
+    });
+  </script>
+</div></body></html>

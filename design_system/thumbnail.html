@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+  html,body{margin:0;padding:0}
+  .tile{width:1280px;height:854px;display:flex;background:#000}
+  .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:48px;background:var(--kls-color-base-black,#000)}
+  .mark{width:280px;height:auto;color:#fff}
+  .name{font-family:var(--kls-font-display,"Plus Jakarta Sans",sans-serif);font-weight:700;font-size:104px;line-height:1;letter-spacing:-.02em;color:#fff}
+  .strip{width:88px;display:flex;flex-direction:column}
+  .strip span{flex:1}
+</style>
+</head>
+<body>
+  <div class="tile">
+    <div class="main">
+      <svg class="mark" viewBox="0 0 33.273 30" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M 13.735 26.155 C 10.848 23.65 8.573 22.835 4.87 22.835 L 2.1 22.835 L 2.1 20.971 L 14.755 20.971 C 18.546 20.971 21.608 20.592 23.825 16.981 L 33.273 0 L 22.104 0 L 0 19.456 L 0 24.175 L 6.532 29.913 L 18.634 30 L 13.706 26.126 L 13.735 26.155 Z" fill-rule="nonzero"></path></svg>
+      <div class="name">MX Design System</div>
+    </div>
+    <div class="strip">
+      <span style="background:var(--kls-color-orange-300,#FC7A36)"></span>
+      <span style="background:var(--kls-color-green-300,#46AD47)"></span>
+      <span style="background:var(--kls-color-blue-300,#2890FF)"></span>
+      <span style="background:var(--kls-color-red-300,#DC2626)"></span>
+    </div>
+  </div>
+</body>
+</html>

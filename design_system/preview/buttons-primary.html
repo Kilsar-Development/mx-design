@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- @dsCard group="Components" name="Buttons — Primary" subtitle="Primary, sizes lg/md/sm" viewport="700x220" -->
+<!-- @dsCard group="Components" name="Buttons — Primary" subtitle="Primary action button — default, icon slots, and the canonical Add <thing> create action" viewport="700x620" -->
 <html><head><meta charset="utf-8"><title>PrimaryActionButton</title>
 <link rel="stylesheet" href="../colors_and_type.css">
 <style>
@@ -38,6 +38,23 @@
   .pa-btn--full{ width:100%; justify-content:center; }
   .pa-btn svg{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.6; }
 
+  /* Create action — leading plus GLYPH (assets/icons/plus.svg), never a "+" text
+     character. The "+" of Plus Jakarta Sans sits on the math axis, so against a
+     14/700 label it renders small and low and every site ends up nudging it with
+     its own marginTop. The glyph is optically centred on the label: no baseline
+     nudge anywhere. Copy is "Add <thing>", not "New <thing>". */
+  .pa-btn .plus{
+    width:18px;height:18px;flex:none;
+    background:currentColor;
+    -webkit-mask:url(../assets/icons/plus.svg) no-repeat center / contain;
+    mask:url(../assets/icons/plus.svg) no-repeat center / contain;
+  }
+  .pa-btn--dense .plus{ width:16px;height:16px; }
+  .pa-btn--text{
+    height:auto;padding:0;background:transparent;border:0;
+    color:var(--kls-on-surface);font-size:14px;font-weight:600;
+  }
+
   .meta{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;opacity:.55;margin-top:auto;line-height:1.45}
   .meta b{font-weight:600;opacity:.85}
 </style></head>
@@ -60,6 +77,15 @@
       <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button></div>
 
+    <p class="label">Create action — "Add &lt;thing&gt;"</p>
+    <div class="row">
+      <button class="pa-btn" data-web><span class="plus"></span>Add block</button>
+      <button class="pa-btn" data-web><span class="plus"></span>Add task</button>
+    </div>
+
+    <p class="label">Create action — dense / text button (16px glyph)</p>
+    <div class="row"><button class="pa-btn pa-btn--text pa-btn--dense"><span class="plus"></span>Add files for context</button></div>
+
     <p class="label">Disabled</p>
     <div class="row"><button class="pa-btn" data-disabled="true">Continue</button></div>
 
@@ -70,7 +96,10 @@
       height <b>40</b> · radius <b>12</b> (mobile) / <b>8</b> (web) · padding-x <b>20</b><br>
       bg <b>tertiaryContainer</b> · text <b>onTertiaryContainer · labelLargeBold</b><br>
       icon <b>20px</b> · gap <b>6</b> · border <b>transparent</b><br>
-      disabled → text <b>onSurfaceVariant</b> · bg unchanged
+      disabled → text <b>onSurfaceVariant</b> · bg unchanged<br>
+      <b>create action</b> → leading <b>plus.svg</b> glyph <b>18px</b> (16 dense/text),<br>
+      currentColor, optically centred — <b>no baseline nudge</b>, never a "+" char;<br>
+      copy is <b>Add &lt;thing&gt;</b>, not New &lt;thing&gt;
     </p>
   </div>
 
@@ -91,6 +120,15 @@
       Next
       <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button></div>
+
+    <p class="label">Create action — "Add &lt;thing&gt;"</p>
+    <div class="row">
+      <button class="pa-btn" data-web><span class="plus"></span>Add block</button>
+      <button class="pa-btn" data-web><span class="plus"></span>Add task</button>
+    </div>
+
+    <p class="label">Create action — dense / text button (16px glyph)</p>
+    <div class="row"><button class="pa-btn pa-btn--text pa-btn--dense"><span class="plus"></span>Add files for context</button></div>
 
     <p class="label">Disabled</p>
     <div class="row"><button class="pa-btn" data-disabled="true">Continue</button></div>

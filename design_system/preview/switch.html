@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- @dsCard group="Components" name="switch" subtitle="Switch / Toggle — custom (no Flutter Switch); built to closest DS tokens" -->
+<!-- @dsCard group="Components" name="switch" subtitle="Switch / Toggle — default 44×26 and compact 36×20 for dense list rows" viewport="1200x560" -->
 <html lang="en"><head>
 <meta charset="utf-8"><title>Switch — canonical</title>
 <link rel="stylesheet" href="../colors_and_type.css">
@@ -34,6 +34,20 @@
   .sw[aria-checked="true"] { background: var(--kls-primary); }
   .sw[aria-checked="true"] .knob { transform: translateX(18px); }
   .sw[disabled] { opacity: .4; cursor: not-allowed; }
+
+  /* Compact (sm) — for dense control lists only.
+     - track 36×20 · knob 16 · same 2px inset · travel 16 (= 36 − 16 − 2×2)
+     - identical tokens and transitions; only the geometry changes.
+     Use when switches sit on rows ~32px tall (one per part, per group, per
+     annotation) where the 26px track dominates the row and crowds the label.
+     Form-level toggles keep the default 44×26. */
+  .sw.sm { width: 36px; height: 20px; }
+  .sw.sm .knob { width: 16px; height: 16px; }
+  .sw.sm[aria-checked="true"] .knob { transform: translateX(16px); }
+
+  /* Dense row the compact size is built for */
+  .denserow { display: flex; align-items: center; gap: var(--kls-space-small); height: 32px; max-width: 320px; }
+  .denserow .t { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: var(--kls-on-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style></head>
 <body><div class="grid">
 
@@ -45,7 +59,12 @@
     <div class="caption">Disabled</div>
     <div class="opt"><span class="t">Let the student choose parameters</span><button class="sw" aria-checked="true" disabled><span class="knob"></span></button></div>
 
-    <div class="caption">Spec — track 44×26 · knob 22 · 2px inset · on = primary, off = outline-variant, knob = surface · knob travel 18px · transition fade-animation (250) / ease-standard. (No canonical Flutter Switch — this is the proposed spec; promote alongside the Slider.)</div>
+    <div class="caption">Compact (sm) — dense list rows, 32px tall</div>
+    <div class="denserow"><span class="t">Object Groups</span><button class="sw sm" aria-checked="true"><span class="knob"></span></button></div>
+    <div class="denserow"><span class="t">Annotations</span><button class="sw sm" aria-checked="false"><span class="knob"></span></button></div>
+    <div class="denserow"><span class="t">Isolate</span><button class="sw sm" aria-checked="false"><span class="knob"></span></button></div>
+
+    <div class="caption">Spec — <b>default</b> track 44×26 · knob 22 · 2px inset · travel 18px. <b>Compact (sm)</b> track 36×20 · knob 16 · 2px inset · travel 16px — same tokens, same transitions, geometry only. Both: on = primary, off = outline-variant, knob = surface · transition fade-animation (250) / ease-standard. The 2px inset and the travel values are component internals, NOT spacing tokens.<br><b>Which size:</b> sm is for dense control lists — rows ~32px tall carrying one toggle each (per part, per group, per annotation), where 26px dominates the row. Everything else, including all form-level toggles, uses the default. (No canonical Flutter Switch — this is the proposed spec; promote alongside the Slider.)</div>
   </template>
 
   <div class="pane" data-theme="light"><div class="label">Light</div></div>

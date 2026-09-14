@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- @dsCard group="Brand" name="checkbox" subtitle="Empty / checked / indeterminate · inverted + M3 green variants" -->
+<!-- @dsCard group="Brand" name="checkbox" subtitle="Mark (22 selection / 18 inline-filter) + CheckboxField labelled pair" viewport="1200x920" -->
 <html lang="en"><head>
 <meta charset="utf-8"><title>Checkbox — canonical</title>
 <link rel="stylesheet" href="../colors_and_type.css">
@@ -41,6 +41,28 @@
     background: var(--kls-on-surface);
   }
   .cb svg { width: 16px; height: 16px; stroke: var(--kls-surface); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Mark sizes — the card specs BOTH; they are not interchangeable.
+     - 22×22 (default): selection rows, where the mark is the row's subject.
+     - 18×18 (sm): inline filter bars, where the mark sits beside a 14px label.
+       At 22 the mark is optically heavier than the label it belongs to. */
+  .cb.sm { width: 18px; height: 18px; border-radius: 5px; }
+  .cb.sm svg { width: 14px; height: 14px; }
+
+  /* CheckboxField — the labelled, clickable pair.
+     The WHOLE pair is one button[aria-pressed], not a mark with a <label>
+     beside it: one hit target, one accessible name, one focus ring.
+     h40 keeps the target at the 40px minimum even though the mark is 18. */
+  .cbfield {
+    display: inline-flex; align-items: center; gap: var(--kls-space-xsmall);
+    height: 40px; padding: 0; border: 0; background: transparent; cursor: pointer;
+    font-family: 'Plus Jakarta Sans';
+    font-size: var(--kls-label-large-size); line-height: var(--kls-label-large-line);
+    font-weight: var(--kls-label-large-weight);
+    color: var(--kls-on-surface);
+  }
+  .cbfield .cb { pointer-events: none; }
+  .filterbar { display: flex; align-items: center; gap: var(--kls-space-med); flex-wrap: wrap; }
 
   /* Green-check variant (M3 default per app_theme.dart) */
   .cb.green { border-color: var(--kls-on-surface-variant); background: transparent; }
@@ -106,7 +128,26 @@
       </div>
     </div>
 
-    <div class="caption">Spec — 22×22 · radius 6 · 1.5px border · stroke 3px · transitions background 80ms · hit target wraps to ≥40px when used inline in a row</div>
+    <div class="caption">Mark sizes — 22 (selection rows) vs 18 (inline filters)</div>
+    <div class="row">
+      <div class="cell">
+        <button class="cb checked"><svg viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L20 6"/></svg></button>
+        <small>22 · default</small>
+      </div>
+      <div class="cell">
+        <button class="cb sm checked"><svg viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L20 6"/></svg></button>
+        <small>18 · sm</small>
+      </div>
+    </div>
+
+    <div class="caption">CheckboxField — labelled pair, one hit target (inline filter bar)</div>
+    <div class="filterbar">
+      <button class="cbfield" aria-pressed="true"><span class="cb sm checked"><svg viewBox="0 0 24 24"><path d="M5 12l4.5 4.5L20 6"/></svg></span>Task</button>
+      <button class="cbfield" aria-pressed="false"><span class="cb sm"></span>Scenario</button>
+      <button class="cbfield" aria-pressed="false"><span class="cb sm"></span>Subtask</button>
+    </div>
+
+    <div class="caption">Spec — <b>mark</b> radius 6 (5 at sm) · 1.5px border · stroke 3px · background transition 80ms. Two sizes, both canonical: <b>22×22</b> for selection rows where the mark is the row's subject; <b>18×18 with a 14px check</b> for inline filter bars, where a 22 mark is optically heavier than the 14px label beside it.<br><b>CheckboxField</b> — the labelled pair is ONE <code>&lt;button aria-pressed&gt;</code> wrapping mark + text, not a mark with a separate <code>&lt;label&gt;</code>: one hit target, one accessible name, one focus ring. Height <b>40</b> (holds the minimum target even with an 18px mark) · <code>gap: var(--kls-space-xsmall)</code> · label <b>labelLarge</b> (14/500) <code>on-surface</code> · mark is <code>pointer-events: none</code> so every click lands on the button.<br><b>Variants</b> — use the inverted mark for multi-select rows, the M3 green-check for standalone form checkboxes.</div>
   </template>
 
   <div class="pane" data-theme="light"><div class="label">Light</div></div>

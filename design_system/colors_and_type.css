@@ -191,6 +191,19 @@
   --kls-color-purple-600:  #4C1D95;
   --kls-color-purple-700:  #2E1065;
 
+  /* ---- Primitives — teal ---- */
+  /* Fills the cool-green/blue-green gap: no other family reads as cyan/teal.
+     Added for categorical coding that must not collide with the semantic
+     hues (blue=info, orange=accent-4, green=success, red=error). */
+  --kls-color-teal-50:   #F0FDFA;
+  --kls-color-teal-100:  #5EEAD4;
+  --kls-color-teal-200:  #2DD4BF;
+  --kls-color-teal-300:  #14B8A6;
+  --kls-color-teal-400:  #0D9488;
+  --kls-color-teal-500:  #0F766E;
+  --kls-color-teal-600:  #115E59;
+  --kls-color-teal-700:  #134E4A;
+
   /* ---- Primitives — transparent (black @ alpha) ---- */
   --kls-color-transparent-20: rgba(0,0,0,0.20);
   --kls-color-transparent-40: rgba(0,0,0,0.40);
@@ -475,7 +488,6 @@
   --kls-header-fg: var(--kls-on-surface);
   --kls-sidebar-bg: var(--kls-surface);
   --kls-sidebar-tab-bg-active: var(--kls-surface-container-lowest);
-  --kls-sidebar-tab-icon-color: var(--kls-primary);
   --kls-sidebar-tab-label-color: var(--kls-on-surface);
   --kls-search-pill-bg: var(--kls-tertiary);
   --kls-search-suggestion-bg: var(--kls-surface);
@@ -628,7 +640,6 @@
   --kls-header-fg: var(--kls-on-surface);
   --kls-sidebar-bg: var(--kls-surface);
   --kls-sidebar-tab-bg-active: var(--kls-surface-container-lowest);
-  --kls-sidebar-tab-icon-color: var(--kls-primary);
   --kls-sidebar-tab-label-color: var(--kls-on-surface);
   --kls-search-pill-bg: var(--kls-tertiary);
   --kls-search-suggestion-bg: var(--kls-surface);
@@ -829,6 +840,19 @@
   --kls-section-label-tracking:  0.08em;
   --kls-section-label-transform: uppercase; /* @kind other */
 
+  /* —— Page header (web content pane) ——
+     The canonical content-pane page title + subtitle. Component-level steps,
+     not general scale steps: the subtitle's 13.5 sits between labelMedium (12)
+     and labelLarge (14) deliberately — it reads as secondary next to a 24px
+     title where 14 reads as body. See preview/content-pane.html. */
+  --kls-page-header-title-size:      24px;
+  --kls-page-header-title-line:      1.2; /* @kind other */
+  --kls-page-header-title-weight:    600;
+  --kls-page-header-title-tracking:  -0.025em;
+  --kls-page-header-subtitle-size:   13.5px;
+  --kls-page-header-subtitle-line:   18px;
+  --kls-page-header-subtitle-weight: 400;
+
   /* ============ SPACING ============
      Canonical from app source (Dart `Sizing` constants). These SIX values are
      the ONLY spacing values permitted anywhere — every padding / margin / gap
@@ -950,13 +974,13 @@
   --kls-sidebar-bg:                var(--kls-surface);
   --kls-sidebar-padding:           var(--kls-space-med);   /* 20 — Sizing.med */
   --kls-sidebar-border:            1px solid var(--kls-outline-variant);
-  --kls-sidebar-tab-height:        56px;
+  --kls-sidebar-tab-height:        44px;
   --kls-sidebar-tab-radius:        4px;                          /* smallBorderRadius */
   --kls-sidebar-tab-bg-active:     var(--kls-surface-container-lowest);
   --kls-sidebar-tab-bg-idle:       transparent;
-  --kls-sidebar-tab-icon-color:    var(--kls-primary);           /* image masks rendered in primary */
   --kls-sidebar-tab-label-color:   var(--kls-on-surface);
-  --kls-sidebar-logo-size:         36px;
+  --kls-sidebar-logo-size-wordmark:    28px;                     /* expanded splash wordmark height */
+  --kls-sidebar-logo-size-mark:        32px;                     /* collapsed K mark */
 
   /* Search input (header) */
   --kls-search-pill-bg:            var(--kls-tertiary);
@@ -1231,6 +1255,19 @@
   font-weight: var(--kls-label-medium-medium-weight);
   color: var(--kls-text-default);
 }
+.kls-text-page-header-title {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-page-header-title-size); line-height: var(--kls-page-header-title-line);
+  font-weight: var(--kls-page-header-title-weight);
+  letter-spacing: var(--kls-page-header-title-tracking);
+  color: var(--kls-on-surface);
+}
+.kls-text-page-header-subtitle {
+  font-family: var(--kls-font-sans);
+  font-size: var(--kls-page-header-subtitle-size); line-height: var(--kls-page-header-subtitle-line);
+  font-weight: var(--kls-page-header-subtitle-weight);
+  color: var(--kls-on-surface-variant);
+}
 .kls-text-label-medium-semibold {
   font-family: var(--kls-font-sans);
   font-size: var(--kls-label-medium-semibold-size); line-height: var(--kls-label-medium-semibold-line);
@@ -1383,7 +1420,6 @@
   --kls-header-fg: var(--kls-on-surface);
   --kls-sidebar-bg: var(--kls-surface);
   --kls-sidebar-tab-bg-active: var(--kls-surface-container-lowest);
-  --kls-sidebar-tab-icon-color: var(--kls-primary);
   --kls-sidebar-tab-label-color: var(--kls-on-surface);
   --kls-search-pill-bg: var(--kls-tertiary);
   --kls-search-suggestion-bg: var(--kls-surface);

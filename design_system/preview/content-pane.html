@@ -12,16 +12,30 @@
   .modelabel { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--kls-on-surface-variant); padding: 16px 20px 0; }
 
   /* Content pane — vertical stack directly on the scaffold (NOT inside one card).
-     Scroll-owning · padded large/large/xLarge · gap med */
+     Scroll-owning · padded med top / large sides / xLarge bottom · gap med.
+     The .med top + the title's 1.2 line-height optically reads as a balanced
+     .large gap; a literal .large top reads as .xlarge. */
   .cp {
     display: flex; flex-direction: column; gap: var(--kls-space-med);
-    padding: var(--kls-space-large) var(--kls-space-large) var(--kls-space-xlarge);
+    padding: var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge);
   }
 
   /* 1. Page header — ON the scaffold, not in a card */
   .ph { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--kls-space-med); }
-  .ph .title { font-size: 32px; font-weight: 700; color: var(--kls-on-surface); line-height: 1.1; }
-  .ph .sub { font-size: 15px; font-weight: 500; color: var(--kls-on-surface-variant); margin-top: var(--kls-space-xsmall); }
+  .ph { align-items: center; }
+  .ph .title {
+    font-size: var(--kls-page-header-title-size); line-height: var(--kls-page-header-title-line);
+    font-weight: var(--kls-page-header-title-weight); letter-spacing: var(--kls-page-header-title-tracking);
+    color: var(--kls-on-surface); margin-bottom: var(--kls-space-tiny);
+  }
+  .ph .sub {
+    font-size: var(--kls-page-header-subtitle-size); line-height: var(--kls-page-header-subtitle-line);
+    font-weight: var(--kls-page-header-subtitle-weight); color: var(--kls-on-surface-variant);
+  }
+  /* Segmented toggle — lives OUTSIDE the card, with the header/actions */
+  .seg { display: inline-flex; background: var(--kls-tertiary); border-radius: var(--kls-radius-small); padding: 3px; gap: 2px; align-self: flex-start; }
+  .seg button { flex: none; white-space: nowrap; height: 34px; padding: 0 var(--kls-space-med); border: 0; cursor: pointer; background: transparent; color: var(--kls-on-tertiary); border-radius: calc(var(--kls-radius-small) - 1px); font-family: inherit; font-size: 14px; font-weight: 600; }
+  .seg button.on { background: var(--kls-surface); color: var(--kls-on-surface); }
   .pbtn {
     height: 40px; padding: 0 var(--kls-space-med); border: 0; cursor: pointer;
     background: var(--kls-tertiary-container); color: var(--kls-on-tertiary-container);
@@ -68,6 +82,12 @@
         <button class="pbtn">New assignment</button>
       </div>
 
+      <div class="seg">
+        <button class="on">Assignments</button>
+        <button>Students</button>
+        <button>Progress</button>
+      </div>
+
       <div class="kpis">
         <div class="kpi"><div class="top"><span class="k">Active</span><span class="chip"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg></span></div><div class="v">24</div></div>
         <div class="kpi"><div class="top"><span class="k">On track</span><span class="chip"><svg viewBox="0 0 24 24"><path d="M5 13l4 4 10-10" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><div class="v ok">18</div></div>
@@ -88,7 +108,7 @@
         <div class="trow"><span>Avionics Inspection</span><span class="muted">12 tasks · 78%</span></div>
       </div>
     </div>
-    <div style="padding:0 32px 24px;font-size:12px;color:var(--kls-on-surface-variant)">Spec — vertical stack on the scaffold (NOT one wrapping card) · padding large/large/xLarge · gap med. (1) Page header on scaffold: title h1 (32/700), subtitle 15/500 on-surface-variant (xsmall below), trailing primary action right-aligned. (2) KPI strip: surface · 1px outline-variant · radius med · pad med; uppercase labelMediumSemiBold label + 28px icon chip, value 30/700 tinted by tone; flex-wrap gap small. (3) Primary card: only the table in one surface card (1px outline-variant, radius med, overflow hidden); toolbar header (search/filters) + bottom divider, optional divided chip row, table flush.</div>
+    <div style="padding:0 32px 24px;font-size:12px;color:var(--kls-on-surface-variant)">Spec — vertical stack on the scaffold (NOT one wrapping card) · padding <b>med top / large sides / xLarge bottom</b> · gap med. The .med top plus the title's 1.2 line-height reads as a balanced .large gap; a literal .large top reads as .xlarge. (1) <b>Page header</b> lives on the scaffold, OUTSIDE the surface card: title h1 <b>24/600, letter-spacing -0.025em</b>, on-surface, space-tiny below (<code>--kls-page-header-title-*</code>); subtitle <b>13.5/400</b> on-surface-variant (<code>--kls-page-header-subtitle-*</code>); trailing primary action right-aligned, row is align-items:center. (1b) <b>Chrome outside the card:</b> the page header, segmented toggles (CompoundSwitch) and action buttons all sit outside the card — the card holds only the table/body. Quick-filter chips that scope the table stay INSIDE the card (see the chip row below). (2) KPI strip: surface · 1px outline-variant · radius med · pad med; uppercase labelMediumSemiBold label + 28px icon chip, value 30/700 tinted by tone; flex-wrap gap small. (3) Primary card: only the table in one surface card (1px outline-variant, radius med, overflow hidden); toolbar header (search/filters) + bottom divider, optional divided chip row, table flush.</div>
   </template>
 
   <div class="pane" data-theme="light"><div class="modelabel">Light</div></div>

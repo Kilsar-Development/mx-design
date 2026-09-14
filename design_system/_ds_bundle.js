@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"MXDesignSystem_019df3","components":[],"sourceHashes":{"ui_kits/mobile/components.jsx":"f432385b95c9","ui_kits/mobile/home-screens.jsx":"d124bf0de063","ui_kits/mobile/ios-frame.jsx":"d67eb3ffe562","ui_kits/mobile/screens.jsx":"d7e4d0cbe02d","ui_kits/shared/kls-icon.jsx":"c2bbf4d1af19","ui_kits/web/browser-window.jsx":"810a9c80aba0","ui_kits/web/chrome.jsx":"3f748096f4ae","ui_kits/web/home-dashboard.jsx":"77f79fcabf13","ui_kits/web/screens.jsx":"175088d5c71b"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":4,"namespace":"MXDesignSystem_019df3","components":[],"sourceHashes":{"ui_kits/mobile/components.jsx":"f432385b95c9","ui_kits/mobile/home-screens.jsx":"d124bf0de063","ui_kits/mobile/ios-frame.jsx":"d67eb3ffe562","ui_kits/mobile/screens.jsx":"d7e4d0cbe02d","ui_kits/shared/kls-icon.jsx":"c2bbf4d1af19","ui_kits/web/browser-window.jsx":"810a9c80aba0","ui_kits/web/chrome.jsx":"fdf496f52c3c","ui_kits/web/home-dashboard.jsx":"77f79fcabf13","ui_kits/web/screens.jsx":"175088d5c71b"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -3059,7 +3059,7 @@ function NavSidebar({
     src: "../../assets/images/splashLogo.png",
     alt: "Kilsar",
     style: {
-      height: 28,
+      height: "var(--kls-sidebar-logo-size-wordmark, 28px)",
       width: "auto",
       display: "block"
     }
@@ -3069,7 +3069,7 @@ function NavSidebar({
   React.createElement(KlsIcon, {
     name: "kilsar",
     size: 32,
-    color: "var(--kls-on-surface)"
+    color: "var(--kls-on-surface)" /* var(--kls-sidebar-logo-size-mark) */
   })), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 24,
@@ -3190,12 +3190,13 @@ function SidebarOption({
   onClick
 }) {
   // Active uses --kls-primary tint; idle uses --kls-on-surface (matches Flutter spec).
+  // M3-compliant: idle uses on-surface, active uses primary (no bespoke token)
   const iconColor = isActive ? "var(--kls-primary)" : "var(--kls-on-surface)";
   const labelColor = "var(--kls-on-surface)";
   return /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     style: {
-      height: "var(--kls-sidebar-tab-height, 56px)",
+      height: "var(--kls-sidebar-tab-height, 44px)",
       marginTop: "var(--kls-space-med)",
       padding: "0 var(--kls-space-med)",
       background: isActive ? "var(--kls-sidebar-tab-bg-active)" : "var(--kls-sidebar-tab-bg-idle)",

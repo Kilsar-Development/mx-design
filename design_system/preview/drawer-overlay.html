@@ -68,6 +68,14 @@
   .drawer-head .close svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
   .drawer-body { padding: 20px; flex: 1; }
 
+  /* Form body — sections/field groups stack at space-small (12), NOT med (20).
+     .med reads as a gap between unrelated blocks; a section heading and the
+     field it labels belong to each other, so .small keeps them paired. */
+  .form-stack { display: flex; flex-direction: column; gap: var(--kls-space-small); }
+  .fgroup { display: flex; flex-direction: column; gap: var(--kls-space-tiny); }
+  .flabel { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--kls-on-surface-variant); }
+  .finput { height: 36px; border-radius: var(--kls-radius-small); border: 1px solid var(--kls-outline-variant); background: var(--kls-surface); color: var(--kls-on-surface-variant); display: flex; align-items: center; padding: 0 var(--kls-space-small); font-size: 13px; }
+
   /* Scrim covering the rest of the app */
   .scrim {
     position: absolute; inset: 0;
@@ -86,7 +94,12 @@
           <span class="title">Your Profile</span>
           <button class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
         </div>
-        <div class="drawer-body">Drawer body content goes here — name, avatar, settings, etc.</div>
+        <div class="drawer-body"><div class="form-stack">
+          <div class="fgroup"><span class="flabel">Type</span><div class="finput">Written exam</div></div>
+          <div class="fgroup"><span class="flabel">Course</span><div class="finput">Turbine Engines</div></div>
+          <div class="fgroup"><span class="flabel">Instructions</span><div class="finput" style="height:56px;align-items:flex-start;padding-top:8px">Optional notes for the student…</div></div>
+          <div class="fgroup"><span class="flabel">Due date</span><div class="finput">12 Oct 2026</div></div>
+        </div></div>
       </div>
     </div>
 
@@ -103,7 +116,7 @@
       </div>
     </div>
 
-    <div class="caption">Spec — 426px collapsed / 50% expanded · 12px inset · smBorderRadius · dropShadow · slides in over scrim · tap scrim or close button to dismiss</div>
+    <div class="caption">Spec — 426px collapsed / 50% expanded · 12px inset · smBorderRadius · dropShadow · slides in over scrim · tap scrim or close button to dismiss.<br><b>Form body:</b> sections / field groups stack at <b>gap: var(--kls-space-small)</b> (12) — not .med (20). Label→control inside a group is space-tiny (4). Applies to sheet bodies too (see sheet-overlay.html).</div>
   </div>
 
   <div class="pane" data-theme="dark"><div class="label">Dark</div>
@@ -116,7 +129,12 @@
           <span class="title">Your Profile</span>
           <button class="close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
         </div>
-        <div class="drawer-body">Drawer body content goes here.</div>
+        <div class="drawer-body"><div class="form-stack">
+          <div class="fgroup"><span class="flabel">Type</span><div class="finput">Written exam</div></div>
+          <div class="fgroup"><span class="flabel">Course</span><div class="finput">Turbine Engines</div></div>
+          <div class="fgroup"><span class="flabel">Instructions</span><div class="finput" style="height:56px;align-items:flex-start;padding-top:8px">Optional notes for the student…</div></div>
+          <div class="fgroup"><span class="flabel">Due date</span><div class="finput">12 Oct 2026</div></div>
+        </div></div>
       </div>
     </div>
 

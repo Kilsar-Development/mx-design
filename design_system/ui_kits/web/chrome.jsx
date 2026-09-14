@@ -261,11 +261,11 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
             <img
               src="../../assets/images/splashLogo.png"
               alt="Kilsar"
-              style={{ height: 28, width: "auto", display: "block" }}
+              style={{ height: "var(--kls-sidebar-logo-size-wordmark, 28px)", width: "auto", display: "block" }}
             />
           ) : (
             // Collapsed: K mark only
-            <KlsIcon name="kilsar" size={32} color="var(--kls-on-surface)" />
+            <KlsIcon name="kilsar" size={32} color="var(--kls-on-surface)" /* var(--kls-sidebar-logo-size-mark) */ />
           )}
         </div>
 
@@ -393,13 +393,14 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
 
 function SidebarOption({ icon, label, isActive, showLabel, onClick }) {
   // Active uses --kls-primary tint; idle uses --kls-on-surface (matches Flutter spec).
+  // M3-compliant: idle uses on-surface, active uses primary (no bespoke token)
   const iconColor = isActive ? "var(--kls-primary)" : "var(--kls-on-surface)";
   const labelColor = "var(--kls-on-surface)";
   return (
     <button
       onClick={onClick}
       style={{
-        height: "var(--kls-sidebar-tab-height, 56px)",
+        height: "var(--kls-sidebar-tab-height, 44px)",
         marginTop: "var(--kls-space-med)",
         padding: "0 var(--kls-space-med)",
         background: isActive ? "var(--kls-sidebar-tab-bg-active)" : "var(--kls-sidebar-tab-bg-idle)",

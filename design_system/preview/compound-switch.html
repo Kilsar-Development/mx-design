@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- @dsCard group="Brand" name="CompoundSwitch (canonical)" subtitle="Animated segmented control — label + icon modes · light + dark" viewport="1200x340" -->
+<!-- @dsCard group="Brand" name="CompoundSwitch (canonical)" subtitle="Animated segmented control — text-only, icon+label, and icon-only tiles" viewport="1200x520" -->
 <html lang="en"><head>
 <meta charset="utf-8"><title>CompoundSwitch — canonical</title>
 <link rel="stylesheet" href="../colors_and_type.css">
@@ -46,34 +46,59 @@
   }
   .cs.icons button { padding: 0; width: 40px; display: inline-flex; align-items: center; justify-content: center; }
   .cs.icons svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+  /* Tiles never shrink and labels never wrap — the TRACK does not shrink to fit
+     a tight toolbar; it scrolls instead. */
+  .cs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .cs::-webkit-scrollbar { display: none; }
+  .cs button { flex: none; white-space: nowrap; }
+
+  /* Text-only tile: the label must optically CENTER. Do not keep an empty icon
+     slot or its gap in the flex row — that pushes every label ~12px off-centre
+     and reads as a missing icon. The 16px icon and the xsmall gap exist only
+     when the tab actually supplies an icon. */
+  .cs button { display: inline-flex; align-items: center; justify-content: center; }
+  .cs button .ico { width: 16px; height: 16px; flex: none; }
+  .cs button .ico svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .cs button:has(.ico) { gap: var(--kls-space-xsmall); }
 </style></head>
 <body><div class="grid">
   <div class="pane" data-theme="light"><div class="label">Light</div>
-    <div class="caption">Label mode</div>
+    <div class="caption">Text-only tiles — label optically centred, no icon slot, no gap</div>
     <div class="cs">
-      <button class="active">Today</button>
-      <button>Week</button>
-      <button>Month</button>
-      <button>All</button>
+      <button class="active">Blocks</button>
+      <button>Block Templates</button>
+      <button>Modules</button>
+      <button>Tasks</button>
     </div>
-    <div class="caption">Icon mode (4 options)</div>
+    <div class="caption">Icon + label — the 16px icon and its xsmall gap appear only here</div>
+    <div class="cs">
+      <button class="active"><span class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></span>Blocks</button>
+      <button><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg></span>Tasks</button>
+    </div>
+    <div class="caption">Icon-only mode (4 options)</div>
     <div class="cs icons">
       <button class="active"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
       <button><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="3" rx="1"/><rect x="4" y="11" width="16" height="3" rx="1"/><rect x="4" y="16" width="16" height="3" rx="1"/></svg></button>
       <button><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><rect x="11" y="5" width="9" height="3" rx="1"/><circle cx="6" cy="12" r="2"/><rect x="11" y="11" width="9" height="3" rx="1"/></svg></button>
       <button><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16"/></svg></button>
     </div>
-    <div class="caption">Spec — height 40 · padding 2 · gap 4 · radius 8 · track tertiary · active surface · labelMediumSemiBold (12/600)</div>
+    <div class="caption">Spec — height 40 · padding 2 · gap 4 · radius 8 · track tertiary + 1px outline-variant · active tile surface · labelMediumSemiBold (12/600), inactive on-tertiary.<br><b>Text-only tiles:</b> tile is <code>justify-content: center</code> and carries NO icon slot — the 16px icon and its <code>--kls-space-xsmall</code> gap exist only when a tab supplies an icon. Keeping an empty slot offsets every label by ~12px and reads as a missing icon.<br><b>Sizing:</b> tiles are <code>flex: none</code> + <code>white-space: nowrap</code>; labels never wrap or squeeze. The track does not shrink to fit — a tight toolbar <b>scrolls the track</b> instead.</div>
   </div>
   <div class="pane" data-theme="dark"><div class="label">Dark</div>
-    <div class="caption">Label mode</div>
+    <div class="caption">Text-only tiles — label optically centred, no icon slot, no gap</div>
     <div class="cs">
-      <button class="active">Today</button>
-      <button>Week</button>
-      <button>Month</button>
-      <button>All</button>
+      <button class="active">Blocks</button>
+      <button>Block Templates</button>
+      <button>Modules</button>
+      <button>Tasks</button>
     </div>
-    <div class="caption">Icon mode</div>
+    <div class="caption">Icon + label — the 16px icon and its xsmall gap appear only here</div>
+    <div class="cs">
+      <button class="active"><span class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></span>Blocks</button>
+      <button><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg></span>Tasks</button>
+    </div>
+    <div class="caption">Icon-only mode</div>
     <div class="cs icons">
       <button class="active"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
       <button><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="3" rx="1"/><rect x="4" y="11" width="16" height="3" rx="1"/><rect x="4" y="16" width="16" height="3" rx="1"/></svg></button>
