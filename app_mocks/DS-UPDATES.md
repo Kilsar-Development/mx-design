@@ -238,3 +238,39 @@ derived one from the checkbox spec:
 Proposal: promote this as `preview/radio.html` alongside `checkbox.html`, with the same
 two variants the checkbox card carries (inverted for selection rows, M3 for forms), so
 single-select rows stop being a per-screen call.
+
+---
+
+## 14. 🔵 Add a **change history / diff** icon — no asset reads as "compare versions"
+**Found:** 2026-09 · Task editor (web) — per-version Change History button in the
+Version history drawer
+
+Every task version card (released / draft / archived) carries a Change History action that
+opens a side-by-side diff of that version against the previous one. As an icon button the
+asset set has no fit: `clock` already means "version history" (the top-bar entry point), so
+reusing it in the drawer is ambiguous; `list`, `stack` and `itemList` all read as "a list".
+
+Local call: the button masks `itemList.png` with the label "Change history for <version>".
+It is a stand-in, not the right mark.
+
+**Ask of the DS:** ship a `changeHistory` (or `compare` / `diff`) glyph in `assets/icons/` —
+conventionally two stacked documents with an arrow, or a split before/after square — mask-
+compatible like the rest. Sixth glyph gap in this class after items 5, 6, 8, 9 and 10.
+
+---
+
+## 15. 🔵 Add **download / downloaded** glyphs — `upload` mirrored is the only option
+**Found:** 2026-09 · Mobile Library (Files / Media / 3D Models) — per-item offline toggle
+
+Every Library row and media tile now carries a download toggle (tap to make the asset
+available offline, tap again to remove it). Neither state has an asset:
+- **Download** — only `upload.png` exists; the button masks it with `rotate={180}` so the
+  arrow points down. Mirroring another icon is not a spec.
+- **Downloaded** — `checkpoint.png` was tried first and is wrong: it is a flag-with-check and
+  reads as "milestone," not "saved to device" (caught in review). The button now draws the
+  check inline as SVG, duplicating the mark `preview/checkbox.html` already owns.
+
+**Ask of the DS:** ship `download` (tray/arrow-down) and `downloaded` (arrow-down with a
+check, or a filled tray) in `assets/icons/`, mask-compatible. Failing that, ship a standalone
+`check` glyph so apps stop inlining the checkbox's path for non-checkbox affirmatives.
+Seventh glyph gap in this class after items 5, 6, 8, 9, 10 and 14.

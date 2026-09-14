@@ -2349,7 +2349,31 @@ function MLibViewToggle({ value, onChange }) {
     </div>
   );
 }
-function MLibTile({ item, onOpen }) {
+// Offline download toggle — the DS ships no download or plain-check glyph, so `upload`
+// is mirrored (rotate 180) for the off state and the downloaded state draws the check
+// inline on tertiary-container. See DS-UPDATES item 15.
+function MLibDownloadBtn({ item, on, onToggle }) {
+  return (
+    <button aria-pressed={on} aria-label={(on ? "Remove download of " : "Download ") + item.name}
+      title={on ? "Downloaded — tap to remove" : "Download for offline use"}
+      onClick={(e) => { e.stopPropagation(); onToggle(item); }}
+      style={{ width: 40, height: 40, flex: "none", borderRadius: "var(--kls-radius-pill)", padding: 0, cursor: "pointer",
+        backgroundColor: on ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+        border: "1px solid " + (on ? "var(--kls-tertiary-container)" : "var(--kls-outline-variant)"),
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        transition: "background-color var(--kls-dur-split-fade-animation) var(--kls-ease-standard)" }}>
+      {on ? (
+        <svg viewBox="0 0 24 24" aria-hidden="true"
+          style={{ width: 18, height: 18, stroke: "var(--kls-on-tertiary-container)", fill: "none", strokeWidth: 2.2 }}>
+          <path d="M5 12.5l4.5 4.5L19 7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <KlsIcon name="upload" size={18} rotate={180} color="var(--kls-on-surface)" />
+      )}
+    </button>
+  );
+}
+function MLibTile({ item, onOpen, downloaded, onDownload }) {
   const k = MLIB_KINDS[item.kind] || MLIB_KINDS.txt;
   const navigable = item.kind === "folder";
   return (
@@ -2357,13 +2381,19 @@ function MLibTile({ item, onOpen }) {
       style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)",
         display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", minWidth: 0,
         cursor: navigable ? "pointer" : "default" }}>
-      <KlsIcon name={k.icon} size={28} color={k.color} />
-      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
-        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
-      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
-        {item.kind === "folder"
-          ? "Folder · " + mlibSize(mlibBytes(item))
-          : mlibSize(mlibBytes(item)) + " · " + mlibDate(item.added)}
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <KlsIcon name={k.icon} size={28} color={k.color} />
+        <div style={{ flex: 1 }} />
+        <MLibDownloadBtn item={item} on={downloaded} onToggle={onDownload} />
+      </div>
+      <div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          {item.kind === "folder"
+            ? "Folder · " + mlibSize(mlibBytes(item))
+            : mlibSize(mlibBytes(item)) + " · " + mlibDate(item.added)}
+        </div>
       </div>
     </div>
   );
@@ -2371,7 +2401,7 @@ function MLibTile({ item, onOpen }) {
 function mlibHasFav(item) {
   return !!item.fav || (item.children || []).some(mlibHasFav);
 }
-function MLibRow({ item, isLast, onOpen }) {
+function MLibRow({ item, isLast, onOpen, downloaded, onDownload }) {
   const k = MLIB_KINDS[item.kind] || MLIB_KINDS.txt;
   const kids = item.children || [];
   const navigable = item.kind === "folder";
@@ -2402,6 +2432,7 @@ function MLibRow({ item, isLast, onOpen }) {
         )}
       </div>
       {item.fav && <KlsIcon name="starFilled" size={16} color="var(--kls-accent-4)" />}
+      <MLibDownloadBtn item={item} on={downloaded} onToggle={onDownload} />
       {navigable && <KlsIcon name="chevronRight" size={18} color="var(--kls-on-surface-variant)" />}
     </div>
   );
@@ -2412,6 +2443,9 @@ function MLibraryScreen({ go }) {
   const [query, setQuery] = useState("");
   const [favOnly, setFavOnly] = useState(false);
   const [path, setPath] = useState([]);            // folder stack inside the active section
+  const [downloads, setDownloads] = useState(["d1", "m2"]);
+  const toggleDownload = (item) => setDownloads((cur) =>
+    (cur.indexOf(item.id) >= 0 ? cur.filter((x) => x !== item.id) : cur.concat([item.id])));
   const current = MLIB_SECTIONS.find((s) => s.key === section) || MLIB_SECTIONS[0];
   const folder = path.length ? path[path.length - 1] : null;
   const q = query.trim().toLowerCase();
@@ -2490,12 +2524,14 @@ function MLibraryScreen({ go }) {
           </div>
         ) : (section === "media" && view === "grid") ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--kls-space-small)" }}>
-            {items.map((i) => <MLibTile key={i.id} item={i} onOpen={(f) => setPath((p) => p.concat([f]))} />)}
+            {items.map((i) => <MLibTile key={i.id} item={i} onOpen={(f) => setPath((p) => p.concat([f]))}
+              downloaded={downloads.indexOf(i.id) >= 0} onDownload={toggleDownload} />)}
           </div>
         ) : (
           <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", overflow: "hidden" }}>
             {items.map((i, idx) => (
-              <MLibRow key={i.id} item={i} isLast={idx === items.length - 1} onOpen={(f) => setPath((p) => p.concat([f]))} />
+              <MLibRow key={i.id} item={i} isLast={idx === items.length - 1} onOpen={(f) => setPath((p) => p.concat([f]))}
+                downloaded={downloads.indexOf(i.id) >= 0} onDownload={toggleDownload} />
             ))}
           </div>
         )}
