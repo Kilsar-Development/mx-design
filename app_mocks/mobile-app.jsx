@@ -4727,6 +4727,21 @@ const WEIcon = ({ name, size = 16, ...rest }) => {
     case 'dot': return <svg {...common}><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>;
     case 'filter': return <svg {...common}><path d="M2 3h12l-4.5 5.5v4l-3 1.5v-5.5z"/></svg>;
     case 'download': return <svg {...common}><path d="M8 2v8M4.5 7L8 10.5L11.5 7"/><path d="M2.5 13.5h11"/></svg>;
+    case 'backspace': return <svg {...common}><path d="M5.5 3.5h8a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-8L1.5 8z"/><path d="M7.5 6l4 4M11.5 6l-4 4"/></svg>;
+    case 'pencil': return <svg {...common}><path d="M10.5 2.5l3 3L6 13H3v-3z"/><path d="M9 4l3 3"/></svg>;
+    case 'trash': return <svg {...common}><path d="M2.5 4h11"/><path d="M6 4V2.5h4V4"/><path d="M4 4l.7 9.5h6.6L12 4"/><path d="M6.8 6.5v4.5M9.2 6.5v4.5"/></svg>;
+    case 'expand': return <svg {...common}><path d="M9.5 2.5h4v4M13.5 2.5L9 7M6.5 13.5h-4v-4M2.5 13.5L7 9"/></svg>;
+    case 'zoom-in': return <svg {...common}><circle cx="7" cy="7" r="4.5"/><path d="M10.3 10.3L13.5 13.5M5 7h4M7 5v4"/></svg>;
+    case 'zoom-out': return <svg {...common}><circle cx="7" cy="7" r="4.5"/><path d="M10.3 10.3L13.5 13.5M5 7h4"/></svg>;
+    case 'more': return <svg {...common}><circle cx="3.5" cy="8" r="0.9" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="0.9" fill="currentColor" stroke="none"/><circle cx="12.5" cy="8" r="0.9" fill="currentColor" stroke="none"/></svg>;
+    case 'note':
+    case 'notes': return <svg {...common}><path d="M11.5 7V3.5a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1H7"/><path d="M4.5 1.3v2.2M7 1.3v2.2M9.5 1.3v2.2"/><path d="M2.5 5.5h9"/><path d="M4.8 8h4.4M4.8 10.2h3.6M4.8 12.4h2"/><path d="M13.1 8.9l1.3 1.3-4.3 4.3-1.8.5.5-1.8z"/><path d="M12.1 9.9l1.3 1.3"/></svg>;
+    case 'exit': return <svg {...common}><path d="M9.5 2.5h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-3"/><path d="M6.5 5L3.5 8l3 3M3.5 8h7"/></svg>;
+    case 'calc': return <svg {...common}><rect x="3.5" y="1.5" width="9" height="13" rx="1.5"/><path d="M5.5 4h5v2h-5z"/><path d="M5.5 8.5h.01M8 8.5h.01M10.5 8.5h.01M5.5 11h.01M8 11h.01M10.5 11h.01" strokeWidth="1.8"/></svg>;
+    case 'bookmark': return <svg {...common}><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg>;
+    case 'bookmark-fill': return <svg {...common} fill="currentColor"><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg>;
+    case 'grid': return <svg {...common}><rect x="2.5" y="2.5" width="4" height="4" rx="1"/><rect x="9.5" y="2.5" width="4" height="4" rx="1"/><rect x="2.5" y="9.5" width="4" height="4" rx="1"/><rect x="9.5" y="9.5" width="4" height="4" rx="1"/></svg>;
+    case 'clock': return <svg {...common}><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.2 1.5"/></svg>;
     case 'pause': return <svg {...common}><rect x="4" y="3" width="2.5" height="10" rx="0.5" fill="currentColor"/><rect x="9.5" y="3" width="2.5" height="10" rx="0.5" fill="currentColor"/></svg>;
     default: return null;
   }
@@ -4803,10 +4818,10 @@ const NavIconButton = ({ icon, label, onClick }) => (
   </button>
 );
 
-const MobileNav = ({ title, large = true, back = false, onBack, trailing = null, subtitle = null }) => (
+const MobileNav = ({ title, large = true, back = false, onBack, trailing = null, subtitle = null, center = null }) => (
   <div style={{ padding: '8px 16px 12px' }}>
     {back && (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 32, marginBottom: 6 }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 32, marginBottom: 6 }}>
         <button style={{
           display: 'inline-flex', alignItems: 'center', gap: 2,
           background: 'transparent', border: 0, color: 'var(--accent)',
@@ -4815,6 +4830,7 @@ const MobileNav = ({ title, large = true, back = false, onBack, trailing = null,
           <WEIcon name="chev-l" size={16} />
           {typeof back === 'string' ? back : 'Back'}
         </button>
+        {center && <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', pointerEvents: 'none' }}>{center}</div>}
         {trailing}
       </div>
     )}
@@ -5220,88 +5236,548 @@ const SheetStat = ({ label, value, mono, icon }) => (
 /* ─────────────────────────────────────────────────────────────
    Screen 4 — Exam runner (mid-exam)
    ───────────────────────────────────────────────────────────── */
-const MRunnerExam = ({ onNext, onExit } = {}) => {
+const MRunnerExam = ({ onNext, onExit, subject = 'Airframe', total = 100, isStudy = false } = {}) => {
   const D = window.KILSAR_DATA;
-  const q = D.sampleQuestions[2];
-  const chosen = 'B';
-  const total = 100;
-  const idx = 23;
+  const bank = D.sampleQuestions;
+  const [idx, setIdx] = React.useState(23);
+  const [answers, setAnswers] = React.useState(() => { const a = {}; for (let i = 0; i < 23; i++) a[i] = bank[i % bank.length].correct; return a; });
+  const [flagged, setFlagged] = React.useState({ 4: true, 11: true, 23: true });
+  const [left, setLeft] = React.useState(6138);
+  const [elapsed, setElapsed] = React.useState(1122);
+  const [revealed, setRevealed] = React.useState({});
+  React.useEffect(() => { const t = setInterval(() => { setLeft(l => Math.max(0, l - 1)); setElapsed(e => e + 1); }, 1000); return () => clearInterval(t); }, []);
+  const elapsedLabel = elapsed >= 3600 ? `${Math.floor(elapsed / 3600)}:${String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}` : `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
+  const hms = `${Math.floor(left / 3600)}:${String(Math.floor((left % 3600) / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+  const q = bank[idx % bank.length];
+  const figures = MWE_MOCK_FIGURES[idx % bank.length];
+  const chosen = answers[idx];
+  const isMarked = !!flagged[idx];
+  const showFeedback = isStudy && !!revealed[idx];
+  const answered = Object.keys(answers).length;
+  const bookmarked = Object.values(flagged).filter(Boolean).length;
+  const placeholder = () => {};
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [calcOpen, setCalcOpen] = React.useState(false);
+  const [notes, setNotes] = React.useState({
+    0: 'Overlap = end of exhaust, start of intake. Both valves open briefly to scavenge.',
+    2: "Oil control ring regulates oil film thickness on the cylinder wall. Don't confuse with the compression ring.",
+    5: 'Detonation is explosive burning after normal ignition. Pre-ignition happens before the spark. Review both before the real exam.',
+    7: 'Choke: barrel is narrower at the top so it becomes straight at operating temperature.',
+  });
+  const [noteOpen, setNoteOpen] = React.useState(false);
+  const [notesOpen, setNotesOpen] = React.useState(false);
+  const [jumpOpen, setJumpOpen] = React.useState(false);
+  const [submitOpen, setSubmitOpen] = React.useState(false);
+  const circle = { width: 40, height: 40, borderRadius: 999, flex: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    background: 'var(--kls-surface)', border: '1px solid var(--kls-outline)', color: 'var(--kls-on-surface)', padding: 0 };
+  const pill = { display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-tiny)', flex: 'none', border: 'none', cursor: 'pointer',
+    padding: 'var(--kls-space-tiny) var(--kls-space-small)', borderRadius: 'var(--kls-radius-small)', background: 'var(--kls-tertiary)', color: 'var(--kls-on-tertiary)',
+    fontFamily: 'var(--kls-font-sans)', fontSize: 12, fontWeight: 500, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' };
+  const secondary = { height: 40, padding: '0 var(--kls-space-small)', borderRadius: 'var(--kls-radius-med)', cursor: 'pointer', flex: 'none',
+    background: 'var(--kls-surface)', color: 'var(--kls-on-surface)', border: '1px solid var(--kls-outline-variant)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--kls-space-xsmall)', fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700 };
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)', fontFamily: 'var(--font-ui)', color: 'var(--ink)' }}>
-      {/* Exam top bar — dark */}
-      <div style={{
-        flexShrink: 0, padding: '50px 16px 12px',
-        background: 'var(--ink)', color: 'var(--bg-elev)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.25)', color: 'inherit', borderRadius: 8, padding: '5px 10px', fontSize: 12.5, fontWeight: 500 }} onClick={onExit}>Save & Exit</button>
-          <div style={{ flex: 1, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, opacity: 0.7 }}>
-              <WEIcon name="lock" size={11} />
-              <span>Exam · Airframe</span>
+    <div data-screen-label="Exam runner" style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--kls-scaffold-bg)', fontFamily: 'var(--kls-font-sans)', color: 'var(--kls-on-surface)' }}>
+      <div style={{ flexShrink: 0, position: 'relative', zIndex: 5, padding: '50px var(--kls-space-med) var(--kls-space-small)', background: 'var(--kls-surface)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)' }}>
+          <button onClick={onExit} aria-label="Exit exam" style={circle}><WEIcon name="exit" size={20} /></button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', minWidth: 0 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{isStudy ? 'Practice session' : `${subject} Written Exam`}</div>
             </div>
-            <div className="mono" style={{ fontSize: 18, fontWeight: 600, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>1:42:18</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', minWidth: 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Question {idx + 1} of {total}</span>
+            </div>
           </div>
-          <div style={{ width: 64, textAlign: 'right', fontSize: 12.5, opacity: 0.8 }} className="mono">{idx + 1}/{total}</div>
+          {isStudy ? (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-tiny)', flex: 'none', height: 32,
+              color: 'var(--kls-on-surface-variant)', fontSize: 14, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
+              <WEIcon name="clock" size={14} />{elapsedLabel}
+            </div>
+          ) : (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', flex: 'none', height: 32, padding: '0 var(--kls-space-xsmall)', borderRadius: 999,
+            background: 'var(--kls-tertiary)', fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+            <WEIcon name="clock" size={14} />{hms}
+          </div>
+          )}
+          <button onClick={() => setMenuOpen(o => !o)} aria-label="More" aria-expanded={menuOpen} style={menuOpen ? { ...circle, background: 'var(--kls-tertiary)' } : circle}><WEIcon name="more" size={20} /></button>
         </div>
-        <div style={{ marginTop: 10, height: 3, background: 'rgba(255,255,255,0.12)', borderRadius: 999 }}>
-          <div style={{ width: `${((idx + 1) / total) * 100}%`, height: '100%', background: '#fff', borderRadius: 999 }} />
+        {menuOpen && (
+          <>
+            <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1 }} />
+            <div role="menu" style={{ position: 'absolute', right: 'var(--kls-space-med)', top: 'calc(100% - var(--kls-space-tiny))', zIndex: 2, minWidth: 220,
+              background: 'var(--kls-on-primary)', borderRadius: 'var(--kls-radius-small)', boxShadow: 'var(--kls-drop-shadow)', overflow: 'hidden' }}>
+              {[
+                { icon: 'notes', label: 'See all notes', on: () => setNotesOpen(true) },
+                { icon: 'check', label: isStudy ? 'End study session' : 'Review & submit exam', on: () => setSubmitOpen(true) },
+              ].map((it, i) => (
+                <button key={it.label} role="menuitem" onClick={() => { setMenuOpen(false); it.on && it.on(); }} style={{ width: '100%', height: 52, display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)',
+                  padding: '0 var(--kls-space-med)', background: 'transparent', border: 'none', borderTop: i ? '1px solid var(--kls-outline-variant)' : 'none', cursor: 'pointer',
+                  fontFamily: 'var(--kls-font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--kls-on-surface)', textAlign: 'left' }}>
+                  <WEIcon name={it.icon} size={18} />{it.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)', padding: 'var(--kls-space-small) var(--kls-space-med)',
+        background: 'var(--kls-surface)', borderBottom: '1px solid var(--kls-outline-variant)' }}>
+        <div style={{ height: 6, borderRadius: 999, background: 'var(--kls-tertiary)', overflow: 'hidden' }}>
+          <div style={{ width: `${((idx + 1) / total) * 100}%`, height: '100%', borderRadius: 999, background: 'var(--kls-on-surface)', transition: 'width 250ms var(--kls-ease-standard)' }} />
         </div>
       </div>
 
-      {/* Question content */}
-      <div className="scroll-y" style={{ flex: 1, overflowY: 'auto', padding: '20px 18px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <span className="chip">{q.acs}</span>
-          <span style={{ fontSize: 12, color: 'var(--ink-4)' }}>{q.module}</span>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+      <div className="scroll-y" style={{ flex: 1, overflowY: 'auto', padding: 'var(--kls-space-med) var(--kls-space-med) calc(var(--kls-space-xlarge) + var(--kls-space-med))' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', marginBottom: 14 }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 'var(--kls-space-tiny)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', minWidth: 0, maxWidth: '100%' }}>
+              <span className="chip">{q.acs}</span>
+              <span style={{ minWidth: 0, fontSize: 12, color: 'var(--ink-4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{q.module}</span>
+            </div>
+            {isStudy && <span style={{ padding: 'var(--kls-space-tiny) var(--kls-space-xsmall)', borderRadius: 'var(--kls-radius-xsmall)', background: 'var(--kls-info-container)', color: 'var(--kls-info)', fontSize: 12, fontWeight: 600, lineHeight: 1 }}>Study mode</span>}
+          </div>
+          <button onClick={() => setNoteOpen(true)} aria-label="Note on question" style={circle}><WEIcon name="note" size={20} /></button>
+          <button onClick={() => setFlagged(f => ({ ...f, [idx]: !f[idx] }))} aria-pressed={isMarked} aria-label={isMarked ? 'Remove bookmark' : 'Bookmark question'}
+            style={isMarked ? { ...circle, background: 'var(--kls-accent-5)', color: 'var(--kls-accent-6)', border: '1px solid var(--kls-accent-4)' } : circle}>
+            <WEIcon name={isMarked ? 'bookmark-fill' : 'bookmark'} size={20} />
+          </button>
         </div>
         <div style={{ fontSize: 21, lineHeight: 1.4, marginBottom: 22, fontWeight: 500, letterSpacing: '-0.005em' }}>{q.stem}</div>
-
+        {figures && <div style={{ marginBottom: 22 }}><MQuestionFigures key={idx} figures={figures} /></div>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {q.choices.map(c => {
             const selected = chosen === c.id;
+            const right = showFeedback && c.id === q.correct;
+            const wrongPick = showFeedback && selected && c.id !== q.correct;
             return (
-              <div key={c.id} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '13px 14px',
-                background: selected ? 'var(--bg-elev)' : 'var(--bg-elev)',
-                border: `1px solid ${selected ? 'var(--ink)' : 'var(--line)'}`,
-                borderRadius: 12,
-                boxShadow: selected ? '0 0 0 3px rgba(11,15,20,0.06)' : 'none',
+              <div key={c.id} role="button" aria-pressed={selected} onClick={() => { if (!showFeedback) setAnswers(a => ({ ...a, [idx]: c.id })); }} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 12, padding: '13px 14px', cursor: showFeedback ? 'default' : 'pointer',
+                background: right ? 'var(--good-soft)' : wrongPick ? 'var(--bad-soft)' : 'var(--bg-elev)',
+                border: `1px solid ${right ? 'var(--good)' : wrongPick ? 'var(--bad)' : selected ? 'var(--ink)' : 'var(--line)'}`, borderRadius: 12,
+                boxShadow: selected && !showFeedback ? '0 0 0 3px rgba(11,15,20,0.06)' : 'none',
               }}>
                 <div style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  border: selected ? 0 : '1px solid var(--line-2)',
-                  background: selected ? 'var(--ink)' : 'transparent',
-                  color: selected ? 'var(--bg-elev)' : 'var(--ink-3)',
-                  display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 600,
-                  flexShrink: 0,
+                  width: 26, height: 26, borderRadius: '50%', border: (selected || right) ? 0 : '1px solid var(--line-2)',
+                  background: right ? 'var(--good)' : wrongPick ? 'var(--bad)' : selected ? 'var(--ink)' : 'transparent', color: (selected || right) ? 'var(--bg-elev)' : 'var(--ink-3)',
+                  display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 600, flexShrink: 0,
                 }}>{c.id}</div>
                 <div style={{ fontSize: 14.5, lineHeight: 1.45, flex: 1 }}>{c.text}</div>
               </div>
             );
           })}
         </div>
+        {isStudy && chosen && !showFeedback && (
+          <button onClick={() => setRevealed(r => ({ ...r, [idx]: true }))} style={{ ...mPrimaryBtn(true), width: '100%', marginTop: 'var(--kls-space-med)' }}>Submit answer<WEIcon name="check" size={14} /></button>
+        )}
+        {showFeedback && (() => {
+          const ok = chosen === q.correct;
+          const tone = ok ? 'var(--kls-success)' : 'var(--kls-error)';
+          return (
+            <div style={{ marginTop: 'var(--kls-space-med)', padding: 'var(--kls-space-med)', borderRadius: 'var(--kls-radius-med)',
+              background: ok ? 'var(--kls-success-container)' : 'var(--kls-error-container)', border: '1px solid ' + tone,
+              display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)', fontFamily: 'var(--kls-font-sans)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', flexWrap: 'wrap' }}>
+                <span style={{ width: 24, height: 24, borderRadius: 999, background: tone, color: 'var(--kls-color-base-white)', display: 'grid', placeItems: 'center', flex: 'none' }}>
+                  <WEIcon name={ok ? 'check' : 'x'} size={14} strokeWidth={2} />
+                </span>
+                <span style={{ fontSize: 18, fontWeight: 600, color: tone }}>{ok ? 'Correct' : 'Incorrect'}</span>
+                {!ok && <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>Correct answer: {q.correct}</span>}
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, color: 'var(--kls-on-surface)', textWrap: 'pretty' }}>{q.explanation}</div>
+              <button style={{ ...mSecondaryBtn, gap: 'var(--kls-space-xsmall)', width: '100%', marginTop: 'var(--kls-space-tiny)' }}>
+                <WEIcon name="orion" size={18} />Ask Orion to elaborate
+              </button>
+            </div>
+          );
+        })()}
+      </div>
+        <button onClick={() => setCalcOpen(true)} aria-label="Calculator" style={{ ...circle, width: 48, height: 48, position: 'absolute', right: 'var(--kls-space-med)', bottom: 'var(--kls-space-med)',
+          border: '1px solid var(--kls-outline-variant)', boxShadow: 'var(--kls-drop-shadow)' }}><WEIcon name="calc" size={22} /></button>
       </div>
 
-      {/* Bottom nav */}
-      <div style={{
-        flexShrink: 0, padding: '12px 16px 28px',
-        background: 'var(--bg-elev)', borderTop: '0.5px solid var(--line)',
-        display: 'flex', gap: 10, alignItems: 'center',
-      }}>
-        <button style={{
-          width: 50, height: 44, borderRadius: 12, border: '1px solid var(--line-2)',
-          background: 'var(--bg-elev)', color: 'var(--ink-3)',
-          display: 'grid', placeItems: 'center',
-        }}><WEIcon name="chev-l" size={16} /></button>
-        <button style={{
-          flex: 1, height: 44, borderRadius: 12, border: 0,
-          background: 'var(--ink)', color: 'var(--bg-elev)',
-          fontSize: 15, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        }} onClick={onNext}>Next question <WEIcon name="arrow-r" size={15} /></button>
+      <div style={{ flexShrink: 0, padding: 'var(--kls-space-small) var(--kls-space-med) 28px', background: 'var(--kls-surface)', borderTop: '1px solid var(--kls-outline-variant)',
+        display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)' }}>
+        <div style={{ display: 'flex', gap: 'var(--kls-space-small)', alignItems: 'center' }}>
+          <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0} aria-label="Previous question"
+            style={{ ...secondary, width: 40, padding: 0, color: idx === 0 ? 'var(--kls-on-surface-variant)' : 'var(--kls-on-surface)' }}><WEIcon name="chev-l" size={16} /></button>
+          <button onClick={() => setJumpOpen(true)} style={{ ...secondary, flex: 1, minWidth: 0 }}>
+            <WEIcon name="grid" size={18} />Jump to question
+          </button>
+          <button onClick={() => setIdx(i => Math.min(total - 1, i + 1))} disabled={idx === total - 1} aria-label="Next question"
+            style={{ ...secondary, width: 40, padding: 0, color: idx === total - 1 ? 'var(--kls-on-surface-variant)' : 'var(--kls-on-surface)' }}><WEIcon name="chev-r" size={16} /></button>
+        </div>
       </div>
+      <MCalcSheet open={calcOpen} onClose={() => setCalcOpen(false)} />
+      <MSubmitSheet open={submitOpen} total={total} answers={answers} flagged={flagged} isStudy={isStudy}
+        onJump={(i) => { setIdx(i); setSubmitOpen(false); }} onSubmit={() => { setSubmitOpen(false); onNext && onNext(); }}
+        onDiscard={() => { setSubmitOpen(false); onExit && onExit(); }} onClose={() => setSubmitOpen(false)} />
+      <MJumpSheet key={jumpOpen ? 'jo' : 'jc'} open={jumpOpen} total={total} idx={idx} answers={answers} flagged={flagged}
+        onPick={(i) => { setIdx(i); setJumpOpen(false); }} onClose={() => setJumpOpen(false)} />
+      <MNoteSheet key={'n' + idx + (noteOpen ? 'o' : 'c')} open={noteOpen} number={idx + 1} q={q} initial={notes[idx] || ''}
+        onSave={(t) => { setNotes(n => ({ ...n, [idx]: t })); setNoteOpen(false); }} onClose={() => setNoteOpen(false)} />
+      <MNotesSheet open={notesOpen} onClose={() => setNotesOpen(false)} notes={notes} bank={bank} currentIdx={idx}
+        onSaveNote={(i, t) => setNotes(n => ({ ...n, [i]: t }))}
+        onDeleteNote={(i) => setNotes(n => { const c = { ...n }; delete c[i]; return c; })} />
     </div>
+  );
+};
+
+const mNotePill = { display: 'inline-flex', alignItems: 'center', padding: 'var(--kls-space-tiny) var(--kls-space-small)', borderRadius: 'var(--kls-radius-small)',
+  background: 'var(--kls-tertiary)', color: 'var(--kls-on-tertiary)', fontFamily: 'var(--kls-font-sans)', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' };
+const mPrimaryBtn = (ok) => ({ height: 40, padding: '0 var(--kls-space-med)', borderRadius: 'var(--kls-radius-med)', border: '1px solid transparent', cursor: ok ? 'pointer' : 'default', opacity: ok ? 1 : 0.5,
+  background: 'var(--kls-tertiary-container)', color: 'var(--kls-on-tertiary-container)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--kls-space-xsmall)',
+  fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700 });
+const mSecondaryBtn = { height: 40, padding: '0 var(--kls-space-med)', borderRadius: 'var(--kls-radius-med)', cursor: 'pointer', background: 'var(--kls-surface)', color: 'var(--kls-on-surface)',
+  border: '1px solid var(--kls-outline-variant)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700 };
+const mTextArea = { width: '100%', boxSizing: 'border-box', resize: 'none', padding: 'var(--kls-space-small)', borderRadius: 'var(--kls-radius-small)', border: '1px solid var(--kls-outline-variant)',
+  background: 'var(--kls-surface)', color: 'var(--kls-on-surface)', outline: 'none', fontFamily: 'var(--kls-font-sans)', fontSize: 16, fontWeight: 500, lineHeight: 1.5 };
+
+const MNoteSheet = ({ open, number, q, initial, onSave, onClose }) => {
+  const [text, setText] = React.useState(initial);
+  const ok = text.trim().length > 0;
+  return (
+    <Sheet open={open} onClose={onClose} label={`Note on question ${number}`}>
+      <div style={{ padding: 'var(--kls-space-med) var(--kls-space-med) var(--kls-space-large)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-med)', fontFamily: 'var(--kls-font-sans)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)' }}>
+          <span style={{ flex: 1, fontSize: 20, fontWeight: 600, color: 'var(--kls-on-surface)' }}>Note on question {number}</span>
+          <SheetCloseBtn onClose={onClose} />
+        </div>
+        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a note" rows={5} style={{ ...mTextArea, minHeight: 140 }} />
+        <div style={{ display: 'flex', gap: 'var(--kls-space-tiny)', flexWrap: 'wrap' }}>
+          <span style={mNotePill}>{q.module}</span>
+          <span style={mNotePill}>{q.acs}</span>
+        </div>
+        <button disabled={!ok} onClick={() => ok && onSave(text.trim())} style={mPrimaryBtn(ok)}>Save note</button>
+      </div>
+    </Sheet>
+  );
+};
+
+const MNoteEntry = ({ n, q, text, isCurrent, onSave, onDelete, onSelect }) => {
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState(text);
+  const ok = draft.trim().length > 0;
+  const iconBtn = { width: 40, height: 40, borderRadius: 999, flex: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+    background: 'var(--kls-surface)', border: '1px solid var(--kls-outline-variant)', color: 'var(--kls-on-surface)' };
+  return (
+    <div onClick={(e) => { if (onSelect && !editing && !e.target.closest('button, textarea')) onSelect(); }} role={onSelect ? 'button' : undefined}
+      style={{ cursor: onSelect && !editing ? 'pointer' : 'default', background: 'var(--kls-surface)', border: '1px solid ' + (isCurrent ? 'var(--kls-on-surface-variant)' : 'var(--kls-outline-variant)'), borderRadius: 'var(--kls-radius-small)',
+      padding: 'var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-med)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', minWidth: 0 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--kls-on-surface)', whiteSpace: 'nowrap' }}>Question {n}</span>
+        {isCurrent && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>· Current</span>}
+        <div style={{ flex: 1 }} />
+        {!editing && <button onClick={() => { setDraft(text); setEditing(true); }} aria-label={`Edit note on question ${n}`} style={iconBtn}><WEIcon name="pencil" size={18} /></button>}
+        {!editing && <button onClick={onDelete} aria-label={`Delete note on question ${n}`} style={{ ...iconBtn, color: 'var(--kls-error)' }}><WEIcon name="trash" size={18} /></button>}
+      </div>
+      <div style={{ display: 'flex', gap: 'var(--kls-space-tiny)', flexWrap: 'wrap' }}>
+        <span style={mNotePill}>{q.module}</span>
+        <span style={mNotePill}>{q.acs}</span>
+      </div>
+      {editing ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)', paddingRight: 'var(--kls-space-tiny)', marginTop: 'var(--kls-space-tiny)' }}>
+          <textarea autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} rows={4} style={{ ...mTextArea, fontSize: 14 }} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--kls-space-xsmall)' }}>
+            <button onClick={() => setEditing(false)} style={mSecondaryBtn}>Cancel</button>
+            <button disabled={!ok} onClick={() => { if (ok) { onSave(draft.trim()); setEditing(false); } }} style={mPrimaryBtn(ok)}>Save</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.55, color: 'var(--kls-on-surface)', whiteSpace: 'pre-wrap', textWrap: 'pretty', paddingRight: 'var(--kls-space-small)', marginTop: 'var(--kls-space-tiny)' }}>{text}</div>
+      )}
+    </div>
+  );
+};
+
+const MNotesSheet = ({ open, onClose, notes, bank, currentIdx, onSaveNote, onDeleteNote, onSelectNote, subtitle = 'on this exam' }) => {
+  const entries = Object.keys(notes).map(Number).sort((a, b) => a - b);
+  return (
+    <Sheet open={open} onClose={onClose} label="Notes">
+      <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', fontFamily: 'var(--kls-font-sans)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', padding: 'var(--kls-space-med)', borderBottom: '1px solid var(--kls-outline-variant)', flex: 'none' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--kls-on-surface)' }}>Notes</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>{entries.length} {entries.length === 1 ? 'note' : 'notes'} {subtitle}</div>
+          </div>
+          <SheetCloseBtn onClose={onClose} />
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--kls-space-med) var(--kls-space-med) var(--kls-space-large)', background: 'var(--kls-scaffold-bg)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)' }}>
+          {entries.length === 0 ? (
+            <div style={{ padding: 'var(--kls-space-large) var(--kls-space-med)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 'var(--kls-space-small)' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'var(--kls-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--kls-on-surface-variant)' }}>
+                <WEIcon name="notes" size={28} />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--kls-on-surface)' }}>No notes yet</div>
+              <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.4, maxWidth: 320, color: 'var(--kls-on-surface-variant)' }}>Notes you add to a question appear here, in question order.</div>
+            </div>
+          ) : entries.map(i => (
+            <MNoteEntry key={i + notes[i]} n={i + 1} q={bank[i % bank.length]} text={notes[i]} isCurrent={i === currentIdx}
+              onSave={(t) => onSaveNote(i, t)} onDelete={() => onDeleteNote(i)} onSelect={onSelectNote ? () => onSelectNote(i) : undefined} />
+          ))}
+        </div>
+      </div>
+    </Sheet>
+  );
+};
+
+const MJumpSheet = ({ open, total, idx, answers, flagged, onPick, onClose }) => {
+  const [filter, setFilter] = React.useState('all');
+  const all = Array.from({ length: total }, (_, i) => i);
+  const unanswered = all.filter(i => !answers[i]).length;
+  const marked = all.filter(i => flagged[i]).length;
+  const items = all.filter(i => filter === 'unanswered' ? !answers[i] : filter === 'bookmarked' ? !!flagged[i] : true);
+  const chip = (key, label, count) => {
+    const on = filter === key;
+    return (
+      <button key={key} onClick={() => setFilter(key)} aria-pressed={on} style={{ padding: 'var(--kls-space-xsmall) var(--kls-space-med)', borderRadius: 24, border: 'none', cursor: 'pointer', flex: 'none',
+        background: on ? 'var(--kls-tertiary-container)' : 'var(--kls-tertiary)', color: on ? 'var(--kls-primary)' : 'var(--kls-on-tertiary)',
+        fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{label} {count}</button>
+    );
+  };
+  const tile = (st) => st === 'current'
+    ? { background: 'var(--kls-on-surface)', color: 'var(--kls-surface)', border: '1px solid var(--kls-on-surface)' }
+    : st === 'marked' ? { background: 'var(--kls-accent-5)', color: 'var(--kls-on-surface)', border: '1px solid var(--kls-accent-4)' }
+    : st === 'answered' ? { background: 'var(--kls-tertiary)', color: 'var(--kls-on-surface)', border: '1px solid var(--kls-tertiary)' }
+    : { background: 'var(--kls-surface)', color: 'var(--kls-on-surface-variant)', border: '1px solid var(--kls-outline-variant)' };
+  const legend = [['current', 'Current'], ['answered', 'Answered'], ['open', 'Unanswered'], ['marked', 'Bookmarked']];
+  return (
+    <Sheet open={open} onClose={onClose} label="Jump to question">
+      <div style={{ minHeight: 0, flex: 1, display: 'flex', flexDirection: 'column', fontFamily: 'var(--kls-font-sans)' }}>
+        <div style={{ flex: 'none', padding: 'var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)' }}>
+            <span style={{ flex: 1, fontSize: 20, fontWeight: 600, color: 'var(--kls-on-surface)' }}>Jump to question</span>
+            <SheetCloseBtn onClose={onClose} />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--kls-space-xsmall)', overflowX: 'auto', margin: '0 calc(-1 * var(--kls-space-med))', padding: '0 var(--kls-space-med)' }}>
+            {chip('all', 'All', total)}{chip('unanswered', 'Unanswered', unanswered)}{chip('bookmarked', 'Bookmarked', marked)}
+          </div>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--kls-space-tiny) var(--kls-space-med) var(--kls-space-small)' }}>
+          {items.length === 0 ? (
+            <div style={{ padding: 'var(--kls-space-large) 0', textAlign: 'center', fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>
+              {filter === 'bookmarked' ? 'No bookmarked questions.' : 'All questions answered.'}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 'var(--kls-space-xsmall)' }}>
+              {items.map(i => {
+                const st = i === idx ? 'current' : flagged[i] ? 'marked' : answers[i] ? 'answered' : 'open';
+                return (
+                  <button key={i} onClick={() => onPick(i)} aria-label={`Question ${i + 1}`} aria-current={i === idx ? 'true' : undefined}
+                    style={{ ...tile(st), height: 44, borderRadius: 'var(--kls-radius-small)', cursor: 'pointer', display: 'grid', placeItems: 'center', padding: 0,
+                      fontFamily: 'var(--kls-font-sans)', fontSize: 16, fontWeight: st === 'open' ? 600 : 700, fontVariantNumeric: 'tabular-nums' }}>{i + 1}</button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 'none', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--kls-space-small) var(--kls-space-med)', padding: 'var(--kls-space-small) var(--kls-space-med) var(--kls-space-large)', borderTop: '1px solid var(--kls-outline-variant)' }}>
+          {legend.map(([st, label]) => (
+            <span key={st} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>
+              <span style={{ ...tile(st), width: 16, height: 16, borderRadius: 'var(--kls-radius-xsmall)', boxSizing: 'border-box' }} />{label}
+            </span>
+          ))}
+        </div>
+      </div>
+    </Sheet>
+  );
+};
+
+const MWE_MOCK_FIGURES = {
+  1: [
+    { fig: '12', title: 'Cylinder bore dimensions' },
+    { fig: '13', title: 'Oversize piston & ring chart' },
+    { fig: '14', title: 'Service limits table' },
+  ],
+  4: [{ fig: '21', title: 'Crankshaft damper assembly' }],
+};
+const MQuestionFigures = ({ figures }) => {
+  const [tab, setTab] = React.useState(0);
+  const [zoom, setZoom] = React.useState(1);
+  const [open, setOpen] = React.useState(false);
+  const [dZoom, setDZoom] = React.useState(1);
+  const rootRef = React.useRef(null);
+  const f = figures[tab] || figures[0];
+  const pick = (i) => { setTab(i); setZoom(1); };
+  const figLabel = { fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' };
+  const circle = { width: 40, height: 40, borderRadius: 999, flex: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+    background: 'var(--kls-surface)', border: '1px solid var(--kls-outline)', color: 'var(--kls-on-surface)' };
+  const zBtn = (dis) => ({ ...circle, color: dis ? 'var(--kls-on-surface-variant)' : 'var(--kls-on-surface)', cursor: dis ? 'default' : 'pointer' });
+  return (
+    <div ref={rootRef} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)', fontFamily: 'var(--kls-font-sans)' }}>
+      {figures.length > 1 && (
+        <div role="tablist" style={{ display: 'flex', gap: 'var(--kls-space-tiny)', padding: 2, height: 40, boxSizing: 'border-box', borderRadius: 8, alignSelf: 'flex-start', maxWidth: '100%',
+          background: 'var(--kls-tertiary)', border: '1px solid var(--kls-outline-variant)', overflowX: 'auto' }}>
+          {figures.map((x, i) => {
+            const on = i === tab;
+            return (
+              <button key={x.fig} role="tab" aria-selected={on} aria-label={`Fig ${x.fig}: ${x.title}`} onClick={() => pick(i)} style={{ height: 34, padding: '0 18px', borderRadius: 8, border: 'none', cursor: 'pointer', flex: 'none',
+                background: on ? 'var(--kls-surface)' : 'transparent', color: on ? 'var(--kls-on-surface)' : 'var(--kls-on-tertiary)',
+                boxShadow: on ? '0 1px 2px rgba(0,0,0,.04)' : 'none', fontFamily: 'var(--kls-font-sans)', ...figLabel }}>Fig {x.fig}</button>
+            );
+          })}
+        </div>
+      )}
+      <div style={{ border: '1px solid var(--kls-outline-variant)', borderRadius: 'var(--kls-radius-small)', overflow: 'hidden', background: 'var(--kls-surface)' }}>
+        <div style={{ height: 220, overflow: 'auto', background: 'var(--kls-surface-container-low)' }}>
+          <div role="img" aria-label={`Figure ${f.fig}: ${f.title}`} style={{ width: `${zoom * 100}%`, minHeight: '100%', aspectRatio: '16 / 9', margin: zoom < 1 ? '0 auto' : 0,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--kls-space-xsmall)', color: 'var(--kls-on-surface-variant)',
+            background: 'var(--kls-surface-container-high)', transition: 'width 125ms var(--kls-ease-standard)' }}>
+            <WEIcon name="image" size={36} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Figure image</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', padding: 'var(--kls-space-xsmall) var(--kls-space-xsmall) var(--kls-space-xsmall) var(--kls-space-small)', borderTop: '1px solid var(--kls-outline-variant)' }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <span style={{ ...figLabel, color: 'var(--kls-on-surface)' }}>Fig {f.fig}</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.title}</span>
+          </div>
+          <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))} disabled={zoom <= 0.5} aria-label="Zoom out" style={zBtn(zoom <= 0.5)}><WEIcon name="zoom-out" size={18} /></button>
+          <button onClick={() => { setDZoom(1); setOpen(true); }} aria-label="Open image" style={circle}><WEIcon name="expand" size={18} /></button>
+          <button onClick={() => setZoom(z => Math.min(3, +(z + 0.25).toFixed(2)))} disabled={zoom >= 3} aria-label="Zoom in" style={zBtn(zoom >= 3)}><WEIcon name="zoom-in" size={18} /></button>
+        </div>
+      </div>
+      {open && rootRef.current && ReactDOM.createPortal(
+        <div role="dialog" aria-modal="true" aria-label={`Figure ${f.fig}: ${f.title}`} style={{ position: 'absolute', inset: 0, zIndex: 90, fontFamily: 'var(--kls-font-sans)', background: 'var(--kls-surface)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', padding: '50px var(--kls-space-med) var(--kls-space-small)', borderBottom: '1px solid var(--kls-outline-variant)' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <span style={{ ...figLabel, color: 'var(--kls-on-surface-variant)' }}>Fig {f.fig}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--kls-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.title}</span>
+            </div>
+            <SheetCloseBtn onClose={() => setOpen(false)} />
+          </div>
+          <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex' }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: 'var(--kls-surface-container-low)', display: 'flex' }}>
+              <div role="img" aria-label={`Figure ${f.fig}: ${f.title}`} style={{ flex: 'none', width: `${dZoom * 100}%`, minHeight: `${dZoom * 100}%`, margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 'var(--kls-space-xsmall)', color: 'var(--kls-on-surface-variant)', background: 'var(--kls-surface-container-high)', transition: 'width 125ms var(--kls-ease-standard), min-height 125ms var(--kls-ease-standard)' }}>
+                <WEIcon name="image" size={48} />
+                <span style={{ fontSize: 14, fontWeight: 600 }}>Figure image</span>
+              </div>
+            </div>
+            <div style={{ position: 'absolute', top: 'var(--kls-space-small)', right: 'var(--kls-space-med)', display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)',
+              padding: 'var(--kls-space-tiny)', borderRadius: 999, background: 'var(--kls-surface)', boxShadow: 'var(--kls-drop-shadow)' }}>
+              <button onClick={() => setDZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))} disabled={dZoom <= 0.5} aria-label="Zoom out" style={zBtn(dZoom <= 0.5)}><WEIcon name="zoom-out" size={18} /></button>
+              <span style={{ minWidth: 44, textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--kls-on-surface-variant)', fontVariantNumeric: 'tabular-nums' }}>{Math.round(dZoom * 100)}%</span>
+              <button onClick={() => setDZoom(z => Math.min(3, +(z + 0.25).toFixed(2)))} disabled={dZoom >= 3} aria-label="Zoom in" style={zBtn(dZoom >= 3)}><WEIcon name="zoom-in" size={18} /></button>
+            </div>
+          </div>
+        </div>,
+        rootRef.current.closest('[data-screen-label="Exam runner"]') || document.body
+      )}
+    </div>
+  );
+};
+
+const MSubmitSheet = ({ open, total, answers, flagged, isStudy, onJump, onSubmit, onDiscard, onClose }) => {
+  const all = Array.from({ length: total }, (_, i) => i);
+  const openQs = all.filter(i => !answers[i]);
+  const marked = all.filter(i => flagged[i]).length;
+  const hasOpen = openQs.length > 0;
+  const label = { fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' };
+  const stat = (title, value, bg, fg, labelFg) => (
+    <div style={{ flex: '1 1 0', minWidth: 0, padding: 'var(--kls-space-small) var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-small)', borderRadius: 'var(--kls-radius-small)', background: bg, display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-tiny)' }}>
+      <span style={{ ...label, color: labelFg, whiteSpace: 'nowrap' }}>{title}</span>
+      <span style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2, color: fg, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{value}</span>
+    </div>
+  );
+  return (
+    <Sheet open={open} onClose={onClose} label={isStudy ? 'End study session' : 'Review and submit exam'}>
+      <div style={{ minHeight: 0, flex: 1, display: 'flex', flexDirection: 'column', fontFamily: 'var(--kls-font-sans)' }}>
+        <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', padding: 'var(--kls-space-med)', borderBottom: '1px solid var(--kls-outline-variant)' }}>
+          <span style={{ flex: 1, fontSize: 20, fontWeight: 600, color: 'var(--kls-on-surface)' }}>{isStudy ? 'End study session' : <>Review {'&'} submit exam</>}</span>
+          <SheetCloseBtn onClose={onClose} />
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 'var(--kls-space-med)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-med)' }}>
+          <div style={{ display: 'flex', gap: 'var(--kls-space-xsmall)' }}>
+            {stat('Answered', `${total - openQs.length}/${total}`, 'var(--kls-surface-variant)', 'var(--kls-on-surface)', 'var(--kls-on-surface-variant)')}
+            {stat('Unanswered', openQs.length, hasOpen ? 'var(--kls-error-container)' : 'var(--kls-surface-variant)', hasOpen ? 'var(--kls-error)' : 'var(--kls-on-surface)', hasOpen ? 'var(--kls-error)' : 'var(--kls-on-surface-variant)')}
+            {stat('Bookmarked', marked, 'var(--kls-accent-5)', 'var(--kls-on-surface)', 'var(--kls-on-surface-variant)')}
+          </div>
+          {hasOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)' }}>
+              <span style={{ ...label, color: 'var(--kls-on-surface-variant)' }}>Still unanswered — tap to jump</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 'var(--kls-space-xsmall)' }}>
+                {openQs.map(i => (
+                  <button key={i} onClick={() => onJump(i)} aria-label={`Go to question ${i + 1}`} style={{ height: 44, borderRadius: 'var(--kls-radius-small)', cursor: 'pointer', padding: 0,
+                    background: 'var(--kls-surface)', border: '1px solid var(--kls-outline-variant)', color: 'var(--kls-on-surface-variant)',
+                    fontFamily: 'var(--kls-font-sans)', fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{i + 1}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)', padding: 'var(--kls-space-small) var(--kls-space-med) var(--kls-space-large)', borderTop: '1px solid var(--kls-outline-variant)' }}>
+          <div style={{ display: 'flex', gap: 'var(--kls-space-xsmall)' }}>
+            <button onClick={onSubmit} style={{ ...mPrimaryBtn(true), flex: 1, minWidth: 0, padding: '0 var(--kls-space-small)', whiteSpace: 'nowrap' }}>{isStudy ? 'End study session' : 'Submit exam'}</button>
+            <button onClick={onClose} style={{ ...mSecondaryBtn, flex: 1, minWidth: 0 }}>Cancel</button>
+          </div>
+          {isStudy && <button onClick={onDiscard} style={{ height: 40, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer',
+            fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 600, color: 'var(--kls-error)', textDecoration: 'underline', textUnderlineOffset: 3 }}>Discard this attempt instead</button>}
+        </div>
+      </div>
+    </Sheet>
+  );
+};
+
+const MCalcSheet = ({ open, onClose }) => {
+  const [st, setSt] = React.useState({ acc: null, op: null, cur: '0', expr: '', done: false });
+  const SYM = { '/': '÷', '*': '×', '-': '−', '+': '+' };
+  const fmt = (n) => { if (!isFinite(n)) return 'Error'; return String(Math.round(n * 1e10) / 1e10); };
+  const calc = (a, op, b) => op === '+' ? a + b : op === '-' ? a - b : op === '*' ? a * b : b === 0 ? NaN : a / b;
+  const press = (k) => setSt(p => {
+    const cur = p.done ? '0' : p.cur;
+    if (/^[0-9]$/.test(k)) return { ...p, done: false, expr: p.done ? '' : p.expr, cur: cur === '0' ? k : cur.length >= 14 ? cur : cur + k };
+    if (k === '.') return { ...p, done: false, expr: p.done ? '' : p.expr, cur: cur.includes('.') ? cur : cur + '.' };
+    if (k === 'C') return { acc: null, op: null, cur: '0', expr: '', done: false };
+    if (k === 'back') return { ...p, done: false, cur: cur.length > 1 ? cur.slice(0, -1) : '0' };
+    if (k === '%') return { ...p, done: false, cur: fmt(parseFloat(p.cur) / 100) };
+    if (k === 'neg') return { ...p, done: false, cur: p.cur.startsWith('-') ? p.cur.slice(1) : p.cur === '0' ? '0' : '-' + p.cur };
+    if (SYM[k]) {
+      const v = p.op && p.cur !== '' ? calc(p.acc, p.op, parseFloat(p.cur)) : p.cur !== '' ? parseFloat(p.cur) : p.acc;
+      return { acc: v, op: k, cur: '', expr: `${fmt(v)} ${SYM[k]}`, done: false };
+    }
+    if (k === '=') {
+      if (!p.op || p.cur === '') return p;
+      const v = calc(p.acc, p.op, parseFloat(p.cur));
+      return { acc: null, op: null, cur: fmt(v), expr: `${fmt(p.acc)} ${SYM[p.op]} ${p.cur}`, done: true };
+    }
+    return p;
+  });
+  const main = st.cur !== '' ? st.cur : st.acc != null ? fmt(st.acc) : '0';
+  const keyBase = { height: 52, borderRadius: 'var(--kls-radius-small)', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center',
+    fontFamily: 'var(--kls-font-sans)', fontSize: 18, fontWeight: 600, color: 'var(--kls-on-surface)' };
+  const K = { num: { ...keyBase, background: 'var(--kls-surface-container-low)' }, op: { ...keyBase, background: 'var(--kls-tertiary)' },
+    eq: { ...keyBase, background: 'var(--kls-tertiary-container)', color: 'var(--kls-on-tertiary-container)', fontWeight: 700 } };
+  const keys = [
+    ['C', 'C', 'op'], ['÷', '/', 'op'], ['×', '*', 'op'], ['back', 'back', 'op'],
+    ['7', '7', 'num'], ['8', '8', 'num'], ['9', '9', 'num'], ['−', '-', 'op'],
+    ['4', '4', 'num'], ['5', '5', 'num'], ['6', '6', 'num'], ['+', '+', 'op'],
+    ['1', '1', 'num'], ['2', '2', 'num'], ['3', '3', 'num'], ['=', '=', 'eq'],
+    ['0', '0', 'num'], ['.', '.', 'num'], ['%', '%', 'op'], ['±', 'neg', 'op'],
+  ];
+  return (
+    <Sheet open={open} onClose={onClose} label="Calculator">
+      <div style={{ padding: 'var(--kls-space-med) var(--kls-space-med) var(--kls-space-large)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)', fontFamily: 'var(--kls-font-sans)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--kls-on-surface)' }}>Calculator</div>
+          <SheetCloseBtn onClose={onClose} />
+        </div>
+        <div style={{ background: 'var(--kls-surface-variant)', borderRadius: 'var(--kls-radius-small)', padding: 'var(--kls-space-small) var(--kls-space-med)',
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 'var(--kls-space-tiny)', minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)', minHeight: 20, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{st.expr}</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--kls-on-surface)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{main}</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 'var(--kls-space-xsmall)' }}>
+          {keys.map(([label, k, kind]) => (
+            <button key={k} onClick={() => press(k)} aria-label={k === 'back' ? 'Backspace' : k === 'neg' ? 'Toggle sign' : label} style={K[kind]}>
+              {k === 'back' ? <WEIcon name="backspace" size={20} /> : label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </Sheet>
   );
 };
 
@@ -5479,65 +5955,163 @@ const MResults = ({ onDone, onDrill, onRetake, tab, onTab, mode = 'study' } = {}
 /* ─────────────────────────────────────────────────────────────
    Screen 6 — History list
    ───────────────────────────────────────────────────────────── */
-const MHistory = ({ tab, onTab, onBack, onOpenAttempt } = {}) => {
-  const items = (window.KILSAR_DATA.history || []).slice(0, 8);
-  const fallback = items.length ? items : Array.from({ length: 6 }, (_, i) => ({
-    id: `h-${i}`,
-    date: ['May 10', 'May 8', 'May 5', 'May 2', 'Apr 28', 'Apr 24'][i],
-    mode: i % 3 === 0 ? 'study' : 'exam',
-    subject: ['Airframe', 'Powerplant', 'General', 'Airframe', 'Powerplant', 'General'][i],
-    score: [0.78, 0.72, 0.81, 0.66, 0.74, 0.88][i],
-    count: [100, 100, 60, 100, 100, 60][i],
-    duration: ['1:48', '1:55', '52m', '2:00', '1:38', '41m'][i],
-  }));
+const MWE_ACS_MAX = 2;
+const MWE_attemptTitle = (a) => {
+  if (a.mode !== 'Exam') return 'Practice Session';
+  if (a.subject) return `${a.subject} Written Exam`;
+  const p = String((a.acs && a.acs[0]) || '').split('.')[0];
+  return `${p === 'AF' ? 'Airframe' : p === 'GE' ? 'General' : 'Powerplant'} Written Exam`;
+};
+const MWE_attemptType = (a) => {
+  const set = new Set((a.acs || []).map(c => String(c).split('.')[0]));
+  if (set.size !== 1) return 'Mixed';
+  const p = [...set][0];
+  return p === 'AF' ? 'Airframe' : p === 'GE' ? 'General' : 'Powerplant';
+};
+const MWE_MOCK_ASSIGNMENTS = { 'h-1': 'Powerplant Midterm', 'h-4': 'Valve Train Review', 'h-7': 'Magnetos & Ignition Timing', 'h-10': 'Powerplant Midterm' };
+const MWE_attemptAssignment = (a) => a.assignment || MWE_MOCK_ASSIGNMENTS[a.id] || '';
+const MHIST_SORTS = [['date', 'Date'], ['title', 'Title'], ['assignment', 'Assignment'], ['mode', 'Mode'], ['type', 'Type'], ['count', 'Questions'], ['time', 'Time'], ['score', 'Score']];
+
+const MHIST_SWIPE_W = 88;
+function MHistSwipeRow({ children, onDelete, onTap, isLast }) {
+  const [tx, setTx] = React.useState(0);
+  const drag = React.useRef({ active: false, startX: 0, base: 0, moved: false });
+  const down = (e) => { drag.current = { active: true, startX: e.clientX, base: tx, moved: false }; };
+  const move = (e) => {
+    const d = drag.current; if (!d.active) return;
+    const dx = e.clientX - d.startX;
+    if (Math.abs(dx) > 4) { d.moved = true; if (!e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.setPointerCapture(e.pointerId); }
+    if (d.moved) setTx(Math.max(-MHIST_SWIPE_W, Math.min(0, d.base + dx)));
+  };
+  const up = () => { const d = drag.current; if (!d.active) return; d.active = false; setTx(cur => (cur < -MHIST_SWIPE_W * 0.4 ? -MHIST_SWIPE_W : 0)); };
+  const onClick = (e) => {
+    if (drag.current.moved) { e.preventDefault(); e.stopPropagation(); return; }
+    if (tx !== 0) { setTx(0); return; }
+    onTap && onTap();
+  };
   return (
-    <MobileShell tab={tab} onTab={onTab}>
-      <MobileNav title="History" subtitle="Past attempts and progress over time." back="Exams" onBack={onBack} />
-
-      <div style={{ padding: '0 16px 4px' }}>
-        <Segment value="all" options={[{v:'all', l:'All'}, {v:'exam', l:'Exam'}, {v:'study', l:'Study'}]} />
+    <div style={{ position: 'relative', borderBottom: isLast ? 'none' : '1px solid var(--kls-outline-variant)' }}>
+      <button aria-label="Delete attempt" onClick={() => { setTx(0); onDelete(); }}
+        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: MHIST_SWIPE_W, border: 'none', cursor: 'pointer',
+          background: 'var(--kls-error)', color: 'var(--kls-on-error)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--kls-space-tiny)' }}>
+        <KlsIcon name="trash" size={20} color="var(--kls-on-error)" />
+        <span style={{ fontFamily: 'var(--kls-font-sans)', fontSize: 12, fontWeight: 600 }}>Delete</span>
+      </button>
+      <div onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onClick={onClick}
+        style={{ position: 'relative', background: 'var(--kls-surface)', cursor: 'pointer', touchAction: 'pan-y',
+          transform: `translateX(${tx}px)`, transition: drag.current.active ? 'none' : 'transform 220ms var(--kls-ease-standard)' }}>
+        {children}
       </div>
+    </div>
+  );
+}
 
-      <WESectionHead title="Recent attempts" />
-      <div style={{ padding: '0 16px 28px' }}>
-        <WECard>
-          {fallback.map((h, i, arr) => {
-            const isExam = String(h.mode || '').toLowerCase() === 'exam';
-            const pass = (h.score || 0.7) >= 0.7;
+// TODO(history-cell): Investigate / compare this mobile history cell with the current production implementation
+// to decide which fields to keep, move, or drop (title, mode chip, date, question count · time, ACS codes + "+X more",
+// assignment, score). Type was removed from the cell per review; it remains a sort option.
+const MHistory = ({ tab, onTab, onBack, onOpenAttempt, deletedIds, onDeleteAttempt } = {}) => {
+  const attempts = window.KILSAR_DATA.history || [];
+  const [modeFilter, setModeFilter] = React.useState('all');
+  const [rangeFilter, setRangeFilter] = React.useState('all');
+  const [sort, setSort] = React.useState({ key: 'date', dir: 'desc' });
+  const [sortOpen, setSortOpen] = React.useState(false);
+  const [localDeleted, setLocalDeleted] = React.useState({});
+  const deleted = deletedIds || localDeleted;
+  const refTime = Math.max(...attempts.map(a => new Date(a.date).getTime()));
+  const rows = attempts.filter(a => !deleted[a.id] && (modeFilter === 'all' || a.mode.toLowerCase() === modeFilter)
+    && (rangeFilter === 'all' || refTime - new Date(a.date).getTime() < Number(rangeFilter) * 86400000));
+  const secs = (d) => String(d || '').split(':').reduce((t, n) => t * 60 + (parseInt(n, 10) || 0), 0);
+  const val = (a) => sort.key === 'date' ? new Date(a.date).getTime() : sort.key === 'title' ? MWE_attemptTitle(a) : sort.key === 'assignment' ? (MWE_attemptAssignment(a) || '\uffff')
+    : sort.key === 'mode' ? a.mode : sort.key === 'type' ? MWE_attemptType(a) : sort.key === 'count' ? a.count : sort.key === 'time' ? secs(a.duration) : a.score;
+  const sorted = rows.slice().sort((x, y) => { const p = val(x), q = val(y); const c = typeof p === 'string' ? p.localeCompare(q) : p - q; return sort.dir === 'asc' ? c : -c; });
+  const pickSort = (k) => setSort(p => p.key === k ? { key: k, dir: p.dir === 'asc' ? 'desc' : 'asc' } : { key: k, dir: ['title', 'assignment', 'mode', 'type'].includes(k) ? 'asc' : 'desc' });
+  const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const sortLabel = (MHIST_SORTS.find(x => x[0] === sort.key) || [])[1];
+  const seg = (opts, value, set, label) => (
+    <div role="tablist" aria-label={label} style={{ display: 'flex', gap: 'var(--kls-space-tiny)', padding: 2, height: 40, boxSizing: 'border-box', borderRadius: 8,
+      background: 'var(--kls-tertiary)', border: '1px solid var(--kls-outline-variant)' }}>
+      {opts.map(([v, l]) => {
+        const on = value === v;
+        return (
+          <button key={v} role="tab" aria-selected={on} onClick={() => set(v)} style={{ flex: 1, minWidth: 0, height: 34, padding: '0 var(--kls-space-small)', borderRadius: 8, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+            background: on ? 'var(--kls-surface)' : 'transparent', color: on ? 'var(--kls-on-surface)' : 'var(--kls-on-tertiary)',
+            boxShadow: on ? '0 1px 2px rgba(0,0,0,.04)' : 'none', fontFamily: 'var(--kls-font-sans)', fontSize: 12, fontWeight: 600 }}>{l}</button>
+        );
+      })}
+    </div>
+  );
+  return (
+    <MobileShell tab={tab} onTab={onTab} theme={null}>
+      <MobileNav title="History" subtitle="Past attempts and progress over time." back="Exams" onBack={onBack} />
+      <div style={{ padding: '0 var(--kls-space-med)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)', fontFamily: 'var(--kls-font-sans)' }}>
+        {seg([['all', 'All'], ['exam', 'Exam'], ['study', 'Study']], modeFilter, setModeFilter, 'Filter by mode')}
+        {seg([['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']], rangeFilter, setRangeFilter, 'Filter by date')}
+      </div>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', padding: 'var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)', fontFamily: 'var(--kls-font-sans)' }}>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--kls-on-surface-variant)' }}>{sorted.length} {sorted.length === 1 ? 'attempt' : 'attempts'}</span>
+        <button onClick={() => setSortOpen(o => !o)} aria-expanded={sortOpen} style={{ height: 40, padding: '0 var(--kls-space-small)', borderRadius: 'var(--kls-radius-med)', cursor: 'pointer',
+          background: 'var(--kls-surface)', color: 'var(--kls-on-surface)', border: '1px solid var(--kls-outline-variant)', display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)',
+          fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700 }}>
+          <span style={{ fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>Sort</span>{sortLabel}
+          <WEIcon name="chev-d" size={12} style={{ transform: sort.dir === 'asc' ? 'rotate(180deg)' : 'none' }} />
+        </button>
+        {sortOpen && (
+          <>
+            <div onClick={() => setSortOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 20 }} />
+            <div role="menu" style={{ position: 'absolute', right: 'var(--kls-space-med)', top: 'calc(100% - var(--kls-space-tiny))', zIndex: 21, minWidth: 200,
+              background: 'var(--kls-on-primary)', borderRadius: 'var(--kls-radius-small)', boxShadow: 'var(--kls-drop-shadow)', overflow: 'hidden' }}>
+              {MHIST_SORTS.map(([k, l], i) => {
+                const on = sort.key === k;
+                return (
+                  <button key={k} role="menuitemradio" aria-checked={on} onClick={() => { pickSort(k); setSortOpen(false); }} style={{ width: '100%', height: 52, display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)',
+                    padding: '0 var(--kls-space-med)', background: 'transparent', border: 'none', borderTop: i ? '1px solid var(--kls-outline-variant)' : 'none', cursor: 'pointer',
+                    fontFamily: 'var(--kls-font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--kls-on-surface)', textAlign: 'left' }}>
+                    <span style={{ flex: 1 }}>{l}</span>
+                    {on && <WEIcon name="chev-d" size={12} style={{ transform: sort.dir === 'asc' ? 'rotate(180deg)' : 'none' }} />}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+      <div style={{ padding: '0 var(--kls-space-med) 28px' }}>
+        <div style={{ background: 'var(--kls-surface)', borderRadius: 'var(--kls-radius-med)', overflow: 'hidden', fontFamily: 'var(--kls-font-sans)' }}>
+          {sorted.length === 0 && (
+            <div style={{ padding: 'var(--kls-space-large) var(--kls-space-med)', textAlign: 'center', fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>No attempts match these filters.</div>
+          )}
+          {sorted.map((a, i) => {
+            const tone = a.score >= 0.8 ? 'var(--good)' : a.score >= 0.7 ? 'var(--warn)' : 'var(--bad)';
+            const asg = MWE_attemptAssignment(a);
+            const isExam = a.mode === 'Exam';
             return (
-              <React.Fragment key={h.id}>
-                <div onClick={() => onOpenAttempt && onOpenAttempt(h)} style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                    background: isExam ? 'var(--lock-soft)' : 'var(--accent-soft)',
-                    color: isExam ? 'var(--lock)' : 'var(--accent)',
-                    display: 'grid', placeItems: 'center',
-                  }}>
-                    <WEIcon name={isExam ? 'lock' : 'book'} size={16} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                      <span style={{ fontSize: 15, fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.title || h.subject}</span>
-                      {isExam && <span style={{ fontSize: 11, color: 'var(--lock)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Exam</span>}
+              <MHistSwipeRow key={a.id} isLast={i === sorted.length - 1} onTap={() => onOpenAttempt && onOpenAttempt(a)} onDelete={() => onDeleteAttempt ? onDeleteAttempt(a.id) : setLocalDeleted(d => ({ ...d, [a.id]: true }))}>
+                <div style={{ padding: 'var(--kls-space-small) var(--kls-space-med)', display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)' }}>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-tiny)' }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--kls-on-surface)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{MWE_attemptTitle(a)}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)', minWidth: 0 }}>
+                      <span className={isExam ? 'chip chip--lock' : 'chip chip--accent'} style={{ flex: 'none' }}><WEIcon name={isExam ? 'lock' : 'book'} size={10} />{a.mode}</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{fmtDate(a.date)}</span>
                     </div>
-                    <div style={{ fontSize: 12.5, color: 'var(--ink-3)', display: 'flex', gap: 8, marginTop: 2 }}>
-                      <span>{h.date || ''}</span>
-                      <span style={{ color: 'var(--ink-5)' }}>·</span>
-                      <span className="mono">{h.count} Q</span>
-                      <span style={{ color: 'var(--ink-5)' }}>·</span>
-                      <span className="mono">{typeof h.duration === 'string' ? h.duration : ''}</span>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)', fontVariantNumeric: 'tabular-nums' }}>{a.count} questions · {a.duration}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', fontSize: 12, color: 'var(--ink-4)', minWidth: 0 }}>
+                      <span className="mono" style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(a.acs || []).slice(0, MWE_ACS_MAX).join(' · ')}</span>
+                      {(a.acs || []).length > MWE_ACS_MAX && <span style={{ whiteSpace: 'nowrap', flex: 'none' }}>+{a.acs.length - MWE_ACS_MAX} more</span>}
                     </div>
+                    {asg && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-tiny)', fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface)', minWidth: 0 }}>
+                        <WEIcon name="exam" size={12} style={{ flex: 'none', color: 'var(--kls-on-surface-variant)' }} />
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{asg}</span>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div className="mono" style={{ fontSize: 17, fontWeight: 700, color: pass ? 'var(--good)' : 'var(--bad)' }}>{Math.round((h.score || 0.7) * 100)}%</div>
-                  </div>
-                  <WEIcon name="chev-r" size={14} style={{ color: 'var(--ink-5)' }} />
+                  <span className="mono" style={{ fontSize: 17, fontWeight: 700, color: tone, flex: 'none' }}>{Math.round(a.score * 100)}%</span>
+                  <WEIcon name="chev-r" size={14} style={{ color: 'var(--ink-5)', flex: 'none' }} />
                 </div>
-                {i < arr.length - 1 && <div style={{ height: 0.5, background: 'var(--line)', marginLeft: 66 }} />}
-              </React.Fragment>
+              </MHistSwipeRow>
             );
           })}
-        </WECard>
+        </div>
       </div>
     </MobileShell>
   );
@@ -5547,13 +6121,21 @@ const MHistory = ({ tab, onTab, onBack, onOpenAttempt } = {}) => {
 /* ─────────────────────────────────────────────────────────────
    Attempt summary (opened from History)
    ───────────────────────────────────────────────────────────── */
-const MHistoryDetail = ({ attempt, onBack, summaryMode = 'From attempt' }) => {
+const MWE_SAMPLE_NOTES = [
+  { stem: 'On a four-stroke-cycle', text: 'Overlap = end of exhaust, start of intake. Both valves open briefly to scavenge.' },
+  { stem: 'The function of the oil control ring', text: "Oil control ring regulates oil film thickness on the cylinder wall. Don't confuse with the compression ring." },
+  { stem: 'Detonation in a reciprocating', text: 'Detonation is explosive burning after normal ignition. Pre-ignition happens before the spark. Review both before the real exam.' },
+  { stem: 'The purpose of cylinder choke', text: 'Choke: barrel is narrower at the top so it becomes straight at operating temperature.' },
+];
+const MHistoryDetail = ({ attempt, onBack, onDelete, backLabel = 'History', summaryMode = 'From attempt' }) => {
   const D = window.KILSAR_DATA;
   const [filter, setFilter] = React.useState('all');
-  const [openAreas, setOpenAreas] = React.useState({});
   const [openQ, setOpenQ] = React.useState({});
+  const [notesOpen, setNotesOpen] = React.useState(false);
+  const [allOpen, setAllOpen] = React.useState(false);
+  const rowRefs = React.useRef({});
+  const [pendingScroll, setPendingScroll] = React.useState(null);
 
-  // Per-question results come from the attempt's own per-ACS breakdown.
   const questions = React.useMemo(() => {
     const bank = D.sampleQuestions;
     const out = [];
@@ -5562,211 +6144,221 @@ const MHistoryDetail = ({ attempt, onBack, summaryMode = 'From attempt' }) => {
       for (let j = 0; j < row.total; j++) {
         const q = pool.length ? pool[j % pool.length] : bank[out.length % bank.length];
         const isCorrect = j < row.correct;
-        out.push({
-          ...q,
-          acs: row.acs, module: row.module,
-          id: attempt.id + '-q-' + out.length,
-          chosen: isCorrect ? q.correct : (q.choices.find(c => c.id !== q.correct) || {}).id,
-          isCorrect,
-        });
+        out.push({ ...q, acs: row.acs, module: row.module, id: attempt.id + '-q-' + out.length,
+          chosen: isCorrect ? q.correct : (q.choices.find(c => c.id !== q.correct) || {}).id, isCorrect });
       }
     });
     return out;
   }, [attempt.id]);
+  const [notes, setNotes] = React.useState(() => {
+    const seed = {}; const used = new Set();
+    questions.forEach((q, i) => {
+      const hit = MWE_SAMPLE_NOTES.find(n => String(q.stem || '').startsWith(n.stem));
+      if (hit && !used.has(hit.stem)) { used.add(hit.stem); seed[i] = hit.text; }
+    });
+    return seed;
+  });
+  const noteCount = Object.keys(notes).length;
 
   const correct = questions.filter(q => q.isCorrect).length;
   const wrong = questions.length - correct;
-  const attemptCorrect = Math.round(attempt.count * attempt.score);
-  const mode = summaryMode === 'From attempt' ? attempt.mode : summaryMode;
-  const pctColor = (p) => p >= 0.8 ? 'var(--good)' : p >= 0.6 ? 'var(--warn)' : 'var(--bad)';
-
+  const scoreTone = attempt.score >= 0.8 ? 'var(--kls-success)' : attempt.score >= 0.7 ? 'var(--kls-accent-4)' : 'var(--kls-error)';
   const byModule = {};
   questions.forEach(q => {
-    if (!byModule[q.module]) byModule[q.module] = { correct: 0, total: 0, acs: q.acs };
+    if (!byModule[q.module]) byModule[q.module] = { correct: 0, total: 0 };
     byModule[q.module].total++;
     if (q.isCorrect) byModule[q.module].correct++;
   });
-
-  const areaMap = {};
-  questions.forEach(q => {
-    const area = String(q.acs || '').split('.').slice(0, 2).join('.');
-    if (!areaMap[area]) areaMap[area] = { correct: 0, total: 0, leaves: {} };
-    areaMap[area].total++;
-    if (q.isCorrect) areaMap[area].correct++;
-    const leaves = areaMap[area].leaves;
-    if (!leaves[q.acs]) leaves[q.acs] = { correct: 0, total: 0, module: q.module };
-    leaves[q.acs].total++;
-    if (q.isCorrect) leaves[q.acs].correct++;
-  });
-  const byArea = Object.entries(areaMap);
-  const areaTitle = (code) => ((D.blocks || []).find(b => b.acs === code) || {}).title || '';
-
-  const isExam = mode === 'Exam';
+  const isExam = attempt.mode === 'Exam';
   const visible = questions.filter(q => filter === 'wrong' ? !q.isCorrect : true);
-  const taken = new Date(attempt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const taken = new Date(attempt.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  const revealQuestion = (i) => {
+    setNotesOpen(false);
+    setAllOpen(true);
+    setOpenQ(o => ({ ...o, [questions[i].id]: true }));
+    if (questions[i].isCorrect && filter === 'wrong') setFilter('all');
+    setPendingScroll(questions[i].id);
+  };
+  React.useEffect(() => {
+    if (!pendingScroll) return;
+    const el = rowRefs.current[pendingScroll];
+    setPendingScroll(null);
+    if (!el) return;
+    requestAnimationFrame(() => {
+      let p = el.parentElement;
+      while (p && !(/(auto|scroll)/.test(getComputedStyle(p).overflowY) && p.scrollHeight > p.clientHeight)) p = p.parentElement;
+      if (!p) return;
+      const from = p.scrollTop;
+      const to = Math.max(0, from + el.getBoundingClientRect().top - p.getBoundingClientRect().top - 80);
+      const t0 = performance.now(), dur = 250;
+      const step = (t) => { const k = Math.min(1, (t - t0) / dur); const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; p.scrollTop = from + (to - from) * e; if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }, [pendingScroll, openQ]);
+
+  const card = { background: 'var(--kls-surface)', borderRadius: 'var(--kls-radius-med)', padding: 'var(--kls-space-med)', fontFamily: 'var(--kls-font-sans)' };
+  const circle = { width: 40, height: 40, borderRadius: 999, flex: 'none', position: 'relative', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+    background: 'var(--kls-surface)', border: '1px solid var(--kls-outline)', color: 'var(--kls-on-surface)' };
+  const stat = (label, value, tone, align = 'start') => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: align === 'start' ? 'flex-start' : align === 'end' ? 'flex-end' : 'center', justifySelf: align, gap: 'var(--kls-space-tiny)', minWidth: 0 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--kls-on-surface-variant)' }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 500, lineHeight: 1.2, color: tone || 'var(--kls-on-surface)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{value}</div>
+    </div>
+  );
 
   return (
-    <MobileShell>
-      <MobileNav title={isExam ? 'Exam session' : 'Practice session'} back="History" onBack={onBack}
-        subtitle={'Taken ' + taken + ' · ' + attempt.duration + ' · ' + attempt.count + ' questions'} />
+    <MobileShell theme={null}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+      <MobileNav title={MWE_attemptTitle(attempt)} back={backLabel} onBack={onBack}
+        center={<span className={isExam ? 'chip chip--lock' : 'chip chip--accent'} style={{ whiteSpace: 'nowrap' }}><WEIcon name={isExam ? 'lock' : 'book'} size={10} />{attempt.mode} Mode</span>}
+        trailing={
+          <button onClick={() => setNotesOpen(true)} aria-label={noteCount ? `Notes (${noteCount})` : 'Notes'} style={circle}>
+            <WEIcon name="notes" size={20} />
+            {noteCount > 0 && <span style={{ position: 'absolute', top: -5, right: -5, minWidth: 10, height: 18, padding: '0 var(--kls-space-tiny)', borderRadius: 999,
+              background: 'var(--kls-info)', color: 'var(--kls-on-info)', border: '2px solid var(--kls-surface)', boxSizing: 'content-box',
+              fontFamily: 'var(--kls-font-sans)', fontSize: 10, fontWeight: 700, lineHeight: '18px', textAlign: 'center' }}>{noteCount}</span>}
+          </button>
+        } />
 
-      {/* Score card */}
-      <div style={{ padding: '4px 16px 0' }}>
-        <WECard style={{ padding: 16 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)',
-            padding: '5px 10px', borderRadius: 8, marginBottom: 14,
-            background: isExam ? 'var(--lock-soft)' : 'var(--accent-soft)',
-            color: isExam ? 'var(--lock)' : 'var(--accent)',
-            fontSize: 13.5, fontWeight: 600,
-          }}>
-            <WEIcon name={isExam ? 'lock' : 'book'} size={14} />{mode}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--kls-space-small)' }}>
-            {[
-              ['Score', Math.round(attempt.score * 100) + '%', pctColor(attempt.score), 'left'],
-              ['Correct', attemptCorrect + ' / ' + attempt.count, 'var(--ink)', 'center'],
-              ['Missed', String(attempt.count - attemptCorrect), (attempt.count - attemptCorrect) ? 'var(--bad)' : 'var(--ink)', 'right'],
-            ].map(([label, value, color, align]) => (
-              <div key={label} style={{ textAlign: align }}>
-                <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 6 }}>{label}</div>
-                <div className="mono" style={{ fontSize: 22, fontWeight: 700, color }}>{value}</div>
-              </div>
-            ))}
-          </div>
-        </WECard>
-      </div>
-
-      {/* Breakdown — by ACS code in Exam mode, by module in Study mode */}
-      <div style={{ padding: 'var(--kls-space-small) 16px 0' }}>
-        <WECard style={{ padding: 16 }}>
-          <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em', marginBottom: 14 }}>
-            {isExam ? 'Performance by ACS code' : 'Performance by module'}
-          </div>
-          {isExam ? (
-            <div>
-              {byArea.map(([code, v], ai) => {
-                const pct = v.correct / v.total;
-                const color = pctColor(pct);
-                const open = !!openAreas[code];
-                const leaves = Object.entries(v.leaves);
-                return (
-                  <div key={code}>
-                    <div onClick={() => setOpenAreas(o => ({ ...o, [code]: !o[code] }))}
-                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', padding: 'var(--kls-space-small) 0',
-                        borderBottom: ai === byArea.length - 1 && !open ? 0 : '0.5px solid var(--line)', minHeight: 44, boxSizing: 'border-box' }}>
-                      <WEIcon name={open ? 'chev-d' : 'chev-r'} size={14} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="mono" style={{ fontSize: 15, fontWeight: 600 }}>{code}</div>
-                        <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 2 }}>{areaTitle(code)} · {v.correct} of {v.total} correct</div>
-                      </div>
-                      <div className="mono" style={{ fontSize: 16, fontWeight: 700, color }}>{Math.round(pct * 100)}%</div>
-                    </div>
-                    {open && leaves.map(([leaf, lv], li) => {
-                      const lp = lv.correct / lv.total;
-                      return (
-                        <div key={leaf} style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)',
-                          padding: '10px 0 10px 28px',
-                          borderBottom: (ai === byArea.length - 1 && li === leaves.length - 1) ? 0 : '0.5px solid var(--line)' }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div className="mono" style={{ fontSize: 13, color: 'var(--ink-2)' }}>{leaf}</div>
-                            <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 1 }}>{lv.module} · {lv.correct} of {lv.total}</div>
-                          </div>
-                          <div className="mono" style={{ fontSize: 13.5, fontWeight: 600, color: pctColor(lp) }}>{Math.round(lp * 100)}%</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+      <div style={{ padding: '0 var(--kls-space-med)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)', paddingBottom: 28 }}>
+        <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-med)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)' }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)', lineHeight: 1.45 }}>
+              Taken on: <span style={{ color: 'var(--kls-on-surface)' }}>{taken}</span>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)' }}>
-              {Object.entries(byModule).map(([mod, v]) => {
-                const pct = v.correct / v.total;
-                const color = pctColor(pct);
-                return (
-                  <div key={mod} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: 'var(--kls-space-small)' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--kls-space-small)', marginBottom: 8 }}>
-                      <span style={{ fontSize: 15, fontWeight: 500 }}>{mod}</span>
-                      <span className="mono" style={{ fontSize: 16, fontWeight: 700, color }}>{Math.round(pct * 100)}%</span>
-                    </div>
-                    <div style={{ height: 4, background: 'var(--bg-sunken)', borderRadius: 999, overflow: 'hidden' }}>
-                      <div style={{ width: (pct * 100) + '%', height: '100%', background: color }} />
-                    </div>
-                    <div style={{ fontSize: 12.5, color: 'var(--ink-3)', marginTop: 8 }}>{v.correct} of {v.total} correct</div>
-                  </div>
-                );
-              })}
+            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)', fontVariantNumeric: 'tabular-nums' }}>{attempt.duration} · {attempt.count} questions</div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)', gap: 'var(--kls-space-small)' }}>
+            {stat('Score', Math.round(attempt.score * 100) + '%', scoreTone, 'start')}
+            {stat('Correct', correct + ' / ' + questions.length, null, 'center')}
+            {stat('Missed', wrong, wrong ? 'var(--kls-error)' : null, 'end')}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)' }}>
+            {wrong > 0 && <button style={{ ...mPrimaryBtn(true), width: '100%' }}><WEIcon name="sparkles" size={16} />Quiz from these {wrong} misses</button>}
+            <div style={{ display: 'flex', gap: 'var(--kls-space-xsmall)' }}>
+              <button style={{ ...mSecondaryBtn, flex: 1, minWidth: 0, padding: '0 var(--kls-space-small)', whiteSpace: 'nowrap' }}>Retake same setup</button>
+              <button style={{ ...mSecondaryBtn, flex: 1, minWidth: 0, padding: '0 var(--kls-space-small)', gap: 'var(--kls-space-xsmall)', whiteSpace: 'nowrap' }}><WEIcon name="orion" size={16} />Review with Orion</button>
             </div>
-          )}
-        </WECard>
-      </div>
+          </div>
+        </div>
 
-      {/* All questions */}
-      <div style={{ padding: 'var(--kls-space-small) 16px 28px' }}>
-        <WECard style={{ padding: '16px 0 0' }}>
-          <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-0.01em', padding: '0 16px 14px' }}>All questions</div>
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, padding: 2, margin: '0 16px 4px',
-            background: 'var(--bg-sunken)', borderRadius: 9,
-          }}>
-            {[['all', 'All (' + questions.length + ')'], ['wrong', 'Missed (' + wrong + ')']].map(([v, l]) => {
-              const active = filter === v;
+        <div style={card}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--kls-on-surface)', marginBottom: 'var(--kls-space-small)' }}>Performance by module</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)' }}>
+            {Object.entries(byModule).map(([mod, v]) => {
+              const pct = v.correct / v.total;
+              const color = pct >= 0.8 ? 'var(--kls-success)' : pct >= 0.6 ? 'var(--kls-accent-4)' : 'var(--kls-error)';
               return (
-                <div key={v} onClick={() => setFilter(v)} style={{ padding: '7px 10px', borderRadius: 7, textAlign: 'center',
-                  background: active ? 'var(--bg-elev)' : 'transparent', boxShadow: active ? '0 1px 2px rgba(11,15,20,0.08)' : 'none',
-                  fontSize: 13.5, fontWeight: active ? 600 : 500, color: active ? 'var(--ink)' : 'var(--ink-3)' }}>{l}</div>
+                <div key={mod} style={{ padding: 'var(--kls-space-small)', background: 'var(--kls-surface)', border: '1px solid var(--kls-outline-variant)', borderRadius: 'var(--kls-radius-med)',
+                  display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--kls-space-small)' }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--kls-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mod}</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color, fontVariantNumeric: 'tabular-nums', flex: 'none' }}>{Math.round(pct * 100)}%</div>
+                  </div>
+                  <div style={{ height: 4, borderRadius: 999, background: 'var(--kls-tertiary)', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct * 100}%`, height: '100%', borderRadius: 999, background: color }} />
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>{v.correct} of {v.total} correct</div>
+                </div>
               );
             })}
           </div>
-          {questions.length < attempt.count && (
-            <div style={{ fontSize: 12, color: 'var(--ink-4)', padding: '8px 16px 0' }}>Showing {questions.length} of {attempt.count} questions</div>
-          )}
-          {visible.map((q) => {
-            const idx = questions.indexOf(q);
+        </div>
+
+        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)', padding: 'var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)' }}>
+            <button onClick={() => setAllOpen(o => !o)} aria-expanded={allOpen} style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', width: '100%', padding: 0, background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--kls-font-sans)' }}>
+              <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: 'var(--kls-on-surface)' }}>All questions</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--kls-on-surface-variant)' }}>{questions.length}</span>
+              <WEIcon name={allOpen ? 'chev-d' : 'chev-r'} size={14} style={{ color: 'var(--ink-5)' }} />
+            </button>
+            {allOpen && <div role="tablist" style={{ display: 'flex', gap: 'var(--kls-space-tiny)', padding: 2, height: 40, boxSizing: 'border-box', borderRadius: 8, background: 'var(--kls-tertiary)', border: '1px solid var(--kls-outline-variant)' }}>
+              {[['all', 'All (' + questions.length + ')'], ['wrong', 'Missed (' + wrong + ')']].map(([v, l]) => {
+                const on = filter === v;
+                return (
+                  <button key={v} role="tab" aria-selected={on} onClick={() => setFilter(v)} style={{ flex: 1, height: 34, borderRadius: 8, border: 'none', cursor: 'pointer',
+                    background: on ? 'var(--kls-surface)' : 'transparent', color: on ? 'var(--kls-on-surface)' : 'var(--kls-on-tertiary)',
+                    boxShadow: on ? '0 1px 2px rgba(0,0,0,.04)' : 'none', fontFamily: 'var(--kls-font-sans)', fontSize: 12, fontWeight: 600 }}>{l}</button>
+                );
+              })}
+            </div>}
+          </div>
+          {allOpen && visible.map((q) => {
+            const i = questions.indexOf(q);
             const open = !!openQ[q.id];
-            const chosen = (q.choices.find(c => c.id === q.chosen) || {}).text;
-            const right = (q.choices.find(c => c.id === q.correct) || {}).text;
+            const note = notes[i];
             return (
-              <div key={q.id} style={{ borderTop: '0.5px solid var(--line)' }}>
-                <div onClick={() => setOpenQ(o => ({ ...o, [q.id]: !o[q.id] }))}
-                  style={{ display: 'grid', gridTemplateColumns: '18px 24px 1fr 14px', gap: 'var(--kls-space-small)',
-                    alignItems: 'center', padding: 'var(--kls-space-small) 16px', minHeight: 44, boxSizing: 'border-box' }}>
-                  <span className="mono" style={{ fontSize: 12, color: 'var(--ink-4)' }}>{idx + 1}</span>
+              <div key={q.id} ref={(el) => { rowRefs.current[q.id] = el; }} style={{ borderTop: '1px solid var(--kls-outline-variant)' }}>
+                <div role="button" onClick={() => setOpenQ(o => ({ ...o, [q.id]: !o[q.id] }))}
+                  style={{ display: 'grid', gridTemplateColumns: '18px 24px minmax(0, 1fr) 18px 14px', gap: 'var(--kls-space-small)', alignItems: 'center',
+                    padding: 'var(--kls-space-small) var(--kls-space-med)', minHeight: 44, boxSizing: 'border-box', cursor: 'pointer' }}>
+                  <span className="mono" style={{ fontSize: 12, color: 'var(--ink-4)' }}>{i + 1}</span>
                   <div style={{ width: 24, height: 24, borderRadius: '50%', display: 'grid', placeItems: 'center',
                     background: q.isCorrect ? 'var(--good-soft)' : 'var(--bad-soft)', color: q.isCorrect ? 'var(--good)' : 'var(--bad)' }}>
                     <WEIcon name={q.isCorrect ? 'check' : 'x'} size={12} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.3 }}>{q.stem}</div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3, display: 'flex', gap: 'var(--kls-space-xsmall)' }}>
-                      <span className="mono">{q.acs}</span>
-                      <span>·</span>
-                      <span>{q.module}</span>
+                    <div style={open ? { fontSize: 14.5, fontWeight: 500, lineHeight: 1.3, textWrap: 'pretty' } : { fontSize: 14.5, fontWeight: 500, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{q.stem}</div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 3, display: 'flex', gap: 'var(--kls-space-xsmall)', minWidth: 0 }}>
+                      <span className="mono" style={{ flex: 'none' }}>{q.acs}</span><span>·</span>
+                      <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{q.module}</span>
                     </div>
                   </div>
+                  <span aria-label={note ? 'Has a note' : undefined} style={{ width: 18, height: 18, display: 'inline-flex', color: 'var(--kls-info)' }}>{note && <WEIcon name="notes" size={18} strokeWidth={1.7} />}</span>
                   <WEIcon name={open ? 'chev-d' : 'chev-r'} size={14} style={{ color: 'var(--ink-5)' }} />
                 </div>
                 {open && (
-                  <div style={{ padding: '0 16px 14px 58px', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)' }}>
-                    {!q.isCorrect && (
-                      <div style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>
-                        <span style={{ color: 'var(--bad)', fontWeight: 600 }}>Your answer: </span>{chosen}
+                  <div style={{ padding: '0 var(--kls-space-med) var(--kls-space-med)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)' }}>
+                    {q.choices.map(c => {
+                      const right = c.id === q.correct;
+                      const wrongPick = c.id === q.chosen && !q.isCorrect;
+                      return (
+                        <div key={c.id} style={{ display: 'flex', gap: 'var(--kls-space-small)', alignItems: 'center', padding: 'var(--kls-space-small)', borderRadius: 8,
+                          background: right ? 'var(--kls-success-container)' : wrongPick ? 'var(--kls-error-container)' : 'var(--kls-surface)',
+                          border: '1px solid ' + (right ? 'var(--kls-success)' : wrongPick ? 'var(--kls-error)' : 'var(--kls-outline-variant)') }}>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--kls-on-surface-variant)', flex: 'none' }}>{c.id}</span>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500, lineHeight: 1.45, color: 'var(--kls-on-surface)' }}>{c.text}</span>
+                          {right && <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--kls-success)', flex: 'none' }}>Correct</span>}
+                          {wrongPick && <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--kls-error)', flex: 'none' }}>Your answer</span>}
+                        </div>
+                      );
+                    })}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)', marginTop: 'var(--kls-space-tiny)' }}>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)' }}>Explanation</span>
+                      <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.55, color: 'var(--kls-on-surface)', textWrap: 'pretty' }}>{q.explanation}</div>
+                    </div>
+                    <button style={{ height: 40, width: '100%', padding: '0 var(--kls-space-med)', borderRadius: 'var(--kls-radius-med)', border: '1px solid transparent', cursor: 'pointer',
+                      background: 'var(--kls-tertiary)', color: 'var(--kls-on-surface)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--kls-space-xsmall)',
+                      fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700 }}><WEIcon name="orion" size={18} />Ask Orion to elaborate</button>
+                    {note && (
+                      <div style={{ padding: 'var(--kls-space-small)', borderRadius: 'var(--kls-radius-small)', border: '1px solid var(--kls-outline-variant)', background: 'var(--kls-surface)',
+                        display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-tiny)' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--kls-on-surface-variant)' }}>
+                          <WEIcon name="notes" size={14} />Your note
+                        </span>
+                        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: 'var(--kls-on-surface)', whiteSpace: 'pre-wrap' }}>{note}</div>
                       </div>
                     )}
-                    <div style={{ fontSize: 13.5, color: 'var(--ink-2)' }}>
-                      <span style={{ color: 'var(--good)', fontWeight: 600 }}>Correct: </span>{right}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 2 }}>{q.explanation}</div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-4)' }}>{q.reference}</div>
                   </div>
                 )}
               </div>
             );
           })}
-        </WECard>
+          {allOpen && questions.length < attempt.count && (
+            <div style={{ fontSize: 12, color: 'var(--ink-4)', padding: 'var(--kls-space-small) var(--kls-space-med)', borderTop: '1px solid var(--kls-outline-variant)', textAlign: 'center' }}>Showing {questions.length} of {attempt.count} questions</div>
+          )}
+        </div>
+        {onDelete && <button onClick={onDelete} style={{ width: '100%', justifyContent: 'center', height: 40, padding: '0 var(--kls-space-small)', borderRadius: 'var(--kls-radius-med)', cursor: 'pointer',
+            background: 'var(--kls-surface)', color: 'var(--kls-on-surface-variant)', border: '1px solid var(--kls-outline-variant)',
+            display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700 }}>
+            <KlsIcon name="trash" size={18} color="var(--kls-on-surface-variant)" />Delete
+          </button>}
       </div>
+      </div>
+      <MNotesSheet open={notesOpen} onClose={() => setNotesOpen(false)} notes={notes} bank={questions} currentIdx={-1} subtitle="on this attempt" onSelectNote={revealQuestion}
+        onSaveNote={(i, t) => setNotes(n => ({ ...n, [i]: t }))}
+        onDeleteNote={(i) => setNotes(n => { const c = { ...n }; delete c[i]; return c; })} />
     </MobileShell>
   );
 };
@@ -5862,14 +6454,21 @@ function MWrittenExams({ onBack, summaryMode = 'From attempt' }) {
   const [tab, setTab] = React.useState('practice');
   const [mode, setMode] = React.useState('study');
   const [phase, setPhase] = React.useState('setup');
-  if (phase === 'warning') return <MPreExamSheet onProceed={() => setPhase('runner')} onClose={() => setPhase('setup')} />;
-  if (phase === 'runner') return <MRunnerExam onNext={() => setPhase('results')} onExit={() => setPhase('setup')} />;
   const [attempt, setAttempt] = React.useState(null);
+  const [deletedIds, setDeletedIds] = React.useState({});
+  if (phase === 'warning') return <MPreExamSheet onProceed={() => setPhase('runner')} onClose={() => setPhase('setup')} />;
+  if (phase === 'runner') return <MRunnerExam isStudy={mode === 'study'} onNext={() => setPhase('results')} onExit={() => setPhase('setup')} />;
   const summaryModeKey = summaryMode === 'From attempt' ? mode : summaryMode.toLowerCase();
-  if (attempt) return <MHistoryDetail attempt={attempt} summaryMode={summaryMode} onBack={() => setAttempt(null)} />;
-  if (phase === 'results') return <MResults mode={summaryModeKey} onDone={() => setPhase('setup')} onDrill={() => setPhase('runner')} onRetake={() => setPhase('setup')} />;
+  if (attempt) return <MHistoryDetail key={attempt.id} attempt={attempt} summaryMode={summaryMode} onBack={() => setAttempt(null)}
+    onDelete={() => { setDeletedIds(d => ({ ...d, [attempt.id]: true })); setAttempt(null); setTab('history'); }} />;
+  if (phase === 'results') {
+    const hist = window.KILSAR_DATA.history || [];
+    const src = hist.find(h => h.mode.toLowerCase() === mode) || hist[0];
+    const fresh = { ...src, id: 'result-' + mode, date: new Date().toISOString() };
+    return <MHistoryDetail key={fresh.id} attempt={fresh} backLabel="Done" onBack={() => setPhase('setup')} onDelete={() => setPhase('setup')} />;
+  }
   const tp = { tab: null, onTab: setTab };
-  if (tab === 'history') return <MHistory {...tp} onBack={onBack} onOpenAttempt={setAttempt} />;
+  if (tab === 'history') return <MHistory {...tp} onBack={onBack} onOpenAttempt={setAttempt} deletedIds={deletedIds} onDeleteAttempt={(id) => setDeletedIds(d => ({ ...d, [id]: true }))} />;
   if (tab === 'progress') return <MProgress {...tp} onBack={onBack} />;
   return mode === 'exam'
     ? <MSetupExam {...tp} onModeChange={setMode} onBegin={() => setPhase('warning')} onBack={onBack} />
