@@ -5554,6 +5554,7 @@ const Icon = ({ name, size = 16, ...rest }) => {
     case 'expand': return <svg {...common}><path d="M9.5 2.5h4v4M13.5 2.5L9 7M6.5 13.5h-4v-4M2.5 13.5L7 9"/></svg>;
     case 'zoom-in': return <svg {...common}><circle cx="7" cy="7" r="4.5"/><path d="M10.3 10.3L13.5 13.5M5 7h4M7 5v4"/></svg>;
     case 'zoom-out': return <svg {...common}><circle cx="7" cy="7" r="4.5"/><path d="M10.3 10.3L13.5 13.5M5 7h4"/></svg>;
+    case 'play': return <svg {...common}><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.4-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z" fill="currentColor"/></svg>;
     case 'exit': return <svg {...common}><path d="M9.5 2.5h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-3"/><path d="M6.5 5L3.5 8l3 3M3.5 8h7"/></svg>;
     case 'calc': return <svg {...common}><rect x="3.5" y="1.5" width="9" height="13" rx="1.5"/><path d="M5.5 4h5v2h-5z"/><path d="M5.5 8.5h.01M8 8.5h.01M10.5 8.5h.01M5.5 11h.01M8 11h.01M10.5 11h.01" strokeWidth="1.8"/></svg>;
     case 'help': return <svg {...common}><circle cx="8" cy="8" r="6"/><path d="M6.3 6.2a1.8 1.8 0 0 1 3.5.5c0 1.2-1.8 1.5-1.8 2.6"/><path d="M8 11.4h.01" strokeWidth="1.8"/></svg>;
@@ -5782,11 +5783,11 @@ const FAA_EXAMS = [
 // which the student can't end — Continue only). Exam mode stays single-session.
 const WE_SESSION_CAP = 3;
 const WE_SESSIONS = [
-  { id: 'ws1', source: 'assigned', mode: 'study', title: 'Magnetos & Ignition Timing', assigner: 'R. Alvarez', due: 'Nov 14', topics: 3, total: 40, answered: 8, modules: ['pp3a'] },
-  { id: 'ws2', source: 'self', mode: 'study', title: 'Practice session', topics: 2, total: 25, answered: 12, modules: ['pp1a', 'pp1b'] },
-  { id: 'ws3', source: 'self', mode: 'study', title: 'Practice session', topics: 1, total: 15, answered: 3, modules: ['af1a'] },
-  { id: 'ws4', source: 'assigned', mode: 'exam', title: 'General Exam', assigner: 'R. Alvarez', due: 'Nov 21', subject: 'General', total: 60, time: '2h', answered: 0 },
-  { id: 'ws5', source: 'assigned', mode: 'study', title: 'Landing Gear Systems', assigner: 'M. Chen', due: 'Dec 03', topics: 2, total: 30, answered: 0, modules: ['af2b'] },
+  { id: 'ws1', source: 'assigned', mode: 'study', title: 'Practice Session', assignment: 'Magnetos & Ignition Timing', assigner: 'R. Alvarez', due: 'Nov 14', topics: 3, total: 40, answered: 8, modules: ['pp3a'] },
+  { id: 'ws2', source: 'self', mode: 'study', title: 'Practice Session', topics: 2, total: 25, answered: 12, modules: ['pp1a', 'pp1b'] },
+  { id: 'ws3', source: 'self', mode: 'study', title: 'Practice Session', topics: 1, total: 15, answered: 3, modules: ['af1a'] },
+  { id: 'ws4', source: 'assigned', mode: 'exam', title: 'General Written Exam', assignment: 'General Section Checkpoint', assigner: 'R. Alvarez', due: 'Nov 21', subject: 'General', total: 60, time: '2h', answered: 0 },
+  { id: 'ws5', source: 'assigned', mode: 'study', title: 'Practice Session', assignment: 'Landing Gear Systems', assigner: 'M. Chen', due: 'Dec 03', topics: 2, total: 30, answered: 0, modules: ['af2b'] },
 ];
 
 // Sort key for "Mon DD" due labels — soonest first; sessions with no due date last.
@@ -5843,7 +5844,15 @@ const InProgressSessions = ({ sessions: unsorted, onResume, onEnd }) => {
                 <Icon name={isExam ? 'exam' : 'book'} size={16} />
               </span>
               <div style={{flex: 1, minWidth: 160}}>
-                <div style={{fontSize: 14.5, fontWeight: 600, color: 'var(--ink)'}}>{s.title}</div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', minWidth: 0}}>
+                  <span style={{fontSize: 14.5, fontWeight: 600, color: 'var(--ink)', flex: 'none'}}>{s.title}</span>
+                  {s.assignment && (
+                    <span style={{display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-tiny)', fontSize: 12.5, fontWeight: 500, color: 'var(--kls-on-surface)', minWidth: 0}}>
+                      <Icon name="exam" size={12} style={{flex: 'none', color: 'var(--kls-on-surface-variant)'}} />
+                      <span style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{s.assignment}</span>
+                    </span>
+                  )}
+                </div>
                 <div style={{display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 3, fontSize: 12.5, color: 'var(--ink-3)'}}>
                   <span style={assigned ? pill('var(--src-assigned-bg)', 'var(--src-assigned-fg)') : pill('var(--src-self-bg)', 'var(--src-self-fg)')}>{assigned ? 'Assigned' : 'Self-started'}</span>
                   {assigned && <span>from {s.assigner} · Due {s.due}</span>}

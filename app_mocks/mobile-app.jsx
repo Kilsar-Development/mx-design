@@ -4736,6 +4736,7 @@ const WEIcon = ({ name, size = 16, ...rest }) => {
     case 'more': return <svg {...common}><circle cx="3.5" cy="8" r="0.9" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="0.9" fill="currentColor" stroke="none"/><circle cx="12.5" cy="8" r="0.9" fill="currentColor" stroke="none"/></svg>;
     case 'note':
     case 'notes': return <svg {...common}><path d="M11.5 7V3.5a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1H7"/><path d="M4.5 1.3v2.2M7 1.3v2.2M9.5 1.3v2.2"/><path d="M2.5 5.5h9"/><path d="M4.8 8h4.4M4.8 10.2h3.6M4.8 12.4h2"/><path d="M13.1 8.9l1.3 1.3-4.3 4.3-1.8.5.5-1.8z"/><path d="M12.1 9.9l1.3 1.3"/></svg>;
+    case 'play': return <svg {...common}><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.4-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z" fill="currentColor"/></svg>;
     case 'exit': return <svg {...common}><path d="M9.5 2.5h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-3"/><path d="M6.5 5L3.5 8l3 3M3.5 8h7"/></svg>;
     case 'calc': return <svg {...common}><rect x="3.5" y="1.5" width="9" height="13" rx="1.5"/><path d="M5.5 4h5v2h-5z"/><path d="M5.5 8.5h.01M8 8.5h.01M10.5 8.5h.01M5.5 11h.01M8 11h.01M10.5 11h.01" strokeWidth="1.8"/></svg>;
     case 'bookmark': return <svg {...common}><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg>;
@@ -4921,11 +4922,11 @@ const Sparkline = ({ data, width = 180, height = 44, color = 'var(--good)' }) =>
 // can't be ended). Exam mode stays single-session. Mirrors web WE_SESSIONS.
 const MWE_SESSION_CAP = 3;
 const MWE_SESSIONS = [
-  { id: 'ws1', source: 'assigned', mode: 'study', title: 'Magnetos & Ignition Timing', assigner: 'R. Alvarez', due: 'Nov 14', topics: 3, total: 40, answered: 8 },
-  { id: 'ws2', source: 'self', mode: 'study', title: 'Practice session', topics: 2, total: 25, answered: 12 },
-  { id: 'ws3', source: 'self', mode: 'study', title: 'Practice session', topics: 1, total: 15, answered: 3 },
-  { id: 'ws4', source: 'assigned', mode: 'exam', title: 'General Exam', assigner: 'R. Alvarez', due: 'Nov 21', subject: 'General', total: 60, time: '2h', answered: 0 },
-  { id: 'ws5', source: 'assigned', mode: 'study', title: 'Landing Gear Systems', assigner: 'M. Chen', due: 'Dec 03', topics: 2, total: 30, answered: 0 },
+  { id: 'ws1', source: 'assigned', mode: 'study', title: 'Practice Session', assignment: 'Magnetos & Ignition Timing', assigner: 'R. Alvarez', due: 'Nov 14', topics: 3, total: 40, answered: 8 },
+  { id: 'ws2', source: 'self', mode: 'study', title: 'Practice Session', topics: 2, total: 25, answered: 12 },
+  { id: 'ws3', source: 'self', mode: 'study', title: 'Practice Session', topics: 1, total: 15, answered: 3 },
+  { id: 'ws4', source: 'assigned', mode: 'exam', title: 'General Written Exam', assignment: 'General Section Checkpoint', assigner: 'R. Alvarez', due: 'Nov 21', subject: 'General', total: 60, time: '2h', answered: 0 },
+  { id: 'ws5', source: 'assigned', mode: 'study', title: 'Practice Session', assignment: 'Landing Gear Systems', assigner: 'M. Chen', due: 'Dec 03', topics: 2, total: 30, answered: 0 },
 ];
 
 // Sort key for "Mon DD" due labels — soonest first; sessions with no due date last.
@@ -4989,10 +4990,19 @@ const MWEInProgressRow = ({ session, onResume, onEnd }) => {
         <div style={{ width: 38, height: 38, borderRadius: 10, background: toneSoft, color: tone, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
           <WEIcon name={isExam ? 'exam' : 'book'} size={18} />
         </div>
-        <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.25 }}>{session.title}</div>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-tiny)' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25 }}>{session.title}</div>
+          {session.assignment && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-tiny)', fontSize: 12, fontWeight: 500, color: 'var(--ink)', minWidth: 0 }}>
+              <WEIcon name="exam" size={12} style={{ flex: 'none', color: 'var(--ink-3)' }} />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{session.assignment}</span>
+            </div>
+          )}
+        </div>
         <span style={assigned ? pill('var(--src-assigned-bg)', 'var(--src-assigned-fg)') : pill('var(--src-self-bg)', 'var(--src-self-fg)')}>{assigned ? 'Assigned' : 'Self-started'}</span>
       </div>
-      <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--ink-3)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', marginTop: 'var(--kls-space-small)' }}>
+      <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: 'var(--ink-3)' }}>
         <div>{isExam
           ? session.subject + ' · ' + session.total + ' questions · ' + session.time
           : session.answered > 0
@@ -5000,11 +5010,10 @@ const MWEInProgressRow = ({ session, onResume, onEnd }) => {
             : session.topics + ' topic' + (session.topics === 1 ? '' : 's') + ' · ' + session.total + ' questions · Not started'}</div>
         {assigned && <div style={{ marginTop: 2 }}>from {session.assigner} · Due {session.due}</div>}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 'var(--kls-space-xsmall)', marginTop: 12 }}>
         {!assigned && (
-          <button onClick={onEnd} style={{ ...btnBase, background: 'var(--sa-bg)', color: 'var(--sa-fg)', border: '1px solid var(--sa-line)' }}>End Exam</button>
+          <button onClick={onEnd} aria-label="End exam" style={{ width: 40, height: 40, borderRadius: 999, padding: 0, flexShrink: 0, cursor: 'pointer', display: 'grid', placeItems: 'center', background: 'var(--sa-bg)', color: 'var(--sa-fg)', border: '1px solid var(--sa-line)' }}><WEIcon name="exit" size={20} /></button>
         )}
-        <button onClick={onResume} style={{ ...btnBase, background: 'var(--pa-bg)', color: 'var(--pa-fg)', border: '1px solid transparent' }}>{isExam || !session.answered ? 'Start' : 'Continue'}</button>
+        <button onClick={onResume} aria-label={isExam || !session.answered ? 'Start' : 'Continue'} style={{ width: 40, height: 40, borderRadius: 999, padding: 0, flexShrink: 0, cursor: 'pointer', display: 'grid', placeItems: 'center', background: 'var(--pa-bg)', color: 'var(--pa-fg)', border: '1px solid transparent' }}><WEIcon name="play" size={18} /></button>
       </div>
     </WECard>
   );
