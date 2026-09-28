@@ -6822,7 +6822,7 @@ const NoteEntry = ({ n, q, text, isCurrent, onSave, onDelete, onSelect }) => {
     </div>
   );
 };
-const ExamSideDrawer = ({ open, onClose, notes = {}, questions = [], currentIdx, onSaveNote, onDeleteNote, onSelectNote }) => {
+const ExamSideDrawer = ({ open, onClose, notes = {}, questions = [], currentIdx, onSaveNote, onDeleteNote, onSelectNote, onAddNote }) => {
   const entries = questions.map((q, i) => ({ q, n: i + 1 })).filter(e => notes[e.q.id]);
   return (
   <div aria-hidden={!open} style={{ position: "fixed", inset: 0, zIndex: 1700, pointerEvents: open ? "auto" : "none" }}>
@@ -6838,6 +6838,15 @@ const ExamSideDrawer = ({ open, onClose, notes = {}, questions = [], currentIdx,
         <button onClick={onClose} aria-label="Close" style={erCircleBtn}><Icon name="x" size={20} /></button>
       </div>
       <div style={{ flex: 1, overflow: "auto", padding: "var(--kls-space-med)", background: "var(--kls-scaffold-bg)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        {onAddNote && currentIdx >= 0 && (
+          <button onClick={onAddNote} style={{ width: "100%", height: 40, flex: "none", padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
+            {questions[currentIdx] && notes[questions[currentIdx].id]
+              ? <><KlsIcon name="pencil" size={16} color="var(--kls-on-tertiary-container)" />Edit note for Question {currentIdx + 1}</>
+              : <><Icon name="plus" size={16} />Add note to Question {currentIdx + 1}</>}
+          </button>
+        )}
         {entries.length === 0 ? (
           <div style={{ margin: "auto 0", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "var(--kls-space-small)" }}>
             <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--kls-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--kls-on-surface-variant)" }}>
@@ -7281,7 +7290,7 @@ const ExamRunnerView = ({ session, isStudy, revealed = {}, setRevealed, question
       {jumpFilter && <JumpToQuestionDialog questions={questions} idx={idx} answers={answers} flagged={flagged} initialFilter={jumpFilter}
         onPick={(i) => { setIdx(i); setJumpFilter(null); }} onClose={() => setJumpFilter(null)} />}
       {calcOpen && <CalculatorDialog onClose={() => setCalcOpen(false)} />}
-      <ExamSideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} notes={notes} questions={questions} currentIdx={idx}
+      <ExamSideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} notes={notes} questions={questions} currentIdx={idx} onAddNote={() => setNoteOpen(true)}
         onSaveNote={(id, t) => setNotes(n => ({ ...n, [id]: t }))}
         onDeleteNote={(id) => setNotes(n => { const c = { ...n }; delete c[id]; return c; })} />
       {noteOpen && <QuestionNoteDialog number={idx + 1} q={q} initial={notes[q.id] || ""}
