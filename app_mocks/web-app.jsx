@@ -5561,6 +5561,8 @@ const Icon = ({ name, size = 16, ...rest }) => {
     case 'comment': return <svg {...common}><path d="M2.5 7.5a5.5 5 0 1 1 2.4 4.1L2.5 13l.8-2.6a4.8 4.8 0 0 1-.8-2.9z"/></svg>;
     case 'chat': return <svg {...common}><path d="M2.5 7.5a5.5 5 0 1 1 2.4 4.1L2.5 13l.8-2.6a4.8 4.8 0 0 1-.8-2.9z"/><path d="M5.8 6.5h4.4M5.8 8.7h3"/></svg>;
     case 'bookmark': return <svg {...common}><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg>;
+    case 'notes-fill': return <svg {...common}><path d="M3.5 2.5h7a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z" fill="currentColor"/><path d="M4.8 8h4.4M4.8 10.5h3" stroke="var(--kls-surface)"/><path d="M4.5 1.3v2.2M7 1.3v2.2M9.5 1.3v2.2" stroke="var(--kls-surface)"/></svg>;
+    case 'warning': return <svg {...common}><path d="M7.1 2.6a1 1 0 0 1 1.8 0l5.3 9.6a1 1 0 0 1-.9 1.5H2.7a1 1 0 0 1-.9-1.5z"/><path d="M8 6.2v3.1M8 11.4h.01"/></svg>;
     case 'bookmark-fill': return <svg {...common} fill="currentColor"><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg>;
     case 'grid': return <svg {...common}><rect x="2.5" y="2.5" width="4" height="4" rx="1"/><rect x="9.5" y="2.5" width="4" height="4" rx="1"/><rect x="2.5" y="9.5" width="4" height="4" rx="1"/><rect x="9.5" y="9.5" width="4" height="4" rx="1"/></svg>;
     case 'clock': return <svg {...common}><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.2 1.5"/></svg>;
@@ -6484,8 +6486,15 @@ const HistoryDetail = ({ attempt: attemptProp, result, onBack, onQuiz, onDelete,
   const toggleArea = (code) => setOpenAreas(o => ({ ...o, [code]: !o[code] }));
 
   const [filter, setFilter] = React.useState('all'); // all | wrong
+  const [notesOnly, setNotesOnly] = React.useState(false);
+  const [bookmarkedOnly, setBookmarkedOnly] = React.useState(false);
+  const bookmarks = React.useMemo(() => {
+    const b = {}; questions.forEach((q, i) => { if (i % 5 === 1 || i === 3) b[q.id] = true; }); return b;
+  }, [questions]);
   const visible = questions.filter(q => {
-    if (filter === 'wrong') return !q.isCorrect;
+    if (filter === 'wrong' && q.isCorrect) return false;
+    if (notesOnly && !notes[q.id]) return false;
+    if (bookmarkedOnly && !bookmarks[q.id]) return false;
     return true;
   });
 
@@ -6640,13 +6649,22 @@ const HistoryDetail = ({ attempt: attemptProp, result, onBack, onQuiz, onDelete,
             <h3 style={{margin: 0}}>All questions</h3>
             <span style={{fontSize: 12, color: 'var(--ink-4)'}}>{visible.length} shown</span>
             <div style={{flex: 1}} />
+            <div style={{display: 'flex', gap: 'var(--kls-space-tiny)'}}>
+              <WEFilterToggle on={notesOnly} label="Show questions with notes only" onClick={() => setNotesOnly(v => !v)}
+                icon={<Icon name={notesOnly ? 'notes-fill' : 'notes'} size={20} style={{color: notesOnly ? 'var(--kls-accent-4)' : 'var(--kls-on-surface-variant)'}} />} />
+              <WEFilterToggle on={bookmarkedOnly} label="Show bookmarked questions only" onClick={() => setBookmarkedOnly(v => !v)}
+                icon={<Icon name={bookmarkedOnly ? 'bookmark-fill' : 'bookmark'} size={20} style={{color: bookmarkedOnly ? 'var(--kls-accent-4)' : 'var(--kls-on-surface-variant)'}} />} />
+            </div>
             <div className="tabs">
               <button className="tab" data-active={filter === 'all'} onClick={() => setFilter('all')}>All ({questions.length})</button>
               <button className="tab" data-active={filter === 'wrong'} onClick={() => setFilter('wrong')}>Missed ({wrong})</button>
             </div>
           </div>
+          {visible.length === 0 && (
+            <div style={{padding: 'var(--kls-space-large) var(--kls-space-med)', textAlign: 'center', fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)', fontFamily: 'var(--kls-font-sans)'}}>No questions match these filters.</div>
+          )}
           {visible.map((q, i) => (
-            <HistoryQuestionRow key={q.id} q={q} idx={questions.indexOf(q)} isFirst={i === 0} note={notes[q.id]}
+            <HistoryQuestionRow key={q.id} q={q} idx={questions.indexOf(q)} isFirst={i === 0} note={notes[q.id]} bookmarked={!!bookmarks[q.id]}
               open={!!openRows[q.id]} onToggle={(v) => setOpenRows(o => ({ ...o, [q.id]: v }))} rowRef={(el) => { rowRefs.current[q.id] = el; }} />
           ))}
           {questions.length < attempt.count && (
@@ -6657,6 +6675,21 @@ const HistoryDetail = ({ attempt: attemptProp, result, onBack, onQuiz, onDelete,
         </div>
       </div>
     </div>
+  );
+};
+
+// Filter toggle — same treatment as the Library favorites star (CatalogStarBtn): 40×40 · r8 ·
+// transparent, tertiary on hover; "on" = filled icon (outline when off).
+const WEFilterToggle = ({ on, label, icon, onClick }) => {
+  const [hover, setHover] = React.useState(false);
+  return (
+    <button aria-label={label} title={label} aria-pressed={on} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 40, height: 40, flex: 'none', boxSizing: 'border-box', borderRadius: 8, border: 'none', cursor: 'pointer', padding: 0,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        background: hover ? 'var(--kls-tertiary)' : 'transparent', transition: 'background 125ms var(--kls-ease-standard)' }}>
+      {icon}
+    </button>
   );
 };
 
@@ -6927,7 +6960,7 @@ const JumpToQuestionDialog = ({ questions, idx, answers, flagged, initialFilter,
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
-      <div role="dialog" aria-modal="true" aria-label="Jump to question" style={{ position: "relative", width: "min(950px, 100%)", maxHeight: "calc(100vh - 40px)",
+      <div role="dialog" aria-modal="true" aria-label="Jump to question" style={{ position: "relative", width: "min(680px, 100%)", maxHeight: "calc(100vh - 40px)",
         background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-large)",
         display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
@@ -6942,12 +6975,12 @@ const JumpToQuestionDialog = ({ questions, idx, answers, flagged, initialFilter,
               {filter === "bookmarked" ? "No bookmarked questions." : "All questions answered."}
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(10, minmax(0, 1fr))", gap: "var(--kls-space-small)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 48px)", gap: "var(--kls-space-small)", justifyContent: "start" }}>
               {items.map(({ q, i }) => {
                 const st = i === idx ? "current" : flagged[q.id] ? "marked" : answers[q.id] ? "answered" : "open";
                 return (
                   <button key={q.id} onClick={() => onPick(i)} aria-label={`Question ${i + 1}`} aria-current={i === idx ? "true" : undefined}
-                    style={{ ...tile(st), height: 44, borderRadius: "var(--kls-radius-small)", cursor: "pointer", display: "grid", placeItems: "center",
+                    style={{ ...tile(st), width: 48, height: 48, padding: 0, borderRadius: "var(--kls-radius-small)", cursor: "pointer", display: "grid", placeItems: "center",
                       fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: st === "open" ? 600 : 700, fontVariantNumeric: "tabular-nums" }}>{i + 1}</button>
                 );
               })}
@@ -7119,6 +7152,69 @@ const SubmitExamDialog = ({ questions, answers, flagged, isStudy, onJump, onSubm
     </div>
   );
 };
+const LeaveSessionDialog = ({ answered, total, timeLabel, onKeep, onSave, onDiscard }) => {
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onKeep(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onKeep]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)" }}>
+      <div onClick={onKeep} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
+      <div role="dialog" aria-modal="true" aria-label="Leave the exam?" style={{ position: "relative", width: "min(520px, 100%)",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-large)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <Icon name="clock" size={24} style={{ flex: "none", color: "var(--kls-on-surface)" }} />
+          <span style={{ flex: 1, fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>Leave the exam?</span>
+        </div>
+        <div style={{ padding: "var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div style={{ padding: "var(--kls-space-med)", borderRadius: "var(--kls-radius-small)", background: "var(--kls-surface-variant)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Progress is saved automatically</span>
+            <span style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+              {answered} of {total} answered · timer paused at {timeLabel}, and can be resumed.
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "var(--kls-space-small)" }}>
+            <button onClick={onKeep} style={{ ...erSecondaryBtn, justifyContent: "center" }}>Keep taking exam</button>
+            <button onClick={onSave} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Save {"&"} exit</button>
+          </div>
+          <button onClick={onDiscard} style={{ alignSelf: "center", padding: 0, border: "none", background: "transparent", cursor: "pointer",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-error)", textDecoration: "underline", textUnderlineOffset: 3 }}>Discard this attempt instead</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const LeaveExamDialog = ({ answered, total, remainingLabel, onKeep, onSubmit }) => {
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onKeep(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onKeep]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)" }}>
+      <div onClick={onKeep} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
+      <div role="alertdialog" aria-modal="true" aria-label="Leave the exam?" style={{ position: "relative", width: "min(520px, 100%)", padding: "var(--kls-space-large)",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <Icon name="warning" size={24} style={{ flex: "none", color: "var(--kls-accent-4)" }} />
+          <span style={{ fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>Leave the exam?</span>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>
+          You've answered {answered} of {total} questions with {remainingLabel} remaining. Leaving submits the exam for grading, and it can't be resumed.
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-small)" }}>
+          <button onClick={onKeep} style={erSecondaryBtn}>Keep taking exam</button>
+          <button onClick={onSubmit} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Submit {"&"} Exit</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 const ExamRunnerView = ({ session, isStudy, revealed = {}, setRevealed, questions, idx, setIdx, answers, setAnswers, flagged, setFlagged, elapsed, onSubmitExam, onExit }) => {
   const q = questions[idx];
   const total = questions.length;
@@ -7145,13 +7241,14 @@ const ExamRunnerView = ({ session, isStudy, revealed = {}, setRevealed, question
   const [noteOpen, setNoteOpen] = React.useState(false);
   const [jumpFilter, setJumpFilter] = React.useState(null);
   const [submitOpen, setSubmitOpen] = React.useState(false);
+  const [leaveOpen, setLeaveOpen] = React.useState(false);
   const pillBtn = { border: "none", cursor: "pointer" };
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--kls-scaffold-bg)", fontFamily: "var(--kls-font-sans)" }}>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(max-content, 1fr)", alignItems: "center", gap: "var(--kls-space-med)", padding: "var(--kls-space-small) var(--kls-space-large)",
         background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
         <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
-          <button onClick={onExit} aria-label="Exit exam" style={erCircleBtn}><Icon name="exit" size={20} /></button>
+          <button onClick={() => setLeaveOpen(true)} aria-label="Exit exam" style={erCircleBtn}><Icon name="exit" size={20} /></button>
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{title}</div>
@@ -7178,7 +7275,7 @@ const ExamRunnerView = ({ session, isStudy, revealed = {}, setRevealed, question
           <button onClick={() => setSubmitOpen(true)} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer", flex: "none",
             background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
             fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>
-            {isStudy ? "End study session" : <>Review {"&"} submit exam<Icon name="chev-r" size={14} /></>}
+            <>Review {"&"} submit exam<Icon name="chev-r" size={14} /></>
           </button>
         </div>
       </div>
@@ -7290,6 +7387,10 @@ const ExamRunnerView = ({ session, isStudy, revealed = {}, setRevealed, question
       {jumpFilter && <JumpToQuestionDialog questions={questions} idx={idx} answers={answers} flagged={flagged} initialFilter={jumpFilter}
         onPick={(i) => { setIdx(i); setJumpFilter(null); }} onClose={() => setJumpFilter(null)} />}
       {calcOpen && <CalculatorDialog onClose={() => setCalcOpen(false)} />}
+      {leaveOpen && !isStudy && <LeaveExamDialog answered={answered} total={total} remainingLabel={`${Math.floor(left / 3600)}:${String(Math.floor((left % 3600) / 60)).padStart(2, "0")}`}
+        onKeep={() => setLeaveOpen(false)} onSubmit={() => { setLeaveOpen(false); onSubmitExam(notes); }} />}
+      {leaveOpen && isStudy && <LeaveSessionDialog answered={answered} total={total} timeLabel={elapsedLabel}
+        onKeep={() => setLeaveOpen(false)} onSave={() => { setLeaveOpen(false); onExit(); }} onDiscard={() => { setLeaveOpen(false); onExit(); }} />}
       <ExamSideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} notes={notes} questions={questions} currentIdx={idx} onAddNote={() => setNoteOpen(true)}
         onSaveNote={(id, t) => setNotes(n => ({ ...n, [id]: t }))}
         onDeleteNote={(id) => setNotes(n => { const c = { ...n }; delete c[id]; return c; })} />
@@ -7755,7 +7856,7 @@ const Dashboard = ({ tweaks, student, onJumpToWeak }) => {
   );
 };
 
-const HistoryQuestionRow = ({ q, idx, isFirst, note, open: openProp, onToggle, rowRef }) => {
+const HistoryQuestionRow = ({ q, idx, isFirst, note, bookmarked, open: openProp, onToggle, rowRef }) => {
   const [openLocal, setOpenLocal] = React.useState(false);
   const open = openProp !== undefined ? openProp : openLocal;
   const setOpen = onToggle || setOpenLocal;
@@ -7763,7 +7864,7 @@ const HistoryQuestionRow = ({ q, idx, isFirst, note, open: openProp, onToggle, r
     <div ref={rowRef} data-qid={q.id} style={{borderTop: isFirst ? 0 : '1px solid var(--line)'}}>
       <button onClick={() => setOpen(!open)} style={{
         width: '100%', padding: '12px 18px',
-        display: 'grid', gridTemplateColumns: '24px 28px 1fr auto auto', gap: 12,
+        display: 'grid', gridTemplateColumns: '24px 28px 1fr auto auto auto', gap: 12,
         background: 'transparent', border: 0, textAlign: 'left', alignItems: 'center', cursor: 'pointer',
       }}>
         <span className="mono" style={{fontSize: 11.5, color: 'var(--ink-4)', textAlign: 'left'}}>{idx + 1}</span>
@@ -7783,6 +7884,7 @@ const HistoryQuestionRow = ({ q, idx, isFirst, note, open: openProp, onToggle, r
           </div>
         </div>
         <span aria-label={note ? 'Has a note' : undefined} title={note ? 'Has a note' : undefined} style={{width: 18, height: 18, display: 'inline-flex', color: 'var(--kls-info)'}}>{note && <Icon name="notes" size={18} strokeWidth={1.7} />}</span>
+        <span aria-label={bookmarked ? 'Bookmarked' : undefined} title={bookmarked ? 'Bookmarked' : undefined} style={{width: 18, height: 18, display: 'inline-flex', color: 'var(--kls-accent-4)'}}>{bookmarked && <Icon name="bookmark-fill" size={18} />}</span>
         <Icon name={open ? 'chev-d' : 'chev-r'} size={13} />
       </button>
       {open && (
@@ -8224,7 +8326,7 @@ function CatalogStar({ on, size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none", display: "block" }}>
       <path d="M12 3.6l2.6 5.3 5.8.85-4.2 4.1 1 5.75L12 16.9l-5.2 2.7 1-5.75-4.2-4.1 5.8-.85z"
-        fill={on ? "var(--kls-primary)" : "none"} stroke="var(--kls-primary)" strokeWidth="1.6" strokeLinejoin="round" />
+        fill={on ? "var(--kls-accent-4)" : "none"} stroke={on ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)"} strokeWidth="1.6" strokeLinejoin="round" />
     </svg>
   );
 }
