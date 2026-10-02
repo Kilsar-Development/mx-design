@@ -4540,6 +4540,7 @@ function WebApp(props) {
     : <ControlTower showKpis={showKpis} initialQuick="all" query={query} />;
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
   else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
+  else if (active === "oralExams") content = <OralExams query={query} />;
   else if (active === "integrations") content = <Integrations query={query} />;
   else if (active === "faq") content = <FaqScreen query={query} onFeedback={() => setHelpOpen(true)} />;
   else if (active === "terms") content = <Blocks query={query} onOpenTask={setEditingTask} />;
@@ -4560,6 +4561,364 @@ function WebApp(props) {
     </div>
   );
 }
+// ════════════════════════════════════════════════════════════════════
+// ORAL EXAMS (student) — topic picker
+// ════════════════════════════════════════════════════════════════════
+const ORAL_TOPICS = [
+  { id: "ot1", title: "Cutting Tools", desc: "", acs: ["AM.I.A.K11", "AM.I.A.K11b", "AM.I.A.K11d", "AM.I.G.K1", "AM.I.G.K12"], easy: 0, med: 5, hard: 0 },
+  { id: "ot2", title: "Helicopters", desc: "", acs: ["AM.I.A.K1", "AM.I.A.K10", "AM.I.A.K11", "AM.I.A.K11a", "AM.I.A.K11b", "AM.I.A.K11c", "AM.I.A.K11d", "AM.I.A.K12"], easy: 0, med: 2, hard: 0 },
+  { id: "ot3", title: "joel test", desc: "", acs: [], easy: 0, med: 3, hard: 0 },
+  { id: "ot4", title: "Sample Topic Sample Topic Sample Topic Sample Topic Sample Topic", desc: Array(10).fill("Test Desciption.  and a long one....").join(" "), acs: [], easy: 5, med: 5, hard: 0 },
+  { id: "ot5", title: "Test Exam - Blue", desc: "", acs: [], easy: 0, med: 20, hard: 0 },
+  { id: "ot6", title: "Test Exam - Fire Safety", desc: "a test exam about fire safety", acs: ["AM.I.A.K1", "AM.I.A.K11", "AM.I.A.K11b"], easy: 0, med: 5, hard: 0 },
+];
+const ORAL_DIFF = [
+  { key: "easy", label: "Easy",   bg: "var(--kls-accent-2)",  fg: "var(--kls-accent-3)" },
+  { key: "med",  label: "Medium", bg: "var(--kls-accent-5)",  fg: "var(--kls-accent-6)" },
+  { key: "hard", label: "Hard",   bg: "var(--kls-accent-14)", fg: "var(--kls-accent-15)" },
+];
+const oralSecondaryBtn = {
+  height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", cursor: "pointer",
+  background: "transparent", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+};
+
+function OralExams({ query = "" }) {
+  const [tab, setTab] = useState("available");
+  const [sortDir, setSortDir] = useState("asc");
+  const [refreshing, setRefreshing] = useState(false);
+  const [setupTopic, setSetupTopic] = useState(null);
+  const [session, setSession] = useState(null);
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
+  const term = query.trim().toLowerCase();
+  const list = ORAL_TOPICS
+    .filter((t) => !term || t.title.toLowerCase().includes(term) || t.desc.toLowerCase().includes(term) || t.acs.some((c) => c.toLowerCase().includes(term)))
+    .slice().sort((a, b) => { const c = a.title.localeCompare(b.title, undefined, { sensitivity: "base" }); return sortDir === "asc" ? c : -c; });
+  if (session) return <OralSpeakRunner session={session} onExit={() => setSession(null)} />;
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, lineHeight: 1.2, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Oral Exams</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, fontWeight: 400, color: "var(--kls-on-surface-variant)" }}>Practice dynamic questions on various topics.</p>
+          </div>
+          <button style={oralSecondaryBtn}><MSGlyph name="mic" size={18} color="var(--kls-on-surface)" />Calibrate</button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ minWidth: 0, overflowX: "auto" }}><SegmentedTabs tabs={[{ key: "available", label: "Available" }, { key: "logs", label: "Exam Logs" }]} value={tab} onChange={setTab} /></div>
+          <LibIconBtn icon="refresh" label="Refresh" onClick={refresh} spin={refreshing} />
+        </div>
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {tab === "logs" ? (
+            <OralEmpty title="No exam logs yet" body="Finished oral exams will show up here." />
+          ) : list.length === 0 ? (
+            <OralEmpty title="Nothing matches" body="Try a different search." />
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <th style={INT_TH}>
+                    <button onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                      style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", font: "inherit", letterSpacing: "inherit", textTransform: "inherit", color: "inherit" }}>
+                      Topic<MSGlyph name={sortDir === "asc" ? "arrow_upward" : "arrow_downward"} size={14} color="var(--kls-on-surface-variant)" />
+                    </button>
+                  </th>
+                  <th style={{ ...INT_TH, width: 200 }}>Questions</th>
+                </tr>
+              </thead>
+              <tbody>{list.map((t) => <OralTopicRow key={t.id} topic={t} onOpen={() => setSetupTopic(t)} />)}</tbody>
+            </table>
+          )}
+        </div>
+      </div>
+      {setupTopic && <OralSetupDialog topic={setupTopic} onClose={() => setSetupTopic(null)} onStart={(cfg) => { setSetupTopic(null); setSession(cfg); }} />}
+    </div>
+  );
+}
+
+function OralTopicRow({ topic, onOpen }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <tr onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", background: hover ? "var(--kls-surface-container-low)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <td style={{ ...INT_TD, paddingTop: "var(--kls-space-med)", paddingBottom: "var(--kls-space-med)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{topic.title}</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.5, textWrap: "pretty" }}>{topic.desc || "No description"}</div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.5 }}>{topic.acs.length ? topic.acs.join(", ") : "No associated ACS codes"}</div>
+        </div>
+      </td>
+      <td style={INT_TD}>
+        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+          {ORAL_DIFF.map((d) => (
+            <span key={d.key} title={d.label + " questions"} style={{ minWidth: 32, textAlign: "center", padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+              background: d.bg, color: d.fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{topic[d.key]}</span>
+          ))}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+const ORAL_LEVELS = [
+  { key: "easy", label: "Easy",   desc: "Up to 3 hints - Extra time per question" },
+  { key: "med",  label: "Medium", desc: "Up to 2 hints - Standard time per question" },
+  { key: "hard", label: "Hard",   desc: "No hints - Reduced time per question" },
+];
+const oralLevelOpt = (l) => l.label + ":  " + l.desc;
+
+function OralSetupDialog({ topic, onClose, onStart }) {
+  const firstLevel = ORAL_LEVELS.find((l) => topic[l.key] > 0) || ORAL_LEVELS[1];
+  const [level, setLevel] = useState(firstLevel.key);
+  const pool = topic[level] || 0;
+  const [count, setCount] = useState(pool);
+  const [answerMode, setAnswerMode] = useState("speak");
+  const [closeHover, setCloseHover] = useState(false);
+  const cardRef = useRef(null);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const pickLevel = (opt) => { const l = ORAL_LEVELS.find((x) => oralLevelOpt(x) === opt); if (l) { setLevel(l.key); setCount(topic[l.key] || 0); } };
+  const levelOpts = ORAL_LEVELS.filter((l) => topic[l.key] > 0).map(oralLevelOpt);
+  const curLevel = ORAL_LEVELS.find((l) => l.key === level);
+  const fieldLabel = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-xsmall)" };
+  return (
+    <div onMouseDown={(e) => { if (cardRef.current && !cardRef.current.contains(e.target)) onClose(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+        backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+        background: "color-mix(in oklab, var(--kls-surface) 80%, transparent)", animation: "kls-fade 180ms var(--kls-ease-standard)" }}>
+      <div ref={cardRef} role="dialog" aria-modal="true" aria-label="Practice Exam Setup"
+        style={{ width: 520, maxWidth: "calc(100vw - 48px)", maxHeight: "calc(100vh - 48px)", background: "var(--kls-surface)", borderRadius: 12,
+          boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden", animation: "kls-pop 200ms var(--kls-ease-standard)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
+          <MSGlyph name="quiz" size={24} color="var(--kls-primary)" />
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Practice Exam Setup</span>
+          <button aria-label="Close" onClick={onClose} onMouseEnter={() => setCloseHover(true)} onMouseLeave={() => setCloseHover(false)}
+            style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+              background: closeHover ? "color-mix(in oklab, var(--kls-on-surface) 9%, transparent)" : "transparent" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="var(--kls-on-surface)" strokeWidth="1.9" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+        <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
+        <div style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)", overflowY: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{topic.title}</div>
+            <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)" }}>{topic.acs.length ? topic.acs.join(", ") : "No associated ACS codes"}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{topic.desc || "No description provided."}</div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: "var(--kls-space-xsmall)" }}>
+            {ORAL_DIFF.map((d) => (
+              <span key={d.key} style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: d.bg, color: d.fg,
+                fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{d.label}: {topic[d.key]}</span>
+            ))}
+          </div>
+          <div>
+            <div style={fieldLabel}>Difficulty</div>
+            <CTSelect value={oralLevelOpt(curLevel)} options={levelOpts} placeholder="Select difficulty" onChange={pickLevel} />
+          </div>
+          <div>
+            <div style={fieldLabel}>Number of Questions ({count})</div>
+            <input type="range" min={pool > 0 ? 1 : 0} max={pool} value={count} disabled={pool === 0}
+              onChange={(e) => setCount(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "var(--kls-primary)" }} />
+          </div>
+          <div>
+            <div style={fieldLabel}>How you answer</div>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+              <OralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+              <OralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type your answer · no mic needed" onClick={() => setAnswerMode("write")} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+              <MSGlyph name="lock" size={16} color="var(--kls-on-surface-variant)" />Locked once the test starts.
+            </div>
+          </div>
+        </div>
+        <div style={{ padding: "0 var(--kls-space-med) var(--kls-space-med)" }}>
+          <button disabled={count === 0} onClick={() => onStart && onStart({ topic, level, count, answerMode })}
+            style={{ ...ctPrimaryBtn, width: "100%", justifyContent: "center", opacity: count === 0 ? 0.5 : 1, cursor: count === 0 ? "not-allowed" : "pointer" }}>Start Test</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OralAnswerCard({ active, glyph, label, sub, onClick }) {
+  const accent = "var(--kls-info)";
+  return (
+    <button onClick={onClick} aria-pressed={active} style={{
+      display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", textAlign: "left", cursor: "pointer",
+      padding: "var(--kls-space-small)", borderRadius: 8,
+      border: active ? "2px solid " + accent : "1.5px solid var(--kls-outline-variant)",
+      background: active ? "color-mix(in srgb, " + accent + " 8%, transparent)" : "var(--kls-surface)",
+      transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <MSGlyph name={glyph} size={20} color={active ? accent : "var(--kls-on-surface)"} />
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</span>
+      </div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)" }}>{sub}</div>
+    </button>
+  );
+}
+
+const ORAL_QUESTIONS = {
+  ot1: [
+    { acs: "AM.I.A.K11b", text: "When selecting a saw blade for cutting composite materials on an aircraft, what characteristics should you consider to ensure a clean cut and minimize delamination, and why are these characteristics important?",
+      hints: ["Think about tooth count and tooth geometry.", "Consider the blade material and how heat builds up during the cut."] },
+    { acs: "AM.I.A.K11", text: "Describe how you would choose the correct drill bit point angle for drilling aluminum versus stainless steel, and what happens if the wrong angle is used.",
+      hints: ["Harder materials generally call for a flatter point.", "Think about chip formation and work hardening."] },
+    { acs: "AM.I.A.K11d", text: "What is the purpose of a reamer, and when would you ream a hole instead of drilling it to final size?",
+      hints: ["Compare the finish and tolerance each tool produces.", "Think about fastener fit requirements."] },
+    { acs: "AM.I.G.K1", text: "Explain how you inspect a cutting tool for wear or damage before use, and what signs would make you remove it from service.",
+      hints: ["Look at the cutting edges and the shank.", "Consider discoloration from overheating."] },
+    { acs: "AM.I.G.K12", text: "What safety precautions should you follow when using a pneumatic cutoff wheel near aircraft structure?",
+      hints: ["Think about guards, PPE, and sparks.", "Consider what is on the other side of the cut."] },
+  ],
+};
+const ORAL_LEVEL_RULES = { easy: { hints: 3, secs: 240 }, med: { hints: 2, secs: 180 }, hard: { hints: 0, secs: 120 } };
+function oralQuestionsFor(topic, count) {
+  const bank = ORAL_QUESTIONS[topic.id] || ORAL_QUESTIONS.ot1.map((q) => ({ ...q, acs: topic.acs[0] || q.acs }));
+  return Array.from({ length: count }, (_, i) => bank[i % bank.length]);
+}
+const oralFmt = (n) => String(Math.floor(n / 60)).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0");
+
+function OralSpeakRunner({ session, onExit }) {
+  const { topic, level, count, answerMode } = session;
+  const [draft, setDraft] = useState("");
+  const rules = ORAL_LEVEL_RULES[level] || ORAL_LEVEL_RULES.med;
+  const questions = React.useMemo(() => oralQuestionsFor(topic, count), [topic, count]);
+  const [idx, setIdx] = useState(0);
+  const [secs, setSecs] = useState(rules.secs);
+  const [recording, setRecording] = useState(false);
+  const [recSecs, setRecSecs] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [shownHints, setShownHints] = useState(0);
+  const [backHover, setBackHover] = useState(false);
+  const q = questions[idx];
+  const hintsLeft = rules.hints - hintsUsed;
+  const next = () => {
+    setRecording(false); setRecSecs(0); setShownHints(0);
+    if (idx + 1 >= questions.length) { onExit(); return; }
+    setIdx(idx + 1); setSecs(rules.secs);
+  };
+  useEffect(() => {
+    const t = setInterval(() => {
+      setSecs((v) => (v > 0 ? v - 1 : 0));
+      setRecSecs((v) => v + 1);
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => { if (secs === 0) next(); }, [secs]);
+  useEffect(() => { if (!recording) setRecSecs(0); }, [recording]);
+  const toggleRec = () => { if (recording) next(); else setRecording(true); };
+  const showHint = () => {
+    if (hintsLeft <= 0 || shownHints >= q.hints.length) return;
+    setHintsUsed((n) => n + 1); setShownHints((n) => n + 1);
+  };
+  const hintDisabled = hintsLeft <= 0 || shownHints >= q.hints.length;
+  const pill = { padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)", color: "var(--kls-on-tertiary)",
+    fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap" };
+  return (
+    <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ flex: 1, minHeight: 0, padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+          <button aria-label="Back" onClick={onExit} onMouseEnter={() => setBackHover(true)} onMouseLeave={() => setBackHover(false)}
+            style={{ width: 40, height: 40, flex: "none", borderRadius: 999, border: "1px solid var(--kls-outline)", padding: 0, cursor: "pointer",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              background: backHover ? "var(--kls-tertiary)" : "var(--kls-surface)", transition: "background 125ms var(--kls-ease-standard)" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="var(--kls-on-surface)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <h1 style={{ minWidth: 0, margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 24, lineHeight: 1.2, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>{topic.title}</h1>
+          </div>
+          <div style={{ ...erPill, padding: "var(--kls-space-xsmall) var(--kls-space-med)", borderRadius: 999, color: secs <= 30 ? "var(--kls-error)" : "var(--kls-on-surface)", fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums", gap: "var(--kls-space-small)" }}>
+            <Icon name="clock" size={18} />{oralFmt(secs)}
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          {rules.hints > 0 && (
+            <button onClick={showHint} disabled={hintDisabled}
+              style={{ ...oralSecondaryBtn, opacity: hintDisabled ? 0.5 : 1, cursor: hintDisabled ? "not-allowed" : "pointer" }}>
+              <MSGlyph name="info" size={20} color="var(--kls-on-surface)" />Hint ({hintsLeft})
+            </button>
+          )}
+          </div>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+              <div style={{ height: 6, borderRadius: 999, background: "var(--kls-tertiary)", overflow: "hidden" }}>
+                <div style={{ width: ((idx + 1) / questions.length * 100) + "%", height: "100%", borderRadius: 999, background: "var(--kls-success)", transition: "width 250ms var(--kls-ease-standard)" }} />
+              </div>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{idx + 1} of {questions.length}</span>
+            </div>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 8, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--kls-space-small)" }}>
+                <span style={pill}>Question {idx + 1}</span>
+                <span style={pill}>{q.acs}</span>
+              </div>
+              <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{q.text}</p>
+            </div>
+            {q.hints.slice(0, shownHints).map((h, i) => (
+              <div key={i} style={{ display: "flex", gap: "var(--kls-space-small)", alignItems: "flex-start", padding: "var(--kls-space-small) var(--kls-space-med)", borderRadius: 8, background: "var(--kls-info-container)" }}>
+                <MSGlyph name="info" size={20} color="var(--kls-on-info-container)" />
+                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-info-container)" }}>
+                  <strong style={{ fontWeight: 700 }}>Hint {i + 1}: </strong>{h}
+                </div>
+              </div>
+            ))}
+          </div>
+          {answerMode === "write" ? (
+          <form onSubmit={(e) => { e.preventDefault(); if (draft.trim()) { setDraft(""); next(); } }}
+            style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+            <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+              <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type your answer to Orion..." aria-label="Your answer"
+                style={{ ...ctInput, paddingRight: 48, color: "var(--kls-on-surface)" }} />
+              <button type="submit" aria-label="Send answer" disabled={!draft.trim()}
+                style={{ position: "absolute", right: "var(--kls-space-tiny)", top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: 8, border: 0, padding: 0,
+                  background: "transparent", cursor: draft.trim() ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <MSGlyph name="send" size={20} color={draft.trim() ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"} />
+              </button>
+            </div>
+            <button type="button" onClick={() => { setDraft(""); next(); }} style={oralSecondaryBtn}><MSGlyph name="keyboard_double_arrow_right" size={20} color="var(--kls-on-surface)" />Skip</button>
+          </form>
+          ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: "var(--kls-space-med)", padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: recording ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+              {recording ? <><span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--kls-error)" }} />Recording · {oralFmt(recSecs)}</> : "Tap to start answering"}
+            </span>
+            <button aria-label={recording ? "Stop recording" : "Start recording"} onClick={toggleRec}
+              style={{ width: 56, height: 56, borderRadius: 999, padding: 0, cursor: "pointer", border: "2px solid var(--kls-on-surface)",
+                background: "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ width: recording ? 20 : 44, height: recording ? 20 : 44, borderRadius: recording ? 4 : 999, background: "var(--kls-accent-4)",
+                transition: "all 250ms var(--kls-ease-standard)" }} />
+            </button>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={next} style={oralSecondaryBtn}><MSGlyph name="keyboard_double_arrow_right" size={20} color="var(--kls-on-surface)" />Skip</button>
+            </div>
+          </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OralEmpty({ title, body }) {
+  return (
+    <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+      <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+        <KlsIcon name="chatBubbles" size={26} color="var(--kls-on-surface-variant)" />
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{title}</div>
+      <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)", maxWidth: 320, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>{body}</div>
+    </div>
+  );
+}
+
 // ════════════════════════════════════════════════════════════════════
 // INTEGRATIONS (web only) — pair one or more workspace events with a webhook URL
 // ════════════════════════════════════════════════════════════════════
