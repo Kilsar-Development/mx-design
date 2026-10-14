@@ -1,6 +1,7 @@
 ---
 name: sync-design
 description: Sync Claude design export zips from ~/Downloads into app_mocks and design_system, review the diff, and commit after approval. Use when the user says sync design, sync mocks, update mocks, or mentions a downloaded claude.ai/design export.
+slash: true
 ---
 
 # Sync design exports
