@@ -4539,7 +4539,7 @@ function moralSubtopics(t) {
   return t.acs.map((code, i) => ({ id: t.id + ":" + code, code, desc: moralAcsDesc(code), q: base + (i < extra ? 1 : 0) }));
 }
 const MORAL_LOGS = [
-  { id: "ol1", date: "2026-10-09T14:20:00", title: "Cutting Tools", acs: ["AM.I.A.K11", "AM.I.A.K11b"], mode: "speak", level: "med", duration: "08:42",
+  { id: "ol1", date: "2026-10-09T14:20:00", title: "Cutting Tools", assignment: "Shop Tools Oral Check", acs: ["AM.I.A.K11", "AM.I.A.K11b"], mode: "speak", level: "med", duration: "08:42",
     questions: [
       { acs: "AM.I.A.K11b", text: "When selecting a saw blade for cutting composite materials on an aircraft, what characteristics should you consider to ensure a clean cut and minimize delamination, and why are these characteristics important?", answer: "A fine-tooth or diamond-grit blade so the fibers get cut rather than torn, and keep the feed slow so heat doesn't build up and soften the resin.", hints: 1, pass: true },
       { acs: "AM.I.A.K11", text: "Describe how you would choose the correct drill bit point angle for drilling aluminum versus stainless steel, and what happens if the wrong angle is used.", answer: "Aluminum takes a sharper point, around 118 degrees. Stainless needs a flatter one, closer to 135. Too sharp on stainless and the bit walks and work-hardens the surface.", hints: 0, pass: true },
@@ -4553,7 +4553,7 @@ const MORAL_LOGS = [
       { acs: "AM.I.A.K11", text: "Describe the precautions you take before performing hot work near a fuel cell.", answer: "Defuel and purge the tank, verify with a combustible gas detector, have a fire watch and extinguisher staged.", hints: 1, pass: true },
       { acs: "AM.I.A.K11b", text: "What are the three elements of the fire triangle and how does each extinguisher type remove one?", answer: "Heat, fuel, oxygen. Water cools, CO2 displaces oxygen, dry chem interrupts the chain reaction.", hints: 0, pass: true },
     ] },
-  { id: "ol3", date: "2026-09-26T16:40:00", title: "Helicopters", acs: ["AM.I.A.K10", "AM.I.A.K12"], mode: "speak", level: "hard", duration: "03:58",
+  { id: "ol3", date: "2026-09-26T16:40:00", title: "Helicopters", assignment: "Rotorcraft Systems Review", acs: ["AM.I.A.K10", "AM.I.A.K12"], mode: "speak", level: "hard", duration: "03:58",
     questions: [
       { acs: "AM.I.A.K10", text: "How do you identify a hydraulic line's pressure rating and fluid type from its markings?", answer: "Color-coded tape bands and the printed spec on the hose. Red for fuel, blue for hydraulic... I'm not certain of the pressure marking.", hints: 0, pass: false },
       { acs: "AM.I.A.K12", text: "What ground-handling precautions are specific to a helicopter with the rotor system installed?", answer: "Tie down the blades, keep clear of the tail rotor arc, use the correct ground-handling wheels and never push on the blades.", hints: 0, pass: true },
@@ -4710,6 +4710,12 @@ function MOralLogs({ onBack, onOpen }) {
                   <span>{moralLevelLabel(a.level)}</span><span>·</span>
                   <span>{a.questions.length} Q · {a.duration}</span>
                 </span>
+                {a.assignment && (
+                  <span style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-tiny)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface)", minWidth: 0 }}>
+                    <WEIcon name="exam" size={12} style={{ flex: "none", color: "var(--kls-on-surface-variant)" }} />
+                    <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.assignment}</span>
+                  </span>
+                )}
               </div>
               <span style={{ fontSize: 16, fontWeight: 700, color: moralTone(score), fontVariantNumeric: "tabular-nums" }}>{Math.round(score * 100)}%</span>
               <KlsIcon name="chevronRight" size={20} color="var(--kls-on-surface-variant)" />

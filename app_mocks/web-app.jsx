@@ -4651,7 +4651,7 @@ function oralSubtopics(t) {
   return t.acs.map((code, i) => ({ id: t.id + ":" + code, code, desc: oralAcsDesc(code), q: base + (i < extra ? 1 : 0) }));
 }
 const ORAL_LOGS = [
-  { id: "ol1", date: "2026-10-09T14:20:00", topicId: "ot1", title: "Cutting Tools", acs: ["AM.I.A.K11", "AM.I.A.K11b"], mode: "speak", level: "med", duration: "08:42",
+  { id: "ol1", date: "2026-10-09T14:20:00", topicId: "ot1", title: "Cutting Tools", assignment: "Shop Tools Oral Check", acs: ["AM.I.A.K11", "AM.I.A.K11b"], mode: "speak", level: "med", duration: "08:42",
     questions: [
       { acs: "AM.I.A.K11b", text: "When selecting a saw blade for cutting composite materials on an aircraft, what characteristics should you consider to ensure a clean cut and minimize delamination, and why are these characteristics important?", answer: "A fine-tooth or diamond-grit blade so the fibers get cut rather than torn, and keep the feed slow so heat doesn't build up and soften the resin.", hints: 1, pass: true },
       { acs: "AM.I.A.K11", text: "Describe how you would choose the correct drill bit point angle for drilling aluminum versus stainless steel, and what happens if the wrong angle is used.", answer: "Aluminum takes a sharper point, around 118 degrees. Stainless needs a flatter one, closer to 135. Too sharp on stainless and the bit walks and work-hardens the surface.", hints: 0, pass: true },
@@ -4665,7 +4665,7 @@ const ORAL_LOGS = [
       { acs: "AM.I.A.K11", text: "Describe the precautions you take before performing hot work near a fuel cell.", answer: "Defuel and purge the tank, verify with a combustible gas detector, have a fire watch and extinguisher staged.", hints: 1, pass: true },
       { acs: "AM.I.A.K11b", text: "What are the three elements of the fire triangle and how does each extinguisher type remove one?", answer: "Heat, fuel, oxygen. Water cools, CO2 displaces oxygen, dry chem interrupts the chain reaction.", hints: 0, pass: true },
     ] },
-  { id: "ol3", date: "2026-09-26T16:40:00", topicId: "ot2", title: "Helicopters", acs: ["AM.I.A.K10", "AM.I.A.K12"], mode: "speak", level: "hard", duration: "03:58",
+  { id: "ol3", date: "2026-09-26T16:40:00", topicId: "ot2", title: "Helicopters", assignment: "Rotorcraft Systems Review", acs: ["AM.I.A.K10", "AM.I.A.K12"], mode: "speak", level: "hard", duration: "03:58",
     questions: [
       { acs: "AM.I.A.K10", text: "How do you identify a hydraulic line's pressure rating and fluid type from its markings?", answer: "Color-coded tape bands and the printed spec on the hose. Red for fuel, blue for hydraulic... I'm not certain of the pressure marking.", hints: 0, pass: false },
       { acs: "AM.I.A.K12", text: "What ground-handling precautions are specific to a helicopter with the rotor system installed?", answer: "Tie down the blades, keep clear of the tail rotor arc, use the correct ground-handling wheels and never push on the blades.", hints: 0, pass: true },
@@ -4820,16 +4820,16 @@ function OralStudentSetup({ onStart }) {
   );
 }
 
-const ORAL_LOG_COLS = "120px minmax(220px,1fr) 90px 100px 90px 80px 72px 24px";
+const ORAL_LOG_COLS = "120px minmax(200px,1.2fr) minmax(140px,1fr) 90px 100px 90px 80px 72px 24px";
 function OralLogsTab({ onOpen }) {
-  const head = ["Date", "Topic", "Mode", "Difficulty", "Questions", "Time", "Score", ""];
+  const head = ["Date", "Topic", "Assignment", "Mode", "Difficulty", "Questions", "Time", "Score", ""];
   const rows = ORAL_LOGS.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
   return (
     <div className="card" style={{ padding: 0 }}>
       <div style={{ overflowX: "auto" }}>
-        <div style={{ minWidth: 860 }}>
+        <div style={{ minWidth: 1000 }}>
           <div style={{ display: "grid", gridTemplateColumns: ORAL_LOG_COLS, gap: 14, alignItems: "center", padding: "10px 18px", borderBottom: "1px solid var(--line)" }}>
-            {head.map((l, i) => <span key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-4)", textAlign: i >= 4 && i <= 6 ? "right" : "left" }}>{l}</span>)}
+            {head.map((l, i) => <span key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-4)", textAlign: i >= 5 && i <= 7 ? "right" : "left" }}>{l}</span>)}
           </div>
           {rows.map((a, i) => {
             const score = oralLogScore(a);
@@ -4842,6 +4842,9 @@ function OralLogsTab({ onOpen }) {
                   <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
                   <div className="mono" style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.acs.join(" · ")}</div>
                 </div>
+                {a.assignment
+                  ? <span style={{ fontSize: 13, color: "var(--ink-2)", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.assignment}</span>
+                  : <span style={{ fontSize: 13, color: "var(--ink-4)" }}>—</span>}
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", fontSize: 13, color: "var(--ink)" }}><MSGlyph name={a.mode === "speak" ? "mic" : "keyboard"} size={16} color="var(--kls-on-surface-variant)" />{a.mode === "speak" ? "Speak" : "Write"}</span>
                 <span style={{ fontSize: 13, color: "var(--ink)" }}>{oralLevelLabel(a.level)}</span>
                 <span style={{ fontSize: 13, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a.questions.length}</span>
