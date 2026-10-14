@@ -20,6 +20,9 @@
   --accent: var(--kls-primary);
   --accent-ink: var(--kls-primary);
   --accent-soft: var(--kls-info-container);
+  /* Exam blues (Study / Speak-Write / Begin): deep fill + border, lighter ink for icons & links. */
+  --exam-blue: var(--kls-color-blue-600);
+  --exam-blue-ink: var(--kls-color-blue-200);
 
   --good: var(--kls-success);
   --good-soft: var(--kls-success-container);
@@ -414,10 +417,12 @@ kbd {
 /* ============ Responsive breakpoints ============ */
 .setup-grid {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 340px 1fr;
   gap: 20px;
   align-items: start;
 }
+/* Config panel sits LEFT, topic list RIGHT (source order is picker → config). */
+.setup-grid > .setup-config { order: -1; }
 .dashboard-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

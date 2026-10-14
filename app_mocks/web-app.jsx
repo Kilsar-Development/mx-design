@@ -4540,7 +4540,7 @@ function WebApp(props) {
     : <ControlTower showKpis={showKpis} initialQuick="all" query={query} />;
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
   else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
-  else if (active === "oralExams") content = <OralExams query={query} />;
+  else if (active === "oralExams") content = examRole === "student" ? <StudentOralExams /> : <OralExams query={query} />;
   else if (active === "integrations") content = <Integrations query={query} />;
   else if (active === "faq") content = <FaqScreen query={query} onFeedback={() => setHelpOpen(true)} />;
   else if (active === "terms") content = <Blocks query={query} onOpenTask={setEditingTask} />;
@@ -4565,12 +4565,12 @@ function WebApp(props) {
 // ORAL EXAMS (student) — topic picker
 // ════════════════════════════════════════════════════════════════════
 const ORAL_TOPICS = [
-  { id: "ot1", title: "Cutting Tools", desc: "", acs: ["AM.I.A.K11", "AM.I.A.K11b", "AM.I.A.K11d", "AM.I.G.K1", "AM.I.G.K12"], easy: 0, med: 5, hard: 0 },
-  { id: "ot2", title: "Helicopters", desc: "", acs: ["AM.I.A.K1", "AM.I.A.K10", "AM.I.A.K11", "AM.I.A.K11a", "AM.I.A.K11b", "AM.I.A.K11c", "AM.I.A.K11d", "AM.I.A.K12"], easy: 0, med: 2, hard: 0 },
-  { id: "ot3", title: "joel test", desc: "", acs: [], easy: 0, med: 3, hard: 0 },
-  { id: "ot4", title: "Sample Topic Sample Topic Sample Topic Sample Topic Sample Topic", desc: Array(10).fill("Test Desciption.  and a long one....").join(" "), acs: [], easy: 5, med: 5, hard: 0 },
-  { id: "ot5", title: "Test Exam - Blue", desc: "", acs: [], easy: 0, med: 20, hard: 0 },
-  { id: "ot6", title: "Test Exam - Fire Safety", desc: "a test exam about fire safety", acs: ["AM.I.A.K1", "AM.I.A.K11", "AM.I.A.K11b"], easy: 0, med: 5, hard: 0 },
+  { id: "ot1", title: "Cutting Tools", subject: "General", desc: "", acs: ["AM.I.A.K11", "AM.I.A.K11b", "AM.I.A.K11d", "AM.I.G.K1", "AM.I.G.K12"], easy: 0, med: 5, hard: 0 },
+  { id: "ot2", title: "Helicopters", subject: "Airframe", desc: "", acs: ["AM.I.A.K1", "AM.I.A.K10", "AM.I.A.K11", "AM.I.A.K11a", "AM.I.A.K11b", "AM.I.A.K11c", "AM.I.A.K11d", "AM.I.A.K12"], easy: 0, med: 2, hard: 0 },
+  { id: "ot3", title: "joel test", subject: "General", desc: "", acs: [], easy: 0, med: 3, hard: 0 },
+  { id: "ot4", title: "Sample Topic Sample Topic Sample Topic Sample Topic Sample Topic", subject: "Powerplant", desc: Array(10).fill("Test Desciption.  and a long one....").join(" "), acs: [], easy: 5, med: 5, hard: 0 },
+  { id: "ot5", title: "Test Exam - Blue", subject: "Airframe", desc: "", acs: [], easy: 0, med: 20, hard: 0 },
+  { id: "ot6", title: "Test Exam - Fire Safety", subject: "General", desc: "a test exam about fire safety", acs: ["AM.I.A.K1", "AM.I.A.K11", "AM.I.A.K11b"], easy: 0, med: 5, hard: 0 },
 ];
 const ORAL_DIFF = [
   { key: "easy", label: "Easy",   bg: "var(--kls-accent-2)",  fg: "var(--kls-accent-3)" },
@@ -4579,7 +4579,7 @@ const ORAL_DIFF = [
 ];
 const oralSecondaryBtn = {
   height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", cursor: "pointer",
-  background: "transparent", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+  background: "var(--kls-surface-container-high)", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
   fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
 };
 
@@ -4603,7 +4603,6 @@ function OralExams({ query = "" }) {
             <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, lineHeight: 1.2, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Oral Exams</h1>
             <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, fontWeight: 400, color: "var(--kls-on-surface-variant)" }}>Practice dynamic questions on various topics.</p>
           </div>
-          <button style={oralSecondaryBtn}><MSGlyph name="mic" size={18} color="var(--kls-on-surface)" />Calibrate</button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
           <div style={{ minWidth: 0, overflowX: "auto" }}><SegmentedTabs tabs={[{ key: "available", label: "Available" }, { key: "logs", label: "Exam Logs" }]} value={tab} onChange={setTab} /></div>
@@ -4627,7 +4626,7 @@ function OralExams({ query = "" }) {
                   <th style={{ ...INT_TH, width: 200 }}>Questions</th>
                 </tr>
               </thead>
-              <tbody>{list.map((t) => <OralTopicRow key={t.id} topic={t} onOpen={() => setSetupTopic(t)} />)}</tbody>
+              <tbody>{list.map((t) => <OralTopicRow key={t.id} topic={t} />)}</tbody>
             </table>
           )}
         </div>
@@ -4637,11 +4636,277 @@ function OralExams({ query = "" }) {
   );
 }
 
+// ── Student Oral Exams: setup (topic tree + config) and Exam Logs ──
+const oralTopicTotal = (t) => (t.easy || 0) + (t.med || 0) + (t.hard || 0);
+// ACS code descriptions (FAA ACS text); CT_POOL supplies any it already defines.
+const ORAL_ACS_DESC = {
+  "AM.I.A.K11a": "a. Series circuits.", "AM.I.A.K11b": "b. Parallel circuits.", "AM.I.A.K11c": "c. Series-parallel circuits.", "AM.I.A.K11d": "d. Voltage drop.",
+  "AM.I.A.K12": "Power and energy.", "AM.I.G.K1": "Precision measurement tools and their use.", "AM.I.G.K12": "Hand tools and power tools.",
+};
+const oralAcsDesc = (code) => { const c = CT_POOL.flatMap((t) => t.courses.flatMap((x) => x.codes)).find((x) => x.code === code); return (c && c.desc) || ORAL_ACS_DESC[code] || ""; };
+// Subtopics = the ACS codes assembled from the topic's questions; the pool is split across them (pool is fixed — difficulty only changes hints + time).
+function oralSubtopics(t) {
+  const n = t.acs.length; if (!n) return [];
+  const total = oralTopicTotal(t), base = Math.floor(total / n), extra = total % n;
+  return t.acs.map((code, i) => ({ id: t.id + ":" + code, code, desc: oralAcsDesc(code), q: base + (i < extra ? 1 : 0) }));
+}
+const ORAL_LOGS = [
+  { id: "ol1", date: "2026-10-09T14:20:00", topicId: "ot1", title: "Cutting Tools", acs: ["AM.I.A.K11", "AM.I.A.K11b"], mode: "speak", level: "med", duration: "08:42",
+    questions: [
+      { acs: "AM.I.A.K11b", text: "When selecting a saw blade for cutting composite materials on an aircraft, what characteristics should you consider to ensure a clean cut and minimize delamination, and why are these characteristics important?", answer: "A fine-tooth or diamond-grit blade so the fibers get cut rather than torn, and keep the feed slow so heat doesn't build up and soften the resin.", hints: 1, pass: true },
+      { acs: "AM.I.A.K11", text: "Describe how you would choose the correct drill bit point angle for drilling aluminum versus stainless steel, and what happens if the wrong angle is used.", answer: "Aluminum takes a sharper point, around 118 degrees. Stainless needs a flatter one, closer to 135. Too sharp on stainless and the bit walks and work-hardens the surface.", hints: 0, pass: true },
+      { acs: "AM.I.A.K11d", text: "What is the purpose of a reamer, and when would you ream a hole instead of drilling it to final size?", answer: "It brings a hole to final size with a smoother finish. You'd ream when the fastener needs a close tolerance fit.", hints: 0, pass: true },
+      { acs: "AM.I.G.K1", text: "Explain how you inspect a cutting tool for wear or damage before use, and what signs would make you remove it from service.", answer: "Check the edges for chips and look for bluing on the shank.", hints: 2, pass: false },
+      { acs: "AM.I.G.K12", text: "What safety precautions should you follow when using a pneumatic cutoff wheel near aircraft structure?", answer: "Guard on, face shield, and check what's behind the cut — lines, wiring, fuel cells. Keep sparks away from anything flammable.", hints: 0, pass: true },
+    ] },
+  { id: "ol2", date: "2026-10-03T09:05:00", topicId: "ot6", title: "Test Exam - Fire Safety", acs: ["AM.I.A.K1", "AM.I.A.K11"], mode: "write", level: "easy", duration: "11:15",
+    questions: [
+      { acs: "AM.I.A.K1", text: "What class of fire extinguisher is appropriate for an electrical fire in the hangar, and why?", answer: "Class C — it's non-conductive so it won't carry current back to you. CO2 or dry chemical.", hints: 0, pass: true },
+      { acs: "AM.I.A.K11", text: "Describe the precautions you take before performing hot work near a fuel cell.", answer: "Defuel and purge the tank, verify with a combustible gas detector, have a fire watch and extinguisher staged.", hints: 1, pass: true },
+      { acs: "AM.I.A.K11b", text: "What are the three elements of the fire triangle and how does each extinguisher type remove one?", answer: "Heat, fuel, oxygen. Water cools, CO2 displaces oxygen, dry chem interrupts the chain reaction.", hints: 0, pass: true },
+    ] },
+  { id: "ol3", date: "2026-09-26T16:40:00", topicId: "ot2", title: "Helicopters", acs: ["AM.I.A.K10", "AM.I.A.K12"], mode: "speak", level: "hard", duration: "03:58",
+    questions: [
+      { acs: "AM.I.A.K10", text: "How do you identify a hydraulic line's pressure rating and fluid type from its markings?", answer: "Color-coded tape bands and the printed spec on the hose. Red for fuel, blue for hydraulic... I'm not certain of the pressure marking.", hints: 0, pass: false },
+      { acs: "AM.I.A.K12", text: "What ground-handling precautions are specific to a helicopter with the rotor system installed?", answer: "Tie down the blades, keep clear of the tail rotor arc, use the correct ground-handling wheels and never push on the blades.", hints: 0, pass: true },
+    ] },
+];
+const oralLogScore = (a) => a.questions.filter((q) => q.pass).length / a.questions.length;
+const oralDate = (d) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const oralLevelLabel = (k) => (ORAL_LEVELS.find((l) => l.key === k) || ORAL_LEVELS[1]).label;
+
+function StudentOralExams() {
+  const [tab, setTab] = useState("practice");
+  const [session, setSession] = useState(null);
+  const [log, setLog] = useState(null);
+  if (session) return <OralSpeakRunner session={session} onExit={() => setSession(null)} />;
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div className="page" data-screen-label="Oral Exams (student)">
+        <div className="page__head">
+          <div>
+            <div className="page__title">Oral Exams</div>
+            <div className="page__sub">Practice dynamic questions on various topics.</div>
+          </div>
+          <button style={oralSecondaryBtn}><MSGlyph name="check_box_outline_blank" size={18} color="var(--kls-accent-4)" />Calibrate</button>
+        </div>
+        <div className="compound-switch" role="tablist">
+          <button className="compound-switch__option" role="tab" data-active={tab === "practice"} onClick={() => setTab("practice")}><Icon name="exam" size={14} />Practice Setup</button>
+          <button className="compound-switch__option" role="tab" data-active={tab === "logs"} onClick={() => { setTab("logs"); setLog(null); }}><Icon name="history" size={14} />Exam Logs<span className="count">{ORAL_LOGS.length}</span></button>
+        </div>
+        {tab === "practice" && <OralStudentSetup onStart={setSession} />}
+        {tab === "logs" && !log && <OralLogsTab onOpen={setLog} />}
+        {tab === "logs" && log && <OralLogDetail attempt={log} onBack={() => setLog(null)} />}
+      </div>
+    </div>
+  );
+}
+
+// DS Checkbox (preview/checkbox.html) — sm mark: 18×18 · radius 5 · 1.5px border · 14px check · M3 green-check variant; indeterminate uses the inverted dash.
+const OralCheck = ({ checked, indeterminate, onChange }) => (
+  <button onClick={(e) => { e.stopPropagation(); onChange(); }} aria-checked={indeterminate ? "mixed" : !!checked} role="checkbox" style={{
+    width: 18, height: 18, borderRadius: 5, flexShrink: 0, padding: 0, cursor: "pointer",
+    border: "1.5px solid " + (checked || indeterminate ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)"),
+    background: indeterminate ? "var(--kls-on-surface)" : "transparent",
+    display: "inline-flex", alignItems: "center", justifyContent: "center", transition: "background-color 80ms" }}>
+    {checked && !indeterminate && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--kls-color-green-300)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4.5 4.5L20 6" /></svg>}
+    {indeterminate && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--kls-surface)" strokeWidth="3" strokeLinecap="round"><path d="M6 12h12" /></svg>}
+  </button>
+);
+
+function OralStudentSetup({ onStart }) {
+  const [expanded, setExpanded] = useState({ ot1: true });
+  const [selected, setSelected] = useState(() => new Set(oralSubtopics(ORAL_TOPICS[0]).map((s) => s.id)));
+  const [level, setLevel] = useState("med");
+  const [answerMode, setAnswerMode] = useState("speak");
+  const [count, setCount] = useState(3);
+  const leafIds = (t) => { const subs = oralSubtopics(t); return subs.length ? subs.map((s) => s.id) : [t.id]; };
+  const toggleIds = (ids) => { const all = ids.every((id) => selected.has(id)); const next = new Set(selected); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); setSelected(next); };
+  const topics = ORAL_TOPICS;
+  const chosen = ORAL_TOPICS.filter((t) => leafIds(t).some((id) => selected.has(id)));
+  const subCount = chosen.reduce((n, t) => n + oralSubtopics(t).filter((s) => selected.has(s.id)).length, 0);
+  const pool = chosen.reduce((n, t) => { const subs = oralSubtopics(t); return n + (subs.length ? subs.filter((s) => selected.has(s.id)).reduce((m, s) => m + s.q, 0) : oralTopicTotal(t)); }, 0);
+  const drawing = Math.min(count, pool);
+  const curLevel = ORAL_LEVELS.find((l) => l.key === level);
+  const begin = () => {
+    const acs = chosen.flatMap((t) => oralSubtopics(t).filter((s) => selected.has(s.id)).map((s) => s.code));
+    const topic = chosen.length === 1 ? chosen[0] : { id: chosen[0].id, title: chosen.length + " topics", desc: chosen.map((t) => t.title).join(", "), acs };
+    onStart({ topic: { ...topic, acs: acs.length ? acs : topic.acs }, level, count: drawing, answerMode });
+  };
+  const label = { fontSize: 12, fontWeight: 600, color: "var(--ink-3)" };
+  const qCount = { fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", flexShrink: 0, minWidth: 40, textAlign: "right" };
+  return (
+    <div className="setup-grid">
+      <div className="card" style={{ padding: 0, minWidth: 0 }}>
+        <div className="setup-topics-head" style={{ padding: "14px 18px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", minWidth: 0 }}>
+            <h3 style={{ margin: 0, whiteSpace: "nowrap" }}>Topics</h3>
+            <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>Pick topics and ACS codes to build a custom oral exam.</div>
+          </div>
+        </div>
+        <div style={{ padding: "var(--kls-space-tiny)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+          {topics.map((t) => {
+            const subs = oralSubtopics(t), ids = leafIds(t);
+            const all = ids.every((id) => selected.has(id)), some = ids.some((id) => selected.has(id)), open = !!expanded[t.id];
+            return (
+              <div key={t.id}>
+                <div style={{ display: "flex", alignItems: "center", padding: "10px 14px", background: "var(--bg-inset)", borderRadius: 8, gap: 10 }}>
+                  <button className="btn btn--ghost btn--sm" disabled={!subs.length} style={{ width: 24, padding: 0, flexShrink: 0, visibility: subs.length ? "visible" : "hidden" }} onClick={() => setExpanded({ ...expanded, [t.id]: !open })}>
+                    <Icon name={open ? "chev-d" : "chev-r"} size={12} />
+                  </button>
+                  <OralCheck checked={all} indeterminate={some && !all} onChange={() => toggleIds(ids)} />
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</span>
+                      <span style={{ fontSize: 12, color: "var(--ink-3)", whiteSpace: "nowrap", flexShrink: 0 }}>{subs.length ? subs.length + " ACS codes" : "No ACS codes"}</span>
+                    </div>
+                    {t.desc && <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-3)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc}</span>}
+                  </div>
+                  <span style={qCount}>{oralTopicTotal(t)} Q</span>
+                </div>
+                {open && subs.map((s) => {
+                  const on = selected.has(s.id);
+                  return (
+                    <div key={s.id} onClick={() => toggleIds([s.id])} style={{ display: "flex", alignItems: "center", padding: "var(--kls-space-xsmall) 14px var(--kls-space-xsmall) 76px", gap: 10, cursor: "pointer", background: on ? "color-mix(in srgb, var(--exam-blue) 12%, transparent)" : "transparent", borderBottom: "1px solid var(--line)" }}>
+                      <OralCheck checked={on} onChange={() => toggleIds([s.id])} />
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3, whiteSpace: "nowrap" }}>{s.code}</span>
+                        {s.desc && <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-3)", lineHeight: 1.3, textWrap: "pretty" }}>{s.desc}</span>}
+                      </div>
+                      <span style={qCount}>{s.q} Q</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="setup-config" style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 76, minWidth: 0 }}>
+        <div className="card" style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <span style={label}>How you answer</span>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+              <OralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+              <OralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type your answer · no mic needed" onClick={() => setAnswerMode("write")} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontSize: 12, fontWeight: 500, color: "var(--ink-3)" }}>
+              <MSGlyph name="lock" size={16} color="var(--kls-on-surface-variant)" />Locked once the exam starts.
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <span style={label}>Difficulty</span>
+            <div role="tablist" aria-label="Difficulty" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: "var(--kls-space-tiny)", padding: 2, height: 40, boxSizing: "border-box", borderRadius: 8, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+              {ORAL_LEVELS.map((l) => { const on = level === l.key; return (
+                <button key={l.key} role="tab" aria-selected={on} onClick={() => setLevel(l.key)} style={{ height: 34, padding: 0, borderRadius: 8, border: "none", cursor: "pointer", whiteSpace: "nowrap",
+                  background: on ? "var(--kls-surface)" : "transparent", color: on ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)", boxShadow: on ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>{l.label}</button>
+              ); })}
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-3)", lineHeight: 1.4 }}>{curLevel.desc.replace(" - ", " · ")}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <CountStepper value={drawing} availablePool={pool} onChange={setCount} onSelectAll={() => setCount(pool)} />
+            <ConfigRow label="Topics" value={chosen.length + (subCount ? " · " + subCount + " ACS code(s)" : "")} />
+            <ConfigRow label="Pool" value={pool + " question(s)"} />
+            <ConfigRow label="Drawing" value={drawing + " question(s)"} />
+          </div>
+          <button disabled={drawing === 0} onClick={begin} style={{ width: "100%", height: 40, padding: "0 var(--kls-space-med)", border: "1px solid transparent", borderRadius: 8, background: "var(--exam-blue)",
+            color: drawing === 0 ? "var(--kls-on-surface-variant)" : "var(--kls-color-base-white)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)", cursor: drawing === 0 ? "default" : "pointer" }}>Begin Oral Exam</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const ORAL_LOG_COLS = "120px minmax(220px,1fr) 90px 100px 90px 80px 72px 24px";
+function OralLogsTab({ onOpen }) {
+  const head = ["Date", "Topic", "Mode", "Difficulty", "Questions", "Time", "Score", ""];
+  const rows = ORAL_LOGS.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  return (
+    <div className="card" style={{ padding: 0 }}>
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ minWidth: 860 }}>
+          <div style={{ display: "grid", gridTemplateColumns: ORAL_LOG_COLS, gap: 14, alignItems: "center", padding: "10px 18px", borderBottom: "1px solid var(--line)" }}>
+            {head.map((l, i) => <span key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-4)", textAlign: i >= 4 && i <= 6 ? "right" : "left" }}>{l}</span>)}
+          </div>
+          {rows.map((a, i) => {
+            const score = oralLogScore(a);
+            const tone = score >= 0.8 ? "var(--good)" : score >= 0.7 ? "var(--warn)" : "var(--bad)";
+            return (
+              <button key={a.id} onClick={() => onOpen(a)} style={{ background: "transparent", width: "100%", padding: "14px 18px", textAlign: "left", cursor: "pointer", borderWidth: 0, borderTop: i === 0 ? 0 : "1px solid var(--line)", borderStyle: "solid", borderColor: "var(--line)",
+                display: "grid", gridTemplateColumns: ORAL_LOG_COLS, gap: 14, alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: "var(--ink-3)", whiteSpace: "nowrap" }}>{oralDate(a.date)}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
+                  <div className="mono" style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.acs.join(" · ")}</div>
+                </div>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", fontSize: 13, color: "var(--ink)" }}><MSGlyph name={a.mode === "speak" ? "mic" : "keyboard"} size={16} color="var(--kls-on-surface-variant)" />{a.mode === "speak" ? "Speak" : "Write"}</span>
+                <span style={{ fontSize: 13, color: "var(--ink)" }}>{oralLevelLabel(a.level)}</span>
+                <span style={{ fontSize: 13, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a.questions.length}</span>
+                <span style={{ fontSize: 13, color: "var(--ink-3)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a.duration}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: tone, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{Math.round(score * 100)}%</span>
+                <span style={{ display: "inline-flex", color: "var(--ink-4)" }}><Icon name="chev-r" size={12} /></span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OralLogDetail({ attempt: a, onBack }) {
+  const passed = a.questions.filter((q) => q.pass).length, score = passed / a.questions.length;
+  const tone = score >= 0.8 ? "var(--good)" : score >= 0.7 ? "var(--warn)" : "var(--bad)";
+  const meta = { fontSize: 12.5, color: "var(--ink-3)" };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+      <button className="btn btn--ghost btn--sm" onClick={onBack} style={{ alignSelf: "flex-start", paddingLeft: 0 }}><Icon name="chev-l" size={12} />Exam Logs</button>
+      <div className="card" style={{ padding: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-med)", flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--ink)" }}>{a.title}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: "var(--kls-space-tiny)", ...meta }}>
+            <span>{oralDate(a.date)}</span><span>·</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)" }}><MSGlyph name={a.mode === "speak" ? "mic" : "keyboard"} size={14} color="var(--kls-on-surface-variant)" />{a.mode === "speak" ? "Speak" : "Write"}</span><span>·</span>
+            <span>{oralLevelLabel(a.level)}</span><span>·</span>
+            <span>{a.questions.length} questions</span><span>·</span>
+            <span>{a.duration}</span>
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: tone, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>{Math.round(score * 100)}%</div>
+          <div style={meta}>{passed} of {a.questions.length} passed</div>
+        </div>
+      </div>
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        {a.questions.map((q, i) => (
+          <div key={i} style={{ padding: "var(--kls-space-med) 18px", borderTop: i ? "1px solid var(--line)" : "none", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", ...meta }}>
+              <span style={{ fontWeight: 600 }}>Q{i + 1}</span>
+              <span className="mono">{q.acs}</span>
+              <span style={{ flex: 1 }} />
+              <span>{q.hints} hint{q.hints === 1 ? "" : "s"} used</span>
+              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: q.pass ? "var(--kls-success-container)" : "var(--kls-error-container)", color: q.pass ? "var(--kls-on-success-container)" : "var(--kls-on-error-container)" }}>{q.pass ? "Pass" : "Needs work"}</span>
+            </div>
+            <div style={{ fontSize: 14.5, fontWeight: 500, color: "var(--ink)", lineHeight: 1.5, textWrap: "pretty" }}>{q.text}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>Your answer</span>
+              <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.55, textWrap: "pretty" }}>{q.answer}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function OralTopicRow({ topic, onOpen }) {
   const [hover, setHover] = useState(false);
   return (
     <tr onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ cursor: "pointer", background: hover ? "var(--kls-surface-container-low)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      style={{ cursor: onOpen ? "pointer" : "default", background: hover && onOpen ? "var(--kls-surface-container-low)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
       <td style={{ ...INT_TD, paddingTop: "var(--kls-space-med)", paddingBottom: "var(--kls-space-med)" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{topic.title}</div>
@@ -4746,7 +5011,7 @@ function OralSetupDialog({ topic, onClose, onStart }) {
 }
 
 function OralAnswerCard({ active, glyph, label, sub, onClick }) {
-  const accent = "var(--kls-info)";
+  const accent = "var(--exam-blue)";
   return (
     <button onClick={onClick} aria-pressed={active} style={{
       display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", textAlign: "left", cursor: "pointer",
@@ -4755,7 +5020,7 @@ function OralAnswerCard({ active, glyph, label, sub, onClick }) {
       background: active ? "color-mix(in srgb, " + accent + " 8%, transparent)" : "var(--kls-surface)",
       transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
-        <MSGlyph name={glyph} size={20} color={active ? accent : "var(--kls-on-surface)"} />
+        <MSGlyph name={glyph} size={20} color={active ? "var(--exam-blue-ink)" : "var(--kls-on-surface)"} />
         <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</span>
       </div>
       <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)" }}>{sub}</div>
@@ -6421,7 +6686,7 @@ const PracticeSetup = ({ tweaks, onStart, sessions, onResume, onEndSession }) =>
           {/* Begin button — DS PrimaryActionButton, color per mode (accent10/11 are unbound in this port → info/lock) */}
           {(() => {
             const isExam = mode === 'exam';
-            const btnColor = isExam ? 'var(--lock)' : 'var(--kls-info)';
+            const btnColor = isExam ? 'var(--lock)' : 'var(--exam-blue)';
             const disabled = !isExam && !random && selectedModules.size === 0;
             return (
               <button
@@ -6561,7 +6826,8 @@ const ExamConfigCard = ({ exam }) => (
 const ModeCard = ({ active, icon, name, sub, onClick }) => {
   const isExam = name === 'Exam';
   // activeColor: Study → info blue, Exam → lock purple (accent-12). Label is always primary (white in dark).
-  const activeColor = isExam ? 'var(--lock)' : 'var(--kls-info)';
+  const activeColor = isExam ? 'var(--lock)' : 'var(--exam-blue)';
+  const iconColor = isExam ? 'var(--lock)' : 'var(--exam-blue-ink)';
   return (
     <button onClick={onClick} style={{
       border: active ? `2px solid ${activeColor}` : '1.5px solid var(--line)',
@@ -6570,7 +6836,7 @@ const ModeCard = ({ active, icon, name, sub, onClick }) => {
       transition: 'all 100ms',
     }}>
       <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-        <span style={{display: 'inline-flex', color: active ? activeColor : 'var(--ink)'}}><Icon name={icon} size={18} /></span>
+        <span style={{display: 'inline-flex', color: active ? iconColor : 'var(--ink)'}}><Icon name={icon} size={18} /></span>
         <span style={{fontWeight: 600, fontSize: 14, color: 'var(--kls-primary)'}}>{name}</span>
       </div>
       <div style={{marginTop: 6, fontSize: 12, fontWeight: 500, color: 'var(--ink-3)', lineHeight: 1.45}}>{sub}</div>
@@ -6599,7 +6865,7 @@ const CountStepper = ({ value, availablePool, onChange, onSelectAll }) => {
       <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: 12, minWidth: 0}}>
         <span style={{fontSize: 12, fontWeight: 600, color: 'var(--ink-3)'}}>Question Count:</span>
         {availablePool > 0 && (
-          <button onClick={onSelectAll} style={{border: 0, background: 'transparent', padding: 0, color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer'}}>Select all</button>
+          <button onClick={onSelectAll} style={{border: 0, background: 'transparent', padding: 0, color: 'var(--exam-blue-ink)', fontSize: 12, fontWeight: 600, cursor: 'pointer'}}>(All)</button>
         )}
       </div>
       <button onClick={() => onChange(Math.max(1, value - 1))} style={{...iconBtn, color: 'var(--ink-3)', cursor: 'pointer'}}>−</button>

@@ -2171,7 +2171,7 @@ function WorkspaceScreen({ go }) {
           onClickCapture={(e) => { if (e.currentTarget.dataset.moved === "1") { e.stopPropagation(); e.preventDefault(); } }}
           style={{ display: "flex", gap: 12, overflowX: "auto", padding: "var(--kls-space-xsmall) var(--kls-space-med) var(--kls-space-med)", touchAction: "pan-x", cursor: "grab", userSelect: "none" }}>
           {WM_DESTINATIONS.map((d) => (
-            <DestinationCard key={d.key} icon={d.icon} label={d.label} onClick={() => { if (d.key === "team") go("team"); else if (d.key === "written") go("writtenExams"); else if (d.key === "controlTower") go("controlTower"); else if (d.key === "library") go("library"); }} />
+            <DestinationCard key={d.key} icon={d.icon} label={d.label} onClick={() => { if (d.key === "team") go("team"); else if (d.key === "written") go("writtenExams"); else if (d.key === "oral") go("oralExams"); else if (d.key === "controlTower") go("controlTower"); else if (d.key === "library") go("library"); }} />
           ))}
         </div>
 
@@ -4330,8 +4330,436 @@ function MobilePlaceholder({ label, icon }) {
     </div>
   );
 }
+// ════════════════════════════════════════════════════════════════════
+// ORAL EXAMS — mobile (student): topic list → setup screen
+// ════════════════════════════════════════════════════════════════════
+function MSGlyph({ name, size = 24, color = "currentColor" }) {
+  return (
+    <span className="material-symbols-outlined" aria-hidden="true"
+      style={{ fontSize: size, lineHeight: 1, color, flex: "none", fontVariationSettings: "'opsz' " + Math.min(48, Math.max(20, size)) }}>{name}</span>
+  );
+}
+const MORAL_TOPICS = [
+  { id: "ot1", title: "Cutting Tools", desc: "", acs: ["AM.I.A.K11", "AM.I.A.K11b", "AM.I.A.K11d", "AM.I.G.K1", "AM.I.G.K12"], easy: 0, med: 5, hard: 0 },
+  { id: "ot2", title: "Helicopters", desc: "", acs: ["AM.I.A.K1", "AM.I.A.K10", "AM.I.A.K11", "AM.I.A.K11a", "AM.I.A.K11b", "AM.I.A.K11c", "AM.I.A.K11d", "AM.I.A.K12"], easy: 0, med: 2, hard: 0 },
+  { id: "ot3", title: "joel test", desc: "", acs: [], easy: 0, med: 3, hard: 0 },
+  { id: "ot4", title: "Sample Topic Sample Topic Sample Topic Sample Topic Sample Topic", desc: Array(10).fill("Test Desciption.  and a long one....").join(" "), acs: [], easy: 5, med: 5, hard: 0 },
+  { id: "ot5", title: "Test Exam - Blue", desc: "", acs: [], easy: 0, med: 20, hard: 0 },
+  { id: "ot6", title: "Test Exam - Fire Safety", desc: "a test exam about fire safety", acs: ["AM.I.A.K1", "AM.I.A.K11", "AM.I.A.K11b"], easy: 0, med: 5, hard: 0 },
+];
+const MORAL_DIFF = [
+  { key: "easy", label: "Easy",   bg: "var(--kls-accent-2)",  fg: "var(--kls-accent-3)" },
+  { key: "med",  label: "Medium", bg: "var(--kls-accent-5)",  fg: "var(--kls-accent-6)" },
+  { key: "hard", label: "Hard",   bg: "var(--kls-accent-14)", fg: "var(--kls-accent-15)" },
+];
+const MORAL_LEVELS = [
+  { key: "easy", label: "Easy",   desc: "Up to 3 hints - Extra time per question" },
+  { key: "med",  label: "Medium", desc: "Up to 2 hints - Standard time per question" },
+  { key: "hard", label: "Hard",   desc: "No hints - Reduced time per question" },
+];
+const moralLevelOpt = (l) => l.label + ":  " + l.desc;
+const moralFieldLabel = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
+  color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-xsmall)" };
+const moralPrimaryBtn = {
+  height: 40, padding: "0 var(--kls-space-med)", borderRadius: "var(--kls-radius-med)", border: "none", cursor: "pointer",
+  background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+};
+
+function MOralBack({ onClick }) {
+  return (
+    <button onClick={onClick} aria-label="Back"
+      style={{ width: 36, height: 36, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--kls-on-surface)", flexShrink: 0, padding: 0 }}>
+      <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}><path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    </button>
+  );
+}
+function MOralDiffPills({ topic, center }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-xsmall)", justifyContent: center ? "center" : "flex-start" }}>
+      {MORAL_DIFF.map((d) => (
+        <span key={d.key} style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: "var(--kls-radius-small)", background: d.bg, color: d.fg,
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{d.label}: {topic[d.key]}</span>
+      ))}
+    </div>
+  );
+}
+
+function MOralExams({ go }) {
+  const [tab, setTab] = useState("available");
+  const [query, setQuery] = useState("");
+  const [setupTopic, setSetupTopic] = useState(null);
+  const q = query.trim().toLowerCase();
+  const list = MORAL_TOPICS
+    .filter((t) => !q || t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.acs.some((c) => c.toLowerCase().includes(q)))
+    .slice().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
+  if (setupTopic) return <MOralSetup topic={setupTopic} onBack={() => setSetupTopic(null)} onStart={() => setSetupTopic(null)} />;
+  return (
+    <div data-screen-label="oral-topics" style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-xsmall) var(--kls-space-small)", flex: "none" }}>
+        <MOralBack onClick={() => go("workspace")} />
+        <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, color: "var(--kls-on-surface)",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Oral Exam Topics</div>
+      </div>
+      <div style={{ padding: "var(--kls-space-tiny) var(--kls-space-med) 0", flex: "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", height: 48, padding: "0 var(--kls-space-small)",
+          background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: "var(--kls-radius-small)", boxSizing: "border-box" }}>
+          <KlsIcon name="search" size={20} color="var(--kls-on-surface-variant)" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search topics"
+            style={{ flex: 1, minWidth: 0, border: 0, outline: "none", background: "transparent", color: "var(--kls-on-surface)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500 }} />
+        </div>
+      </div>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)", flex: "none" }}>
+        <div style={{ display: "inline-flex", height: 40, padding: 2, gap: "var(--kls-space-tiny)", borderRadius: "var(--kls-radius-small)",
+          background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", boxSizing: "border-box" }}>
+          {[{ key: "available", label: "Available" }, { key: "logs", label: "Exam Logs" }].map((t) => {
+            const active = t.key === tab;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                style={{ height: 34, padding: "0 18px", borderRadius: "var(--kls-radius-small)", border: 0, cursor: "pointer", flex: "none",
+                  background: active ? "var(--kls-surface)" : "transparent", boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+                  color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>{t.label}</button>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-tiny) var(--kls-space-med) var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        {tab === "logs" || list.length === 0 ? (
+          <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+              <KlsIcon name="chatBubbles" size={26} color="var(--kls-on-surface-variant)" />
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{tab === "logs" ? "No exam logs yet" : "Nothing matches"}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)", lineHeight: 1.5 }}>{tab === "logs" ? "Finished oral exams will show up here." : "Try a different search."}</div>
+          </div>
+        ) : list.map((t) => (
+          <div key={t.id}
+            style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", textAlign: "left", width: "100%", boxSizing: "border-box",
+              padding: "var(--kls-space-med)", borderRadius: "var(--kls-radius-med)", border: 0, background: "var(--kls-surface)" }}>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{t.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)",
+                display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.desc || "No description"}</div>
+              <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)" }}>{t.acs.length ? t.acs.join(", ") : "No associated ACS codes"}</div>
+              <div style={{ marginTop: "var(--kls-space-tiny)" }}><MOralDiffPills topic={t} /></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MOralAnswerCard({ active, glyph, label, sub, onClick }) {
+  const accent = "var(--exam-blue)";
+  return (
+    <button onClick={onClick} aria-pressed={active} style={{
+      display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", textAlign: "left", cursor: "pointer", minWidth: 0,
+      padding: "var(--kls-space-small)", borderRadius: "var(--kls-radius-small)",
+      border: active ? "2px solid " + accent : "1.5px solid var(--kls-outline-variant)",
+      background: active ? "color-mix(in srgb, " + accent + " 8%, transparent)" : "var(--kls-surface)",
+      transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <MSGlyph name={glyph} size={20} color={active ? "var(--exam-blue-ink)" : "var(--kls-on-surface)"} />
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</span>
+      </div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)" }}>{sub}</div>
+    </button>
+  );
+}
+
+function MOralSetup({ topic, onBack, onStart }) {
+  const firstLevel = MORAL_LEVELS.find((l) => topic[l.key] > 0) || MORAL_LEVELS[1];
+  const [level, setLevel] = useState(firstLevel.key);
+  const pool = topic[level] || 0;
+  const [count, setCount] = useState(pool);
+  const [answerMode, setAnswerMode] = useState("speak");
+  const curLevel = MORAL_LEVELS.find((l) => l.key === level);
+  const levelOpts = MORAL_LEVELS.filter((l) => topic[l.key] > 0).map(moralLevelOpt);
+  const pickLevel = (opt) => { const l = MORAL_LEVELS.find((x) => moralLevelOpt(x) === opt); if (l) { setLevel(l.key); setCount(topic[l.key] || 0); } };
+  return (
+    <div data-screen-label="oral-setup" style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-xsmall) var(--kls-space-small)", flex: "none" }}>
+        <MOralBack onClick={onBack} />
+        <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, color: "var(--kls-on-surface)",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Practice Exam Setup</div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <img src="assets/images/placeholderImage.jpg" alt="" style={{ height: 128, aspectRatio: "16 / 10", objectFit: "cover", borderRadius: "var(--kls-radius-med)", display: "block" }} />
+          <MOralDiffPills topic={topic} center />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)" }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{topic.title}</div>
+          <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)" }}>{topic.acs.length ? topic.acs.join(", ") : "No associated ACS codes"}</div>
+          <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{topic.desc || "No description provided."}</div>
+        </div>
+        <div>
+          <div style={moralFieldLabel}>Difficulty</div>
+          <MCTSelect value={moralLevelOpt(curLevel)} options={levelOpts} placeholder="Select difficulty" onChange={pickLevel} />
+        </div>
+        <div>
+          <div style={moralFieldLabel}>Number of Questions ({count})</div>
+          <input type="range" min={pool > 0 ? 1 : 0} max={pool} value={count} disabled={pool === 0}
+            onChange={(e) => setCount(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--kls-primary)" }} />
+        </div>
+        <div>
+          <div style={moralFieldLabel}>How you answer</div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+            <MOralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+            <MOralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type your answer · no mic needed" onClick={() => setAnswerMode("write")} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+            <MSGlyph name="lock" size={16} color="var(--kls-on-surface-variant)" />Locked once the test starts.
+          </div>
+        </div>
+      </div>
+      <div style={{ flex: "none", padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-large)", borderTop: "1px solid var(--kls-outline-variant)", background: "var(--kls-scaffold-bg)" }}>
+        <button disabled={count === 0} onClick={() => onStart && onStart({ topic, level, count, answerMode })}
+          style={{ ...moralPrimaryBtn, width: "100%", opacity: count === 0 ? 0.5 : 1, cursor: count === 0 ? "not-allowed" : "pointer" }}>Start Test</button>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Student Oral Exams (mobile): topic tree + config, Exam Logs → detail. Mirrors web StudentOralExams. ──
+const MORAL_ACS_DESC = {
+  "AM.I.A.K11a": "a. Series circuits.", "AM.I.A.K11b": "b. Parallel circuits.", "AM.I.A.K11c": "c. Series-parallel circuits.", "AM.I.A.K11d": "d. Voltage drop.",
+  "AM.I.A.K12": "Power and energy.", "AM.I.G.K1": "Precision measurement tools and their use.", "AM.I.G.K12": "Hand tools and power tools.",
+};
+const moralAcsDesc = (code) => { const c = MCT_POOL.flatMap((t) => t.courses.flatMap((x) => x.codes)).find((x) => x.code === code); return (c && c.desc) || MORAL_ACS_DESC[code] || ""; };
+const moralTopicTotal = (t) => (t.easy || 0) + (t.med || 0) + (t.hard || 0);
+function moralSubtopics(t) {
+  const n = t.acs.length; if (!n) return [];
+  const total = moralTopicTotal(t), base = Math.floor(total / n), extra = total % n;
+  return t.acs.map((code, i) => ({ id: t.id + ":" + code, code, desc: moralAcsDesc(code), q: base + (i < extra ? 1 : 0) }));
+}
+const MORAL_LOGS = [
+  { id: "ol1", date: "2026-10-09T14:20:00", title: "Cutting Tools", acs: ["AM.I.A.K11", "AM.I.A.K11b"], mode: "speak", level: "med", duration: "08:42",
+    questions: [
+      { acs: "AM.I.A.K11b", text: "When selecting a saw blade for cutting composite materials on an aircraft, what characteristics should you consider to ensure a clean cut and minimize delamination, and why are these characteristics important?", answer: "A fine-tooth or diamond-grit blade so the fibers get cut rather than torn, and keep the feed slow so heat doesn't build up and soften the resin.", hints: 1, pass: true },
+      { acs: "AM.I.A.K11", text: "Describe how you would choose the correct drill bit point angle for drilling aluminum versus stainless steel, and what happens if the wrong angle is used.", answer: "Aluminum takes a sharper point, around 118 degrees. Stainless needs a flatter one, closer to 135. Too sharp on stainless and the bit walks and work-hardens the surface.", hints: 0, pass: true },
+      { acs: "AM.I.A.K11d", text: "What is the purpose of a reamer, and when would you ream a hole instead of drilling it to final size?", answer: "It brings a hole to final size with a smoother finish. You'd ream when the fastener needs a close tolerance fit.", hints: 0, pass: true },
+      { acs: "AM.I.G.K1", text: "Explain how you inspect a cutting tool for wear or damage before use, and what signs would make you remove it from service.", answer: "Check the edges for chips and look for bluing on the shank.", hints: 2, pass: false },
+      { acs: "AM.I.G.K12", text: "What safety precautions should you follow when using a pneumatic cutoff wheel near aircraft structure?", answer: "Guard on, face shield, and check what's behind the cut — lines, wiring, fuel cells. Keep sparks away from anything flammable.", hints: 0, pass: true },
+    ] },
+  { id: "ol2", date: "2026-10-03T09:05:00", title: "Test Exam - Fire Safety", acs: ["AM.I.A.K1", "AM.I.A.K11"], mode: "write", level: "easy", duration: "11:15",
+    questions: [
+      { acs: "AM.I.A.K1", text: "What class of fire extinguisher is appropriate for an electrical fire in the hangar, and why?", answer: "Class C — it's non-conductive so it won't carry current back to you. CO2 or dry chemical.", hints: 0, pass: true },
+      { acs: "AM.I.A.K11", text: "Describe the precautions you take before performing hot work near a fuel cell.", answer: "Defuel and purge the tank, verify with a combustible gas detector, have a fire watch and extinguisher staged.", hints: 1, pass: true },
+      { acs: "AM.I.A.K11b", text: "What are the three elements of the fire triangle and how does each extinguisher type remove one?", answer: "Heat, fuel, oxygen. Water cools, CO2 displaces oxygen, dry chem interrupts the chain reaction.", hints: 0, pass: true },
+    ] },
+  { id: "ol3", date: "2026-09-26T16:40:00", title: "Helicopters", acs: ["AM.I.A.K10", "AM.I.A.K12"], mode: "speak", level: "hard", duration: "03:58",
+    questions: [
+      { acs: "AM.I.A.K10", text: "How do you identify a hydraulic line's pressure rating and fluid type from its markings?", answer: "Color-coded tape bands and the printed spec on the hose. Red for fuel, blue for hydraulic... I'm not certain of the pressure marking.", hints: 0, pass: false },
+      { acs: "AM.I.A.K12", text: "What ground-handling precautions are specific to a helicopter with the rotor system installed?", answer: "Tie down the blades, keep clear of the tail rotor arc, use the correct ground-handling wheels and never push on the blades.", hints: 0, pass: true },
+    ] },
+];
+const moralLogScore = (a) => a.questions.filter((q) => q.pass).length / a.questions.length;
+const moralDate = (d) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const moralLevelLabel = (k) => (MORAL_LEVELS.find((l) => l.key === k) || MORAL_LEVELS[1]).label;
+const moralTone = (s) => s >= 0.8 ? "var(--good)" : s >= 0.7 ? "var(--warn)" : "var(--bad)";
+// DS Checkbox sm mark (preview/checkbox.html): 18×18 · radius 5 · 1.5px border · 14px check · M3 green-check variant.
+const MOralCheck = ({ checked, indeterminate, onChange }) => (
+  <button onClick={(e) => { e.stopPropagation(); onChange(); }} role="checkbox" aria-checked={indeterminate ? "mixed" : !!checked} style={{
+    width: 18, height: 18, borderRadius: 5, flexShrink: 0, padding: 0, cursor: "pointer",
+    border: "1.5px solid " + (checked || indeterminate ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)"),
+    background: indeterminate ? "var(--kls-on-surface)" : "transparent",
+    display: "inline-flex", alignItems: "center", justifyContent: "center", transition: "background-color 80ms" }}>
+    {checked && !indeterminate && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--kls-color-green-300)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4.5 4.5L20 6" /></svg>}
+    {indeterminate && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--kls-surface)" strokeWidth="3" strokeLinecap="round"><path d="M6 12h12" /></svg>}
+  </button>
+);
+const moralCalibrateAction = { label: "Calibrate", node: <MSGlyph name="check_box_outline_blank" size={20} color="var(--kls-accent-4)" />, onClick: () => {} };
+
+function MStudentOralExams({ go }) {
+  const [view, setView] = useState("setup");
+  const [log, setLog] = useState(null);
+  if (view === "logs" && log) return <MOralLogDetail attempt={log} onBack={() => setLog(null)} />;
+  if (view === "logs") return <MOralLogs onBack={() => setView("setup")} onOpen={setLog} />;
+  return <MOralStudentSetup onBack={() => go("workspace")} onLogs={() => setView("logs")} />;
+}
+
+function MOralStudentSetup({ onBack, onLogs }) {
+  const [expanded, setExpanded] = useState({ ot1: true });
+  const [selected, setSelected] = useState(() => new Set(moralSubtopics(MORAL_TOPICS[0]).map((s) => s.id)));
+  const [level, setLevel] = useState("med");
+  const [answerMode, setAnswerMode] = useState("speak");
+  const [count, setCount] = useState(3);
+  const leafIds = (t) => { const subs = moralSubtopics(t); return subs.length ? subs.map((s) => s.id) : [t.id]; };
+  const toggleIds = (ids) => { const all = ids.every((id) => selected.has(id)); const next = new Set(selected); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); setSelected(next); };
+  const chosen = MORAL_TOPICS.filter((t) => leafIds(t).some((id) => selected.has(id)));
+  const subCount = chosen.reduce((n, t) => n + moralSubtopics(t).filter((s) => selected.has(s.id)).length, 0);
+  const pool = chosen.reduce((n, t) => { const subs = moralSubtopics(t); return n + (subs.length ? subs.filter((s) => selected.has(s.id)).reduce((m, s) => m + s.q, 0) : moralTopicTotal(t)); }, 0);
+  const drawing = Math.min(count, pool);
+  const curLevel = MORAL_LEVELS.find((l) => l.key === level);
+  const F = "var(--kls-font-sans)";
+  const label = { fontFamily: F, fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" };
+  const value = { fontFamily: F, fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)", fontVariantNumeric: "tabular-nums" };
+  const row = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", minHeight: 28 };
+  const stepBtn = (dis) => ({ width: 36, height: 32, display: "grid", placeItems: "center", border: 0, background: "transparent", borderRadius: "var(--kls-radius-small)", padding: 0, fontSize: 20, lineHeight: 1, color: dis ? "var(--kls-outline-variant)" : "var(--kls-on-surface-variant)", cursor: dis ? "default" : "pointer" });
+  const qCount = { fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0, minWidth: 36, textAlign: "right" };
+  return (
+    <div data-screen-label="oral-student-setup" style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+      <MWEPageHeader title="Oral Exams" subtitle="Practice dynamic questions on various topics." onBack={onBack}
+        actions={[{ icon: "history", label: "Exam Logs", onClick: onLogs }, moralCalibrateAction]} />
+      <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-tiny) var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <span style={label}>How you answer</span>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+              <MOralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+              <MOralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type your answer · no mic needed" onClick={() => setAnswerMode("write")} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontFamily: F, fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+              <MSGlyph name="lock" size={16} color="var(--kls-on-surface-variant)" />Locked once the exam starts.
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <span style={label}>Difficulty</span>
+            <div role="tablist" aria-label="Difficulty" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: "var(--kls-space-tiny)", padding: 2, height: 40, boxSizing: "border-box", borderRadius: "var(--kls-radius-small)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+              {MORAL_LEVELS.map((l) => { const on = level === l.key; return (
+                <button key={l.key} role="tab" aria-selected={on} onClick={() => setLevel(l.key)} style={{ height: 34, padding: 0, borderRadius: "var(--kls-radius-small)", border: "none", cursor: "pointer", whiteSpace: "nowrap",
+                  background: on ? "var(--kls-surface)" : "transparent", color: on ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)", boxShadow: on ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+                  fontFamily: F, fontSize: 12, fontWeight: 600 }}>{l.label}</button>
+              ); })}
+            </div>
+            <span style={{ fontFamily: F, fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.4 }}>{curLevel.desc.replace(" - ", " · ")}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <div style={row}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+                <span style={label}>Question Count:</span>
+                {pool > 0 && <button onClick={() => setCount(pool)} style={{ border: 0, background: "transparent", padding: 0, color: "var(--exam-blue-ink)", fontFamily: F, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>(All)</button>}
+              </div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <button onClick={() => setCount(Math.max(1, drawing - 1))} style={stepBtn(false)}>−</button>
+                <div style={{ width: 40, textAlign: "center", fontFamily: F, fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", fontVariantNumeric: "tabular-nums" }}>{drawing}</div>
+                <button onClick={drawing >= pool ? undefined : () => setCount(drawing + 1)} disabled={drawing >= pool} style={stepBtn(drawing >= pool)}>+</button>
+              </div>
+            </div>
+            <div style={row}><span style={label}>Topics:</span><span style={value}>{chosen.length}{subCount ? " · " + subCount + " ACS code(s)" : ""}</span></div>
+            <div style={row}><span style={label}>Pool:</span><span style={value}>{pool} question(s)</span></div>
+            <div style={row}><span style={label}>Drawing:</span><span style={value}>{drawing} question(s)</span></div>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", fontFamily: F }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>Topics</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Pick topics and ACS codes to build a custom oral exam.</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          {MORAL_TOPICS.map((t) => {
+            const subs = moralSubtopics(t), ids = leafIds(t);
+            const all = ids.every((id) => selected.has(id)), some = ids.some((id) => selected.has(id)), open = !!expanded[t.id];
+            return (
+              <div key={t.id} style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", overflow: "hidden", fontFamily: F }}>
+                <div onClick={() => subs.length && setExpanded({ ...expanded, [t.id]: !open })} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-med)", cursor: subs.length ? "pointer" : "default" }}>
+                  <MOralCheck checked={all} indeterminate={some && !all} onChange={() => toggleIds(ids)} />
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</span>
+                      <span style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0 }}>{subs.length ? subs.length + " ACS codes" : "No ACS codes"}</span>
+                    </div>
+                    {t.desc && <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc}</span>}
+                  </div>
+                  <span style={qCount}>{moralTopicTotal(t)} Q</span>
+                  <span style={{ display: "inline-flex", color: "var(--kls-on-surface-variant)", visibility: subs.length ? "visible" : "hidden", transform: open ? "rotate(90deg)" : "none", transition: "transform var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}><KlsIcon name="chevronRight" size={20} color="var(--kls-on-surface-variant)" /></span>
+                </div>
+                {open && subs.map((s) => { const on = selected.has(s.id); return (
+                  <div key={s.id} onClick={() => toggleIds([s.id])} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-xsmall) var(--kls-space-med) var(--kls-space-xsmall) 48px", borderTop: "1px solid var(--kls-outline-variant)", background: on ? "color-mix(in srgb, var(--exam-blue) 12%, transparent)" : "transparent", cursor: "pointer" }}>
+                    <MOralCheck checked={on} onChange={() => toggleIds([s.id])} />
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>{s.code}</span>
+                      {s.desc && <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{s.desc}</span>}
+                    </div>
+                    <span style={qCount}>{s.q} Q</span>
+                  </div>
+                ); })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ flex: "none", padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-large)", borderTop: "1px solid var(--kls-outline-variant)", background: "var(--kls-scaffold-bg)" }}>
+        <button disabled={drawing === 0} style={{ ...moralPrimaryBtn, width: "100%", background: "var(--exam-blue)", color: drawing === 0 ? "var(--kls-on-surface-variant)" : "var(--kls-color-base-white)", cursor: drawing === 0 ? "default" : "pointer" }}>Begin Oral Exam</button>
+      </div>
+    </div>
+  );
+}
+
+function MOralLogs({ onBack, onOpen }) {
+  const rows = MORAL_LOGS.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  const F = "var(--kls-font-sans)";
+  return (
+    <div data-screen-label="oral-logs" style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+      <MWEPageHeader title="Exam Logs" subtitle={rows.length + " completed oral exams"} onBack={onBack} />
+      <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-tiny) var(--kls-space-med) var(--kls-space-large)" }}>
+        <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", overflow: "hidden" }}>
+          {rows.map((a, i) => { const score = moralLogScore(a); return (
+            <button key={a.id} onClick={() => onOpen(a)} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", width: "100%", textAlign: "left", cursor: "pointer", border: 0, background: "transparent",
+              padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-med)", borderTop: i ? "1px solid var(--kls-outline-variant)" : "none", fontFamily: F }}>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: "var(--kls-on-surface-variant)", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+                  <span>{moralDate(a.date)}</span><span>·</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}><MSGlyph name={a.mode === "speak" ? "mic" : "keyboard"} size={14} color="var(--kls-on-surface-variant)" />{a.mode === "speak" ? "Speak" : "Write"}</span><span>·</span>
+                  <span>{moralLevelLabel(a.level)}</span><span>·</span>
+                  <span>{a.questions.length} Q · {a.duration}</span>
+                </span>
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 700, color: moralTone(score), fontVariantNumeric: "tabular-nums" }}>{Math.round(score * 100)}%</span>
+              <KlsIcon name="chevronRight" size={20} color="var(--kls-on-surface-variant)" />
+            </button>
+          ); })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MOralLogDetail({ attempt: a, onBack }) {
+  const passed = a.questions.filter((q) => q.pass).length, score = passed / a.questions.length;
+  const F = "var(--kls-font-sans)";
+  const meta = { fontFamily: F, fontSize: 12.5, fontWeight: 500, color: "var(--kls-on-surface-variant)" };
+  return (
+    <div data-screen-label="oral-log-detail" style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
+      <MWEPageHeader title={a.title} subtitle={moralDate(a.date) + " · " + (a.mode === "speak" ? "Speak" : "Write") + " · " + moralLevelLabel(a.level)} onBack={onBack} />
+      <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-tiny) var(--kls-space-med) var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ fontFamily: F, fontSize: 32, fontWeight: 700, lineHeight: 1.1, color: moralTone(score), fontVariantNumeric: "tabular-nums" }}>{Math.round(score * 100)}%</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span style={{ fontFamily: F, fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{passed} of {a.questions.length} passed</span>
+            <span style={meta}>{a.questions.length} questions · {a.duration}</span>
+          </div>
+        </div>
+        {a.questions.map((q, i) => (
+          <div key={i} style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap", ...meta }}>
+              <span style={{ fontWeight: 600 }}>Q{i + 1}</span>
+              <span style={{ fontFamily: "var(--font-mono)" }}>{q.acs}</span>
+              <span style={{ flex: 1 }} />
+              <span>{q.hints} hint{q.hints === 1 ? "" : "s"}</span>
+              <span style={{ padding: "2px 8px", borderRadius: "var(--kls-radius-pill)", fontSize: 11.5, fontWeight: 600, background: q.pass ? "var(--kls-success-container)" : "var(--kls-error-container)", color: q.pass ? "var(--kls-on-success-container)" : "var(--kls-on-error-container)" }}>{q.pass ? "Pass" : "Needs work"}</span>
+            </div>
+            <div style={{ fontFamily: F, fontSize: 14.5, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{q.text}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+              <span style={{ ...moralFieldLabel, marginBottom: 0 }}>Your answer</span>
+              <div style={{ fontFamily: F, fontSize: 14, fontWeight: 500, lineHeight: 1.55, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{q.answer}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MobileApp(props) {
   const ctRole = (props && props.ctRole) || "instructor";
+  const examRole = (props && props.examRole) || "instructor";
   const examSummaryMode = (props && props.examSummaryMode) || "From attempt";
   const { BottomNav } = window.KLS;
   const [tab, setTab] = useState("home");
@@ -4344,6 +4772,7 @@ function MobileApp(props) {
   const inWritten = (tab === "workspace" && wsScreen === "writtenExams");
   const inControlTower = (tab === "workspace" && wsScreen === "controlTower");
   const inLibrary = (tab === "workspace" && wsScreen === "library");
+  const inOral = (tab === "workspace" && wsScreen === "oralExams");
   let body;
   if (tab === "home") body = <HomeScreen showHelpButton={true} onHelp={openFeedback} onProfile={() => setProfileOpen(true)} />;
   else if (tab === "workspace") {
@@ -4352,13 +4781,14 @@ function MobileApp(props) {
       <div style={{ height: "100%", paddingTop: 54, boxSizing: "border-box", background: "var(--kls-surface-variant)" }}>
         {inTeam ? <TeamScreen go={(s) => setWsScreen(s)} />
           : inLibrary ? <MLibraryScreen go={(s) => setWsScreen(s)} />
+          : inOral ? (examRole === "student" ? <MStudentOralExams go={(s) => setWsScreen(s)} /> : <MOralExams go={(s) => setWsScreen(s)} />)
           : inControlTower ? (ctRole === "student" ? <StudentControlTowerScreen go={(s) => setWsScreen(s)} /> : <ControlTowerScreen go={(s) => setWsScreen(s)} />)
           : <WorkspaceScreen go={(s) => setWsScreen(s)} />}
       </div>
     );
   }
   else body = <MobilePlaceholder label={tab === "orion" ? "Orion" : "Notifications"} icon={tab === "orion" ? "orionOutline" : "bell"} />;
-  const showNav = !inTeam && !inWritten && !inControlTower && !inLibrary;
+  const showNav = !inTeam && !inWritten && !inControlTower && !inLibrary && !inOral;
   return (
     <IOSDevice width={402} height={874}>
       <div style={{ position: "relative", height: "100%", overflow: "hidden" }}>
@@ -4819,6 +5249,32 @@ const NavIconButton = ({ icon, label, onClick }) => (
   </button>
 );
 
+// Page header — back CircleButton(36) · title h2 24/600 + subtitle · trailing CircleButtons(40)
+const MWEPageHeader = ({ title, subtitle, onBack, actions = [] }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', padding: 'var(--kls-space-med) var(--kls-space-med) var(--kls-space-small) var(--kls-space-small)' }}>
+    <button onClick={onBack} aria-label="Back"
+      style={{ width: 36, height: 36, borderRadius: 'var(--kls-radius-pill)', background: 'var(--bg-sunken)', border: '1px solid var(--line)',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--ink)', flexShrink: 0, padding: 0 }}>
+      <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: 'currentColor', fill: 'none', strokeWidth: 1.8 }}><path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    </button>
+    <div style={{ flex: 1, minWidth: 0, fontFamily: 'var(--kls-font-sans)' }}>
+      <div style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.2, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+      {subtitle && <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-3)', marginTop: 2 }}>{subtitle}</div>}
+    </div>
+    {actions.length > 0 && (
+      <div style={{ display: 'flex', gap: 'var(--kls-space-xsmall)', flex: 'none' }}>
+        {actions.map((a) => (
+          <button key={a.label} aria-label={a.label} onClick={a.onClick}
+            style={{ width: 40, height: 40, borderRadius: 'var(--kls-radius-pill)', background: 'var(--bg-elev)', border: '1px solid var(--line-2)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--ink)', padding: 0 }}>
+            {a.node || <WEIcon name={a.icon} size={20} />}
+          </button>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 const MobileNav = ({ title, large = true, back = false, onBack, trailing = null, subtitle = null, center = null }) => (
   <div style={{ padding: '8px 16px 12px' }}>
     {back && (
@@ -5028,17 +5484,8 @@ const MSetupStudy = ({ tab, onTab, onModeChange, onBegin, onBack, onGoHistory, o
   const [orionEnabled, setOrionEnabled] = React.useState(true);
   return (
     <MobileShell tab={tab} onTab={onTab}>
-      <MobileNav
-        title="Written Exams"
-        subtitle="Practice for your FAA written test."
-        back="Home" onBack={onBack}
-        trailing={
-          <div style={{ display: 'flex', gap: 6 }}>
-            <NavIconButton icon="history" label="History" onClick={onGoHistory} />
-            <NavIconButton icon="chart" label="Progress" onClick={onGoProgress} />
-          </div>
-        }
-      />
+      <MWEPageHeader title="Written Exams" subtitle="Practice for your FAA written test." onBack={onBack}
+        actions={[{ icon: 'history', label: 'History', onClick: onGoHistory }, { icon: 'chart', label: 'Progress', onClick: onGoProgress }]} />
 
       <MWEInProgressSection mode="study" onModeChange={onModeChange} onBegin={onBegin} />
 
@@ -5115,7 +5562,7 @@ const MSetupStudy = ({ tab, onTab, onModeChange, onBegin, onBack, onGoHistory, o
    ───────────────────────────────────────────────────────────── */
 const MSetupExam = ({ selected = 'airframe', tab, onTab, onModeChange, onBegin, onBack } = {}) => (
   <MobileShell tab={tab} onTab={onTab}>
-    <MobileNav title="Written Exams" subtitle="Choose your FAA written exam." back="Home" onBack={onBack} />
+    <MWEPageHeader title="Written Exams" subtitle="Choose your FAA written exam." onBack={onBack} />
 
     <MWEInProgressSection mode="exam" onModeChange={onModeChange} onBegin={onBegin} />
 
