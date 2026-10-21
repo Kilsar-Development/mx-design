@@ -435,9 +435,13 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
           onClick={() => onSelect && onSelect("help")}
         />
 
-        {/* Version */}
-        <div
+        {/* Version — opens Release Notes */}
+        <button
+          onClick={() => onSelect && onSelect("releaseNotes")}
+          aria-label={"Release notes, version " + version}
           style={{
+            all: "unset",
+            cursor: "pointer",
             display: "flex",
             justifyContent: "center",
             gap: "var(--kls-space-tiny)",
@@ -449,8 +453,8 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
           }}
         >
           {showLabels && <span>Version:</span>}
-          <span>{version}</span>
-        </div>
+          <span style={{ textDecoration: "underline", textUnderlineOffset: 2, color: "var(--kls-on-surface)" }}>{version}</span>
+        </button>
       </div>
     </div>
   );
@@ -519,10 +523,10 @@ const CT_STATUS = {
 };
 
 const CT_TYPES = {
-  task:    { label: "Task",         short: "Task",    icon: "worklog",     passFail: false, dot: "var(--kls-color-purple-400)" },
-  oral:    { label: "Oral exam",    short: "Oral",    icon: "chatBubbles", passFail: true,  dot: "var(--kls-color-teal-200)" },
-  written: { label: "Written exam", short: "Written", icon: "checkpoint",  passFail: true,  dot: "var(--kls-color-red-100)" },
-  simulator: { label: "Simulator",  short: "Sim",     icon: "worklog", symbol: "school", passFail: false, dot: "var(--kls-color-purple-200)" },
+  task:    { label: "Task",         short: "Task",    icon: "worklog",     passFail: false, dot: "var(--kls-success)" },
+  oral:    { label: "Oral exam",    short: "Oral",    icon: "chatBubbles", passFail: true,  dot: "var(--kls-accent-4)" },
+  written: { label: "Written exam", short: "Written", icon: "checkpoint",  passFail: true,  dot: "var(--kls-info)" },
+  simulator: { label: "Simulator",  short: "Sim",     icon: "worklog", symbol: "school", passFail: false, dot: "var(--kls-accent-12)" },
 };
 
 // ── Roster ──────────────────────────────────────────────────────────────────
@@ -624,6 +628,20 @@ function ctBuildAssignments() {
   return out;
 }
 
+// Seeded oral-exam params (topic + ACS codes + mode + count) for demo allocations.
+function ctOralSeed(i) {
+  let topics; try { topics = ORAL_TOPICS; } catch (e) { return null; }
+  if (!topics || !topics.length) return null;
+  const t = topics[i % topics.length];
+  const subs = oralSubtopics(t);
+  const take = Math.max(1, Math.ceil(subs.length / 2));
+  const chosen = subs.slice(0, take);
+  const pool = chosen.reduce((n, x) => n + x.q, 0) || oralTopicTotal(t);
+  if (i % 4 === 3) return { studentDefined: true, difficulty: "Medium", qCount: pool };
+  return { topic: t.title, acs: chosen.map((x) => x.code), oralAcs: chosen.map((x) => x.id), answerMode: i % 2 ? "write" : "speak",
+    difficulty: ["Easy", "Medium", "Hard"][i % 3], qCount: Math.max(1, Math.min(pool, 3 + (i % 3))) };
+}
+
 // ── Group allocations (one piece of work assigned to a whole group) ───────────
 // Each allocation is a distinct task/exam given to every member of the group.
 // `instances` carry the per-assignee progress the segmented bar aggregates.
@@ -662,7 +680,8 @@ function ctBuildAllocations() {
         const score = (status === "completed" && type !== "task" && type !== "simulator") ? 55 + ((mi + k * 7) % 42) : null;
         return { studentId: m.id, status, score };
       });
-      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances, ...(simulators ? { simulators } : {}),
+      const oralSeed = type === "oral" ? ctOralSeed(gi + k) : null;
+      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances, ...(simulators ? { simulators } : {}), ...(oralSeed || {}),
         settings: { allowResubmission: type !== "task", notifyOverdue: true } });
     }
   });
@@ -1748,7 +1767,7 @@ function StudentAssignmentDrawer({ item, onClose, onOpenSim }) {
           </div>
           {item.type === "simulator" && (
             <div>
-              {label("Simulators")}
+              {label("Simulator")}
               <CTSimList ids={item.simulators || []} onOpen={onOpenSim} />
             </div>
           )}
@@ -1824,6 +1843,8 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
   const [topic, setTopic] = useCtldState(allocation.topic || "");
   const [qCount, setQCount] = useCtldState(String(allocation.qCount || 20));
   const [difficulty, setDifficulty] = useCtldState(allocation.difficulty || "Medium");
+  const [oralAcs, setOralAcs] = useCtldState(() => new Set(allocation.oralAcs || []));
+  const [answerMode, setAnswerMode] = useCtldState(allocation.answerMode || "speak");
   const [selModules, setSelModules] = useCtldState(() => new Set(allocation.selModules || []));
   const [selSims, setSelSims] = useCtldState(() => new Set(allocation.simulators || []));
   const [instructions, setInstructions] = useCtldState(allocation.instructions || "");
@@ -1851,7 +1872,8 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
     if (s.type === "group") { const g = (roster.groups || []).find((x) => x.id === s.id); return { ...s, label: g && g.name, color: g && g.color }; }
     const p = (roster.people || []).find((x) => x.id === s.id); return { ...s, label: p && p.name };
   }).filter((c) => c.label);
-  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : allocation.type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
+  const oralSel = oralSelectionSummary(oralAcs);
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || oralSel.pool > 0) : allocation.type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   function cancelEdit() {
     setDue(allocation.due);
@@ -1893,7 +1915,9 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
       title: ct || defaultTitle,
       course: allocation.type === "task" ? course : allocation.course,
       term: term || allocation.term,
-      studentDefined, topic, qCount, difficulty, selModules: [...selModules], orion, randomized, instructions, instances };
+      studentDefined, topic: allocation.type === "oral" ? (oralSel.title || topic) : topic,
+      qCount: allocation.type === "oral" && !studentDefined ? (Math.min(Number(qCount) || 0, oralSel.pool) || Number(qCount)) : qCount, difficulty, selModules: [...selModules], orion, randomized, instructions, instances,
+      ...(allocation.type === "oral" ? { answerMode, oralAcs: [...oralAcs], acs: oralSel.acs } : {}) };
   }
 
   const stat = (label, value, tone) => (
@@ -1990,11 +2014,9 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
               ) : allocation.type === "oral" ? (
                 <>
                   <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
-                    <CTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin the oral exam." checked={studentDefined} onChange={setStudentDefined} />
+                    <CTToggleRow label="Let the student choose parameters" hint="Student picks topics, Speak or Write, difficulty and count when they begin." checked={studentDefined} onChange={setStudentDefined} />
                   </div>
-                  {!studentDefined && (<div><CTLabel>Topic</CTLabel><CTSelect value={topic} options={oralTopics} placeholder="Select a topic" onChange={setTopic} /></div>)}
-                  <div><CTLabel>Difficulty</CTLabel><CTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
-                  <CTStepper value={qCount} setValue={setQCount} />
+                  {!studentDefined && <CTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />}
                 </>
               ) : allocation.type === "simulator" ? (
                 <CTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
@@ -2060,9 +2082,18 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
                 {allocation.type === "task" ? infoRow("Course", allocation.course) : allocation.type === "simulator" ? null : infoRow("Term", allocation.term)}
                 {infoRow("Assigned", allocation.assigned)}
                 {infoRow("Due date", due)}
+                {allocation.type === "oral" && (allocation.studentDefined
+                  ? infoRow("Parameters", "Student's choice")
+                  : <>
+                      {infoRow("Topics", allocation.topic || "—")}
+                      {infoRow("ACS codes", (allocation.acs && allocation.acs.length) ? allocation.acs.length + " selected" : "—")}
+                      {infoRow("Answer mode", allocation.answerMode === "write" ? "Write" : "Speak")}
+                      {infoRow("Difficulty", allocation.difficulty || "Medium")}
+                      {infoRow("Questions", allocation.qCount != null ? String(allocation.qCount) : "—")}
+                    </>)}
                 {allocation.type === "simulator" && (
                   <div style={{ paddingTop: "var(--kls-space-small)" }}>
-                    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-xsmall)" }}>Simulators</div>
+                    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-xsmall)" }}>Simulator</div>
                     <CTSimList ids={allocation.simulators || []} />
                   </div>
                 )}
@@ -2477,7 +2508,7 @@ function WrittenTopicPicker({ selModules, setSelModules, count, setCount, orion,
 // Read-only simulator rows (allocation detail / student drawer). onOpen makes rows launch the runner.
 function CTSimList({ ids, onOpen }) {
   const sims = (ids || []).map((id) => TRAINING_SIMS.find((x) => x.id === id)).filter(Boolean);
-  if (!sims.length) return <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No simulators selected.</div>;
+  if (!sims.length) return <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No simulator selected.</div>;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
       {sims.map((sim) => (
@@ -2513,7 +2544,7 @@ function CTSimCell({ sim, selected, onClick }) {
   const PREVIEW_W = 1280;
   const accent = "var(--kls-accent-12)";
   return (
-    <button onClick={onClick} aria-pressed={selected} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+    <button onClick={onClick} role="radio" aria-checked={selected} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{ all: "unset", cursor: "pointer", boxSizing: "border-box", display: "flex", flexDirection: "column", textAlign: "left", position: "relative",
         background: selected ? `color-mix(in srgb, ${accent} 8%, transparent)` : "var(--kls-surface)",
         border: selected ? `2px solid ${accent}` : "1.5px solid " + (hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"),
@@ -2524,22 +2555,125 @@ function CTSimCell({ sim, selected, onClick }) {
       </div>
       <div style={{ padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-small)", display: "flex", alignItems: "flex-start", gap: "var(--kls-space-xsmall)" }}>
         <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, lineHeight: 1.35, color: "var(--kls-on-surface)" }}>{sim.title}</div>
-        <span style={{ flex: "none", marginTop: 1 }}><CTCheck checked={selected} onClick={onClick} /></span>
       </div>
     </button>
   );
 }
 function CTSimulatorPicker({ selSims, setSelSims }) {
-  const toggle = (id) => setSelSims((cur) => { const n = new Set(cur); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggle = (id) => setSelSims(new Set([id]));
   return (
     <div>
-      <CTLabel trailing={selSims.size > 0 ? (
-        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{selSims.size} selected</span>
-      ) : null}>Simulators</CTLabel>
+      <CTLabel>Simulator</CTLabel>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "var(--kls-space-small)" }}>
         {TRAINING_SIMS.map((sim) => <CTSimCell key={sim.id} sim={sim} selected={selSims.has(sim.id)} onClick={() => toggle(sim.id)} />)}
       </div>
     </div>
+  );
+}
+
+// Oral-exam parameters for the assign/edit drawers — same controls as the student setup
+// (ACS topic tree · Speak/Write · difficulty · pool-aware count). Defined later in the file
+// (ORAL_TOPICS, oralSubtopics, ORAL_LEVELS, OralCheck, OralAnswerCard) — resolved at render time.
+const ORAL_LEVEL_LABEL_TO_KEY = { Easy: "easy", Medium: "med", Hard: "hard" };
+const ORAL_LEVEL_KEY_TO_LABEL = { easy: "Easy", med: "Medium", hard: "Hard" };
+function oralLeafIds(t) { const subs = oralSubtopics(t); return subs.length ? subs.map((x) => x.id) : [t.id]; }
+function oralSelectionSummary(selected) {
+  const chosen = ORAL_TOPICS.filter((t) => oralLeafIds(t).some((id) => selected.has(id)));
+  const subCount = chosen.reduce((n, t) => n + oralSubtopics(t).filter((x) => selected.has(x.id)).length, 0);
+  const pool = chosen.reduce((n, t) => { const subs = oralSubtopics(t); return n + (subs.length ? subs.filter((x) => selected.has(x.id)).reduce((m, x) => m + x.q, 0) : oralTopicTotal(t)); }, 0);
+  const acs = chosen.flatMap((t) => oralSubtopics(t).filter((x) => selected.has(x.id)).map((x) => x.code));
+  const title = chosen.length === 0 ? "" : chosen.length === 1 ? chosen[0].title : chosen.length + " topics";
+  return { chosen, subCount, pool, acs, title };
+}
+function CTOralPicker({ selected, setSelected, answerMode, setAnswerMode, difficulty, setDifficulty, count, setCount }) {
+  const [expanded, setExpanded] = useState({});
+  const toggleIds = (ids) => { const all = ids.every((id) => selected.has(id)); const next = new Set(selected); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); setSelected(next); };
+  const { chosen, subCount, pool } = oralSelectionSummary(selected);
+  const n = Math.min(Number(count) || 0, pool);
+  const levelKey = ORAL_LEVEL_LABEL_TO_KEY[difficulty] || "med";
+  const curLevel = ORAL_LEVELS.find((l) => l.key === levelKey) || ORAL_LEVELS[1];
+  const qStyle = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0, minWidth: 40, textAlign: "right" };
+  const stepBtn = (dis) => ({ width: 36, height: 32, display: "grid", placeItems: "center", border: "none", background: "transparent", borderRadius: 8, padding: 0, fontSize: 20, lineHeight: 1, cursor: dis ? "default" : "pointer", color: dis ? "var(--kls-outline-variant)" : "var(--kls-on-surface-variant)" });
+  const panel = { background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" };
+  return (
+    <>
+      <div>
+        <CTLabel>How the student answers</CTLabel>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+          <OralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+          <OralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type the answer · no mic needed" onClick={() => setAnswerMode("write")} />
+        </div>
+      </div>
+      <div>
+        <CTLabel>Difficulty</CTLabel>
+        <div role="tablist" aria-label="Difficulty" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: "var(--kls-space-tiny)", padding: 2, height: 40, boxSizing: "border-box", borderRadius: 8, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+          {ORAL_LEVELS.map((l) => { const on = levelKey === l.key; return (
+            <button key={l.key} role="tab" aria-selected={on} onClick={() => setDifficulty(ORAL_LEVEL_KEY_TO_LABEL[l.key])} style={{ height: 34, padding: 0, borderRadius: 8, border: "none", cursor: "pointer", whiteSpace: "nowrap",
+              background: on ? "var(--kls-surface)" : "transparent", color: on ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)", boxShadow: on ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>{l.label}</button>
+          ); })}
+        </div>
+        <div style={{ marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.4 }}>{curLevel.desc.replace(" - ", " · ")}</div>
+      </div>
+      <div>
+        <CTLabel trailing={chosen.length > 0 ? <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{chosen.length} topic(s) · {subCount} ACS code(s)</span> : null}>Topics</CTLabel>
+        <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 12, padding: "var(--kls-space-tiny)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", maxHeight: 360, overflowY: "auto" }}>
+          {ORAL_TOPICS.map((t) => {
+            const subs = oralSubtopics(t), ids = oralLeafIds(t);
+            const all = ids.every((id) => selected.has(id)), some = ids.some((id) => selected.has(id)), open = !!expanded[t.id];
+            return (
+              <div key={t.id}>
+                <div style={{ display: "flex", alignItems: "center", padding: "var(--kls-space-xsmall) var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: 8, gap: "var(--kls-space-xsmall)" }}>
+                  <button disabled={!subs.length} onClick={() => setExpanded({ ...expanded, [t.id]: !open })} aria-label={open ? "Collapse" : "Expand"}
+                    style={{ width: 24, height: 24, padding: 0, border: "none", background: "transparent", cursor: "pointer", flexShrink: 0, visibility: subs.length ? "visible" : "hidden", display: "grid", placeItems: "center" }}>
+                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 2, transform: open ? "rotate(90deg)" : "none" }}><path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                  <OralCheck checked={all} indeterminate={some && !all} onChange={() => toggleIds(ids)} />
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+                      <span style={{ fontFamily: "var(--kls-font-sans)", fontWeight: 600, fontSize: 14, color: "var(--kls-on-surface)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</span>
+                      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0 }}>{subs.length ? subs.length + " ACS codes" : "No ACS codes"}</span>
+                    </div>
+                    {t.desc && <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc}</span>}
+                  </div>
+                  <span style={qStyle}>{oralTopicTotal(t)} Q</span>
+                </div>
+                {open && subs.map((x) => {
+                  const on = selected.has(x.id);
+                  return (
+                    <div key={x.id} onClick={() => toggleIds([x.id])} style={{ display: "flex", alignItems: "center", padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-xsmall) calc(var(--kls-space-large) + var(--kls-space-med))", gap: "var(--kls-space-xsmall)", cursor: "pointer", background: on ? "color-mix(in srgb, var(--kls-info) 12%, transparent)" : "transparent", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+                      <OralCheck checked={on} onChange={() => toggleIds([x.id])} />
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", lineHeight: 1.3, whiteSpace: "nowrap" }}>{x.code}</span>
+                        {x.desc && <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.3, textWrap: "pretty" }}>{x.desc}</span>}
+                      </div>
+                      <span style={qStyle}>{x.q} Q</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <CTLabel>Settings</CTLabel>
+        <div style={panel}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Question count</span>
+            <button onClick={() => { if (pool > 0) setCount(String(pool)); }} style={{ border: "none", background: "transparent", padding: 0, color: "var(--kls-info)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>(All)</button>
+          </div>
+          <button onClick={() => setCount(String(Math.max(1, n - 1)))} disabled={n <= 1} style={stepBtn(n <= 1)}>−</button>
+          <div style={{ width: 40, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{n}</div>
+          <button onClick={() => { if (n < pool) setCount(String(n + 1)); }} disabled={n >= pool} style={stepBtn(n >= pool)}>+</button>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          <span>Pool {pool} question(s)</span><span>Drawing {n} question(s)</span>
+        </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -2568,6 +2702,8 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
   const [topic, setTopic] = useCtadState("");
   const [qCount, setQCount] = useCtadState("20");
   const [difficulty, setDifficulty] = useCtadState("Medium");
+  const [oralAcs, setOralAcs] = useCtadState(() => new Set());
+  const [answerMode, setAnswerMode] = useCtadState("speak");
   const [timeLimit, setTimeLimit] = useCtadState("60");
   const [passScore, setPassScore] = useCtadState("70");
   const [instructions, setInstructions] = useCtadState("");
@@ -2603,7 +2739,8 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
     const p = roster.people.find((x) => x.id === s.id); return { ...s, label: p?.name };
   }).filter((c) => c.label);
 
-  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
+  const oralSel = oralSelectionSummary(oralAcs);
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || oralSel.pool > 0) : type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   function buildAndAssign() {
     if (!valid) return;
@@ -2618,14 +2755,14 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
     const defaultTitle = type === "task" ? task
       : type === "written" ? (examMode === "exam" ? examSubjectName + " Exam" : "Written Exam")
       : type === "simulator" ? (simList.length === 1 ? simList[0].title : simList.length + " Simulators")
-      : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
+      : (studentDefined ? "Oral Exam" : (oralSel.title || "Oral Exam"));
     const ct = customTitle.trim();
     const title = ct || defaultTitle;
     const created = studentIds.map((sid, i) => ({
       id: "n" + Date.now() + "_" + i, studentId: sid, type,
       title, defaultTitle, customTitle: ct, course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || CT.TERMS[0]),
       due: dueLabel, status: "not_started", score: null,
-      ...(type === "oral" ? { difficulty, qCount: Number(qCount) } : {}),
+      ...(type === "oral" ? { difficulty, qCount: Math.min(Number(qCount) || 0, oralSel.pool) || Number(qCount), answerMode, oralAcs: [...oralAcs], topic: oralSel.title, acs: oralSel.acs } : {}),
       ...(type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, orion, randomized }) : {}),
       ...(type === "simulator" ? { simulators: simList.map((x) => x.id) } : {}),
     }));
@@ -2703,19 +2840,14 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
           ) : type === "oral" ? (
             <>
               <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
-                <CTToggleRow label="Let the student choose the topic"
-                  hint="Student picks the topic when they begin the oral exam."
+                <CTToggleRow label="Let the student choose parameters"
+                  hint="Student picks topics, Speak or Write, difficulty and count when they begin."
                   checked={studentDefined} onChange={setStudentDefined} />
               </div>
 
               {!studentDefined && (
-                <div>
-                  <CTLabel>Topic</CTLabel>
-                  <CTSelect value={topic} options={oralTopics} placeholder="Select a topic" onChange={setTopic} />
-                </div>
+                <CTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />
               )}
-              <div><CTLabel>Difficulty</CTLabel><CTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
-              <CTStepper value={qCount} setValue={setQCount} />
             </>
           ) : type === "simulator" ? (
             <CTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
@@ -4622,6 +4754,117 @@ function webLabelMeta(key) {
   ]);
   return all.find((t) => t.key === key) || { key, label: key, icon: "worklog" };
 }
+// ════════════════════════════════════════════════════════════════════
+// RELEASE NOTES — opened from the sidebar version string
+// ════════════════════════════════════════════════════════════════════
+const RN_KIND_COLOR = { New: "var(--kls-success)", Improved: "var(--kls-info)", Fixed: "var(--kls-accent-4)" };
+
+function ReleaseSections({ sections }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+      {sections.map((sec) => (
+        <div key={sec.kind}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginBottom: "var(--kls-space-xsmall)" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "var(--kls-radius-pill)", background: RN_KIND_COLOR[sec.kind] || "var(--kls-outline)" }} />
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{sec.kind}</span>
+          </div>
+          <ul style={{ margin: 0, padding: "0 0 0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            {sec.items.map((t, i) => <li key={i} style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{t}</li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReleaseNotes() {
+  const releases = window.MX_RELEASES || [];
+  const [current, ...past] = releases;
+  const [open, setOpen] = useState({});
+  const scrollRef = useRef(null);
+  const [activeV, setActiveV] = useState(current ? current.version : "");
+  const relTop = (el, c) => el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop;
+  const jump = (v) => {
+    setOpen((o) => ({ ...o, [v]: true }));
+    const c = scrollRef.current;
+    const el = c && c.querySelector('[data-release="' + v + '"]');
+    if (el && c) c.scrollTop = relTop(el, c) - 20;
+    setActiveV(v);
+  };
+  const onScroll = () => {
+    const c = scrollRef.current; if (!c) return;
+    const nodes = Array.from(c.querySelectorAll("[data-release]"));
+    let best = nodes[0];
+    for (const n of nodes) if (relTop(n, c) - c.scrollTop <= 80) best = n;
+    if (best) setActiveV(best.getAttribute("data-release"));
+  };
+  if (!current) return null;
+  return (
+    <div ref={scrollRef} onScroll={onScroll} style={{ position: "relative", flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", gap: "var(--kls-space-large)", alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Release Notes</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>What changed in each version.</p>
+          </div>
+
+          {/* current release */}
+          <section data-release={current.version} style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Version {current.version}</span>
+              <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Current</span>
+              <span style={{ marginLeft: "auto", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{current.date}</span>
+            </div>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{current.summary}</p>
+            <ReleaseSections sections={current.sections} />
+          </section>
+
+          {/* past releases */}
+          {past.length > 0 && (
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-small)" }}>Past releases</div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            {past.map((r) => {
+              const isOpen = !!open[r.version];
+              return (
+                <section key={r.version} data-release={r.version} style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+                  <button onClick={() => setOpen((o) => ({ ...o, [r.version]: !isOpen }))} aria-expanded={isOpen}
+                    style={{ all: "unset", boxSizing: "border-box", cursor: "pointer", width: "100%", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)" }}>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", flexShrink: 0 }}>Version {r.version}</span>
+                    <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.summary}</span>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", flexShrink: 0 }}>{r.date}</span>
+                    <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, flexShrink: 0, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.8, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: "0 var(--kls-space-med) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)", paddingTop: "var(--kls-space-med)" }}>
+                      <ReleaseSections sections={r.sections} />
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* version jump rail */}
+        <nav aria-label="Versions" style={{ width: 112, flexShrink: 0, position: "sticky", top: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", paddingTop: 48 }}>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", padding: "0 var(--kls-space-small)", marginBottom: "var(--kls-space-tiny)" }}>Versions</div>
+          {releases.map((r) => {
+            const on = activeV === r.version;
+            return (
+              <button key={r.version} onClick={() => jump(r.version)}
+                style={{ all: "unset", boxSizing: "border-box", cursor: "pointer", height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+                  background: on ? "var(--kls-surface-container-lowest)" : "transparent", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: on ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
+                {r.version}{r === current && <span style={{ fontSize: 10, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>CURRENT</span>}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
 function WebPlaceholder({ tabKey }) {
   const m = webLabelMeta(tabKey);
   return (
@@ -4639,9 +4882,10 @@ function WebPlaceholder({ tabKey }) {
 function WebApp(props) {
   const groupsSurface = props.groupsSurface || "tabs";
   const showKpis = props.showKpis !== false;
-  const examRole = props.examRole || "instructor";
+  const role = props.role || "instructor";
+  const examRole = role;
   const examSummaryMode = props.examSummaryMode || "From attempt";
-  const ctRole = props.ctRole || "instructor";
+  const ctRole = role;
   const studentLayout = props.studentLayout || "sections";
   const [active, setActive] = useState("library");
   const [query, setQuery] = useState("");
@@ -4669,6 +4913,7 @@ function WebApp(props) {
   else if (active === "tickets") content = <Tickets query={query} />;
   else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
   else if (active === "training") content = <Training query={query} onOpen={setOpenSim} />;
+  else if (active === "releaseNotes") content = <ReleaseNotes />;
   else content = <WebPlaceholder tabKey={active} />;
   if (openSim) return <SimulatorRunner sim={openSim} onClose={() => setOpenSim(null)} />;
   if (editing3D) return <ModelEditor node={editing3D} onClose={() => setEditing3D(null)} />;
@@ -4897,8 +5142,20 @@ const oralLogScore = (a) => a.questions.filter((q) => q.pass).length / a.questio
 const oralDate = (d) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 const oralLevelLabel = (k) => (ORAL_LEVELS.find((l) => l.key === k) || ORAL_LEVELS[1]).label;
 
+// Calibrate icon: "tune" glyph; when calibrated, a small success check badge overlays the corner.
+function CalibrateIcon({ done, size = 18 }) {
+  return (
+    <span style={{ position: "relative", display: "inline-flex", width: size, height: size, flexShrink: 0 }}>
+      <MSGlyph name="tune" size={size} color={done ? "var(--kls-success)" : "var(--kls-accent-4)"} />
+      {done && <span style={{ position: "absolute", right: -4, bottom: -4, width: 11, height: 11, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-success)", border: "1.5px solid var(--kls-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <svg viewBox="0 0 24 24" width="7" height="7" fill="none" stroke="var(--kls-on-success)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4.5 4.5L20 6" /></svg>
+      </span>}
+    </span>
+  );
+}
 function StudentOralExams() {
   const [tab, setTab] = useState("practice");
+  const [calibrated, setCalibrated] = useState(false);
   const [session, setSession] = useState(null);
   const [log, setLog] = useState(null);
   if (session) return <OralSpeakRunner session={session} onExit={() => setSession(null)} />;
@@ -4910,7 +5167,7 @@ function StudentOralExams() {
             <div className="page__title">Oral Exams</div>
             <div className="page__sub">Practice dynamic questions on various topics.</div>
           </div>
-          <button style={oralSecondaryBtn}><MSGlyph name="check_box_outline_blank" size={18} color="var(--kls-accent-4)" />Calibrate</button>
+          <button style={oralSecondaryBtn} onClick={() => setCalibrated((v) => !v)} aria-pressed={calibrated}><CalibrateIcon done={calibrated} size={18} />{calibrated ? "Calibrated" : "Calibrate"}</button>
         </div>
         <div className="compound-switch" role="tablist">
           <button className="compound-switch__option" role="tab" data-active={tab === "practice"} onClick={() => setTab("practice")}><Icon name="exam" size={14} />Practice Setup</button>
@@ -5083,7 +5340,7 @@ function OralLogsTab({ onOpen }) {
 }
 
 function OralLogDetail({ attempt: a, onBack }) {
-  const passed = a.questions.filter((q) => q.pass).length, score = passed / a.questions.length;
+  const passed = a.questions.filter((q) => q.pass).length, score = passed / a.questions.length, missed = a.questions.length - passed;
   const tone = score >= 0.8 ? "var(--good)" : score >= 0.7 ? "var(--warn)" : "var(--bad)";
   const meta = { fontSize: 12.5, color: "var(--ink-3)" };
   return (
@@ -5103,6 +5360,12 @@ function OralLogDetail({ attempt: a, onBack }) {
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: tone, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>{Math.round(score * 100)}%</div>
           <div style={meta}>{passed} of {a.questions.length} passed</div>
+        </div>
+        <div style={{ flexBasis: "100%", display: "flex", justifyContent: "flex-start", gap: 8, flexWrap: "wrap" }}>
+          {missed > 0 && <button style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}><Icon name="sparkles" size={16} />Quiz from these {missed} misses</button>}
+          <button style={erSecondaryBtn}>Retake same setup</button>
         </div>
       </div>
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>

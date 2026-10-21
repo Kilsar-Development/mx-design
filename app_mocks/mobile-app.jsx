@@ -1002,7 +1002,7 @@ function Toggle({ on }) {
   );
 }
 
-function ProfileSheet({ open, onClose, showHelpRow, newBadge, onHelp }) {
+function ProfileSheet({ open, onClose, showHelpRow, newBadge, onHelp, onReleaseNotes }) {
   return (
     <Sheet open={open} onClose={onClose} label="Your Profile">
       <div style={{ padding: "28px 24px 8px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
@@ -1051,7 +1051,7 @@ function ProfileSheet({ open, onClose, showHelpRow, newBadge, onHelp }) {
         )}
         <button style={sheetBtnStyle}>Privacy Policy</button>
         <button style={sheetBtnStyle}>Logout</button>
-        <div style={{ textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", marginTop: 2 }}>Version: 2.16.3</div>
+        <button onClick={onReleaseNotes} aria-label="Release notes, version 2.16.5" style={{ border: "none", background: "transparent", margin: "2px 0 0", padding: 0, cursor: "pointer", display: "block", width: "100%", textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Version: <span style={{ textDecoration: "underline", textUnderlineOffset: 2, color: "var(--kls-on-surface)" }}>2.16.5</span></button>
       </div>
     </Sheet>
   );
@@ -2561,7 +2561,19 @@ const MCT_TYPES = {
   task:    { label: "Task",         icon: "worklog",     long: "Task",         dot: "var(--kls-color-purple-400)" },
   oral:    { label: "Oral exam",    icon: "chatBubbles", long: "Oral Exam",    dot: "var(--kls-color-teal-200)" },
   written: { label: "Written exam", icon: "checkpoint",  long: "Written Exam", dot: "var(--kls-color-red-100)" },
+  simulator: { label: "Simulator",  icon: "worklog", symbol: "school", long: "Simulator", dot: "var(--kls-accent-12)" },
 };
+// Simulators available to assign (mirrors web TRAINING_SIMS; run on web only).
+const MCT_SIMS = [
+  { id: "six-pack",             title: "Six-Pack Flight Instruments", desc: "Pitch, bank, speed and altitude across the six primary instruments." },
+  { id: "turbocharger",         title: "Turbocharger System",         desc: "Exhaust, compressor and wastegate behavior with manifold pressure." },
+  { id: "vapor-cycle",          title: "Vapor Cycle Cooling",         desc: "Refrigerant through compressor, condenser, expansion valve and evaporator." },
+  { id: "circuit-trainer",      title: "Circuit Trainer",             desc: "Series and parallel circuits; measure voltage, current and resistance." },
+  { id: "logic-gate",           title: "Logic Gate Simulator",        desc: "Wire gates and test outputs against truth tables." },
+  { id: "power-w",              title: "Four-Stroke Cycle",           desc: "Intake, compression, power and exhaust across 720° of rotation." },
+  { id: "micrometer",           title: "Micrometer",                  desc: "Read an outside micrometer to the thousandth." },
+  { id: "propeller-protractor", title: "Propeller Protractor",        desc: "Set blade angle at the reference station." },
+];
 const MCT_STUDENTS = [
   { id: "s1", name: "Joel Bishop",    email: "joel.b@kilsar.com",  lastActive: "2h ago" },
   { id: "s2", name: "Melodie Stone",  email: "melodie@kilsar.com", lastActive: "40m ago" },
@@ -2599,6 +2611,7 @@ const MCT_TASK_LIBRARY = {
 const MCT_EXAM_TITLES = {
   oral:    ["Engine Run-Up Oral", "Landing Gear Inspection Oral", "Sheet Metal Repair Oral"],
   written: ["FAA Regulations Written", "Turbine Theory Written", "Electrical Systems Written"],
+  simulator: ["Six-Pack Flight Instruments", "Turbocharger System", "Circuit Trainer"],
 };
 const MCT_ORAL_TOPICS = ["Engine Run-Up", "Landing Gear Inspection", "Sheet Metal Repair", "Hydraulic Systems", "Electrical Troubleshooting"];
 
@@ -2672,6 +2685,19 @@ function mctInitials(name) {
   const p = (name || "").trim().split(/\s+/);
   return ((p[0] && p[0][0] || "?") + (p[1] && p[1][0] || "")).toUpperCase();
 }
+// Seeded oral-exam params for demo allocations (MORAL_TOPICS is declared later; resolved at call time).
+function mctOralSeed(i) {
+  let topics; try { topics = MORAL_TOPICS; } catch (e) { return null; }
+  if (!topics || !topics.length) return null;
+  const t = topics[i % topics.length];
+  const subs = moralSubtopics(t);
+  const chosen = subs.slice(0, Math.max(1, Math.ceil(subs.length / 2)));
+  const pool = chosen.reduce((n, x) => n + x.q, 0) || moralTopicTotal(t);
+  if (i % 4 === 3) return { studentDefined: true, difficulty: "Medium", qCount: pool };
+  return { topic: t.title, acs: chosen.map((x) => x.code), oralAcs: chosen.map((x) => x.id), answerMode: i % 2 ? "write" : "speak",
+    difficulty: ["Easy", "Medium", "Hard"][i % 3], qCount: Math.max(1, Math.min(pool, 3 + (i % 3))) };
+}
+
 // A group allocation: one task/exam assigned to the whole group; `instances`
 // carry per-assignee progress the rollup bar aggregates.
 function mctBuildAllocations() {
@@ -2681,9 +2707,12 @@ function mctBuildAllocations() {
     const members = mctGroupMembers(g);
     const n = 3 + (gi % 2);
     for (let k = 0; k < n; k++) {
-      const type = ["task", "oral", "written"][(gi + k) % 3];
-      let title, course, term;
-      if (type === "task") {
+      const type = k === 2 ? "simulator" : ["task", "oral", "written"][(gi + k) % 3];
+      let title, course, term, simulators;
+      if (type === "simulator") {
+        const sim = MCT_SIMS[(gi + k) % MCT_SIMS.length];
+        title = sim.title; course = "Training"; term = MCT_TERMS[k % MCT_TERMS.length]; simulators = [sim.id];
+      } else if (type === "task") {
         term = MCT_TERMS[(gi + k) % MCT_TERMS.length];
         const courses = MCT_COURSES[term];
         course = courses[(gi + k) % courses.length];
@@ -2700,10 +2729,10 @@ function mctBuildAllocations() {
       const assigned = MCT_ASSIGNED[(gi + k) % MCT_ASSIGNED.length];
       const instances = members.map((m, mi) => {
         let status = MCT_STATUS_CYCLE[(gi * 2 + k + mi) % MCT_STATUS_CYCLE.length];
-        const score = (status === "completed" && type !== "task") ? 55 + ((mi + k * 7) % 42) : null;
+        const score = (status === "completed" && type !== "task" && type !== "simulator") ? 55 + ((mi + k * 7) % 42) : null;
         return { studentId: m.id, status, score };
       });
-      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances });
+      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances, ...(simulators ? { simulators } : {}), ...(type === "oral" ? (mctOralSeed(gi + k) || {}) : {}) });
     }
   });
   return out;
@@ -2753,7 +2782,7 @@ function mctBuildStudentItems(meId) {
     if (!inst) return;
     const g = MCT_GROUPS.find((x) => x.id === al.groupId);
     out.push({ id: al.id + "@" + meId, type: al.type, title: al.title, course: al.course, term: al.term,
-      due: al.due, status: inst.status, score: inst.score, instructions: al.instructions,
+      due: al.due, status: inst.status, score: inst.score, instructions: al.instructions, simulators: al.simulators,
       source: "group", groupName: g ? g.name : "Group" });
   });
   return out;
@@ -3088,6 +3117,9 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
   const [topic, setTopic] = useTM(allocation.topic || "");
   const [qCount, setQCount] = useTM(allocation.qCount || 20);
   const [difficulty, setDifficulty] = useTM(allocation.difficulty || "Medium");
+  const [oralAcs, setOralAcs] = useTM(() => new Set(allocation.oralAcs || []));
+  const [answerMode, setAnswerMode] = useTM(allocation.answerMode || "speak");
+  const [selSims, setSelSims] = useTM(() => new Set(allocation.simulators || []));
   const [selModules, setSelModules] = useTM(() => new Set(allocation.selModules || []));
   const [orion, setOrion] = useTM(allocation.orion !== false);
   const [randomized, setRandomized] = useTM(!!allocation.randomized);
@@ -3104,7 +3136,8 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
     if (s.type === "group") { const g = roster.groups.find((x) => x.id === s.id); return g && { ...s, label: g.name, color: g.color }; }
     const p = roster.people.find((x) => x.id === s.id); return p && { ...s, label: p.name };
   }).filter(Boolean);
-  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : (studentDefined || examMode === "exam" || selModules.size > 0));
+  const oralSel = moralSelectionSummary(oralAcs);
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || oralSel.pool > 0) : allocation.type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   const cancelEdit = () => {
     setDue(allocation.due);
@@ -3116,6 +3149,9 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
     setTopic(allocation.topic || "");
     setQCount(allocation.qCount || 20);
     setDifficulty(allocation.difficulty || "Medium");
+    setOralAcs(new Set(allocation.oralAcs || []));
+    setAnswerMode(allocation.answerMode || "speak");
+    setSelSims(new Set(allocation.simulators || []));
     setSelModules(new Set(allocation.selModules || []));
     setOrion(allocation.orion !== false);
     setRandomized(!!allocation.randomized);
@@ -3136,14 +3172,20 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
       : allocation.instances;
     const base = allocation.defaultTitle || allocation.title;
     const examSubjectName = ((FAA_EXAMS_M.find((e) => e.id === examSubject) || FAA_EXAMS_M[0]) || {}).subject || "";
+    const simList = MCT_SIMS.filter((x) => selSims.has(x.id));
     const defaultTitle = allocation.type === "task" ? (task || base)
+      : allocation.type === "simulator" ? (simList.length === 1 ? simList[0].title : simList.length ? simList.length + " Simulators" : base)
       : (allocation.type === "written" && examMode === "exam") ? examSubjectName + " Exam" : base;
     const ct = customTitle.trim();
     return { ...allocation, due, defaultTitle, customTitle: ct, examMode, examSubject,
       title: ct || defaultTitle,
       course: allocation.type === "task" ? course : allocation.course,
       term: term || allocation.term,
-      studentDefined, topic, qCount, difficulty, selModules: [...selModules], orion, randomized, instructions, instances };
+      studentDefined, topic: allocation.type === "oral" ? (oralSel.title || topic) : topic,
+      qCount: allocation.type === "oral" && !studentDefined ? (Math.min(Number(qCount) || 0, oralSel.pool) || Number(qCount)) : qCount,
+      difficulty, selModules: [...selModules], orion, randomized, instructions, instances,
+      ...(allocation.type === "oral" ? { answerMode, oralAcs: [...oralAcs], acs: oralSel.acs } : {}),
+      ...(allocation.type === "simulator" ? { simulators: simList.map((x) => x.id) } : {}) };
   };
 
   const sectionLabel = (t) => (
@@ -3221,12 +3263,12 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
             ) : allocation.type === "oral" ? (
               <>
                 <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
-                  <MCTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin." checked={studentDefined} onChange={setStudentDefined} />
+                  <MCTToggleRow label="Let the student choose parameters" hint="Student picks topics, Speak or Write, difficulty and count when they begin." checked={studentDefined} onChange={setStudentDefined} />
                 </div>
-                {!studentDefined && <div><MCTLabel>Topic</MCTLabel><MCTSelect value={topic} options={MCT_ORAL_TOPICS} placeholder="Select a topic" onChange={setTopic} /></div>}
-            <div><MCTLabel>Difficulty</MCTLabel><MCTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
-            <MCTStepper value={qCount} setValue={setQCount} />
+                {!studentDefined && <MCTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />}
               </>
+            ) : allocation.type === "simulator" ? (
+              <MCTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
             ) : (
               <>
                 <MCTExamModeCards mode={examMode} setMode={setExamMode} />
@@ -3276,9 +3318,19 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
             <div>
               {sectionLabel("Details")}
               {infoRow("Type", T.long)}
-              {infoRow(allocation.type === "task" ? "Course" : "Term", allocation.type === "task" ? allocation.course : allocation.term)}
+              {allocation.type === "task" ? infoRow("Course", allocation.course) : allocation.type === "simulator" ? null : infoRow("Term", allocation.term)}
               {infoRow("Assigned", allocation.assigned)}
               {infoRow("Due date", due)}
+              {allocation.type === "oral" && (allocation.studentDefined
+                ? infoRow("Parameters", "Student's choice")
+                : <>
+                    {infoRow("Topics", allocation.topic || "—")}
+                    {infoRow("ACS codes", (allocation.acs && allocation.acs.length) ? allocation.acs.length + " selected" : "—")}
+                    {infoRow("Answer mode", allocation.answerMode === "write" ? "Write" : "Speak")}
+                    {infoRow("Difficulty", allocation.difficulty || "Medium")}
+                    {infoRow("Questions", allocation.qCount != null ? String(allocation.qCount) : "—")}
+                  </>)}
+              {allocation.type === "simulator" && infoRow("Simulator", MCT_SIMS.filter((x) => (allocation.simulators || []).includes(x.id)).map((x) => x.title).join(", ") || "—")}
               {allocation.instructions && (
                 <div style={{ paddingTop: "var(--kls-space-small)" }}>
                   <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: 4 }}>Instructions</div>
@@ -3370,14 +3422,14 @@ function MCTToggleRow({ label, hint, checked, onChange }) {
     </div>
   );
 }
-function MCTTypeCard({ active, icon, label, accent, onClick }) {
+function MCTTypeCard({ active, icon, symbol, label, accent, onClick }) {
   return (
     <button onClick={onClick} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer",
       padding: "var(--kls-space-small) var(--kls-space-tiny)", borderRadius: "var(--kls-radius-small)",
       border: active ? ("2px solid " + accent) : "1.5px solid var(--kls-outline-variant)",
       background: active ? ("color-mix(in srgb, " + accent + " 8%, transparent)") : "var(--kls-surface)",
       transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
-      <KlsIcon name={icon} size={20} color={active ? accent : "var(--kls-on-surface)"} />
+      {symbol ? <MSGlyph name={symbol} size={20} color={active ? accent : "var(--kls-on-surface)"} /> : <KlsIcon name={icon} size={20} color={active ? accent : "var(--kls-on-surface)"} />}
       <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)", textAlign: "center", whiteSpace: "nowrap" }}>{label}</span>
     </button>
   );
@@ -3395,6 +3447,135 @@ function MCTCheck({ checked, indeterminate, onClick }) {
     </span>
   );
 }
+// Oral-exam parameters for the mobile assign/edit sheets — mirrors the student setup
+// (Speak/Write · difficulty · ACS topic tree · pool-aware count). MORAL_* are declared later; resolved at render.
+const MORAL_LABEL_TO_KEY = { Easy: "easy", Medium: "med", Hard: "hard" };
+const MORAL_KEY_TO_LABEL = { easy: "Easy", med: "Medium", hard: "Hard" };
+function moralLeafIds(t) { const subs = moralSubtopics(t); return subs.length ? subs.map((x) => x.id) : [t.id]; }
+function moralSelectionSummary(selected) {
+  const chosen = MORAL_TOPICS.filter((t) => moralLeafIds(t).some((id) => selected.has(id)));
+  const subCount = chosen.reduce((n, t) => n + moralSubtopics(t).filter((x) => selected.has(x.id)).length, 0);
+  const pool = chosen.reduce((n, t) => { const subs = moralSubtopics(t); return n + (subs.length ? subs.filter((x) => selected.has(x.id)).reduce((s, x) => s + x.q, 0) : moralTopicTotal(t)); }, 0);
+  const acs = chosen.flatMap((t) => moralSubtopics(t).filter((x) => selected.has(x.id)).map((x) => x.code));
+  const title = chosen.length === 0 ? "" : chosen.length === 1 ? chosen[0].title : chosen.length + " topics";
+  return { chosen, subCount, pool, acs, title };
+}
+function MCTOralPicker({ selected, setSelected, answerMode, setAnswerMode, difficulty, setDifficulty, count, setCount }) {
+  const [expanded, setExpanded] = useState({});
+  const toggleIds = (ids) => { const all = ids.every((id) => selected.has(id)); const next = new Set(selected); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); setSelected(next); };
+  const { chosen, subCount, pool } = moralSelectionSummary(selected);
+  const n = Math.min(Number(count) || 0, pool);
+  const levelKey = MORAL_LABEL_TO_KEY[difficulty] || "med";
+  const curLevel = MORAL_LEVELS.find((l) => l.key === levelKey) || MORAL_LEVELS[1];
+  const F = "var(--kls-font-sans)";
+  const label = { fontFamily: F, fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" };
+  const value = { fontFamily: F, fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)", fontVariantNumeric: "tabular-nums" };
+  const row = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", minHeight: 28 };
+  const stepBtn = (dis) => ({ width: 36, height: 32, display: "grid", placeItems: "center", border: 0, background: "transparent", borderRadius: "var(--kls-radius-small)", padding: 0, fontSize: 20, lineHeight: 1, color: dis ? "var(--kls-outline-variant)" : "var(--kls-on-surface-variant)", cursor: dis ? "default" : "pointer" });
+  const qStyle = { fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0, minWidth: 36, textAlign: "right" };
+  return (
+    <>
+      <div>
+        <MCTLabel>How the student answers</MCTLabel>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+          <MOralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+          <MOralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type the answer · no mic needed" onClick={() => setAnswerMode("write")} />
+        </div>
+      </div>
+      <div>
+        <MCTLabel>Difficulty</MCTLabel>
+        <div role="tablist" aria-label="Difficulty" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: "var(--kls-space-tiny)", padding: 2, height: 40, boxSizing: "border-box", borderRadius: "var(--kls-radius-small)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+          {MORAL_LEVELS.map((l) => { const on = levelKey === l.key; return (
+            <button key={l.key} role="tab" aria-selected={on} onClick={() => setDifficulty(MORAL_KEY_TO_LABEL[l.key])} style={{ height: 34, padding: 0, borderRadius: "var(--kls-radius-small)", border: "none", cursor: "pointer", whiteSpace: "nowrap",
+              background: on ? "var(--kls-surface)" : "transparent", color: on ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)", boxShadow: on ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+              fontFamily: F, fontSize: 12, fontWeight: 600 }}>{l.label}</button>
+          ); })}
+        </div>
+        <div style={{ marginTop: "var(--kls-space-xsmall)", fontFamily: F, fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.4 }}>{curLevel.desc.replace(" - ", " · ")}</div>
+      </div>
+      <div>
+        <MCTLabel trailing={chosen.length > 0 ? <span style={{ fontFamily: F, fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{chosen.length} topic(s) · {subCount} ACS code(s)</span> : null}>Topics</MCTLabel>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          {MORAL_TOPICS.map((t) => {
+            const subs = moralSubtopics(t), ids = moralLeafIds(t);
+            const all = ids.every((id) => selected.has(id)), some = ids.some((id) => selected.has(id)), open = !!expanded[t.id];
+            return (
+              <div key={t.id} style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", overflow: "hidden", fontFamily: F }}>
+                <div onClick={() => subs.length && setExpanded({ ...expanded, [t.id]: !open })} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-small)", cursor: subs.length ? "pointer" : "default" }}>
+                  <MOralCheck checked={all} indeterminate={some && !all} onChange={() => toggleIds(ids)} />
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</span>
+                      <span style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0 }}>{subs.length ? subs.length + " ACS codes" : "No ACS codes"}</span>
+                    </div>
+                    {t.desc && <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc}</span>}
+                  </div>
+                  <span style={qStyle}>{moralTopicTotal(t)} Q</span>
+                  <span style={{ display: "inline-flex", color: "var(--kls-on-surface-variant)", visibility: subs.length ? "visible" : "hidden", transform: open ? "rotate(90deg)" : "none", transition: "transform var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}><KlsIcon name="chevronRight" size={20} color="var(--kls-on-surface-variant)" /></span>
+                </div>
+                {open && subs.map((x) => { const on = selected.has(x.id); return (
+                  <div key={x.id} onClick={() => toggleIds([x.id])} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-xsmall) calc(var(--kls-space-large) + var(--kls-space-xsmall))", borderTop: "1px solid var(--kls-outline-variant)", background: on ? "color-mix(in srgb, var(--kls-info) 12%, transparent)" : "transparent", cursor: "pointer" }}>
+                    <MOralCheck checked={on} onChange={() => toggleIds([x.id])} />
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>{x.code}</span>
+                      {x.desc && <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{x.desc}</span>}
+                    </div>
+                    <span style={qStyle}>{x.q} Q</span>
+                  </div>
+                ); })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <MCTLabel>Settings</MCTLabel>
+        <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+          <div style={row}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+              <span style={label}>Question Count:</span>
+              <button onClick={() => { if (pool > 0) setCount(pool); }} style={{ border: 0, background: "transparent", padding: 0, color: "var(--kls-info)", fontFamily: F, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>(All)</button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <button onClick={() => setCount(Math.max(1, n - 1))} disabled={n <= 1} style={stepBtn(n <= 1)}>−</button>
+              <div style={{ width: 40, textAlign: "center", fontFamily: F, fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)", fontVariantNumeric: "tabular-nums" }}>{n}</div>
+              <button onClick={n >= pool ? undefined : () => setCount(n + 1)} disabled={n >= pool} style={stepBtn(n >= pool)}>+</button>
+            </div>
+          </div>
+          <div style={row}><span style={label}>Pool:</span><span style={value}>{pool} question(s)</span></div>
+          <div style={row}><span style={label}>Drawing:</span><span style={value}>{n} question(s)</span></div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Simulator picker for the assign/edit sheets — list of selectable cells.
+function MCTSimulatorPicker({ selSims, setSelSims }) {
+  const toggle = (id) => setSelSims(new Set([id]));
+  const F = "var(--kls-font-sans)";
+  return (
+    <div>
+      <MCTLabel>Simulator</MCTLabel>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+        {MCT_SIMS.map((sim) => { const on = selSims.has(sim.id); return (
+          <div key={sim.id} onClick={() => toggle(sim.id)} role="radio" aria-checked={on} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", cursor: "pointer",
+            borderRadius: "var(--kls-radius-med)", border: "1px solid " + (on ? "var(--kls-accent-12)" : "var(--kls-outline-variant)"), background: on ? "color-mix(in srgb, var(--kls-accent-12) 8%, var(--kls-surface-variant))" : "var(--kls-surface-variant)" }}>
+            <img src={"assets/sim-thumbs/" + sim.id + ".png"} alt="" style={{ width: 64, height: 40, borderRadius: "var(--kls-radius-small)", flexShrink: 0, objectFit: "cover", objectPosition: "top left", display: "block", border: "1px solid var(--kls-outline-variant)" }} />
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", fontFamily: F }}>
+              <span style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3, color: "var(--kls-on-surface)" }}>{sim.title}</span>
+              <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{sim.desc}</span>
+            </div>
+          </div>
+        ); })}
+      </div>
+      <div style={{ marginTop: "var(--kls-space-xsmall)", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontFamily: F, fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+        <MSGlyph name="info" size={16} color="var(--kls-on-surface-variant)" />Students run simulators on the web app.
+      </div>
+    </div>
+  );
+}
+
 // Compact question-count stepper (oral exams).
 function MCTStepper({ value, setValue, min = 1, max = 200, label = "Question count" }) {
   const n = Number(value) || 0;
@@ -3714,6 +3895,9 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
   const [topic, setTopic] = useTM("");
   const [qCount, setQCount] = useTM(20);
   const [difficulty, setDifficulty] = useTM("Medium");
+  const [oralAcs, setOralAcs] = useTM(() => new Set());
+  const [answerMode, setAnswerMode] = useTM("speak");
+  const [selSims, setSelSims] = useTM(() => new Set());
   const [selModules, setSelModules] = useTM(() => new Set());
   const [orion, setOrion] = useTM(true);
   const [randomized, setRandomized] = useTM(false);
@@ -3733,7 +3917,8 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
     if (s.type === "group") { const g = roster.groups.find((x) => x.id === s.id); return g && { ...s, label: g.name, color: g.color }; }
     const p = roster.people.find((x) => x.id === s.id); return p && { ...s, label: p.name };
   }).filter(Boolean);
-  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (studentDefined || examMode === "exam" || selModules.size > 0));
+  const oralSel = moralSelectionSummary(oralAcs);
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || oralSel.pool > 0) : type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   function buildAndAssign() {
     if (!valid) return;
@@ -3743,17 +3928,20 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
     });
     const studentIds = [...new Set(expanded)];
     const examSubjectName = ((FAA_EXAMS_M.find((e) => e.id === examSubject) || FAA_EXAMS_M[0]) || {}).subject || "";
+    const simList = MCT_SIMS.filter((x) => selSims.has(x.id));
     const defaultTitle = type === "task" ? task
       : type === "written" ? (examMode === "exam" ? examSubjectName + " Exam" : "Written Exam")
-      : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
+      : type === "simulator" ? (simList.length === 1 ? simList[0].title : simList.length + " Simulators")
+      : (studentDefined ? "Oral Exam" : (oralSel.title || "Oral Exam"));
     const ct = customTitle.trim();
     const title = ct || defaultTitle;
     const dueLabel = due ? new Date(due + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit" }) : null;
     const created = studentIds.map((sid, i) => ({
       id: "n" + Date.now() + "_" + i, studentId: sid, type, title, defaultTitle, customTitle: ct,
-      course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || MCT_TERMS[0]),
+      course: type === "task" ? course : type === "simulator" ? "Training" : "Open-ended", term: type === "task" ? term : (term || MCT_TERMS[0]),
       due: dueLabel, status: "not_started", score: null, instructions,
-      ...(type === "oral" ? { difficulty, qCount } : type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, selModules: [...selModules], qCount, orion, randomized }) : {}),
+      ...(type === "simulator" ? { simulators: simList.map((x) => x.id) } : {}),
+      ...(type === "oral" ? { difficulty, qCount: Math.min(Number(qCount) || 0, oralSel.pool) || Number(qCount), answerMode, oralAcs: [...oralAcs], topic: oralSel.title, acs: oralSel.acs } : type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, selModules: [...selModules], qCount, orion, randomized }) : {}),
     }));
     onAssign(created, title);
   }
@@ -3780,10 +3968,11 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
         {/* Type */}
         <div>
           <MCTLabel>Type</MCTLabel>
-          <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--kls-space-xsmall)" }}>
             <MCTTypeCard active={type === "task"} icon="worklog" label="Task" accent="var(--kls-success)" onClick={() => setType("task")} />
             <MCTTypeCard active={type === "oral"} icon="chatBubbles" label="Oral Exam" accent="var(--kls-accent-4)" onClick={() => setType("oral")} />
             <MCTTypeCard active={type === "written"} icon="checkpoint" label="Written Exam" accent="var(--kls-info)" onClick={() => setType("written")} />
+            <MCTTypeCard active={type === "simulator"} symbol="school" label="Simulator" accent="var(--kls-accent-12)" onClick={() => setType("simulator")} />
           </div>
         </div>
         {/* Work picker */}
@@ -3796,12 +3985,12 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
         ) : type === "oral" ? (
           <>
             <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", marginTop: "calc(-1 * var(--kls-space-small))" }}>
-              <MCTToggleRow label="Let the student choose the topic" hint="Student picks the topic when they begin." checked={studentDefined} onChange={setStudentDefined} />
+              <MCTToggleRow label="Let the student choose parameters" hint="Student picks topics, Speak or Write, difficulty and count when they begin." checked={studentDefined} onChange={setStudentDefined} />
             </div>
-            {!studentDefined && <div><MCTLabel>Topic</MCTLabel><MCTSelect value={topic} options={MCT_ORAL_TOPICS} placeholder="Select a topic" onChange={setTopic} /></div>}
-            <div><MCTLabel>Difficulty</MCTLabel><MCTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
-            <MCTStepper value={qCount} setValue={setQCount} />
+            {!studentDefined && <MCTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />}
           </>
+        ) : type === "simulator" ? (
+          <MCTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
         ) : (
           <>
             <MCTExamModeCards mode={examMode} setMode={setExamMode} />
@@ -4120,7 +4309,8 @@ function MCTStudentDetailSheet({ item, onClose }) {
         <div>
           {sectionLabel("Details")}
           {infoRow("Type", mctTypeLabel(item.type))}
-          {item.type === "task" ? infoRow("Course", item.course) : infoRow("Term", item.term)}
+          {item.type === "task" ? infoRow("Course", item.course) : item.type === "simulator" ? null : infoRow("Term", item.term)}
+          {item.type === "simulator" && infoRow("Simulator", MCT_SIMS.filter((x) => (item.simulators || []).includes(x.id)).map((x) => x.title).join(", ") || "—")}
           {infoRow("Due date", item.due)}
           {showScore && infoRow("Result", item.score + "%")}
         </div>
@@ -4574,7 +4764,18 @@ const MOralCheck = ({ checked, indeterminate, onChange }) => (
     {indeterminate && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--kls-surface)" strokeWidth="3" strokeLinecap="round"><path d="M6 12h12" /></svg>}
   </button>
 );
-const moralCalibrateAction = { label: "Calibrate", node: <MSGlyph name="check_box_outline_blank" size={20} color="var(--kls-accent-4)" />, onClick: () => {} };
+// Calibrate icon: "tune" glyph; when calibrated, a small success check badge overlays the corner.
+function MCalibrateIcon({ done, size = 20 }) {
+  return (
+    <span style={{ position: "relative", display: "inline-flex", width: size, height: size, flexShrink: 0 }}>
+      <MSGlyph name="tune" size={size} color={done ? "var(--kls-success)" : "var(--kls-accent-4)"} />
+      {done && <span style={{ position: "absolute", right: -4, bottom: -4, width: 11, height: 11, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-success)", border: "1.5px solid var(--kls-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <svg viewBox="0 0 24 24" width="7" height="7" fill="none" stroke="var(--kls-on-success)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4.5 4.5L20 6" /></svg>
+      </span>}
+    </span>
+  );
+}
+const moralCalibrateAction = (done, onClick) => ({ label: done ? "Calibrated" : "Calibrate", node: <MCalibrateIcon done={done} size={20} />, onClick });
 
 function MStudentOralExams({ go }) {
   const [view, setView] = useState("setup");
@@ -4585,6 +4786,7 @@ function MStudentOralExams({ go }) {
 }
 
 function MOralStudentSetup({ onBack, onLogs }) {
+  const [calibrated, setCalibrated] = useState(false);
   const [expanded, setExpanded] = useState({ ot1: true });
   const [selected, setSelected] = useState(() => new Set(moralSubtopics(MORAL_TOPICS[0]).map((s) => s.id)));
   const [level, setLevel] = useState("med");
@@ -4606,7 +4808,7 @@ function MOralStudentSetup({ onBack, onLogs }) {
   return (
     <div data-screen-label="oral-student-setup" style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--kls-scaffold-bg)" }}>
       <MWEPageHeader title="Oral Exams" subtitle="Practice dynamic questions on various topics." onBack={onBack}
-        actions={[{ icon: "history", label: "Exam Logs", onClick: onLogs }, moralCalibrateAction]} />
+        actions={[{ icon: "history", label: "Exam Logs", onClick: onLogs }, moralCalibrateAction(calibrated, () => setCalibrated((v) => !v))]} />
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-tiny) var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
         <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
@@ -4728,7 +4930,7 @@ function MOralLogs({ onBack, onOpen }) {
 }
 
 function MOralLogDetail({ attempt: a, onBack }) {
-  const passed = a.questions.filter((q) => q.pass).length, score = passed / a.questions.length;
+  const passed = a.questions.filter((q) => q.pass).length, score = passed / a.questions.length, missed = a.questions.length - passed;
   const F = "var(--kls-font-sans)";
   const meta = { fontFamily: F, fontSize: 12.5, fontWeight: 500, color: "var(--kls-on-surface-variant)" };
   return (
@@ -4741,6 +4943,13 @@ function MOralLogDetail({ attempt: a, onBack }) {
             <span style={{ fontFamily: F, fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{passed} of {a.questions.length} passed</span>
             <span style={meta}>{a.questions.length} questions · {a.duration}</span>
           </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          {missed > 0 && <button style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: "var(--kls-radius-med)", border: "1px solid transparent", cursor: "pointer", width: "100%",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: F, fontSize: 14, fontWeight: 700 }}><WEIcon name="sparkles" size={16} />Quiz from these {missed} misses</button>}
+          <button style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: "var(--kls-radius-med)", cursor: "pointer", width: "100%", background: "var(--kls-surface)", color: "var(--kls-on-surface)",
+            border: "1px solid var(--kls-outline-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: F, fontSize: 14, fontWeight: 700 }}>Retake same setup</button>
         </div>
         {a.questions.map((q, i) => (
           <div key={i} style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
@@ -4763,9 +4972,81 @@ function MOralLogDetail({ attempt: a, onBack }) {
   );
 }
 
+/* ── Release Notes (full screen, opened from Profile sheet version) ────────── */
+const M_RN_KIND_COLOR = { New: "var(--kls-success)", Improved: "var(--kls-info)", Fixed: "var(--kls-accent-4)" };
+function MReleaseSections({ sections }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      {sections.map((sec) => (
+        <div key={sec.kind}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginBottom: "var(--kls-space-tiny)" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "var(--kls-radius-pill)", background: M_RN_KIND_COLOR[sec.kind] || "var(--kls-outline)" }} />
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{sec.kind}</span>
+          </div>
+          <ul style={{ margin: 0, padding: "0 0 0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            {sec.items.map((t, i) => <li key={i} style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{t}</li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+function MReleaseNotesScreen({ onBack }) {
+  const releases = window.MX_RELEASES || [];
+  const [current, ...past] = releases;
+  const [open, setOpen] = useState({});
+  if (!current) return null;
+  const card = { background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: "var(--kls-radius-med)" };
+  return (
+    <div data-screen-label="release-notes" style={{ display: "flex", flexDirection: "column", height: "100%", paddingTop: 54, boxSizing: "border-box", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-xsmall) var(--kls-space-med) var(--kls-space-xsmall) var(--kls-space-small)", flex: "none" }}>
+        <button onClick={onBack} aria-label="Back"
+          style={{ width: 36, height: 36, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--kls-on-surface)", flexShrink: 0 }}>
+          <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}><path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+        <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, color: "var(--kls-on-surface)" }}>Release Notes</div>
+      </div>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        <section style={{ ...card, flex: "none", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>Version {current.version}</span>
+            <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: "var(--kls-radius-small)", background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Current</span>
+          </div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{current.date}</div>
+          <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{current.summary}</p>
+          <MReleaseSections sections={current.sections} />
+        </section>
+        {past.length > 0 && <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Past releases</div>}
+        {past.map((r) => {
+          const isOpen = !!open[r.version];
+          return (
+            <section key={r.version} style={{ ...card, overflow: "hidden", flex: "none" }}>
+              <button onClick={() => setOpen((o) => ({ ...o, [r.version]: !isOpen }))} aria-expanded={isOpen}
+                style={{ border: "none", background: "transparent", margin: 0, font: "inherit", color: "inherit", textAlign: "left", boxSizing: "border-box", cursor: "pointer", width: "100%", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Version {r.version}</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 2 }}>{r.date}</div>
+                </div>
+                <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, flexShrink: 0, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.8, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+              {isOpen && (
+                <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                  <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface)" }}>{r.summary}</p>
+                  <MReleaseSections sections={r.sections} />
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function MobileApp(props) {
-  const ctRole = (props && props.ctRole) || "instructor";
-  const examRole = (props && props.examRole) || "instructor";
+  const role = (props && props.role) || "instructor";
+  const ctRole = role, examRole = role;
   const examSummaryMode = (props && props.examSummaryMode) || "From attempt";
   const { BottomNav } = window.KLS;
   const [tab, setTab] = useState("home");
@@ -4773,6 +5054,7 @@ function MobileApp(props) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(false);
+  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
   const openFeedback = () => { setProfileOpen(false); setFaqOpen(false); setFeedbackOpen(true); };
   const inTeam = (tab === "workspace" && wsScreen === "team");
   const inWritten = (tab === "workspace" && wsScreen === "writtenExams");
@@ -4780,21 +5062,22 @@ function MobileApp(props) {
   const inLibrary = (tab === "workspace" && wsScreen === "library");
   const inOral = (tab === "workspace" && wsScreen === "oralExams");
   let body;
-  if (tab === "home") body = <HomeScreen showHelpButton={true} onHelp={openFeedback} onProfile={() => setProfileOpen(true)} />;
+  if (releaseNotesOpen) body = <MReleaseNotesScreen onBack={() => setReleaseNotesOpen(false)} />;
+  else if (tab === "home") body = <HomeScreen showHelpButton={true} onHelp={openFeedback} onProfile={() => setProfileOpen(true)} />;
   else if (tab === "workspace") {
     if (inWritten) body = <MWrittenExams summaryMode={examSummaryMode} onBack={() => setWsScreen("workspace")} />;
     else body = (
       <div style={{ height: "100%", paddingTop: 54, boxSizing: "border-box", background: "var(--kls-surface-variant)" }}>
         {inTeam ? <TeamScreen go={(s) => setWsScreen(s)} />
           : inLibrary ? <MLibraryScreen go={(s) => setWsScreen(s)} />
-          : inOral ? (examRole === "student" ? <MStudentOralExams go={(s) => setWsScreen(s)} /> : <MOralExams go={(s) => setWsScreen(s)} />)
+          : inOral ? <MStudentOralExams go={(s) => setWsScreen(s)} />
           : inControlTower ? (ctRole === "student" ? <StudentControlTowerScreen go={(s) => setWsScreen(s)} /> : <ControlTowerScreen go={(s) => setWsScreen(s)} />)
           : <WorkspaceScreen go={(s) => setWsScreen(s)} />}
       </div>
     );
   }
   else body = <MobilePlaceholder label={tab === "orion" ? "Orion" : "Notifications"} icon={tab === "orion" ? "orionOutline" : "bell"} />;
-  const showNav = !inTeam && !inWritten && !inControlTower && !inLibrary && !inOral;
+  const showNav = !releaseNotesOpen && !inTeam && !inWritten && !inControlTower && !inLibrary && !inOral;
   return (
     <IOSDevice width={402} height={874}>
       <div style={{ position: "relative", height: "100%", overflow: "hidden" }}>
@@ -4806,7 +5089,7 @@ function MobileApp(props) {
             </div>
           )}
         </div>
-        <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} showHelpRow={true} newBadge={true} onHelp={openFeedback} />
+        <ProfileSheet open={profileOpen} onClose={() => setProfileOpen(false)} showHelpRow={true} newBadge={true} onHelp={openFeedback} onReleaseNotes={() => { setProfileOpen(false); setReleaseNotesOpen(true); }} />
         <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} onBrowseFaqs={() => { setFeedbackOpen(false); setFaqOpen(true); }} />
         <FaqSheet open={faqOpen} onClose={() => setFaqOpen(false)} />
       </div>
