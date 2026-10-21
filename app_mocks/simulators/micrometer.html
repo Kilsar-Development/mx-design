@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Kilsar Micrometer Simulator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1c2129; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    #__bundler_loading { position: fixed; bottom: 20px; right: 20px; font: 13px/1.4 -apple-system, BlinkMacSystemFont, sans-serif; color: #666; background: #fff; padding: 8px 14px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 10000; }
+    #__bundler_thumbnail { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #1c2129; z-index: 9999; }
+    #__bundler_thumbnail svg { width: 100%; height: 100%; object-fit: contain; }
+    #__bundler_placeholder { color: #999; font-size: 14px; }
+  </style>
+  <noscript>
+    <style>#__bundler_loading { display: none; }</style>
+    <div style="position:fixed;bottom:12px;left:12px;font:13px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#999;background:rgba(255,255,255,0.9);padding:6px 12px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);z-index:10000;">
+      This page requires JavaScript to display.
+    </div>
+  </noscript>
+</head>
+<body>
+  <div id="__bundler_thumbnail"><svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="800" fill="#1c2129"></rect><path d="M430 260 C330 260 270 330 270 420 C270 520 350 580 450 580 C550 580 620 520 620 420 L620 360 H560 L560 420 C560 480 510 525 450 525 C385 525 330 480 330 420 C330 360 370 320 430 320Z" fill="#f3f5f8"></path><rect x="620" y="330" width="260" height="80" rx="8" fill="#aeb8c6"></rect><rect x="880" y="310" width="90" height="120" rx="10" fill="#4d8ff0"></rect></svg></div>
+  <div id="__bundler_loading">Unpacking...</div>
+
+  <script>
+    
+document.addEventListener('DOMContentLoaded', async function() {
+  const loading = document.getElementById('__bundler_loading');
+  function setStatus(msg) { if (loading) loading.textContent = msg; }
+
+  const FONT_MIME = /^(font[/]|application[/](x-)?font-|application[/]vnd\.ms-fontobject)/i;
+  const MIME_TOKEN = /^[\w.+-]+[/][\w.+-]+$/;
+  function toBase64(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  }
+
+  // Error sink persists across replaceWith since it's on window, not the DOM.
+  window.addEventListener('error', function(e) {
+    // Failed resource loads (CSP-blocked links, scripts, images) fire plain
+    // events at the element — warn only; real JS errors carry message/error.
+    if (!e.message && !e.error && e.target && e.target !== window) {
+      console.warn('[bundle] resource failed to load:',
+        e.target.tagName, String(e.target.src || e.target.href || ''));
+      return;
+    }
+    var p = document.body || document.documentElement;
+    var d = document.getElementById('__bundler_err') || p.appendChild(document.createElement('div'));
+    d.id = '__bundler_err';
+    d.style.cssText = 'position:fixed;bottom:12px;left:12px;right:12px;font:12px/1.4 ui-monospace,monospace;background:#2a1215;color:#ff8a80;padding:10px 14px;border-radius:8px;border:1px solid #5c2b2e;z-index:99999;white-space:pre-wrap;max-height:40vh;overflow:auto';
+    d.textContent = (d.textContent ? d.textContent + String.fromCharCode(10) : '') +
+      '[bundle] ' + (e.message || e.type) +
+      (e.filename ? ' (' + e.filename.slice(0, 60) + ':' + e.lineno + ')' : '');
+  }, true);
+
+  try {
+    const manifestEl = document.querySelector('script[type="__bundler/manifest"]');
+    const templateEl = document.querySelector('script[type="__bundler/template"]');
+    if (!manifestEl || !templateEl) {
+      setStatus('Error: missing bundle data');
+      console.error('[bundler] Missing script tags — manifestEl:', !!manifestEl, 'templateEl:', !!templateEl);
+      return;
+    }
+
+    const manifest = JSON.parse(manifestEl.textContent);
+    let template = JSON.parse(templateEl.textContent);
+
+    // Nested page bundles (iframe targets). Each ships ONCE, in the ROOT
+    // document's manifest; frame srcs carry an about:blank#<uuid> marker
+    // instead of a substitutable uuid. Every document mints the blobs for
+    // its OWN frames — from local text at the root, or text obtained from
+    // its DIRECT parent over the relay protocol below — so each frame
+    // navigation stays same-origin with its initiator and a deduped page
+    // loads at any depth on any host, including a file:// download's
+    // opaque origins (where a blob minted by one document cannot be
+    // navigated to by another).
+    const pageOrderEl = document.querySelector('script[type="__bundler/page_order"]');
+    const pageOrder = pageOrderEl ? JSON.parse(pageOrderEl.textContent) : [];
+    const pageSet = new Set(pageOrder);
+    const pageTexts = {};
+
+    // ── Nested-page text protocol (parent-chain relay) ──
+    // Page bundles ship once, in the ROOT document's manifest. Every
+    // document mints the blobs for its OWN frames, obtaining page text
+    // through a strict parent-chain relay: a document only ever SENDS to
+    // its direct parent (which, for every document the publisher's own
+    // runtime minted, is another publisher document) and only ACCEPTS
+    // text from that direct parent; requests from below are honored only
+    // for the document's own child frames, and the ROOT never sends
+    // upward at all. That last rule is load-bearing: the artifact host's
+    // frame-ancestors allows claude.ai (and friends) to frame an
+    // artifact, so window.top can be a FOREIGN document — a top-addressed
+    // protocol would hand page uuids to that ancestor and accept forged
+    // "page text" from it, minting attacker HTML as an artifact-origin
+    // blob document. The chain never touches the ancestor: requests stop
+    // at the root, replies are origin-addressed per hop (never '*' when
+    // an origin exists), and both directions are origin-gated (on https
+    // a foreign sender's origin can never equal this document's; in
+    // opaque contexts — file:// — everything serializes as 'null', where
+    // an embedded EXTERNAL frame still fails the gate by carrying its
+    // own real origin, and a sandboxed child of such a frame is excluded
+    // by the own-child-frames check plus uuid unguessability). Shape is
+    // deny-by-default: one request form, one reply form, no error
+    // replies.
+    // window.origin is the SERIALIZED SECURITY origin ('null' in opaque
+    // contexts such as a sandboxed preview iframe) — location.origin is
+    // computed from the URL and stays 'https://…' even when the document
+    // is sandboxed, which would misgate every opaque chain.
+    const OWN_TARGET = /^https?:[/][/]/.test(window.origin || '')
+      ? window.origin
+      : '*';
+    function trustedOrigin(e) {
+      if (e.origin === window.origin) return true; // https chains; opaque==opaque
+      // file:// trees: Chrome serializes the file document's origin as
+      // 'file://' while the blob: documents it mints serialize as 'null',
+      // so the two legitimate shapes can never string-match — accept the
+      // pair in both directions. https origins never serialize as either,
+      // and sender identity (own child frame / direct parent) is checked
+      // separately.
+      return (
+        (e.origin === 'null' &&
+          (window.origin === 'file://' ||
+            window.location.protocol === 'file:')) ||
+        (/^file:/.test(e.origin) && window.origin === 'null')
+      );
+    }
+    // Non-empty only in the root document (nested bundles ship an empty
+    // island), so it doubles as the root marker: the root answers from
+    // local text and treats a miss as authoritative — never relaying to
+    // its (possibly foreign) parent.
+    const isPageRoot = pageOrder.length > 0;
+    const blobUrls = {};
+    const resourceBlobs = {};
+    const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    const pendingFrames = {}; // uuid -> [{el, frag}] awaiting text for own frames
+    const pendingRelays = {}; // uuid -> [childWindow] awaiting text to pass down
+    function mountPage(el, frag, text) {
+      const pageBlob = new Blob([text], { type: 'text/html' });
+      const u = URL.createObjectURL(pageBlob);
+      resourceBlobs[u] = pageBlob;
+      el.src = u + frag;
+    }
+    function deliverPage(uuid, text) {
+      const frames = pendingFrames[uuid];
+      delete pendingFrames[uuid];
+      if (frames) for (const f of frames) mountPage(f.el, f.frag, text);
+      const relays = pendingRelays[uuid];
+      delete pendingRelays[uuid];
+      if (relays) {
+        for (const cw of relays) {
+          try { cw.postMessage({ __bundler_page: uuid, __bundler_text: text }, OWN_TARGET); } catch (err) { /* gone */ }
+        }
+      }
+    }
+    function ownFrameWindows() {
+      const out = [];
+      for (const f of Array.from(document.querySelectorAll('iframe'))) {
+        try { if (f.contentWindow) out.push(f.contentWindow); } catch (err) { /* detached */ }
+      }
+      return out;
+    }
+    window.addEventListener('message', function (e) {
+      const d = e.data;
+      if (!d || typeof d !== 'object' || !e.source) return;
+      // Origin gate first; the structural checks below (own-child-frames
+      // for requests, direct-parent + solicited-uuid for replies, the
+      // root's never-relay rule) are what hold in fully opaque chains
+      // where origin strings can't discriminate — a sandboxed root's
+      // FOREIGN wrapper still fails all three even though both serialize
+      // as real-vs-'null' rather than matching.
+      if (!trustedOrigin(e)) return;
+      if (typeof d.__bundler_need === 'string' && UUID_SHAPE.test(d.__bundler_need)) {
+        // Requests are honored only for this document's own child frames.
+        if (ownFrameWindows().indexOf(e.source) < 0) return;
+        const uuid = d.__bundler_need;
+        const text = pageTexts[uuid];
+        if (typeof text === 'string') {
+          try { e.source.postMessage({ __bundler_page: uuid, __bundler_text: text }, OWN_TARGET); } catch (err) { /* gone */ }
+          return;
+        }
+        if (isPageRoot || window.parent === window) return; // authoritative miss
+        const waiting = pendingRelays[uuid];
+        if (waiting) {
+          if (waiting.indexOf(e.source) < 0) waiting.push(e.source);
+          return;
+        }
+        // Never-answered uuids would otherwise accumulate forever under a
+        // request spray; past the cap (far above any real page count) new
+        // relays are dropped rather than remembered.
+        if (Object.keys(pendingRelays).length >= 128) return;
+        pendingRelays[uuid] = [e.source];
+        window.parent.postMessage({ __bundler_need: uuid }, OWN_TARGET);
+      } else if (
+        typeof d.__bundler_page === 'string' &&
+        UUID_SHAPE.test(d.__bundler_page) &&
+        typeof d.__bundler_text === 'string'
+      ) {
+        // The shape test is load-bearing beyond tidiness: the solicited
+        // check below uses the in operator, which matches prototype keys
+        // ('__proto__', 'constructor') — an unshaped key would reach
+        // deliverPage and throw, painting the error banner.
+        // Text is accepted only from the direct parent — the document
+        // that minted this one.
+        if (e.source !== window.parent || window.parent === window) return;
+        if (!(d.__bundler_page in pendingFrames) && !(d.__bundler_page in pendingRelays)) return;
+        deliverPage(d.__bundler_page, d.__bundler_text);
+      }
+    });
+
+    const uuids = Object.keys(manifest);
+    setStatus('Unpacking ' + uuids.length + ' assets...');
+
+    await Promise.all(uuids.map(async (uuid) => {
+      const entry = manifest[uuid];
+      try {
+        const binaryStr = atob(entry.data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+        let finalBytes = bytes;
+        if (entry.compressed) {
+          if (typeof DecompressionStream !== 'undefined') {
+            const ds = new DecompressionStream('gzip');
+            const writer = ds.writable.getWriter();
+            const reader = ds.readable.getReader();
+            writer.write(bytes);
+            writer.close();
+            const chunks = [];
+            let totalLen = 0;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              chunks.push(value);
+              totalLen += value.length;
+            }
+            finalBytes = new Uint8Array(totalLen);
+            let offset = 0;
+            for (const chunk of chunks) { finalBytes.set(chunk, offset); offset += chunk.length; }
+          } else {
+            console.warn('DecompressionStream not available, asset ' + uuid + ' may not render');
+          }
+        }
+
+        if (pageSet.has(uuid)) {
+          pageTexts[uuid] = new TextDecoder().decode(finalBytes);
+          return;
+        }
+        if (FONT_MIME.test(entry.mime) && MIME_TOKEN.test(entry.mime)) {
+          // Strict artifact hosts allow font-src data: but not blob:.
+          blobUrls[uuid] = 'data:' + entry.mime + ';base64,' +
+            (entry.compressed ? toBase64(finalBytes) : entry.data);
+        } else {
+          const blob = new Blob([finalBytes], { type: entry.mime });
+          blobUrls[uuid] = URL.createObjectURL(blob);
+          resourceBlobs[blobUrls[uuid]] = blob;
+        }
+      } catch (err) {
+        console.error('Failed to decode asset ' + uuid + ':', err);
+        const blob = new Blob([], { type: entry.mime });
+        blobUrls[uuid] = URL.createObjectURL(blob);
+        resourceBlobs[blobUrls[uuid]] = blob;
+      }
+    }));
+
+    const extResEl = document.querySelector('script[type="__bundler/ext_resources"]');
+    const extResources = extResEl ? JSON.parse(extResEl.textContent) : [];
+    const resourceMap = {};
+    for (const entry of extResources) {
+      if (blobUrls[entry.uuid]) resourceMap[entry.id] = blobUrls[entry.uuid];
+    }
+
+    // Artifact-host CSP (connect-src 'self') refuses fetch() of blob: URLs —
+    // consumers read these Blobs directly. Survives the swap like the error sink.
+    window.__resourceBlobs = resourceBlobs;
+
+    setStatus('Rendering...');
+    // Page uuids have no blob here — they ride inside about:blank#<uuid>
+    // frame markers the pass below resolves after the swap.
+    for (const uuid of uuids) {
+      if (pageSet.has(uuid)) continue;
+      template = template.split(uuid).join(blobUrls[uuid]);
+    }
+
+    // Strip integrity + crossorigin — blob URLs from a file:// document inherit
+    // a null origin, so crossorigin forces a CORS fetch that SRI then rejects.
+    // The manifest bytes are ours; SRI protects against CDN compromise, not this.
+    template = template.replace(/\s+integrity="[^"]*"/gi, '').replace(/\s+crossorigin="[^"]*"/gi, '');
+
+    const resourceScript = '<script>window.__resources = ' +
+      JSON.stringify(resourceMap).replace(/<\//g, '<\\/') +
+      ';</' + 'script>';
+    // Inject after <head> so the DOCTYPE stays first; prepending the script
+    // would push the parser into quirks mode. DOMParser always emits a <head>
+    // (synthesizing one if the source HTML omitted it) but may carry
+    // attributes through, so match the full opening tag. slice() rather than
+    // replace() keeps us clear of $-pattern substitution in resourceScript.
+    const headOpen = template.match(/<head[^>]*>/i);
+    if (headOpen) {
+      const i = headOpen.index + headOpen[0].length;
+      template = template.slice(0, i) + resourceScript + template.slice(i);
+    }
+
+    // Parse the template and swap the root element. Scripts inserted via
+    // DOMParser/replaceWith are inert per spec — re-create each with
+    // createElement so they execute, awaiting onload for src scripts to
+    // preserve ordering (React before ReactDOM before Babel before text/babel).
+    const doc = new DOMParser().parseFromString(template, 'text/html');
+    document.documentElement.replaceWith(doc.documentElement);
+
+    // Resolve page-frame markers: mint this document's own blob for each
+    // framed page — from local text when this is the root, otherwise by
+    // asking the direct parent over the relay protocol above. An
+    // unanswered request leaves the frame on about:blank, the same
+    // degraded state as a refused embed.
+    {
+      const MARKER = /^about:blank#([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(#.*)?$/;
+      const needed = [];
+      for (const el of Array.from(document.querySelectorAll('iframe'))) {
+        const m = MARKER.exec(el.getAttribute('src') || '');
+        if (!m) continue;
+        const text = pageTexts[m[1]];
+        if (typeof text === 'string') {
+          mountPage(el, m[2] || '', text);
+        } else if (window.parent !== window && !isPageRoot) {
+          const had = pendingFrames[m[1]];
+          (pendingFrames[m[1]] = had || []).push({ el: el, frag: m[2] || '' });
+          if (!had) needed.push(m[1]);
+        }
+      }
+      for (const uuid of needed) {
+        window.parent.postMessage({ __bundler_need: uuid }, OWN_TARGET);
+      }
+    }
+
+    const dead = Array.from(document.scripts);
+    for (const old of dead) {
+      const s = document.createElement('script');
+      for (const a of old.attributes) s.setAttribute(a.name, a.value);
+      s.textContent = old.textContent;
+      // text/babel scripts with a src: read and inline. transformScriptTags
+      // does XHR against the src, but blob:null/ from a file:// origin is
+      // silently dropped. Inlining makes it a plain inline babel script,
+      // which transformScriptTags handles unconditionally.
+      if ((s.type === 'text/babel' || s.type === 'text/jsx') && s.src) {
+        const pre = resourceBlobs[s.src.split('#')[0]];
+        s.textContent = pre ? await pre.text() : await (await fetch(s.src)).text();
+        s.removeAttribute('src');
+      }
+      const p = s.src ? new Promise(function(r) { s.onload = s.onerror = r; }) : null;
+      old.replaceWith(s);
+      if (p) await p;
+    }
+    // Babel standalone auto-transforms type=text/babel on DOMContentLoaded,
+    // which fired before we swapped the document. Trigger manually if present.
+    if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
+      window.Babel.transformScriptTags();
+    }
+  } catch (err) {
+    setStatus('Error unpacking: ' + err.message);
+    console.error('Bundle unpack error:', err);
+  }
+});
+
+  </script>
+
+  <script type="__bundler/manifest">
+{"992ca24d-82ef-42ee-b6af-5c9b72279f58":{"mime":"image/png","compressed":false,"data":"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"}}
+  </script>
+
+  <script type="__bundler/ext_resources">
+[]
+  </script>
+
+  <script type="__bundler/page_order">
+[]
+  </script>
+
+  <script type="__bundler/template">
+"<!DOCTYPE html>\n<html lang=\"en\"><head>\n<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Kilsar Micrometer Simulator<\u002Ftitle>\n<style>\n:root{--bg:#1c2129;--card:#fff;--ink:#172033;--muted:#aeb8c6;--blue:#1264d8;--green:#168447;--red:#c93636}\n*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}\n.wrap{max-width:1250px;margin:auto;padding:22px}.header h1{margin:0;font-size:28px;color:#f3f5f8}.header p{margin:5px 0 18px;color:#aeb8c6}.header p b{color:#f3f5f8}\n.layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:18px}.layout>*{min-width:0}.card{background:#262c36;color:#e8ecf1;border:1px solid #363e4b;border-radius:12px;padding:16px;box-shadow:0 2px 10px #0000004d}\nh3{margin:0 0 10px}.btn{border:1px solid #465061;background:#2f3642;border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:650;color:#e8ecf1}.btn:hover{background:#39414f}.btn.active{border:2px solid #4d8ff0;background:#1d3a66;color:#fff}.wide{width:100%;margin-top:8px}\n.row{display:flex;gap:7px;flex-wrap:wrap}.label{font-size:13px;font-weight:700;margin:16px 0 7px}.stats{border-top:1px solid #363e4b;margin-top:18px;padding-top:10px}.stat{display:flex;justify-content:space-between;margin:9px 0}\n.stage{background:linear-gradient(#e4e8ed,#d0d6de);border:1px solid #363e4b;border-radius:10px;overflow:auto}.stage svg{display:block;width:100%;min-width:560px;height:auto}\n.answer{display:flex;gap:8px;margin-top:13px}.answer input{flex:1;padding:12px;background:#1c2129;color:#fff;border:1px solid #465061;border-radius:8px;font-size:17px}.submit{background:var(--blue);color:#fff;border:0}\n.feedback,.learn{display:none;margin-top:12px;padding:13px;border-radius:8px}.good{display:block;background:#143324;border:1px solid #2f7a4c}.bad{display:block;background:#3a1d1f;border:1px solid #8a3a3a}.learn.show{display:block;background:#172a45;border:1px solid #2f5ea8}\n.breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:9px}.breakdown div{background:#1c2129;border:1px solid #363e4b;border-radius:8px;padding:8px;text-align:center;font-size:12px}.breakdown b{display:block;font-size:17px;margin-top:4px}\n.help{font-size:13px;color:var(--muted);margin-top:10px}.pill{white-space:nowrap;font-size:12px;font-weight:700;background:#1d3a66;color:#cfe0ff;padding:7px 10px;border-radius:99px}\n@media(max-width:780px){.layout{grid-template-columns:1fr}.breakdown{grid-template-columns:1fr 1fr}.wrap{padding:10px}}\n.tabs{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}.tab{background:transparent;border:1px solid #465061;color:#aeb8c6;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer}.tab:hover{color:#fff}.tab.active{background:#262c36;color:#fff;border:2px solid #4d8ff0}.zoom{background:#f4f6f8;border:1px solid #363e4b;border-radius:10px;overflow:auto}.zoom svg{display:block;width:100%;min-width:480px;height:auto}.hot{cursor:pointer}.hot circle{transition:fill .15s}.hot:hover circle.dot{fill:#1264d8}.idbar{display:none;margin-top:13px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:13px;border-radius:8px;background:#172a45;border:1px solid #2f5ea8}.idbar .q{font-size:17px}\n<\u002Fstyle>\n<\u002Fhead>\n<body><div class=\"wrap\">\n<div class=\"header\"><div style=\"display:flex;align-items:center;gap:12px\"><img src=\"992ca24d-82ef-42ee-b6af-5c9b72279f58\" alt=\"Kilsar\" style=\"height:34px;width:auto;filter:invert(1)\"><span style=\"font-size:28px;font-weight:700;letter-spacing:.02em;color:#f3f5f8\">Kilsar<\u002Fspan><h1 id=\"h1\">Micrometer Simulator<\u002Fh1><\u002Fdiv><p>Read the micrometer to <b>0.0001 inch<\u002Fb>. The blue READ HERE line marks the thimble edge.<\u002Fp><\u002Fdiv>\n<div class=\"tabs\" id=\"tabs\"><button class=\"tab\" data-size=\"0-1\">0–1″<\u002Fbutton><button class=\"tab active\" data-size=\"1-2\">1–2″<\u002Fbutton><button class=\"tab\" data-size=\"2-4\">2–4″<\u002Fbutton><button class=\"tab\" data-size=\"3-6\">3–6″<\u002Fbutton><\u002Fdiv>\n<div class=\"layout\">\n<aside class=\"card\">\n<h3>Controls<\u002Fh3>\n<div class=\"label\">Mode<\u002Fdiv><div class=\"row\"><button class=\"btn mode active\" data-mode=\"practice\">Practice<\u002Fbutton><button class=\"btn mode\" data-mode=\"learn\">Learn<\u002Fbutton><button class=\"btn mode\" data-mode=\"identify\">Identify Parts<\u002Fbutton><\u002Fdiv>\n<div id=\"readCtl\"><div class=\"label\">Difficulty<\u002Fdiv><div class=\"row\"><button class=\"btn diff\" data-d=\"easy\">Easy<\u002Fbutton><button class=\"btn diff active\" data-d=\"medium\">Medium<\u002Fbutton><button class=\"btn diff\" data-d=\"hard\">Hard<\u002Fbutton><\u002Fdiv>\n<button id=\"new\" class=\"btn wide\">New Random Reading<\u002Fbutton><\u002Fdiv>\n<div id=\"anvilCtl\" style=\"display:none\"><div class=\"label\">Anvil installed<\u002Fdiv><div class=\"row\" id=\"anvilRow\"><\u002Fdiv><\u002Fdiv>\n<div id=\"learnCtl\" style=\"display:none\">\n<div class=\"label\">Move thimble<\u002Fdiv><div class=\"row\"><button id=\"m25\" class=\"btn\">−.025<\u002Fbutton><button id=\"m1\" class=\"btn\">−.001<\u002Fbutton><button id=\"p1\" class=\"btn\">+.001<\u002Fbutton><button id=\"p25\" class=\"btn\">+.025<\u002Fbutton><\u002Fdiv>\n<\u002Fdiv>\n<div class=\"stats\"><h3>Progress<\u002Fh3><div id=\"readStats\"><div class=\"stat\"><span>Attempted<\u002Fspan><b id=\"att\">0<\u002Fb><\u002Fdiv><div class=\"stat\"><span>Correct<\u002Fspan><b id=\"cor\">0<\u002Fb><\u002Fdiv><div class=\"stat\"><span>Accuracy<\u002Fspan><b id=\"acc\">0%<\u002Fb><\u002Fdiv><div class=\"stat\"><span>Readings<\u002Fspan><b id=\"sRead\">0 / 0<\u002Fb><\u002Fdiv><div class=\"stat\"><span>Parts<\u002Fspan><b id=\"sPart\">0 / 0<\u002Fb><\u002Fdiv><\u002Fdiv><div id=\"idStats\" style=\"display:none\"><div class=\"stat\"><span>Parts found<\u002Fspan><b id=\"idFound\">0 / 10<\u002Fb><\u002Fdiv><div class=\"stat\"><span>First try<\u002Fspan><b id=\"idFirst\">0<\u002Fb><\u002Fdiv><div class=\"stat\"><span>Misses<\u002Fspan><b id=\"idMiss\">0<\u002Fb><\u002Fdiv><\u002Fdiv><\u002Fdiv>\n<\u002Faside>\n<main class=\"card\">\n<div style=\"display:flex;justify-content:space-between;align-items:start;gap:10px\"><div><h3 id=\"mainTitle\">Read the micrometer<\u002Fh3><div id=\"mainSub\" style=\"font-size:13px;color:#aeb8c6\">1.0000″ base + sleeve + thimble + vernier<\u002Fdiv><\u002Fdiv><span class=\"pill\" id=\"pill\">1–2″ RANGE • .0001″ VERNIER<\u002Fspan><\u002Fdiv>\n<div class=\"stage\">\n<svg id=\"mainSvg\" viewBox=\"0 90 1050 400\" aria-label=\"vernier micrometer\">\n<defs>\n<linearGradient id=\"frame\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop stop-color=\"#353535\"><\u002Fstop><stop offset=\".35\" stop-color=\"#111\"><\u002Fstop><stop offset=\".7\" stop-color=\"#272727\"><\u002Fstop><stop offset=\"1\" stop-color=\"#080808\"><\u002Fstop><\u002FlinearGradient>\n<linearGradient id=\"steel\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop stop-color=\"#fff\"><\u002Fstop><stop offset=\".18\" stop-color=\"#b8bec2\"><\u002Fstop><stop offset=\".36\" stop-color=\"#f7f7f4\"><\u002Fstop><stop offset=\".58\" stop-color=\"#8d969b\"><\u002Fstop><stop offset=\".75\" stop-color=\"#f5f5f1\"><\u002Fstop><stop offset=\"1\" stop-color=\"#9da5aa\"><\u002Fstop><\u002FlinearGradient>\n<linearGradient id=\"steelH\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\"><stop stop-color=\"#626b70\"><\u002Fstop><stop offset=\".2\" stop-color=\"#fafafa\"><\u002Fstop><stop offset=\".5\" stop-color=\"#a7afb3\"><\u002Fstop><stop offset=\".72\" stop-color=\"#fff\"><\u002Fstop><stop offset=\"1\" stop-color=\"#778187\"><\u002Fstop><\u002FlinearGradient>\n<pattern id=\"knurl\" width=\"9\" height=\"9\" patternUnits=\"userSpaceOnUse\"><path d=\"M-2 9L9-2M0-2L11 9\" stroke=\"#62686b\" stroke-width=\"1.2\"><\u002Fpath><\u002Fpattern>\n<filter id=\"shadow\" x=\"-20%\" y=\"-20%\" width=\"150%\" height=\"160%\"><feDropShadow dx=\"0\" dy=\"9\" stdDeviation=\"8\" flood-opacity=\".25\"><\u002FfeDropShadow><\u002Ffilter>\n<\u002Fdefs>\n<g id=\"frameG\"><path d=\"M205 150 H250 C262 150 264 216 250 216 H212 C182 218 160 248 160 292 C160 350 205 400 275 400 C345 400 402 350 404 290 L406 228 H474 L472 300 C468 405 385 470 275 470 C160 470 90 395 90 290 C90 205 140 150 205 150Z\" fill=\"url(#frame)\" stroke=\"#050505\" stroke-width=\"3\" filter=\"url(#shadow)\"><\u002Fpath>\n<path d=\"M212 166 C160 170 112 215 110 290 C108 380 185 450 275 450 C370 450 448 390 452 300 L454 244 M424 244 L422 292 C420 362 355 420 275 420 C190 420 138 360 140 290 C142 232 172 200 212 198\" fill=\"none\" stroke=\"#6a6f73\" stroke-width=\"2.5\" opacity=\".55\"><\u002Fpath>\n<path d=\"M200 158 C150 162 102 205 98 280\" fill=\"none\" stroke=\"#fff\" stroke-width=\"4\" stroke-linecap=\"round\" opacity=\".18\"><\u002Fpath>\n<ellipse cx=\"280\" cy=\"435\" rx=\"58\" ry=\"20\" fill=\"#f5f5f2\" stroke=\"#bbb\"><\u002Fellipse>\n<image href=\"992ca24d-82ef-42ee-b6af-5c9b72279f58\" x=\"234\" y=\"425\" width=\"24\" height=\"20\"><\u002Fimage>\n<text x=\"290\" y=\"436\" text-anchor=\"middle\" font-size=\"15\" font-weight=\"800\" font-style=\"italic\" fill=\"#111\">Kilsar<\u002Ftext>\n<text id=\"badgeTxt\" x=\"290\" y=\"448\" text-anchor=\"middle\" font-size=\"8\" font-weight=\"700\" fill=\"#111\">1–2 IN · .0001<\u002Ftext><\u002Fg>\n<g id=\"anvilG\"><\u002Fg>\n<!-- moving spindle -->\n<g id=\"movingSpindle\"><rect x=\"300\" y=\"166\" width=\"218\" height=\"37\" rx=\"5\" fill=\"url(#steelH)\" stroke=\"#454b4f\" stroke-width=\"2\"><\u002Frect><rect x=\"300\" y=\"163\" width=\"10\" height=\"43\" rx=\"2\" fill=\"#333\"><\u002Frect><\u002Fg>\n<!-- barrel support and lock -->\n<path d=\"M445 140 H560 V230 H404 C404 190 420 140 445 140Z\" fill=\"url(#frame)\" stroke=\"#050505\" stroke-width=\"3\"><\u002Fpath>\n<path d=\"M458 150 H550\" stroke=\"#fff\" stroke-width=\"3\" opacity=\".18\" stroke-linecap=\"round\"><\u002Fpath>\n<rect x=\"543\" y=\"130\" width=\"30\" height=\"110\" rx=\"6\" fill=\"#151515\" stroke=\"#050505\" stroke-width=\"2\"><\u002Frect><rect x=\"543\" y=\"130\" width=\"30\" height=\"110\" rx=\"6\" fill=\"url(#knurl)\" opacity=\".6\"><\u002Frect>\n<rect x=\"495\" y=\"128\" width=\"24\" height=\"14\" rx=\"3\" fill=\"#151515\" stroke=\"#050505\"><\u002Frect><rect x=\"495\" y=\"128\" width=\"24\" height=\"14\" rx=\"3\" fill=\"url(#knurl)\" opacity=\".6\"><\u002Frect>\n<!-- sleeve scale -->\n<g id=\"sleeveGroup\"><rect x=\"565\" y=\"128\" width=\"210\" height=\"116\" fill=\"url(#steel)\" stroke=\"#555\"><\u002Frect><line id=\"datum\" x1=\"579\" y1=\"188\" x2=\"750\" y2=\"188\" stroke=\"#202020\" stroke-width=\"2\"><\u002Fline><g id=\"sleeveTicks\"><\u002Fg>\n<!-- vernier -->\n<g id=\"vernierTicks\"><\u002Fg><\u002Fg>\n<!-- moving thimble/ratchet -->\n<g id=\"thimbleGroup\">\n<path d=\"M750 137 L786 123 H920 V250 H786 L750 235Z\" fill=\"url(#steel)\" stroke=\"#555\" stroke-width=\"2\"><\u002Fpath>\n<g id=\"thimbleTicks\"><\u002Fg>\n<rect x=\"846\" y=\"123\" width=\"74\" height=\"127\" fill=\"url(#knurl)\" opacity=\".72\"><\u002Frect>\n<rect x=\"920\" y=\"165\" width=\"34\" height=\"42\" fill=\"#1a1a1a\" stroke=\"#050505\"><\u002Frect><rect x=\"950\" y=\"151\" width=\"50\" height=\"70\" rx=\"8\" fill=\"#151515\" stroke=\"#050505\" stroke-width=\"2\"><\u002Frect><rect x=\"950\" y=\"151\" width=\"50\" height=\"70\" rx=\"8\" fill=\"url(#knurl)\" opacity=\".7\"><\u002Frect>\n<\u002Fg>\n<!-- blue index reference -->\n<g id=\"readGroup\"><g id=\"readHere\">\n<line x1=\"744\" y1=\"119\" x2=\"744\" y2=\"253\" stroke=\"#1264d8\" stroke-width=\"4\"><\u002Fline>\n<polygon points=\"735,117 753,117 744,130\" fill=\"#1264d8\"><\u002Fpolygon>\n<text x=\"744\" y=\"108\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"700\" fill=\"#1264d8\">READ HERE<\u002Ftext>\n<\u002Fg>\n<g id=\"gapDim\"><\u002Fg>\n<text id=\"gapLabel\" x=\"282\" y=\"256\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"800\" fill=\"#fff\" stroke=\"#111\" stroke-width=\"3\" paint-order=\"stroke\"><\u002Ftext><\u002Fg>\n<g id=\"hotspots\"><\u002Fg>\n<\u002Fsvg><\u002Fdiv>\n<div id=\"zoomWrap\" style=\"margin-top:12px\"><div class=\"label\" style=\"margin-top:0\">Magnified scale<\u002Fdiv><div class=\"zoom\"><svg viewBox=\"0 0 1000 330\" aria-label=\"magnified scale\">\n<rect x=\"20\" y=\"70\" width=\"580\" height=\"240\" fill=\"#e6e9ed\"><\u002Frect><rect x=\"600\" y=\"40\" width=\"380\" height=\"280\" fill=\"#dfe3e8\"><\u002Frect>\n<text x=\"310\" y=\"28\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#607086\">SLEEVE<\u002Ftext><text x=\"670\" y=\"28\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#607086\">VERNIER<\u002Ftext><text x=\"790\" y=\"28\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#607086\">THIMBLE<\u002Ftext>\n<line x1=\"20\" y1=\"230\" x2=\"600\" y2=\"230\" stroke=\"#222\" stroke-width=\"3\"><\u002Fline><g id=\"zoomSleeve\"><\u002Fg><g id=\"zoomVernier\"><\u002Fg><g id=\"zoomThimble\"><\u002Fg>\n<line x1=\"600\" y1=\"40\" x2=\"600\" y2=\"320\" stroke=\"#1264d8\" stroke-width=\"5\"><\u002Fline>\n<\u002Fsvg><\u002Fdiv><\u002Fdiv>\n<div id=\"learn\" class=\"learn\"><b>Learn Mode — exact breakdown<\u002Fb><div class=\"breakdown\"><div>Base<b id=\"lb\">1.0000″<\u002Fb><\u002Fdiv><div>Sleeve<b id=\"ls\">—<\u002Fb><\u002Fdiv><div>Thimble<b id=\"lt\">—<\u002Fb><\u002Fdiv><div>Vernier<b id=\"lv\">—<\u002Fb><\u002Fdiv><div>Total<b id=\"lTotal\">—<\u002Fb><\u002Fdiv><\u002Fdiv><\u002Fdiv>\n<div id=\"idbar\" class=\"idbar\"><div class=\"q\" id=\"idQ\">Click the <b>Thimble<\u002Fb><\u002Fdiv><div class=\"row\" id=\"idBtns\"><button id=\"idSkip\" class=\"btn\" type=\"button\">Skip<\u002Fbutton><button id=\"idShow\" class=\"btn\" type=\"button\">Show all labels<\u002Fbutton><button id=\"idRestart\" class=\"btn\" type=\"button\">Restart<\u002Fbutton><\u002Fdiv><\u002Fdiv>\n<form id=\"form\" class=\"answer\"><input id=\"ans\" inputmode=\"decimal\" placeholder=\"Enter reading, e.g. 1.2792\"><button class=\"btn submit\">Submit<\u002Fbutton><\u002Fform>\n<div id=\"fb\" class=\"feedback\"><\u002Fdiv>\n<div class=\"help\" id=\"help\"><span id=\"helpBase\">A 1–2″ micrometer starts at <b>1.0000″<\u002Fb>.<\u002Fspan> Add the last sleeve line visible at the thimble edge (.025″ each; numbers = .100″), the last thimble line at or just below the datum (.001″ each), and the vernier line that lines up exactly with a thimble line (.0001″ each).<\u002Fdiv>\n<\u002Fmain><\u002Fdiv><\u002Fdiv>\n<script>\n(()=>{\nconst $=x=>document.getElementById(x),NS='http://www.w3.org/2000/svg';\nlet qType='read',pTarget=null,pAnswered=false,rA=0,rC=0,pA=0,pC=0;\nconst SIZES={'0-1':{min:0,max:1,anv:[0],k:.85},'1-2':{min:1,max:2,anv:[1],k:1},'2-4':{min:2,max:4,anv:[2,3],k:1.2},'3-6':{min:3,max:6,anv:[3,4,5],k:1.55}};\nlet size='1-2',anvil=1;const SZ=()=>SIZES[size],lab=()=>SZ().min+'–'+SZ().max+'″',geo={k:1,tipR:255,face:300};\nlet inc=2792,mode='practice',difficulty='medium',att=0,cor=0; // increment above 1 inch, in .0001\nfunction components(){\n let thousandths=Math.floor(inc/10), ver=inc%10;\n let sleeve=Math.floor(thousandths/25)*25;\n let thimble=thousandths-sleeve;\n return {sleeve,thimble,ver,total:anvil+inc/10000};\n}\nfunction line(g,x1,y1,x2,y2,w=1,c='#222'){let e=document.createElementNS(NS,'line');Object.entries({x1,y1,x2,y2}).forEach(([k,v])=>e.setAttribute(k,v));e.setAttribute('stroke',c);e.setAttribute('stroke-width',w);g.appendChild(e)}\nfunction txt(g,x,y,t,sz=13,a='middle',wt='400',c='#222'){let e=document.createElementNS(NS,'text');e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('font-size',sz);e.setAttribute('text-anchor',a);e.setAttribute('font-weight',wt);e.setAttribute('fill',c);e.textContent=t;g.appendChild(e)}\nfunction render(){\n let p=components(),r=inc/10,f=(inc%10)/10,L=mode==='learn';\n let travel=(inc/9999)*115,tt=travel*.16,edge=750+tt;\n $('movingSpindle').setAttribute('transform','translate('+travel+',0)');\n $('thimbleGroup').setAttribute('transform','translate('+tt+',0)');\n $('readHere').setAttribute('transform','translate('+(edge-744)+',0)');\n $('datum').setAttribute('x2',edge);\n // sleeve ticks are placed relative to the thimble edge, which sits at the true reading\n let sg=$('sleeveTicks');sg.innerHTML='';\n for(let n=Math.floor(r/25)*25;n>=0;n-=25){let x=edge-(r-n)/25*20;if(x<582)break;let mj=n%100===0,md=n%50===0;line(sg,x,188,x,mj?151:md?158:165,mj?2:1.2);if(mj)txt(sg,x,145,n/100,12)}\n // vernier: 10 divisions span 9 thimble divisions; 0 line is the datum, numbered upward\n const s=6,vs=.9*s;let vg=$('vernierTicks');vg.innerHTML='';\n for(let i=0;i<=10;i++){let y=188-i*vs,hi=L&&i===p.ver;line(vg,edge-16,y,edge,y,hi?2.5:1,hi?'#b42318':'#222');if(i%5===0)txt(vg,edge-19,y+3,i%10,8,'end')}\n // thimble: numbers increase upward; scale rotated by the vernier fraction\n let tg=$('thimbleTicks');tg.innerHTML='';\n for(let k=-9;k<=10;k++){let y=188-(k-f)*s;if(y<128||y>246)continue;let n=((p.thimble+k)%25+25)%25,hi=L&&k===p.ver;line(tg,752,y,n%5===0?774:764,y,hi?2.5:n%5===0?1.6:1,hi?'#b42318':'#222');if(n%5===0)txt(tg,778,y+4,n,10,'start','700')}\n // magnified view\n let zs=$('zoomSleeve');zs.innerHTML='';\n for(let n=Math.floor(r/25)*25;n>=0;n-=25){let x=600-(r-n)/25*64;if(x<30)break;let mj=n%100===0,md=n%50===0;line(zs,x,230,x,mj?150:md?172:192,mj?3.5:2.2);if(mj)txt(zs,x,138,n/100,28,'middle','700')}\n let zv=$('zoomVernier');zv.innerHTML='';\n for(let i=0;i<=10;i++){let y=230-i*18,hi=L&&i===p.ver;line(zv,630,y,712,y,hi?4:2,hi?'#b42318':'#222');txt(zv,622,y+5,i%10,15,'end',hi?'700':'600',hi?'#b42318':'#222')}\n let zt=$('zoomThimble');zt.innerHTML='';\n for(let k=-5;k<=10;k++){let y=230-(k-f)*20;if(y<45||y>316)continue;let n=((p.thimble+k)%25+25)%25,hi=L&&k===p.ver;line(zt,712,y,n%5===0?784:752,y,hi?4:n%5===0?3:2,hi?'#b42318':'#222');if(n%5===0)txt(zt,794,y+9,n,26,'start','700',hi?'#b42318':'#222')}\n renderFrame(travel);\n $('lb').textContent=anvil.toFixed(4)+'″';\n $('ls').textContent=(p.sleeve/1000).toFixed(3)+'″';\n $('lt').textContent=(p.thimble/1000).toFixed(3)+'″';\n $('lv').textContent=(p.ver/10000).toFixed(4)+'″';\n $('lTotal').textContent=p.total.toFixed(4)+'″';\n $('gapLabel').textContent=mode==='learn' ? 'Gap: '+p.total.toFixed(4)+'″' : '';\n $('learn').classList.toggle('show',mode==='learn');\n $('learnCtl').style.display=mode==='learn'?'block':'none';\n let part=mode==='practice'&&qType==='part';\n $('form').style.display=mode==='practice'&&!part?'flex':'none';\n $('new').textContent=mode==='practice'?'Next Question':'New Random Reading';\n let idm=mode==='identify',id=idm||part;\n $('idBtns').style.display=idm?'':'none';\n $('readGroup').style.display=id?'none':'';$('zoomWrap').style.display=id?'none':'';$('anvilCtl').style.display=!idm&&SZ().anv.length>1?'block':'none';$('anvilTag')&&($('anvilTag').style.display=id?'none':'');\n $('readCtl').style.display=idm?'none':'block';\n $('readStats').style.display=idm?'none':'block';$('idStats').style.display=idm?'block':'none';\n $('idbar').style.display=id?'flex':'none';$('help').style.display=id?'none':'block';\n $('mainTitle').textContent=part?'Identify the part':idm?'Identify the parts':'Read the micrometer';\n $('mainSub').textContent=part?'Click the marker on the named part':idm?'Click the numbered marker on the named part':anvil.toFixed(4)+'″ base + sleeve + thimble + vernier';\n $('pill').textContent=lab()+' RANGE • .0001″ VERNIER';\n $('ans').placeholder='Enter reading, e.g. '+(anvil+.2792).toFixed(4);\n $('helpBase').innerHTML=SZ().anv.length>1?'This '+lab()+' micrometer uses interchangeable anvils. With the <b>'+anvil+'″ anvil<\u002Fb> installed, readings start at <b>'+anvil.toFixed(4)+'″<\u002Fb>.':'A '+lab()+' micrometer starts at <b>'+anvil.toFixed(4)+'″<\u002Fb>.';\n document.querySelectorAll('#anvilRow .btn').forEach(b=>b.classList.toggle('active',+b.dataset.a===anvil));\n if(id)$('gapLabel').textContent='';\n renderHot(travel);\n}\nfunction renderFrame(travel){\n const S=SZ(),k=S.k,tipR=404-(404-258)*k,face=300-(anvil-S.anv[0])*55;geo.k=k;geo.tipR=tipR;geo.face=face;\n $('frameG').setAttribute('transform','translate(404,230) scale('+k+') translate(-404,-230)');\n $('badgeTxt').textContent=S.min+'–'+S.max+' IN · .0001';\n const left=Math.min(0,404-314*k-20),bottom=Math.max(490,230+240*k+20);\n $('mainSvg').setAttribute('viewBox',left+' 90 '+(1050-left)+' '+(bottom-90));\n let g=$('anvilG');g.innerHTML='';\n el('rect',{x:tipR-16,y:160,width:22,height:48,rx:3,fill:'url(#steel)',stroke:'#555'},g);\n el('rect',{x:tipR+6,y:171,width:Math.max(0,face-8-tipR-6),height:26,fill:'url(#steelH)',stroke:'#454b4f'},g);\n el('rect',{x:face-10,y:166,width:10,height:36,rx:2,fill:'url(#steel)',stroke:'#454b4f'},g);\n if(S.anv.length>1){let t=el('text',{id:'anvilTag',x:(tipR+face)/2,y:Math.max(108,230-80*k-8),'text-anchor':'middle','font-size':13,'font-weight':800,fill:'#fff',stroke:'#111','stroke-width':3,'paint-order':'stroke'},g);t.textContent=anvil+'″ ANVIL'}\n let d=$('gapDim');d.innerHTML='';const sx=300+travel,y=230;\n line(d,face,y,sx,y,1.5,'#6b7888');line(d,face,y-7,face,y+7,1.5,'#6b7888');line(d,sx,y-7,sx,y+7,1.5,'#6b7888');\n $('gapLabel').setAttribute('x',(face+sx)/2);\n}\nfunction setAnvil(a){anvil=a;$('fb').className='feedback';render()}\nfunction buildAnvils(){const row=$('anvilRow');row.innerHTML='';SZ().anv.forEach(a=>{let b=document.createElement('button');b.className='btn';b.dataset.a=a;b.textContent=a+'″';b.onclick=()=>setAnvil(a);row.appendChild(b)})}\ndocument.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{size=t.dataset.size;anvil=SZ().anv[0];document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));buildAnvils();if(mode==='identify')idStart();else if(mode==='practice'){qType='read';randomReading()}else render()});\nconst PARTS=[\n {k:'frame',n:'Frame',x:117,y:330,d:'Rigid C-shaped body that holds the anvil and barrel in fixed alignment.',lx:0,ly:34},\n {k:'anvil',n:'Anvil',x:268,y:120,d:'Fixed measuring face the part rests against. On 2–4″ and 3–6″ micrometers it’s interchangeable to set the starting size.',lx:0,ly:-18,fix:1},\n {k:'spindle',n:'Spindle',x:405,y:184,d:'Moving measuring face, advanced by the thimble screw.',lx:0,ly:-20,mv:1},\n {k:'lock',n:'Spindle lock',x:507,y:104,d:'Clamps the spindle so the reading can’t change while you read it.',lx:0,ly:-18},\n {k:'sleeve',n:'Sleeve (barrel)',x:630,y:226,d:'Stationary tube carrying the main scale and vernier.',lx:0,ly:34},\n {k:'sscale',n:'Sleeve scale',x:625,y:104,d:'Main scale in .025″ divisions, numbered every .100″.',lx:0,ly:-18},\n {k:'vernier',n:'Vernier scale',x:722,y:270,d:'Ten divisions on the sleeve that span nine thimble divisions; the line that aligns with a thimble line gives the .0001″ digit.',lx:0,ly:32},\n {k:'thimble',n:'Thimble',x:884,y:268,d:'Rotating sleeve; one turn moves the spindle .025″.',lx:0,ly:32,th:1},\n {k:'tscale',n:'Thimble scale',x:778,y:104,d:'25 graduations around the thimble, each .001″.',lx:0,ly:-18,th:1},\n {k:'ratchet',n:'Ratchet stop',x:976,y:268,d:'Slips at a set torque so every measurement uses the same pressure.',lx:0,ly:32,th:1}\n];\nlet order=[],qi=0,found=new Set(),tries=0,first=0,miss=0,showAll=false;\nfunction shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}\nfunction idStart(){inc=1500;order=shuffle(PARTS.map(p=>p.k));qi=0;found=new Set();tries=0;first=0;miss=0;showAll=false;$('fb').className='feedback';idUpdate()}\nfunction idUpdate(){\n $('idFound').textContent=found.size+' / '+PARTS.length;$('idFirst').textContent=first;$('idMiss').textContent=miss;\n while(qi<order.length&&found.has(order[qi]))qi++;\n let done=qi>=order.length;\n $('idQ').innerHTML=done?'<b>All parts identified.<\u002Fb> '+first+' of '+PARTS.length+' on the first try.':'Click the <b>'+PARTS.find(p=>p.k===order[qi]).n+'<\u002Fb>';\n $('idSkip').style.display=done?'none':'';\n $('idShow').textContent=showAll?'Hide labels':'Show all labels';\n render();\n}\nfunction el(tag,attrs,parent){let e=document.createElementNS(NS,tag);for(let k in attrs)e.setAttribute(k,attrs[k]);parent.appendChild(e);return e}\nfunction renderHot(travel){\n let g=$('hotspots');g.innerHTML='';let pm=mode==='practice'&&qType==='part';if(mode!=='identify'&&!pm)return;\n let fset=pm?(pAnswered?new Set([pTarget]):new Set()):found;\n PARTS.forEach((p,i)=>{\n  let x=p.k==='frame'?404-(404-117)*geo.k:p.k==='anvil'?Math.max(geo.tipR+12,geo.face-22):p.k==='spindle'?Math.min(390,(300+travel+404)/2):p.x+(p.mv?travel:0)+(p.th?travel*.16:0),y=p.k==='frame'?230+100*geo.k:p.y,got=fset.has(p.k),lab=got||(!pm&&showAll);\n  let tx=p.x+(p.mv?travel:0)+(p.th?travel*.16:0);\n  let a=el('g',{class:'hot'},g);\n  if(p.k==='anvil'||p.k==='lock'||p.k==='tscale'||p.k==='sscale'){el('line',{x1:x,y1:y+11,x2:x,y2:p.k==='anvil'?150:p.k==='lock'?128:p.k==='sscale'?160:132,stroke:got?'#168447':'#1264d8','stroke-width':2},a)}\n  if(p.k==='vernier'||p.k==='thimble'||p.k==='ratchet'){el('line',{x1:x,y1:y-11,x2:x,y2:p.k==='vernier'?232:246,stroke:got?'#168447':'#1264d8','stroke-width':2},a)}\n  el('circle',{cx:x,cy:y,r:13,fill:got?'#168447':'#172033',stroke:'#fff','stroke-width':2.5,class:got?'':'dot'},a);\n  let t=el('text',{x,y:y+5,'text-anchor':'middle','font-size':13,'font-weight':700,fill:'#fff','pointer-events':'none'},a);t.textContent=got?'✓':i+1;\n  if(lab){let l=el('text',{x:x+p.lx,y:y+p.ly,'text-anchor':'middle','font-size':14,'font-weight':700,fill:got?'#0f5e32':'#172033',stroke:'#fff','stroke-width':4,'paint-order':'stroke','pointer-events':'none'},a);l.textContent=p.n}\n  a.onclick=()=>pm?pClick(p):idClick(p);\n });\n}\nfunction idClick(p){\n if(qi>=order.length||found.has(p.k))return;\n let target=PARTS.find(q=>q.k===order[qi]),fb=$('fb');\n if(p.k===target.k){found.add(p.k);if(tries===0)first++;tries=0;qi++;fb.className='feedback good';fb.innerHTML='<b>Correct — '+p.n+'.<\u002Fb> '+p.d}\n else{tries++;miss++;fb.className='feedback bad';fb.innerHTML='<b>That’s the '+p.n+'.<\u002Fb> '+p.d+' Try again for the '+target.n+'.'}\n idUpdate();\n}\n$('idSkip').onclick=()=>{if(qi<order.length){order.push(order.splice(qi,1)[0]);tries=0;$('fb').className='feedback';idUpdate()}};\n$('idShow').onclick=()=>{showAll=!showAll;idUpdate()};\n$('idRestart').onclick=idStart;\nfunction score(ok,t){att++;if(ok)cor++;if(t==='read'){rA++;if(ok)rC++}else{pA++;if(ok)pC++}\n $('att').textContent=att;$('cor').textContent=cor;$('acc').textContent=Math.round(cor/att*100)+'%';$('sRead').textContent=rC+' / '+rA;$('sPart').textContent=pC+' / '+pA}\nfunction newQuestion(){\n if(mode!=='practice'){randomReading();return}\n qType=Math.random()<.5?'part':'read';\n if(qType==='read'){randomReading();return}\n let ks=PARTS.map(x=>x.k).filter(k=>k!==pTarget);pTarget=ks[Math.floor(Math.random()*ks.length)];pAnswered=false;\n inc=1500;$('fb').className='feedback';$('idQ').innerHTML='Click the <b>'+PARTS.find(x=>x.k===pTarget).n+'<\u002Fb>';render();\n}\nfunction pClick(p){\n if(pAnswered)return;pAnswered=true;let t=PARTS.find(x=>x.k===pTarget),ok=p.k===pTarget,fb=$('fb');score(ok,'part');\n fb.className='feedback '+(ok?'good':'bad');\n fb.innerHTML=ok?'<b>Correct — '+t.n+'.<\u002Fb> '+t.d:'<b>Incorrect. You clicked the '+p.n+'.<\u002Fb> The '+t.n+' is highlighted in green. '+t.d;\n render();\n}\nfunction randomReading(){\n let sleeveSteps,th,v;\n if(difficulty==='easy'){sleeveSteps=Math.floor(Math.random()*40);th=[0,5,10,15,20][Math.floor(Math.random()*5)];v=[0,5][Math.floor(Math.random()*2)]}\n else {sleeveSteps=Math.floor(Math.random()*40);th=Math.floor(Math.random()*25);v=Math.floor(Math.random()*10)}\n inc=sleeveSteps*250+th*10+v;\n const A=SZ().anv;if(A.length>1)anvil=A[Math.floor(Math.random()*A.length)];\n if(inc>9999) inc=9999;\n $('ans').value='';$('fb').className='feedback';render();\n}\ndocument.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('active',x===b));if(mode==='practice')newQuestion();else if(mode==='identify')idStart();else{$('fb').className='feedback';render()}});\ndocument.querySelectorAll('.diff').forEach(b=>b.onclick=()=>{difficulty=b.dataset.d;document.querySelectorAll('.diff').forEach(x=>x.classList.toggle('active',x===b));qType='read';randomReading()});\n$('new').onclick=newQuestion;\nfunction adj(n){inc=Math.max(0,Math.min(9999,inc+n));render()}\n$('m25').onclick=()=>adj(-250);$('m1').onclick=()=>adj(-10);$('p1').onclick=()=>adj(10);$('p25').onclick=()=>adj(250);\n$('form').onsubmit=e=>{e.preventDefault();let n=Number($('ans').value.trim().replace(/[″\"]/g,'')),p=components(),fb=$('fb');if(!Number.isFinite(n)){fb.className='feedback bad';fb.innerHTML='<b>Enter a decimal measurement.<\u002Fb> Example: '+(anvil+.2792).toFixed(4);return}let ok=Math.abs(n-p.total)<0.00005;score(ok,'read');fb.className='feedback '+(ok?'good':'bad');fb.innerHTML=(ok?'<b>Correct: '+p.total.toFixed(4)+'″<\u002Fb>':'<b>Incorrect. Correct reading: '+p.total.toFixed(4)+'″<\u002Fb>')+'<br>'+anvil.toFixed(4)+' + '+(p.sleeve/1000).toFixed(3)+' + '+(p.thimble/1000).toFixed(3)+' + '+(p.ver/10000).toFixed(4)+' = '+p.total.toFixed(4)+'″';};\nbuildAnvils();randomReading();\n})();\n<\u002Fscript><\u002Fbody><\u002Fhtml>"
+  </script>
+</body>
+</html>

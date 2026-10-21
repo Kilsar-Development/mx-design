@@ -1,0 +1,79 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "openai/gpt-6.1-sol",
+  "default_agent": "pair",
+  "instructions": [
+    ".opencode/rules/operating-contract.md",
+    ".opencode/rules/testing-value.md"
+  ],
+  "provider": {
+    "openai": {
+      "models": {
+        "gpt-6.1-sol": {
+          "limit": {
+            "context": 1148000,
+            "input": 1020000,
+            "output": 128000
+          }
+        }
+      }
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": false,
+    "reserved": 20000
+  },
+  "permission": {
+    "external_directory": {
+      "*": "ask",
+      "../mx-design/**": "allow",
+      "~/.pub-cache/**": "allow",
+      "/var/folders/**/T/opencode/**": "allow"
+    },
+    "bash": {
+      "*": "allow",
+      "curl*": "deny",
+      "wget*": "deny",
+      "nc *": "deny",
+      "ncat*": "deny",
+      "rm -rf*": "deny",
+      "shred*": "deny",
+      "truncate*": "deny",
+      "sudo*": "deny",
+      "su *": "deny",
+      "chmod 777*": "deny",
+      "chown*": "deny",
+      "ssh*": "deny",
+      "scp*": "deny",
+      "rsync*": "deny",
+      "git reset --hard*": "deny",
+      "git clean -fd*": "deny",
+      "git worktree*": "deny",
+      "git push *--force*": "deny",
+      "git push *--force-with-lease*": "deny",
+      "git push -f*": "deny",
+      "git push *--delete*": "deny",
+      "git push * :*": "deny",
+      "gh pr merge*": "deny",
+      "gh pr close*": "deny",
+      "gh repo delete*": "deny",
+      "gh * delete*": "deny",
+      "gh api -X DELETE*": "deny",
+      "gh api --method DELETE*": "deny",
+      "gh api * -X DELETE*": "deny",
+      "gh api * --method DELETE*": "deny",
+      "docker system prune*": "deny",
+      "docker volume rm*": "deny",
+      "docker volume prune*": "deny",
+      "docker compose *down *-v*": "deny",
+      "docker compose down *-v*": "deny",
+      "docker-compose *down *-v*": "deny",
+      "terraform destroy*": "deny",
+      "terraform *-destroy*": "deny",
+      "pip install *--index-url*": "deny",
+      "python -m pip install *--index-url*": "deny",
+      "python3 -m pip install *--index-url*": "deny"
+    }
+  }
+}

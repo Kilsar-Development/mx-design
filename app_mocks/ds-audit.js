@@ -26,7 +26,7 @@ const css = await readFile(DS);
 const defined = new Set([...css.matchAll(/(--kls-[a-z0-9-]+)\s*:/gi)].map(m => m[1].toLowerCase()));
 const SCALE = new Set([4, 6, 12, 20, 32, 64]);
 const SKIP = /(ios|android)-frame\.jsx$/;
-const SKIP_DIR = /^(_ds|assets|fonts|uploads|screenshots)$/;
+const SKIP_DIR = /^(_ds|assets|fonts|uploads|screenshots|simulators)$/;
 
 // ── Check 4: canonical component dimensions (from preview/*.html spec cards) ──
 // sig:      a regex that, when matched, anchors a candidate style object.

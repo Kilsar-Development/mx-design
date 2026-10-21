@@ -269,14 +269,15 @@ function Header({ systemMessage = null, unread = 0, onAvatar, onBell, onSearch, 
 // `flavor` swaps labels via WorkspaceSettings overrides (termsKey / ticketsKey
 // / coursesKey / assignmentsKey). The icon set is identical across flavors.
 const FLAVOR_LABELS = {
-  education:  { terms: "Catalog",   tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
-  commercial: { terms: "Cases",     tickets: "Tickets", library: "Library", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
+  education:  { terms: "Catalog",   tickets: "Tickets", library: "Library", training: "Training", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
+  commercial: { terms: "Cases",     tickets: "Tickets", library: "Library", training: "Training", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
 };
 
 const SIDEBAR_TABS_BASE = [
   { key: "terms",         icon: "tabs/home" },
   { key: "tickets",       icon: "checkpoint" },
   { key: "library",       icon: "tabs/library" },
+  { key: "training",      symbol: "school" },
   { key: "oralExams",     icon: "chatBubbles" },
   { key: "inventory",     icon: "cube" },
   { key: "assistant",     icon: "orionOutline" },
@@ -521,6 +522,7 @@ const CT_TYPES = {
   task:    { label: "Task",         short: "Task",    icon: "worklog",     passFail: false, dot: "var(--kls-color-purple-400)" },
   oral:    { label: "Oral exam",    short: "Oral",    icon: "chatBubbles", passFail: true,  dot: "var(--kls-color-teal-200)" },
   written: { label: "Written exam", short: "Written", icon: "checkpoint",  passFail: true,  dot: "var(--kls-color-red-100)" },
+  simulator: { label: "Simulator",  short: "Sim",     icon: "worklog", symbol: "school", passFail: false, dot: "var(--kls-color-purple-200)" },
 };
 
 // ── Roster ──────────────────────────────────────────────────────────────────
@@ -571,6 +573,7 @@ const CT_TASK_LIBRARY = {
 const CT_EXAM_TITLES = {
   oral:    ["Engine Run-Up Oral", "Landing Gear Inspection Oral", "Sheet Metal Repair Oral"],
   written: ["FAA Regulations Written", "Turbine Theory Written", "Electrical Systems Written"],
+  simulator: ["Six-Pack Flight Instruments", "Turbocharger System", "Circuit Trainer"],
 };
 
 // ── Generate assignment instances (deterministic) ────────────────────────────
@@ -578,13 +581,18 @@ const CT_DUE_PAST = ["Sep 28", "Oct 02", "Oct 09"];
 const CT_DUE_FUTURE = ["Nov 14", "Nov 21", "Dec 03", "Dec 12"];
 const CT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "in_progress", "completed", "not_started", "in_progress"];
 
+// Seeded simulator assignments reference TRAINING_SIMS by id (titles mirrored so seeding doesn't depend on load order).
+const CT_SIM_SEED = [
+  { id: "six-pack", title: "Six-Pack Flight Instruments" }, { id: "turbocharger", title: "Turbocharger System" },
+  { id: "circuit-trainer", title: "Circuit Trainer" }, { id: "micrometer", title: "Micrometer" }, { id: "vapor-cycle", title: "Vapor Cycle Cooling" },
+];
 function ctBuildAssignments() {
   const out = [];
   let id = 0;
   CT_STUDENTS.forEach((s, si) => {
     const n = 4 + (si % 3); // 4–6 each
     for (let k = 0; k < n; k++) {
-      const type = ["task", "oral", "written"][(si + k) % 3];
+      const type = k === 3 ? "simulator" : ["task", "oral", "written"][(si + k) % 3];
       let status = CT_STATUS_CYCLE[(si * 2 + k) % CT_STATUS_CYCLE.length];
 
       let title, course, term;
@@ -601,10 +609,16 @@ function ctBuildAssignments() {
         title = pool[(si + k) % pool.length];
       }
 
+      let simulators;
+      if (type === "simulator") {
+        const sim = CT_SIM_SEED[si % CT_SIM_SEED.length];
+        title = sim.title; simulators = [sim.id]; course = "Training";
+        if (status === "overdue") status = "in_progress";
+      }
       const due = status === "overdue" ? CT_DUE_PAST[(si + k) % CT_DUE_PAST.length] : CT_DUE_FUTURE[(si + k) % CT_DUE_FUTURE.length];
-      const score = (status === "completed" && type !== "task") ? 55 + ((si + k * 7) % 42) : null;
+      const score = (status === "completed" && type !== "task" && type !== "simulator") ? 55 + ((si + k * 7) % 42) : null;
 
-      out.push({ id: "a" + (id++), studentId: s.id, type, title, course, term, due, status, score });
+      out.push({ id: "a" + (id++), studentId: s.id, type, title, course, term, due, status, score, ...(simulators ? { simulators } : {}) });
     }
   });
   return out;
@@ -621,14 +635,19 @@ function ctBuildAllocations() {
     const members = ctGroupMembers(g);
     const n = 3 + (gi % 2); // 3–4 allocations per group
     for (let k = 0; k < n; k++) {
-      const type = ["task", "oral", "written"][(gi + k) % 3];
-      let title, course, term;
+      const type = k === 2 ? "simulator" : ["task", "oral", "written"][(gi + k) % 3];
+      let title, course, term, simulators;
       if (type === "task") {
         term = CT_TERMS[(gi + k) % CT_TERMS.length];
         const courses = CT_COURSES[term];
         course = courses[(gi + k) % courses.length];
         const lib = CT_TASK_LIBRARY[course];
         title = lib[k % lib.length];
+      } else if (type === "simulator") {
+        term = CT_TERMS[k % CT_TERMS.length];
+        course = "Training";
+        const sim = CT_SIM_SEED[(gi + 1) % CT_SIM_SEED.length];
+        title = sim.title; simulators = [sim.id];
       } else {
         term = CT_TERMS[k % CT_TERMS.length];
         course = "Open-ended";
@@ -640,10 +659,10 @@ function ctBuildAllocations() {
       const assigned = CT_ASSIGNED[(gi + k) % CT_ASSIGNED.length];
       const instances = members.map((m, mi) => {
         let status = CT_STATUS_CYCLE[(gi * 2 + k + mi) % CT_STATUS_CYCLE.length];
-        const score = (status === "completed" && type !== "task") ? 55 + ((mi + k * 7) % 42) : null;
+        const score = (status === "completed" && type !== "task" && type !== "simulator") ? 55 + ((mi + k * 7) % 42) : null;
         return { studentId: m.id, status, score };
       });
-      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances,
+      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances, ...(simulators ? { simulators } : {}),
         settings: { allowResubmission: type !== "task", notifyOverdue: true } });
     }
   });
@@ -674,6 +693,12 @@ function CTAvatar({ name, size = 40 }) {
       fontFamily: "var(--kls-font-sans)", fontWeight: 700, fontSize: Math.round(size * 0.36),
     }}>{ctInitials(name)}</div>
   );
+}
+
+// Type glyph — PNG icon, or Material Symbol when the type declares one (Simulator).
+function CTTypeIcon({ type, size = 18, color = "var(--kls-on-surface-variant)" }) {
+  const T = CT_TYPES[type] || CT_TYPES.task;
+  return T.symbol ? <MSGlyph name={T.symbol} size={size} color={color} /> : <KlsIcon name={T.icon} size={size} color={color} />;
 }
 
 function CTStatusPill({ status, size = "md" }) {
@@ -932,7 +957,7 @@ function AllocationRow({ alloc, onOpen, onMenu }) {
       <td style={{ ...CT_TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-            <KlsIcon name={T.icon} size={16} color="var(--kls-on-surface-variant)" />
+            <CTTypeIcon type={alloc.type} size={16} />
           </span>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{alloc.title}</div>
@@ -1274,6 +1299,7 @@ function ctParseDue(s) {
 }
 const CT_TODAY = new Date(2024, 10, 18); // Nov 18, 2024 — "today" for the demo
 function ctActionLabel(status, type) {
+  if (type === "simulator") return status === "completed" ? "Open again" : status === "not_started" ? "Open simulator" : "Continue";
   if (status === "completed") return type === "task" ? "View submission" : "View result";
   if (status === "not_started") return "Start";
   if (status === "overdue") return "Start now";
@@ -1325,7 +1351,7 @@ function StudentTypeGlyph({ type, size = 40 }) {
   return (
     <span style={{ flexShrink: 0, width: size, height: size, borderRadius: 12, background: "var(--kls-tertiary)",
       display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-      <KlsIcon name={T.icon} size={Math.round(size * 0.45)} color="var(--kls-on-surface-variant)" />
+      <CTTypeIcon type={type} size={Math.round(size * 0.45)} />
     </span>
   );
 }
@@ -1500,7 +1526,7 @@ function StudentBlockRow({ block, onOpen, last }) {
   );
 }
 
-function StudentControlTower({ query = "", onNavigate }) {
+function StudentControlTower({ query = "", onNavigate, onOpenSim }) {
   const CT = window.CT;
   const ME = CT.STUDENTS[0]; // Joel Bishop — the signed-in student
   const [status, setStatus] = useCtState("all"); // all|todo|overdue|completed
@@ -1516,7 +1542,7 @@ function StudentControlTower({ query = "", onNavigate }) {
       if (!inst) return;
       const g = CT.GROUPS.find((x) => x.id === al.groupId);
       out.push({ id: al.id + "@" + ME.id, type: al.type, title: al.title, course: al.course, term: al.term,
-        due: al.due, status: inst.status, score: inst.score, instructions: al.instructions,
+        due: al.due, status: inst.status, score: inst.score, instructions: al.instructions, simulators: al.simulators,
         source: "group", groupName: g ? g.name : "Group" });
     });
     return out;
@@ -1647,12 +1673,12 @@ function StudentControlTower({ query = "", onNavigate }) {
         </div>
       </div>
 
-      {openItem && <StudentAssignmentDrawer item={openItem} onClose={() => setOpenId(null)} />}
+      {openItem && <StudentAssignmentDrawer item={openItem} onClose={() => setOpenId(null)} onOpenSim={onOpenSim} />}
     </div>
   );
 }
 
-function StudentAssignmentDrawer({ item, onClose }) {
+function StudentAssignmentDrawer({ item, onClose, onOpenSim }) {
   const CT = window.CT;
   const T = CT.TYPES[item.type];
   const [shown, setShown] = useCtState(false);
@@ -1715,11 +1741,17 @@ function StudentAssignmentDrawer({ item, onClose }) {
           <div>
             {label("Details")}
             {infoRow("Type", T.label)}
-            {item.type === "task" ? infoRow("Course", item.course) : infoRow("Term", item.term)}
+            {item.type === "task" ? infoRow("Course", item.course) : item.type === "simulator" ? null : infoRow("Term", item.term)}
             {infoRow("Assigned via", via)}
             {infoRow("Due date", item.due)}
             {showScore && infoRow("Result", `${item.score}%`)}
           </div>
+          {item.type === "simulator" && (
+            <div>
+              {label("Simulators")}
+              <CTSimList ids={item.simulators || []} onOpen={onOpenSim} />
+            </div>
+          )}
           <div>
             {label("Instructions")}
             <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>
@@ -1730,7 +1762,8 @@ function StudentAssignmentDrawer({ item, onClose }) {
 
         {/* Footer action */}
         <div style={{ padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
-          <button style={{ ...ctPrimaryBtn, width: "100%", justifyContent: "center" }}>
+          <button onClick={item.type === "simulator" && onOpenSim ? () => { const sim = TRAINING_SIMS.find((x) => (item.simulators || [])[0] === x.id); if (sim) onOpenSim(sim); } : undefined}
+            style={{ ...ctPrimaryBtn, width: "100%", justifyContent: "center" }}>
             {ctActionLabel(item.status, item.type)}
           </button>
         </div>
@@ -1792,6 +1825,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
   const [qCount, setQCount] = useCtldState(String(allocation.qCount || 20));
   const [difficulty, setDifficulty] = useCtldState(allocation.difficulty || "Medium");
   const [selModules, setSelModules] = useCtldState(() => new Set(allocation.selModules || []));
+  const [selSims, setSelSims] = useCtldState(() => new Set(allocation.simulators || []));
   const [instructions, setInstructions] = useCtldState(allocation.instructions || "");
   const [orion, setOrion] = useCtldState(allocation.orion !== false);
   const [randomized, setRandomized] = useCtldState(!!allocation.randomized);
@@ -1809,7 +1843,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
   }, [pickerOpen]);
 
   const r = CT.rollup(allocation.instances);
-  const drawerWidth = "min(500px, calc(100vw - 24px))";
+  const drawerWidth = "min(max(50vw, 500px), 960px, calc(100vw - 24px))";
   const oralTopics = (window.KILSAR_DATA && window.KILSAR_DATA.blocks) ? window.KILSAR_DATA.blocks.map((b) => b.title) : [];
   const courses = term ? (CT.COURSES[term] || []) : [];
   const tasks = course ? (CT.TASK_LIBRARY[course] || []) : [];
@@ -1817,7 +1851,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
     if (s.type === "group") { const g = (roster.groups || []).find((x) => x.id === s.id); return { ...s, label: g && g.name, color: g && g.color }; }
     const p = (roster.people || []).find((x) => x.id === s.id); return { ...s, label: p && p.name };
   }).filter((c) => c.label);
-  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : (studentDefined || examMode === "exam" || selModules.size > 0));
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || !!topic) : allocation.type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   function cancelEdit() {
     setDue(allocation.due);
@@ -1829,6 +1863,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
     setQCount(String(allocation.qCount || 20));
     setDifficulty(allocation.difficulty || "Medium");
     setSelModules(new Set(allocation.selModules || []));
+    setSelSims(new Set(allocation.simulators || []));
     setInstructions(allocation.instructions || "");
     setOrion(allocation.orion !== false);
     setRandomized(!!allocation.randomized);
@@ -1849,10 +1884,12 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
       : allocation.instances;
     const base = allocation.defaultTitle || allocation.title;
     const examSubjectName = ((FAA_EXAMS.find((e) => e.id === examSubject) || FAA_EXAMS[0]) || {}).subject || "";
+    const simList = TRAINING_SIMS.filter((x) => selSims.has(x.id));
     const defaultTitle = allocation.type === "task" ? (task || base)
-      : (allocation.type === "written" && examMode === "exam") ? examSubjectName + " Exam" : base;
+      : (allocation.type === "written" && examMode === "exam") ? examSubjectName + " Exam"
+      : allocation.type === "simulator" ? (simList.length === 1 ? simList[0].title : simList.length + " Simulators") : base;
     const ct = customTitle.trim();
-    return { ...allocation, due, defaultTitle, customTitle: ct, examMode, examSubject,
+    return { ...allocation, due, defaultTitle, customTitle: ct, examMode, examSubject, simulators: simList.map((x) => x.id),
       title: ct || defaultTitle,
       course: allocation.type === "task" ? course : allocation.course,
       term: term || allocation.term,
@@ -1886,7 +1923,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
           <span style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-            <KlsIcon name={T.icon} size={22} color="var(--kls-on-surface-variant)" />
+            <CTTypeIcon type={allocation.type} size={22} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allocation.title}</div>
@@ -1937,7 +1974,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
               <div>
                 <CTLabel>Type</CTLabel>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, height: 48, boxSizing: "border-box", padding: "0 var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface-variant)" }}>
-                  <KlsIcon name={T.icon} size={18} color="var(--kls-on-surface-variant)" />
+                  <CTTypeIcon type={allocation.type} size={18} />
                   <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{T.label}</span>
                   <span style={{ marginLeft: "auto", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Can’t be changed</span>
                 </div>
@@ -1959,6 +1996,8 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
                   <div><CTLabel>Difficulty</CTLabel><CTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
                   <CTStepper value={qCount} setValue={setQCount} />
                 </>
+              ) : allocation.type === "simulator" ? (
+                <CTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
               ) : (
                 <>
                   <CTExamModeCards mode={examMode} setMode={setExamMode} />
@@ -2018,9 +2057,15 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
               <div>
                 <CTAllocLabel>Details</CTAllocLabel>
                 {infoRow("Type", T.label)}
-                {infoRow(allocation.type === "task" ? "Course" : "Term", allocation.type === "task" ? allocation.course : allocation.term)}
+                {allocation.type === "task" ? infoRow("Course", allocation.course) : allocation.type === "simulator" ? null : infoRow("Term", allocation.term)}
                 {infoRow("Assigned", allocation.assigned)}
                 {infoRow("Due date", due)}
+                {allocation.type === "simulator" && (
+                  <div style={{ paddingTop: "var(--kls-space-small)" }}>
+                    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-xsmall)" }}>Simulators</div>
+                    <CTSimList ids={allocation.simulators || []} />
+                  </div>
+                )}
                 {allocation.instructions && (
                   <div style={{ paddingTop: "var(--kls-space-small)" }}>
                     <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: 4 }}>Instructions</div>
@@ -2147,7 +2192,7 @@ function CTToggleRow({ label, hint, checked, onChange }) {
   );
 }
 
-function CTTypeCard({ active, icon, label, sub, accent, onClick }) {
+function CTTypeCard({ active, icon, symbol, label, sub, accent, onClick }) {
   return (
     <button onClick={onClick} style={{
       flex: 1, display: "flex", flexDirection: "column", textAlign: "left", cursor: "pointer",
@@ -2157,7 +2202,7 @@ function CTTypeCard({ active, icon, label, sub, accent, onClick }) {
       transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
         <span style={{ display: "inline-flex" }}>
-          <KlsIcon name={icon} size={18} color={active ? accent : "var(--kls-on-surface)"} />
+          {symbol ? <MSGlyph name={symbol} size={18} color={active ? accent : "var(--kls-on-surface)"} /> : <KlsIcon name={icon} size={18} color={active ? accent : "var(--kls-on-surface)"} />}
         </span>
         <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-primary)" }}>{label}</span>
       </div>
@@ -2429,6 +2474,75 @@ function WrittenTopicPicker({ selModules, setSelModules, count, setCount, orion,
   );
 }
 
+// Read-only simulator rows (allocation detail / student drawer). onOpen makes rows launch the runner.
+function CTSimList({ ids, onOpen }) {
+  const sims = (ids || []).map((id) => TRAINING_SIMS.find((x) => x.id === id)).filter(Boolean);
+  if (!sims.length) return <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No simulators selected.</div>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+      {sims.map((sim) => (
+        <button key={sim.id} onClick={onOpen ? () => onOpen(sim) : undefined} disabled={!onOpen}
+          style={{ all: "unset", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-xsmall) var(--kls-space-xsmall)",
+            borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: onOpen ? "pointer" : "default" }}>
+          <span style={{ width: 64, aspectRatio: "16 / 10", borderRadius: 4, overflow: "hidden", position: "relative", flex: "none", background: "var(--kls-surface-container-low)" }}>
+            <iframe src={sim.src} title="" tabIndex={-1} scrolling="no" aria-hidden="true"
+              style={{ position: "absolute", top: 0, left: 0, width: 1280, height: 800, border: 0, transformOrigin: "0 0", transform: "scale(0.05)", pointerEvents: "none" }} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{sim.title}</span>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sim.desc}</span>
+          </span>
+          {onOpen && <MSGlyph name="play_arrow" size={20} color="var(--kls-on-surface-variant)" />}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Simulator picker for the Simulator assign flow — compact selectable grid of TRAINING_SIMS.
+function CTSimCell({ sim, selected, onClick }) {
+  const [hover, setHover] = useCtadState(false);
+  const ref = useRef(null);
+  const [w, setW] = useCtadState(200);
+  useCtadEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver((e) => setW(e[0].contentRect.width));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  const PREVIEW_W = 1280;
+  const accent = "var(--kls-accent-12)";
+  return (
+    <button onClick={onClick} aria-pressed={selected} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ all: "unset", cursor: "pointer", boxSizing: "border-box", display: "flex", flexDirection: "column", textAlign: "left", position: "relative",
+        background: selected ? `color-mix(in srgb, ${accent} 8%, transparent)` : "var(--kls-surface)",
+        border: selected ? `2px solid ${accent}` : "1.5px solid " + (hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"),
+        borderRadius: 8, overflow: "hidden", transition: "border-color var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <div ref={ref} style={{ position: "relative", width: "100%", aspectRatio: "16 / 10", background: "var(--kls-surface-container-low)", overflow: "hidden", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <iframe src={sim.src} title={sim.title + " preview"} tabIndex={-1} scrolling="no"
+          style={{ position: "absolute", top: 0, left: 0, width: PREVIEW_W, height: PREVIEW_W * 10 / 16, border: 0, transformOrigin: "0 0", transform: "scale(" + (w / PREVIEW_W) + ")", pointerEvents: "none", background: "var(--kls-surface)" }} />
+      </div>
+      <div style={{ padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-small)", display: "flex", alignItems: "flex-start", gap: "var(--kls-space-xsmall)" }}>
+        <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, lineHeight: 1.35, color: "var(--kls-on-surface)" }}>{sim.title}</div>
+        <span style={{ flex: "none", marginTop: 1 }}><CTCheck checked={selected} onClick={onClick} /></span>
+      </div>
+    </button>
+  );
+}
+function CTSimulatorPicker({ selSims, setSelSims }) {
+  const toggle = (id) => setSelSims((cur) => { const n = new Set(cur); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  return (
+    <div>
+      <CTLabel trailing={selSims.size > 0 ? (
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{selSims.size} selected</span>
+      ) : null}>Simulators</CTLabel>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "var(--kls-space-small)" }}>
+        {TRAINING_SIMS.map((sim) => <CTSimCell key={sim.id} sim={sim} selected={selSims.has(sim.id)} onClick={() => toggle(sim.id)} />)}
+      </div>
+    </div>
+  );
+}
+
 // Compact question-count stepper (oral exams; written uses the pool-aware stepper above).
 function CTStepper({ value, setValue, min = 1, max = 200 }) {
   const n = Number(value) || 0;
@@ -2458,6 +2572,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
   const [passScore, setPassScore] = useCtadState("70");
   const [instructions, setInstructions] = useCtadState("");
   const [selModules, setSelModules] = useCtadState(() => new Set());
+  const [selSims, setSelSims] = useCtadState(() => new Set());
   const [orion, setOrion] = useCtadState(true);
   const [randomized, setRandomized] = useCtadState(false);
   const [customTitle, setCustomTitle] = useCtadState("");
@@ -2488,7 +2603,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
     const p = roster.people.find((x) => x.id === s.id); return { ...s, label: p?.name };
   }).filter((c) => c.label);
 
-  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : (studentDefined || examMode === "exam" || selModules.size > 0));
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || !!topic) : type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
 
   function buildAndAssign() {
     if (!valid) return;
@@ -2499,8 +2614,10 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
     });
     const studentIds = [...new Set(expanded)];
     const examSubjectName = ((FAA_EXAMS.find((e) => e.id === examSubject) || FAA_EXAMS[0]) || {}).subject || "";
+    const simList = TRAINING_SIMS.filter((x) => selSims.has(x.id));
     const defaultTitle = type === "task" ? task
       : type === "written" ? (examMode === "exam" ? examSubjectName + " Exam" : "Written Exam")
+      : type === "simulator" ? (simList.length === 1 ? simList[0].title : simList.length + " Simulators")
       : (studentDefined ? "Oral Exam" : (topic || "Oral Exam"));
     const ct = customTitle.trim();
     const title = ct || defaultTitle;
@@ -2510,11 +2627,12 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
       due: dueLabel, status: "not_started", score: null,
       ...(type === "oral" ? { difficulty, qCount: Number(qCount) } : {}),
       ...(type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, orion, randomized }) : {}),
+      ...(type === "simulator" ? { simulators: simList.map((x) => x.id) } : {}),
     }));
     onAssign && onAssign(created);
   }
 
-  const drawerWidth = "min(500px, calc(100vw - 24px))";
+  const drawerWidth = "min(max(50vw, 500px), 960px, calc(100vw - 24px))";
   const num = { ...ctInput, height: 44 };
 
   return (
@@ -2559,6 +2677,7 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
               <CTTypeCard active={type === "task"} icon="worklog" label="Task" sub="Hands-on procedures and tasks to perform." accent="var(--kls-success)" onClick={() => setType("task")} />
               <CTTypeCard active={type === "oral"} icon="chatBubbles" label="Oral exam" sub="Practice dynamic questions on various topics." accent="var(--kls-accent-4)" onClick={() => setType("oral")} />
               <CTTypeCard active={type === "written"} icon="checkpoint" label="Written exam" sub="Prepare for your FAA exam." accent="var(--kls-info)" onClick={() => setType("written")} />
+              <CTTypeCard active={type === "simulator"} symbol="school" label="Simulator" sub="Interactive systems to explore hands-on." accent="var(--kls-accent-12)" onClick={() => setType("simulator")} />
             </div>
           </div>
 
@@ -2598,6 +2717,8 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
               <div><CTLabel>Difficulty</CTLabel><CTSelect value={difficulty} options={["Easy", "Medium", "Hard"]} onChange={setDifficulty} /></div>
               <CTStepper value={qCount} setValue={setQCount} />
             </>
+          ) : type === "simulator" ? (
+            <CTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
           ) : (
             <>
               <CTExamModeCards mode={examMode} setMode={setExamMode} />
@@ -4526,6 +4647,7 @@ function WebApp(props) {
   const [query, setQuery] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
   const [editing3D, setEditing3D] = useState(null);
+  const [openSim, setOpenSim] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const flags = { name: true, email: false, title: true, role: true, status: false, avatar: true };
@@ -4536,7 +4658,7 @@ function WebApp(props) {
   };
   let content;
   if (active === "controlTower") content = ctRole === "student"
-    ? <StudentControlTower layout={studentLayout} query={query} onNavigate={onSelect} />
+    ? <StudentControlTower layout={studentLayout} query={query} onNavigate={onSelect} onOpenSim={setOpenSim} />
     : <ControlTower showKpis={showKpis} initialQuick="all" query={query} />;
   else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
   else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
@@ -4546,18 +4668,118 @@ function WebApp(props) {
   else if (active === "terms") content = <Blocks query={query} onOpenTask={setEditingTask} />;
   else if (active === "tickets") content = <Tickets query={query} />;
   else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
+  else if (active === "training") content = <Training query={query} onOpen={setOpenSim} />;
   else content = <WebPlaceholder tabKey={active} />;
+  if (openSim) return <SimulatorRunner sim={openSim} onClose={() => setOpenSim(null)} />;
   if (editing3D) return <ModelEditor node={editing3D} onClose={() => setEditing3D(null)} />;
   if (editingTask) return <TaskEditor task={editingTask} onClose={() => setEditingTask(null)} />;
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--kls-scaffold-bg)", overflow: "hidden" }}>
       <NavSidebar active={active} workspaceName="EduDev" version="2.16.5" flavor="education" onSelect={onSelect} />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <Header unread={47} onSearch={setQuery} onAvatar={() => setProfileOpen(true)} searchPlaceholder={active === "controlTower" ? (ctRole === "student" ? "Search assignments" : "Search students") : active === "faq" ? "Search FAQs" : "Search"} />
+        <Header unread={47} onSearch={setQuery} onAvatar={() => setProfileOpen(true)} searchPlaceholder={active === "controlTower" ? (ctRole === "student" ? "Search assignments" : "Search students") : active === "faq" ? "Search FAQs" : active === "training" ? "Search simulators" : "Search"} />
         {content}
       </div>
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} onHelp={() => { setProfileOpen(false); setHelpOpen(true); }} />
       <FeedbackDialog open={helpOpen} onClose={() => setHelpOpen(false)} onBrowseFaqs={() => { setHelpOpen(false); setActive("faq"); }} />
+    </div>
+  );
+}
+// ════════════════════════════════════════════════════════════════════
+// TRAINING — simulator grid + in-app runner
+// ════════════════════════════════════════════════════════════════════
+const TRAINING_SIMS = [
+  { id: "six-pack",            title: "Six-Pack Flight Instruments", desc: "Fly the six primary instruments and watch how pitch, bank, speed and altitude read out together.",  src: "simulators/six-pack.html" },
+  { id: "turbocharger",        title: "Turbocharger System",         desc: "Trace exhaust, compressor and wastegate behavior as manifold pressure and altitude change.",       src: "simulators/turbocharger.html" },
+  { id: "vapor-cycle",         title: "Vapor Cycle Cooling",         desc: "Follow refrigerant through compressor, condenser, expansion valve and evaporator.",                  src: "simulators/vapor-cycle.html" },
+  { id: "circuit-trainer",     title: "Circuit Trainer",             desc: "Build series and parallel circuits and measure voltage, current and resistance.",                    src: "simulators/circuit-trainer.html" },
+  { id: "logic-gate",          title: "Logic Gate Simulator",        desc: "Wire AND, OR, NOT and compound gates, then test outputs against truth tables.",                      src: "simulators/logic-gate.html" },
+  { id: "power-w",             title: "Four-Stroke Cycle",           desc: "Step through intake, compression, power and exhaust across 720° of crankshaft rotation, with valve lead, lag and ignition timing.",                       src: "simulators/power-w.html" },
+  { id: "micrometer",          title: "Micrometer",                  desc: "Read an outside micrometer to the thousandth across sleeve, thimble and vernier scales.",            src: "simulators/micrometer.html" },
+  { id: "propeller-protractor",title: "Propeller Protractor",        desc: "Set blade angle at the reference station with a universal propeller protractor.",                  src: "simulators/propeller-protractor.html" },
+];
+
+function TrainingCard({ sim, onOpen }) {
+  const [hover, setHover] = useState(false);
+  const ref = useRef(null);
+  const [w, setW] = useState(320);
+  useEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver((e) => setW(e[0].contentRect.width));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  const PREVIEW_W = 1280;
+  const scale = w / PREVIEW_W;
+  return (
+    <button onClick={() => onOpen(sim)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ all: "unset", cursor: "pointer", boxSizing: "border-box", display: "flex", flexDirection: "column", textAlign: "left",
+        background: "var(--kls-surface)", border: "1px solid " + (hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"), borderRadius: 12, overflow: "hidden",
+        boxShadow: hover ? "var(--kls-drop-shadow)" : "none", transform: hover ? "translateY(-2px)" : "none",
+        transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard), box-shadow var(--kls-dur-fade-animation) var(--kls-ease-standard), border-color var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+      <div ref={ref} style={{ position: "relative", width: "100%", aspectRatio: "16 / 10", background: "var(--kls-surface-container-low)", overflow: "hidden", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <iframe src={sim.src} title={sim.title + " preview"} tabIndex={-1} scrolling="no"
+          style={{ position: "absolute", top: 0, left: 0, width: PREVIEW_W, height: PREVIEW_W * 10 / 16, border: 0, transformOrigin: "0 0", transform: "scale(" + scale + ")", pointerEvents: "none", background: "var(--kls-surface)" }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          background: hover ? "rgba(0,0,0,0.35)" : "transparent", opacity: hover ? 1 : 0, transition: "opacity var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+          <span style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+            display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
+            <MSGlyph name="play_arrow" size={20} />Open
+          </span>
+        </div>
+      </div>
+      <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{sim.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{sim.desc}</div>
+      </div>
+    </button>
+  );
+}
+
+function Training({ query = "", onOpen }) {
+  const term = query.trim().toLowerCase();
+  const sims = TRAINING_SIMS.filter((s) => !term || s.title.toLowerCase().includes(term) || s.desc.toLowerCase().includes(term));
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div>
+          <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Training</h1>
+          <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Interactive simulators for hands-on practice.</p>
+        </div>
+        {sims.length === 0 ? (
+          <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try a different search.</div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "var(--kls-space-med)" }}>
+            {sims.map((s) => <TrainingCard key={s.id} sim={s} onOpen={onOpen} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SimulatorRunner({ sim, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--kls-scaffold-bg)", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: 64, flex: "none", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        padding: "0 var(--kls-space-med)", background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <MeCircleBtn label="Back to Training" onClick={onClose}>
+          <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sim.title}</div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Training · Simulator</div>
+        </div>
+      </div>
+      <iframe src={sim.src} title={sim.title} style={{ flex: 1, width: "100%", border: 0, background: "var(--kls-surface)" }} />
     </div>
   );
 }
