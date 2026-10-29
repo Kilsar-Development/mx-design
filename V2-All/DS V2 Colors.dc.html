@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="ds-v2/colors.css">
+<style>
+body{margin:0;background:var(--mx-surface-container-low);color:var(--mx-on-surface);font-family:var(--mx-font)}
+a{color:var(--mx-primary)}a:hover{color:var(--mx-on-primary-container)}
+</style>
+</helmet>
+<div style="max-width:1240px;margin:0 auto;padding:48px 32px 96px;display:flex;flex-direction:column;gap:48px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:720px">
+    <span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mx-on-surface-variant)">Mx Design System V2 · Color</span>
+    <h1 style="margin:0;font-size:32px;font-weight:700;letter-spacing:-.02em">Two hues and a neutral</h1>
+    <p style="margin:0;font-size:16px;line-height:1.55;color:var(--mx-on-surface-variant);text-wrap:pretty">Direction 3a (Teal &amp; Amber). Primitives are fixed hex ladders. Scheme roles are only Flutter <code>ColorScheme</code> members; amber lives in the <code>AccentColors</code> extension. Light and dark pick different steps of the same ladder. Files: <a href="ds-v2/colors.css">colors.css</a> · <a href="ds-v2/color_scheme.dart">color_scheme.dart</a> · <a href="ds-v2/scheme.json">scheme.json</a>.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+    <h2 style="margin:0;font-size:20px;font-weight:600">0 · The token paradigm</h2>
+    <sc-for list="{{ paradigm }}" as="p" hint-placeholder-count="5">
+      <div style="display:grid;grid-template-columns:160px minmax(0,1fr);gap:16px;padding:12px 0;border-bottom:1px solid var(--mx-outline);font-size:14px;line-height:1.55"><span style="font-weight:600">{{ p.what }}</span><span style="color:var(--mx-on-surface-variant)">{{ p.why }}</span></div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:20px;font-weight:600">1 · Primitives</h2>
+    <sc-for list="{{ ladders }}" as="l" hint-placeholder-count="4">
+      <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;align-items:center">
+        <span style="font-size:14px;font-weight:600">{{ l.name }}</span>
+        <div style="display:flex;gap:4px">
+          <sc-for list="{{ l.steps }}" as="s" hint-placeholder-count="10">
+            <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div style="height:48px;border-radius:6px;background:{{ s.hex }};border:1px solid var(--mx-outline-variant)"></div>
+              <span style="font-size:11px;color:var(--mx-on-surface-variant);font-variant-numeric:tabular-nums">{{ s.step }}</span>
+              <span style="font-size:10px;color:var(--mx-on-surface-variant);font-family:ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis">{{ s.hex }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <p style="margin:0;font-size:14px;line-height:1.5;color:var(--mx-on-surface-variant);max-width:720px">Blue, green, orange, purple and the odd <code>neutral-650</code> step are gone. If a hue has no ladder it cannot be used; that is the whole two-color rule, enforced at the source.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:20px;font-weight:600">2 · Scheme</h2>
+    <div style="background:var(--mx-surface);border:1px solid var(--mx-outline);border-radius:12px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr);gap:12px;padding:10px 16px;border-bottom:1px solid var(--mx-outline);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mx-on-surface-variant)"><span>Role</span><span>Light</span><span>Dark</span><span>Was (V1 light)</span></div>
+      <sc-for list="{{ roles }}" as="r" hint-placeholder-count="12">
+        <sc-if value="{{ r.groupHead }}" hint-placeholder-val="{{ false }}"><div style="padding:14px 16px 6px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mx-on-primary-container);background:var(--mx-surface-container-low);border-bottom:1px solid var(--mx-outline-variant)">{{ r.group }}</div></sc-if>
+        <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr);gap:12px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--mx-outline-variant);font-size:13px">
+          <span style="font-family:ui-monospace,monospace;font-size:12px;font-weight:600">{{ r.role }}</span>
+          <span style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:5px;background:{{ r.lightHex }};border:1px solid var(--mx-outline);flex:none"></span><span style="color:var(--mx-on-surface-variant)">{{ r.light }}</span></span>
+          <span style="display:flex;align-items:center;gap:8px"><span style="width:20px;height:20px;border-radius:5px;background:{{ r.darkHex }};border:1px solid var(--mx-outline);flex:none"></span><span style="color:var(--mx-on-surface-variant)">{{ r.dark }}</span></span>
+          <span style="color:var(--mx-on-surface-variant)">{{ r.was }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <h2 style="margin:0;font-size:20px;font-weight:600">3 · Widgets on the new roles</h2>
+    <p style="margin:0;font-size:14px;line-height:1.5;color:var(--mx-on-surface-variant);max-width:720px">Same V1 widget specs (heights, radii, type), new role bindings. Each pane sets its own <code>data-theme</code>.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+        <div data-theme="{{ t }}" style="background:var(--mx-surface-container-low);color:var(--mx-on-surface);border:1px solid var(--mx-outline);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:24px">
+          <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mx-on-surface-variant)">{{ t }}</span>
+
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;color:var(--mx-on-surface-variant)">Buttons · primary / on-primary · Fix = accent1 / accent2 · Delete = error / on-error</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span style="height:40px;padding:0 20px;border-radius:8px;background:var(--mx-primary);color:var(--mx-on-primary);font-size:14px;font-weight:700;display:flex;align-items:center">Primary</span>
+            <span style="height:40px;padding:0 20px;border-radius:8px;border:1.5px solid var(--mx-outline);color:var(--mx-on-surface);font-size:14px;font-weight:700;display:flex;align-items:center">Secondary</span>
+            <span style="height:40px;padding:0 20px;border-radius:8px;background:var(--mx-tertiary);color:var(--mx-on-tertiary-container);font-size:14px;font-weight:700;display:flex;align-items:center">Tonal</span>
+            <span style="height:40px;padding:0 20px;border-radius:8px;background:var(--mx-accent-1);color:var(--mx-accent-2);font-size:14px;font-weight:700;display:flex;align-items:center">Fix</span>
+            <span style="height:40px;padding:0 20px;border-radius:8px;background:var(--mx-error);color:var(--mx-on-error);font-size:14px;font-weight:700;display:flex;align-items:center">Delete</span>
+          </div></div>
+
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;color:var(--mx-on-surface-variant)">Pills · primary-container, primary, accent3 / accent4, error-container, tertiary-container, inverse-surface</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="padding:4px 12px;border-radius:8px;background:var(--mx-primary-container);color:var(--mx-on-primary-container);font-size:12px;font-weight:600">In progress</span>
+            <span style="padding:4px 12px;border-radius:8px;background:var(--mx-primary);color:var(--mx-on-primary);font-size:12px;font-weight:600">Completed</span>
+            <span style="padding:4px 12px;border-radius:8px;background:var(--mx-accent-3);color:var(--mx-accent-4);font-size:12px;font-weight:600">Needs revision</span>
+            <span style="padding:4px 12px;border-radius:8px;background:var(--mx-error-container);color:var(--mx-on-error-container);font-size:12px;font-weight:600">Failed</span>
+            <span style="padding:4px 12px;border-radius:8px;background:var(--mx-tertiary-container);color:var(--mx-on-tertiary-container);font-size:12px;font-weight:600">Pending</span>
+            <span style="padding:4px 12px;border-radius:8px;background:var(--mx-inverse-surface);color:var(--mx-on-inverse-surface);font-size:12px;font-weight:600">Active</span>
+          </div></div>
+
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;color:var(--mx-on-surface-variant)">Header chrome · bell badge = accent1 / accent2 · avatar = primary-container</span>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="display:flex;align-items:center;gap:10px;height:36px;flex:1;padding:0 14px;border-radius:8px;background:var(--mx-surface);border:1px solid var(--mx-outline);color:var(--mx-on-surface-variant);font-size:13px">⌕ Search or do anything<span style="flex:1"></span><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--mx-tertiary)">⌘K</span></div>
+            <div style="position:relative;width:36px;height:36px;border-radius:8px;background:var(--mx-surface);border:1px solid var(--mx-outline);display:flex;align-items:center;justify-content:center"><span style="width:14px;height:16px;border:1.5px solid var(--mx-on-surface-variant);border-radius:7px 7px 2px 2px"></span><span style="position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;background:var(--mx-accent-1);color:var(--mx-accent-2);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px">3</span></div>
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--mx-primary-container);color:var(--mx-on-primary-container);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">JO</div>
+          </div></div>
+
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;color:var(--mx-on-surface-variant)">Sidebar tab · active = primary-container (was surface-container-lowest)</span>
+          <div style="background:var(--mx-surface);border:1px solid var(--mx-outline);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:2px;max-width:220px">
+            <div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;background:var(--mx-primary-container);font-size:14px;font-weight:700;color:var(--mx-on-primary-container)"><span style="width:16px;height:16px;border-radius:4px;background:var(--mx-primary)"></span>Home</div>
+            <div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;font-size:14px;font-weight:500;color:var(--mx-on-surface-variant)"><span style="width:16px;height:16px;border-radius:4px;border:1.5px solid var(--mx-outline)"></span>Tasks</div>
+          </div></div>
+
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;color:var(--mx-on-surface-variant)">Input · checkbox · switch · card</span>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <div style="height:48px;flex:1;min-width:180px;padding:0 14px;border-radius:8px;background:var(--mx-surface);border:1px solid var(--mx-outline);display:flex;align-items:center;color:var(--mx-on-surface-variant);font-size:14px">Torque value</div>
+            <span style="width:22px;height:22px;border-radius:6px;background:var(--mx-primary);color:var(--mx-on-primary);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800">✓</span>
+            <span style="width:44px;height:26px;border-radius:13px;background:var(--mx-primary);position:relative"><span style="position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:var(--mx-on-primary)"></span></span>
+          </div>
+          <div style="background:var(--mx-surface);border:1px solid var(--mx-outline);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--mx-drop-shadow)">
+            <span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mx-on-surface-variant)">Block 4</span>
+            <span style="font-size:16px;font-weight:600">Hydraulic pump removal &amp; replacement</span>
+            <div style="height:4px;border-radius:2px;background:var(--mx-primary-container);overflow:hidden"><div style="width:44%;height:100%;background:var(--mx-primary)"></div></div>
+          </div></div>
+
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;color:var(--mx-on-surface-variant)">Snackbar · inverse-surface (was tertiary-container)</span>
+          <div style="padding:12px 16px;border-radius:8px;background:var(--mx-inverse-surface);color:var(--mx-on-inverse-surface);font-size:14px;font-weight:500">Evidence submitted for review</div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;max-width:760px">
+    <h2 style="margin:0;font-size:20px;font-weight:600">4 · Cleanup from V1</h2>
+    <sc-for list="{{ cleanup }}" as="c" hint-placeholder-count="8">
+      <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;padding:12px 0;border-bottom:1px solid var(--mx-outline);font-size:14px;line-height:1.5">
+        <span style="font-weight:600">{{ c.what }}</span><span style="color:var(--mx-on-surface-variant)">{{ c.why }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { data: null };
+  componentDidMount() { fetch('ds-v2/scheme.json').then(r => r.json()).then(data => this.setState({ data })); }
+  renderVals() {
+    const d = this.state.data || { primitives: {}, roles: [] };
+    const was = {
+      'primary':'base-black','on-primary':'neutral-100','primary-container':'neutral-50','on-primary-container':'neutral-800',
+      'secondary':'neutral-200','on-secondary':'neutral-950','secondary-container':'neutral-50','on-secondary-container':'neutral-950',
+      'tertiary':'neutral-100','on-tertiary':'neutral-500','tertiary-container':'neutral-200 (primary button bg)','on-tertiary-container':'neutral-950',
+      'error':'red-300','on-error':'neutral-50','error-container':'red-50','on-error-container':'red-100',
+      'surface':'white','on-surface':'neutral-900','on-surface-variant':'neutral-500 (3.3:1, failed AA)','surface-container-low':'neutral-200 (scaffold was surface-variant neutral-50)',
+      'outline':'neutral-200','outline-variant':'neutral-100','inverse-surface':'neutral-800','on-inverse-surface':'neutral-50',
+      'surface-container-lowest':'neutral-50','surface-container-low':'neutral-200','surface-container':'neutral-400 (unusable as a surface)','surface-container-high':'neutral-500','surface-container-highest':'neutral-700',
+      'shadow':'black','scrim':'transparent-40',
+      'attention':'new — replaces progress + accent-4/5/6','on-attention':'new','attention-container':'new','on-attention-container':'new',
+    };
+    const ladders = Object.entries(d.primitives).map(([name, steps]) => ({ name, steps: Object.entries(steps).map(([step, hex]) => ({ step, hex })) }));
+    const roles = d.roles.map((r, i, arr) => ({ ...r, was: was[r.role] || (r.use ? 'new · ' + r.use + ' (replaces progress + accent-4/5/6)' : 'new'), groupHead: i === 0 || arr[i - 1].group !== r.group, group: r.group === 'AccentColors' ? 'AccentColors ThemeExtension' : 'ColorScheme (Material 3)' }));
+    const paradigm = [
+      { what: 'Why names, not hex', why: 'The product is Flutter. Every widget binds to exactly one ColorScheme member or one AccentColors member, and the theme swaps between light and dark as a whole. Token names are the contract between design and engineering. A role that is not a ColorScheme member cannot be expressed in the app, so a mock that uses it cannot be built as drawn.' },
+      { what: 'Allowed scheme roles', why: 'Only Flutter ColorScheme members: primary / secondary / tertiary families (base, on, container, onContainer, fixed, fixedDim, onFixed, onFixedVariant), error family, surface / onSurface / surfaceDim / surfaceBright / surfaceContainer ladder / onSurfaceVariant, outline / outlineVariant, shadow / scrim, inverseSurface / onInverseSurface / inversePrimary / surfaceTint. No invented roles (attention, primaryTint, success, info), no legacy aliases, no surface-variant.' },
+      { what: 'AccentColors', why: 'Everything the scheme cannot express goes in the AccentColors ThemeExtension (accent1, accent2, …). Each accentN has its own light value and its own dark value under the same name. A widget binds ONE accentN and must look right in both modes through that single binding. Never accentX in light and accentY in dark; never a raw primitive in a widget.' },
+      { what: 'Pairs', why: 'Foreground and background come from matched pairs: primary / onPrimary, primaryContainer / onPrimaryContainer, accent1 / accent2, accent3 / accent4. Do not mix a scheme background with an accent foreground unless the pair is documented.' },
+      { what: 'V2 accent map', why: 'accent1 attention solid (amber) · accent2 on-attention · accent3 attention container · accent4 on-attention container. Adding an accent needs a reason, a light and a dark value, and a line in CLAUDE.md.' },
+      { what: 'Web mirror', why: 'ds-v2/colors.css exposes the same names as --mx-<role> in kebab-case (--mx-primary-container, --mx-accent-1). Mocks reference only these. Primitives (--mx-teal-600) exist for this spec page, never in a mock.' },
+    ];
+    return {
+      ladders, roles, paradigm, themes: ['light', 'dark'],
+      cleanup: [
+        { what: 'AccentColors 1–16', why: 'Reduced to accent1–4 (amber attention pair + container pair). Error stays on the red ladder. Anything that used a numbered accent remaps to primary-container, attention-container or a neutral.' },
+        { what: 'success / progress / info', why: 'Removed. Completed and passed render in primary; in-progress in primary-container; needs-attention in attention; failed in error. Four states, two hues.' },
+        { what: 'Legacy aliases', why: 'surface-page, content-*, stroke-*, action-*, warning/danger/info-soft, secondary-fixed, tertiary-fixed all dropped. One name per role; the M3 name.' },
+        { what: 'Primary button on tertiary-container', why: 'Primary actions now use primary / on-primary. tertiary and tertiary-container are neutral fills only (search pill, tonal chips, inactive track).' },
+        { what: 'Surface container ladder', why: 'V1 jumped to neutral-400/500/700 as "surfaces", which no card could sit on. V2 is a real elevation ladder: 0 / 50 / 100 / 200 / 300 light, inverted in dark.' },
+        { what: 'on-surface-variant contrast', why: 'neutral-500 #838383 on white was 3.3:1. V2 neutral-600 #5A5F66 is 6.1:1; dark neutral-400 on neutral-900 is 6.3:1.' },
+        { what: 'Dark values duplicated', why: 'V1 repeated the dark block three times (data-theme, media query, alias re-resolution). V2 generates all blocks from one table; roles reference primitives directly so no re-resolution layer is needed.' },
+        { what: 'Component tokens in the color file', why: 'sidebar-*, header-*, search-*, bell-*, slider-*, checkbox-* bindings moved out of colors.css; each widget reads roles directly. Bell badge → accent1, checkbox check → primary, sidebar active → primary-container.' },
+        { what: 'Theme-level greens', why: 'Checkbox check green-200/300 and the focus tint removed; no hue exists outside the three ladders.' },
+        { what: 'Neutral ladder', why: 'Warm-grey rebuilt as 0–1000 in regular steps; neutral-650 dropped. Hex values changed; names did not.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

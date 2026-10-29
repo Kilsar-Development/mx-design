@@ -7,7 +7,7 @@
 # is handled here.
 #
 # Usage:
-#   ./sync.sh                          Sync BOTH folders from the newest matching
+#   ./sync.sh                          Sync all mapped folders from the newest matching
 #                                      zips in ~/Downloads (see MAPPINGS below).
 #   ./sync.sh <zip> <target-folder>    One-off: mirror <zip> into <target-folder>.
 #   ./sync.sh --commit "message"       As no-arg sync, then git add+commit+push.
@@ -28,6 +28,7 @@ DOWNLOADS="${HOME}/Downloads"
 MAPPINGS=(
   "MX.zip|app_mocks"
   "MX Design System.zip|design_system"
+  "MX V2.zip|V2-All"
 )
 
 cd "$REPO_DIR"

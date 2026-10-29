@@ -1,0 +1,363 @@
+{
+ "primitives": {
+  "neutral": {
+   "0": "#FFFFFF",
+   "50": "#F7F7F5",
+   "100": "#EFEFEC",
+   "200": "#E2E2DE",
+   "300": "#CBCCC7",
+   "400": "#9A9EA4",
+   "500": "#6F747B",
+   "600": "#5A5F66",
+   "700": "#3A3D42",
+   "800": "#24272B",
+   "900": "#1B1D20",
+   "950": "#121315",
+   "1000": "#000000"
+  },
+  "teal": {
+   "50": "#EDF8F6",
+   "100": "#DDF3F0",
+   "200": "#A8E5DC",
+   "300": "#5EEAD4",
+   "400": "#2DBFA9",
+   "500": "#14968A",
+   "600": "#0F766E",
+   "700": "#0B5A54",
+   "800": "#123532",
+   "900": "#0A2321"
+  },
+  "amber": {
+   "50": "#FDF6E7",
+   "100": "#FDF0DC",
+   "200": "#FCD264",
+   "300": "#FBBF24",
+   "400": "#F59E0B",
+   "500": "#D97706",
+   "600": "#B45309",
+   "700": "#9A5200",
+   "800": "#3A2A0A",
+   "900": "#2A1D05"
+  },
+  "red": {
+   "50": "#FEF2F2",
+   "100": "#FECACA",
+   "200": "#F87171",
+   "300": "#EF4444",
+   "500": "#DC2626",
+   "700": "#991B1B",
+   "800": "#450A0A",
+   "900": "#2C0606"
+  }
+ },
+ "roles": [
+  {
+   "role": "primary",
+   "light": "teal-600",
+   "lightHex": "#0F766E",
+   "dark": "teal-300",
+   "darkHex": "#5EEAD4",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-primary",
+   "light": "neutral-0",
+   "lightHex": "#FFFFFF",
+   "dark": "teal-900",
+   "darkHex": "#0A2321",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "primary-container",
+   "light": "teal-100",
+   "lightHex": "#DDF3F0",
+   "dark": "teal-800",
+   "darkHex": "#123532",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-primary-container",
+   "light": "teal-700",
+   "lightHex": "#0B5A54",
+   "dark": "teal-200",
+   "darkHex": "#A8E5DC",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "inverse-primary",
+   "light": "teal-300",
+   "lightHex": "#5EEAD4",
+   "dark": "teal-600",
+   "darkHex": "#0F766E",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface-tint",
+   "light": "teal-600",
+   "lightHex": "#0F766E",
+   "dark": "teal-300",
+   "darkHex": "#5EEAD4",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "secondary",
+   "light": "neutral-100",
+   "lightHex": "#EFEFEC",
+   "dark": "neutral-800",
+   "darkHex": "#24272B",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-secondary",
+   "light": "neutral-900",
+   "lightHex": "#1B1D20",
+   "dark": "neutral-50",
+   "darkHex": "#F7F7F5",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "secondary-container",
+   "light": "neutral-100",
+   "lightHex": "#EFEFEC",
+   "dark": "neutral-800",
+   "darkHex": "#24272B",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-secondary-container",
+   "light": "neutral-900",
+   "lightHex": "#1B1D20",
+   "dark": "neutral-50",
+   "darkHex": "#F7F7F5",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "tertiary",
+   "light": "neutral-100",
+   "lightHex": "#EFEFEC",
+   "dark": "neutral-800",
+   "darkHex": "#24272B",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-tertiary",
+   "light": "neutral-600",
+   "lightHex": "#5A5F66",
+   "dark": "neutral-400",
+   "darkHex": "#9A9EA4",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "tertiary-container",
+   "light": "neutral-200",
+   "lightHex": "#E2E2DE",
+   "dark": "neutral-700",
+   "darkHex": "#3A3D42",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-tertiary-container",
+   "light": "neutral-900",
+   "lightHex": "#1B1D20",
+   "dark": "neutral-50",
+   "darkHex": "#F7F7F5",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "error",
+   "light": "red-500",
+   "lightHex": "#DC2626",
+   "dark": "red-200",
+   "darkHex": "#F87171",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-error",
+   "light": "neutral-0",
+   "lightHex": "#FFFFFF",
+   "dark": "red-900",
+   "darkHex": "#2C0606",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "error-container",
+   "light": "red-50",
+   "lightHex": "#FEF2F2",
+   "dark": "red-800",
+   "darkHex": "#450A0A",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-error-container",
+   "light": "red-700",
+   "lightHex": "#991B1B",
+   "dark": "red-100",
+   "darkHex": "#FECACA",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface",
+   "light": "neutral-0",
+   "lightHex": "#FFFFFF",
+   "dark": "neutral-900",
+   "darkHex": "#1B1D20",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-surface",
+   "light": "neutral-900",
+   "lightHex": "#1B1D20",
+   "dark": "neutral-50",
+   "darkHex": "#F7F7F5",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-surface-variant",
+   "light": "neutral-600",
+   "lightHex": "#5A5F66",
+   "dark": "neutral-400",
+   "darkHex": "#9A9EA4",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface-dim",
+   "light": "neutral-200",
+   "lightHex": "#E2E2DE",
+   "dark": "neutral-950",
+   "darkHex": "#121315",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface-bright",
+   "light": "neutral-0",
+   "lightHex": "#FFFFFF",
+   "dark": "neutral-800",
+   "darkHex": "#24272B",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface-container-lowest",
+   "light": "neutral-0",
+   "lightHex": "#FFFFFF",
+   "dark": "neutral-950",
+   "darkHex": "#121315",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface-container-low",
+   "light": "neutral-50",
+   "lightHex": "#F7F7F5",
+   "dark": "neutral-950",
+   "darkHex": "#121315",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface-container",
+   "light": "neutral-100",
+   "lightHex": "#EFEFEC",
+   "dark": "neutral-800",
+   "darkHex": "#24272B",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface-container-high",
+   "light": "neutral-200",
+   "lightHex": "#E2E2DE",
+   "dark": "neutral-700",
+   "darkHex": "#3A3D42",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "surface-container-highest",
+   "light": "neutral-300",
+   "lightHex": "#CBCCC7",
+   "dark": "neutral-600",
+   "darkHex": "#5A5F66",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "outline",
+   "light": "neutral-200",
+   "lightHex": "#E2E2DE",
+   "dark": "neutral-700",
+   "darkHex": "#3A3D42",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "outline-variant",
+   "light": "neutral-100",
+   "lightHex": "#EFEFEC",
+   "dark": "neutral-800",
+   "darkHex": "#24272B",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "inverse-surface",
+   "light": "neutral-800",
+   "lightHex": "#24272B",
+   "dark": "neutral-50",
+   "darkHex": "#F7F7F5",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "on-inverse-surface",
+   "light": "neutral-50",
+   "lightHex": "#F7F7F5",
+   "dark": "neutral-950",
+   "darkHex": "#121315",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "shadow",
+   "light": "neutral-1000",
+   "lightHex": "#000000",
+   "dark": "neutral-1000",
+   "darkHex": "#000000",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "scrim",
+   "light": "alpha-40",
+   "lightHex": "rgba(0,0,0,0.40)",
+   "dark": "alpha-60",
+   "darkHex": "rgba(0,0,0,0.60)",
+   "group": "ColorScheme"
+  },
+  {
+   "role": "accent-1",
+   "light": "amber-500",
+   "lightHex": "#D97706",
+   "dark": "amber-300",
+   "darkHex": "#FBBF24",
+   "group": "AccentColors",
+   "use": "attention solid"
+  },
+  {
+   "role": "accent-2",
+   "light": "neutral-0",
+   "lightHex": "#FFFFFF",
+   "dark": "amber-900",
+   "darkHex": "#2A1D05",
+   "group": "AccentColors",
+   "use": "on attention"
+  },
+  {
+   "role": "accent-3",
+   "light": "amber-100",
+   "lightHex": "#FDF0DC",
+   "dark": "amber-800",
+   "darkHex": "#3A2A0A",
+   "group": "AccentColors",
+   "use": "attention container"
+  },
+  {
+   "role": "accent-4",
+   "light": "amber-700",
+   "lightHex": "#9A5200",
+   "dark": "amber-200",
+   "darkHex": "#FCD264",
+   "group": "AccentColors",
+   "use": "on attention container"
+  }
+ ]
+}

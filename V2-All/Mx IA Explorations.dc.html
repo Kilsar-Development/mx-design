@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>@font-face{font-family:'Plus Jakarta Sans';src:url('fonts/PlusJakartaSans-Regular.ttf');font-weight:400}@font-face{font-family:'Plus Jakarta Sans';src:url('fonts/PlusJakartaSans-Medium.ttf');font-weight:500}@font-face{font-family:'Plus Jakarta Sans';src:url('fonts/PlusJakartaSans-SemiBold.ttf');font-weight:600}@font-face{font-family:'Plus Jakarta Sans';src:url('fonts/PlusJakartaSans-Bold.ttf');font-weight:700}
+body{margin:0;background:#f0eee9;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#1a1a1a}a{color:#1a1a1a}a:hover{color:#2a78d6}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.6);max-width:960px}.dv-card{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}.dv-note{max-width:720px;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.6);margin:0 0 18px}
+.wf{font-size:14px;line-height:1.3}.b{border:1.5px solid #2b2b2b;border-radius:3px;background:#fff}.d{border:1.5px dashed #9a9a9a;border-radius:3px;color:#777}.ext{border:1.5px solid #2b2b2b;border-radius:3px;background:repeating-linear-gradient(135deg,#fff 0 6px,#ededed 6px 12px)}.img{background:repeating-linear-gradient(135deg,#f3f3f3 0 8px,#e6e6e6 8px 16px);border:1.5px solid #2b2b2b;display:flex;align-items:center;justify-content:center;color:#666}.pill{display:inline-flex;align-items:center;padding:1px 9px;border:1.5px solid #2b2b2b;border-radius:999px;font-size:12px;white-space:nowrap}.pill.on{background:#2b2b2b;color:#fff}.ann{color:#c8471b;font-size:12px}.coin{color:#7a3ec9;font-size:12px}.hd{font-size:19px;font-weight:700}.mut{color:#777}.row{display:flex;gap:8px;align-items:center}.col{display:flex;flex-direction:column;gap:8px}.ln{height:8px;border-radius:5px;background:#dedede}.btn{display:inline-flex;align-items:center;justify-content:center;padding:5px 12px;border:1.5px solid #2b2b2b;border-radius:4px;font-size:13px;white-space:nowrap}.btn.on{background:#2b2b2b;color:#fff}.nav{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:4px;white-space:nowrap}.nav.on{background:#e6e6e6;font-weight:600}.nav.off{color:#aaa;text-decoration:line-through}.sq{width:14px;height:14px;border:1.5px solid currentColor;border-radius:3px;flex:none}.tag{font-size:11px;padding:1px 6px;border-radius:3px;border:1.5px solid;white-space:nowrap}.t-ok{border-color:#2f7d4f;color:#2f7d4f}.t-warn{border-color:#b8860b;color:#b8860b}.t-off{border-color:#aaa;color:#999;border-style:dashed}.t-ext{border-color:#2a78d6;color:#2a78d6}.ico{font-size:18px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px}.bdg{position:absolute;top:-6px;right:-8px;background:#c8471b;color:#fff;font-size:10px;font-weight:700;border-radius:999px;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px}.cap{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#777;font-weight:600}</style></helmet>
+
+<section class="dv-turn" id="t7">
+<div class="dv-thd"><a class="dv-tid" href="#t7">7</a><span class="dv-tname">Instructor Home and Admin Home. Same shell, different first screen: instructors see their students; admins see the workspace.</span></div>
+<p class="dv-note">Both share the staff rail; which Home you get is decided by permission level (Editor → instructor Home, Admin → admin Home). An Admin who also teaches can switch the Home view in settings. Exam results, not a gradebook: grades remain AIM's system. Review items (evidence, check-ins, help requests, question drafts) arrive as notifications in the bell drawer; there is no separate Review page.</p>
+<div class="dv-opts">
+
+<!-- 7a -->
+<div class="dv-opt" id="7a"><div class="dv-olabel"><a class="dv-oid" href="#7a">7a</a>Instructor Home. Students as the list, same inversion as <a href="#6a">6a</a>: one flat roster across my groups, with what each student is doing now, progress to their next level, weak areas, and what needs me. Group, block and level are filters. Allocation is a verb on a selection.</div>
+<div class="dv-card wf" style="width:1100px;height:720px;display:grid;grid-template-columns:168px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 16px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Aviation Institute · M. Reyes</span><span style="flex:1"></span><div class="d" style="padding:3px 10px;font-size:12px;width:240px">Search or do anything… <span class="mut">⌘K</span></div><div class="row" style="gap:18px"><span class="ico" style="position:relative">🔔<span class="bdg">7</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 8px;gap:2px">
+    <div class="cap" style="padding:2px 9px 4px">Work</div>
+    <div class="nav on"><span class="sq"></span>Home</div>
+    <div class="nav"><span class="sq"></span>Assignments</div>
+    <div class="nav"><span class="sq"></span>Tasks</div>
+    <div class="cap" style="padding:12px 9px 4px">Teach</div>
+    <div class="nav"><span class="sq"></span>Training</div>
+    <div class="nav"><span class="sq"></span>Assessments</div>
+    <div class="cap" style="padding:12px 9px 4px">Build</div>
+    <div class="nav"><span class="sq"></span>Design Studio</div>
+    <div class="cap" style="padding:12px 9px 4px">Knowledge</div>
+    <div class="nav"><span class="sq"></span>Library</div>
+    <div class="nav"><span class="sq"></span>Assistant</div>
+    <div class="nav"><span class="sq"></span>Milestones</div>
+    <div style="flex:1"></div>
+    <div class="nav"><span class="sq"></span>Workspace</div>
+    <div class="nav"><span class="sq"></span>Help &amp; Feedback</div>
+    <div class="mut" style="font-size:11px;padding:4px 9px">Version 2.22.17</div></div>
+  <div class="col" style="padding:14px 22px 18px;gap:10px;min-height:0">
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <div class="b row" style="padding:6px 10px;gap:8px"><b>4</b><span class="mut" style="font-size:12px">to review</span></div>
+      <div class="b row" style="padding:6px 10px;gap:8px"><b>3</b><span class="mut" style="font-size:12px">overdue</span></div>
+      <div class="b row" style="padding:6px 10px;gap:8px"><b>2</b><span class="mut" style="font-size:12px">failed an exam this week</span></div>
+      <div class="b row" style="padding:6px 10px;gap:8px"><b>5</b><span class="mut" style="font-size:12px">ready for a gate exam</span></div>
+      <span style="flex:1"></span><span class="ann">counts are filters: click one and the roster narrows. "To review" also opens the bell drawer: review items are notifications.</span>
+    </div>
+    <div class="row" style="justify-content:space-between;align-items:baseline"><span class="hd">Your students</span><div class="row" style="gap:6px"><span class="btn">Message selected</span><span class="btn on">Allocate to selected…</span></div></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill on">Group: Avionics 2 ✕</span><span class="pill">Block ▾</span><span class="pill">Level ▾</span><span class="pill">Weak area ▾</span><span class="pill">Needs me</span><span class="mut" style="font-size:12px;margin-left:4px">18 students</span></div>
+    <div class="b" style="padding:0;flex:1;min-height:0;overflow:hidden">
+      <div class="row" style="padding:7px 12px;border-bottom:1.5px solid #2b2b2b;font-size:11px;font-weight:600;color:#777"><span class="sq" style="width:12px;height:12px"></span><span style="width:110px;flex:none">Student</span><span style="flex:1">Doing now</span><span style="width:120px;flex:none">Next level</span><span style="width:150px;flex:none">Last exam</span><span style="width:120px;flex:none">Weak areas</span><span style="width:90px;flex:none">Needs me</span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><span class="sq" style="width:12px;height:12px"></span><span style="width:110px;flex:none"><b>J. Ortiz</b></span><div class="col" style="flex:1;min-width:0;gap:1px"><span>Hydraulic pump R&amp;R · 7/9</span><span class="mut" style="font-size:12px">active 20 min ago</span></div><span style="width:120px;flex:none;font-size:12px">L4 · 1 task + exam</span><span style="width:120px;flex:none;font-size:12px">Elec. written · <span class="tag t-ok">88</span></span><span style="width:120px;flex:none;font-size:12px">—</span><span style="width:90px;flex:none"><span class="tag t-warn">Evidence</span></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd;border-left:4px solid #c8471b"><span class="sq" style="width:12px;height:12px"></span><span style="width:110px;flex:none"><b>M. Chen</b></span><div class="col" style="flex:1;min-width:0;gap:1px"><span>Gear retraction walkthrough</span><span class="mut" style="font-size:12px">overdue 3 days · no activity 6 days</span></div><span style="width:120px;flex:none;font-size:12px">L3 · 4 tasks + exam</span><span style="width:120px;flex:none;font-size:12px">Elec. written · <span class="tag" style="border-color:#c8471b;color:#c8471b">64 fail</span></span><span style="width:120px;flex:none;font-size:12px">AM.II.D.K1 · schematics</span><span style="width:90px;flex:none"><span class="tag" style="border-color:#c8471b;color:#c8471b">Check in</span></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><span class="sq" style="width:12px;height:12px"></span><span style="width:110px;flex:none"><b>R. Patel</b></span><div class="col" style="flex:1;min-width:0;gap:1px"><span>Block 4 complete</span><span class="mut" style="font-size:12px">Airframe written recommended, not started</span></div><span style="width:120px;flex:none;font-size:12px">L4 · exam only</span><span style="width:120px;flex:none;font-size:12px">Elec. written · <span class="tag t-ok">92</span></span><span style="width:120px;flex:none;font-size:12px">—</span><span style="width:90px;flex:none"><span class="tag t-off">Nudge?</span></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><span class="sq" style="width:12px;height:12px"></span><span style="width:110px;flex:none"><b>A. Nakamura</b></span><div class="col" style="flex:1;min-width:0;gap:1px"><span>Pump fault simulator · 3/5</span><span class="mut" style="font-size:12px">active now</span></div><span style="width:120px;flex:none;font-size:12px">L4 · 2 tasks + exam</span><span style="width:120px;flex:none;font-size:12px">Elec. oral · <span class="tag t-ok">Pass</span></span><span style="width:120px;flex:none;font-size:12px">AM.II.D.R1</span><span style="width:90px;flex:none" class="mut">—</span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><span class="sq" style="width:12px;height:12px"></span><span style="width:110px;flex:none"><b>S. Okafor</b></span><div class="col" style="flex:1;min-width:0;gap:1px"><span>Torque worksheet</span><span class="mut" style="font-size:12px">submitted 1 h ago</span></div><span style="width:120px;flex:none;font-size:12px">L4 · 1 task + exam</span><span style="width:120px;flex:none;font-size:12px">Elec. written · <span class="tag t-ok">79</span></span><span style="width:120px;flex:none;font-size:12px">AM.II.D.S2</span><span style="width:90px;flex:none"><span class="tag t-warn">Review</span></span></div>
+      <div class="d" style="padding:8px 12px;border:0;border-top:1px dashed #9a9a9a;font-size:12px">+ 13 more</div>
+    </div>
+    <span class="ann">Row → the student (their Home as the instructor sees it, plus evidence and exam history). "Needs me" is computed from pending notifications (evidence, check-ins, help requests), overdue, inactivity and fails. Weak areas come from exam results by ACS code.</span>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Allocation flow: select rows → "Allocate to selected…" → sheet: pick task/exam/sim, due date, instructions. Same sheet from a task's page ("Allocate") and from ⌘K. The Assignments tab is Control Tower: the full allocation surface (who has what, due when, bulk allocate). For students, Control Tower is their Home (<a href="#6a">6a</a>).</div></div>
+
+<!-- 7b -->
+<div class="dv-opt" id="7b"><div class="dv-olabel"><a class="dv-oid" href="#7b">7b</a>Admin Home. Workspace analytics: how the program is performing, where content is weak, what needs administering. Numbers link to the surface that fixes them. Everything else an admin does (content, exam content, tasks, 3D Studio, users) is a rail destination, not a Home widget.</div>
+<div class="dv-card wf" style="width:1100px;height:800px;display:grid;grid-template-columns:168px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 16px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Aviation Institute · Admin</span><span style="flex:1"></span><div class="d" style="padding:3px 10px;font-size:12px;width:240px">Search or do anything… <span class="mut">⌘K</span></div><div class="row" style="gap:18px"><span class="ico" style="position:relative">🔔<span class="bdg">2</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 8px;gap:2px">
+    <div class="cap" style="padding:2px 9px 4px">Work</div>
+    <div class="nav on"><span class="sq"></span>Home</div>
+    <div class="nav"><span class="sq"></span>Triage</div>
+    <div class="nav"><span class="sq"></span>Jobs</div>
+    <div class="nav"><span class="sq"></span>Procedures</div>
+    <div class="cap" style="padding:12px 9px 4px">Teach</div>
+    <div class="nav"><span class="sq"></span>Course Catalog</div>
+    <div class="nav"><span class="sq"></span>Training</div>
+    <div class="nav"><span class="sq"></span>Assessments</div>
+    <div class="cap" style="padding:12px 9px 4px">Build</div>
+    <div class="nav"><span class="sq"></span>Design Studio</div>
+    <div class="cap" style="padding:12px 9px 4px">Knowledge</div>
+    <div class="nav"><span class="sq"></span>Library</div>
+    <div class="nav"><span class="sq"></span>Assistant</div>
+    <div class="nav"><span class="sq"></span>Milestones</div>
+    <div class="cap" style="padding:12px 9px 4px">Operations</div>
+    <div class="nav"><span class="sq"></span>Inventory Mgr</div>
+    <div class="nav"><span class="sq"></span>Records</div>
+    <div class="nav"><span class="sq"></span>Integrations</div>
+    <div style="flex:1"></div>
+    <div class="nav"><span class="sq"></span>Workspace</div>
+    <div class="nav"><span class="sq"></span>Help &amp; Feedback</div>
+    <div class="mut" style="font-size:11px;padding:4px 9px">Version 2.22.17</div></div>
+  <div class="col" style="padding:14px 22px 18px;gap:12px;min-height:0">
+    <div class="row" style="justify-content:space-between;align-items:baseline"><span class="hd">Aviation Institute · this term</span><div class="row" style="gap:6px"><span class="pill on">Term</span><span class="pill">30 days</span><span class="pill">Course ▾</span><span class="pill">Campus ▾</span></div></div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+      <div class="b col" style="padding:12px;gap:4px"><span class="cap">Active students</span><span class="hd">412</span><span class="mut" style="font-size:12px">38 inactive &gt; 7 days →</span></div>
+      <div class="b col" style="padding:12px;gap:4px"><span class="cap">Exam pass rate</span><span class="hd">81%</span><span class="mut" style="font-size:12px">Written 84 · Oral 76 · ↓3 vs last term</span></div>
+      <div class="b col" style="padding:12px;gap:4px"><span class="cap">On pace to level</span><span class="hd">67%</span><span class="mut" style="font-size:12px">91 students behind path →</span></div>
+      <div class="b col" style="padding:12px;gap:4px"><span class="cap">Review backlog</span><span class="hd">23</span><span class="mut" style="font-size:12px">oldest 6 days · 4 instructors →</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;flex:1;min-height:0">
+      <div class="b col" style="padding:12px;gap:8px;min-height:0">
+        <div class="row" style="justify-content:space-between"><span class="cap">Weakest ACS areas · from exam results</span><span class="mut" style="font-size:12px">→ exam content</span></div>
+        <div class="row" style="gap:8px;font-size:12px"><span style="width:200px">AM.II.D.K1 · Hydraulic schematics</span><div style="flex:1;height:8px;border-radius:5px;background:linear-gradient(90deg,#c8471b 54%,#dedede 54%)"></div><span style="width:120px" class="mut">54% · 3 tasks cover it</span></div>
+        <div class="row" style="gap:8px;font-size:12px"><span style="width:200px">AM.I.B.K4 · Weight &amp; balance</span><div style="flex:1;height:8px;border-radius:5px;background:linear-gradient(90deg,#b8860b 61%,#dedede 61%)"></div><span style="width:120px" class="mut">61% · 1 task</span></div>
+        <div class="row" style="gap:8px;font-size:12px"><span style="width:200px">AM.II.A.K2 · Pitot-static</span><div style="flex:1;height:8px;border-radius:5px;background:linear-gradient(90deg,#b8860b 66%,#dedede 66%)"></div><span style="width:120px" class="mut">66% · 0 sims</span></div>
+        <div class="row" style="gap:8px;font-size:12px"><span style="width:200px">AM.II.E.K2 · Fuel systems</span><div style="flex:1;height:8px;border-radius:5px;background:linear-gradient(90deg,#2b2b2b 72%,#dedede 72%)"></div><span style="width:120px" class="mut">72%</span></div>
+        <span class="ann" style="margin-top:auto">Content gap is the admin's lever: low score + few tasks or sims covering the code → go author or allocate. Row → exam content filtered to that ACS code.</span>
+      </div>
+      <div class="col" style="gap:10px;min-height:0">
+        <div class="b col" style="padding:12px;gap:6px"><span class="cap">Level distribution</span><div class="row" style="gap:3px;align-items:flex-end;height:48px"><div style="flex:1;background:#2b2b2b;height:30%"></div><div style="flex:1;background:#2b2b2b;height:55%"></div><div style="flex:1;background:#2b2b2b;height:100%"></div><div style="flex:1;background:#2b2b2b;height:45%"></div><div style="flex:1;background:#2b2b2b;height:15%"></div></div><div class="row" style="justify-content:space-between;font-size:11px" class="mut"><span>L1</span><span>L2</span><span>L3</span><span>L4</span><span>L5</span></div></div>
+        <div class="b col" style="padding:12px;gap:4px"><span class="cap">Needs administering</span><span style="font-size:12px">12 invitations pending · 3 tasks reference an outdated manual rev · 1 integration failing (SSO)</span></div>
+        <div class="b col" style="padding:12px;gap:4px"><span class="cap">Content activity</span><span style="font-size:12px">7 tasks published · 41 questions approved · 2 3D scenes generated</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Every number here is a facet of Capability insight or Administration; if a capability is disabled, its tile is absent and the grid reflows (rule from <a href="#1a">1a</a>). Admin rail: Work = Home · Triage · Jobs · Procedures; Teach = Course Catalog · Training · Assessments; Build = Design Studio; Knowledge = Library · Assistant · Milestones; Operations = Inventory Mgr · Records · Integrations; Workspace · Help &amp; Feedback. "Triage" is the admin's work queue (coined by you; I have not wireframed it yet). Course Catalog vs Procedures: Education shows Course Catalog, Commercial / radio pilot shows Procedures; both drawn here to illustrate.</div></div>
+
+</div>
+<p class="dv-next">Try: "allocation sheet from <a class="dv-oid" href="#7a">7a</a>" · "student detail page from a <a class="dv-oid" href="#7a">7a</a> row" · "now dress <a class="dv-oid" href="#6a">6a</a> and <a class="dv-oid" href="#7a">7a</a> in two visual directions"</p>
+</section>
+
+<section class="dv-turn" id="t6">
+<div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">Hierarchy inverted. Tasks lifted to the surface; block, module and ACS code become filters. "My work" removed. Admins set up milestones.</span></div>
+<p class="dv-note">Why: students and campus admins don't manage blocks well, and nobody likes drilling block → module → task. So the block stops being a place. Home is the list of everything allocated to me; the structure is a set of filters and a map under Milestones. Rail has three sections: Work (Home · Jobs · Tasks) · Learn (Start here · Training · Assessments) · Knowledge (Library · Assistant · Milestones). Simulators are part of Training.</p>
+<div class="dv-opts">
+
+<!-- 6a -->
+<div class="dv-opt" id="6a"><div class="dv-olabel"><a class="dv-oid" href="#6a">6a</a>Student / Operator Home. Milestone path on top; then pending / exams / training counts, continue working, needs attention, and the list of everything assigned. The full allocation list lives under Tasks (<a href="#6d">6d</a>); Jobs is the Commercial container (block equivalent).</div>
+<div class="dv-card wf" style="width:1100px;height:760px;display:grid;grid-template-columns:168px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 16px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Avionics · Avionics 2 cohort</span><span style="flex:1"></span><div class="d" style="padding:3px 10px;font-size:12px;width:240px">Search or do anything… <span class="mut">⌘K</span></div><div class="row" style="gap:18px"><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 8px;gap:2px">
+    <div class="cap" style="padding:2px 9px 4px">Work</div>
+    <div class="nav on"><span class="sq"></span>Home</div>
+    <div class="nav"><span class="sq"></span>Jobs</div>
+    <div class="nav"><span class="sq"></span>Tasks</div>
+    <div class="cap" style="padding:12px 9px 4px">Learn</div>
+    <div class="nav"><span class="sq"></span>Start here</div>
+    <div class="nav"><span class="sq"></span>Training</div>
+    <div class="nav"><span class="sq"></span>Assessments</div>
+    <div class="cap" style="padding:12px 9px 4px">Knowledge</div>
+    <div class="nav"><span class="sq"></span>Library</div>
+    <div class="nav"><span class="sq"></span>Assistant</div>
+    <div class="nav"><span class="sq"></span>Milestones</div>
+    <div style="flex:1"></div>
+    <div class="nav"><span class="sq"></span>Help &amp; Feedback</div>
+    <div class="mut" style="font-size:11px;padding:4px 9px">Version 2.22.17</div>
+  </div>
+  <div class="col" style="padding:14px 22px 18px;gap:10px;min-height:0">
+    <div class="row" style="gap:10px"><span class="pill on">L1 ✓</span><span class="pill on">L2 ✓</span><span class="pill on" style="outline:3px solid #ddd">L3</span><span class="pill" style="color:#999;border-color:#bbb">L4</span><span class="pill" style="color:#999;border-color:#bbb">L5</span><span class="mut" style="font-size:12px">To Level 4: 2 tasks → Airframe written</span><span style="flex:1"></span><span class="mut" style="font-size:12px">Milestones →</span></div>
+    <div class="row" style="justify-content:space-between;align-items:baseline"><span class="hd">Home</span><span class="mut" style="font-size:12px">Everything assigned to you: what's due and what you're working on.</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+      <div class="b col" style="padding:12px;gap:4px"><span class="cap">Pending tasks</span><span class="hd">11</span><span class="mut" style="font-size:12px">3 due this week · 1 overdue</span></div>
+      <div class="b col" style="padding:12px;gap:4px"><span class="cap">Exams completed</span><span class="hd">4</span><span class="mut" style="font-size:12px">Written 3 · Oral 1 · next: Airframe written</span></div>
+      <div class="b col" style="padding:12px;gap:4px"><span class="cap">Training completed</span><span class="hd">12 / 19</span><span class="mut" style="font-size:12px">modules · Block 4 in progress</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+      <div class="b col" style="padding:12px;gap:8px">
+        <div class="row" style="justify-content:space-between"><span class="cap">Continue working</span><span class="mut" style="font-size:12px">2</span></div>
+        <div class="row" style="gap:10px;align-items:center"><span class="sq" style="width:28px;height:28px"></span><div class="col" style="flex:1;gap:4px"><b>Hydraulic pump R&amp;R</b><div class="row" style="gap:8px"><div style="flex:1;height:5px;border-radius:5px;background:linear-gradient(90deg,#2b2b2b 44%,#dedede 44%)"></div><span class="mut" style="font-size:12px">4 of 9 done</span></div></div><span class="btn on" style="padding:2px 10px;font-size:12px">Resume</span></div>
+        <div class="row" style="gap:10px;align-items:center"><span class="sq" style="width:28px;height:28px"></span><div class="col" style="flex:1;gap:4px"><b>Pump fault simulator · fault set 2</b><div class="row" style="gap:8px"><div style="flex:1;height:5px;border-radius:5px;background:linear-gradient(90deg,#2b2b2b 60%,#dedede 60%)"></div><span class="mut" style="font-size:12px">3 of 5 done</span></div></div><span class="btn" style="padding:2px 10px;font-size:12px">Open</span></div>
+      </div>
+      <div class="b col" style="padding:12px;gap:8px">
+        <div class="row" style="justify-content:space-between"><span class="cap">Needs attention</span><span class="mut" style="font-size:12px">2</span></div>
+        <div class="row" style="gap:10px;align-items:center"><span class="sq" style="width:28px;height:28px"></span><div class="col" style="flex:1;gap:1px"><b>Gear retraction · 3D walkthrough</b><span class="mut" style="font-size:12px">overdue · needs revision · M. Reyes: "check torque values on step 6"</span></div><span class="btn" style="padding:2px 10px;font-size:12px">Fix</span></div>
+        <div class="row" style="gap:10px;align-items:center"><span class="sq" style="width:28px;height:28px"></span><div class="col" style="flex:1;gap:1px"><b>Airframe written exam</b><span class="mut" style="font-size:12px">recommended after Pump R&amp;R · reaches Level 4</span></div><span class="btn" style="padding:2px 10px;font-size:12px">Start</span></div>
+      </div>
+    </div>
+    <div class="b" style="padding:0;flex:1;min-height:0;overflow:hidden">
+      <div class="row" style="padding:8px 12px;border-bottom:1.5px solid #2b2b2b;gap:6px"><span class="pill on">To do · 9</span><span class="pill">Overdue · 1</span><span class="pill">Completed · 26</span><span class="pill">All · 37</span><span style="flex:1"></span><span class="mut" style="font-size:12px">Assigned to you · sorted by due</span></div>
+      <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd"><div class="col" style="flex:1;min-width:0;gap:1px"><b>worksheet · Torque worksheet</b><span class="mut" style="font-size:12px">Block 4 · Pump maintenance · 6 questions</span></div><span style="width:64px;flex:none">Fri</span><span style="width:104px;flex:none"><span class="tag t-off">Not started</span></span><span style="width:70px;flex:none"><span class="btn" style="padding:2px 10px;font-size:12px">Start</span></span></div>
+      <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd"><div class="col" style="flex:1;min-width:0;gap:1px"><b>task · Fuel selector valve inspection</b><span class="mut" style="font-size:12px">Block 5 · Fuel systems · 9 steps · 3D</span></div><span style="width:64px;flex:none">Oct 28</span><span style="width:104px;flex:none"><span class="tag t-off">Not started</span></span><span style="width:70px;flex:none"><span class="btn" style="padding:2px 10px;font-size:12px">Start</span></span></div>
+      <div class="d" style="padding:6px 12px;border:0;border-top:1px dashed #9a9a9a;font-size:12px">+ 7 more · All tasks →</div>
+    </div>
+    <span class="ann">Mirrors the current Home minus Active Blocks: counts, continue working, then the assigned list with To do / Overdue / Completed / All. Added "Needs attention" for revisions and the recommended exam. Path strip stays on top.</span>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Rail: Work (Home · Jobs · Tasks) · Learn (Start here · Training · Assessments) · Knowledge (Library · Assistant · Milestones). Simulators live inside Training. Commercial relabels: Jobs stays, Tasks → Procedures.</div></div>
+
+<!-- 6d -->
+<div class="dv-opt" id="6d"><div class="dv-olabel"><a class="dv-oid" href="#6d">6d</a>Tasks. The full list of allocations (tasks, exams, simulators, worksheets), default sort by due date. Filter chips for block, module, ACS code, type and status. Block and module appear as labels on each row, never as containers.</div>
+<div class="dv-card wf" style="width:1100px;height:700px;display:grid;grid-template-columns:168px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 16px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Avionics · Avionics 2 cohort</span><span style="flex:1"></span><div class="d" style="padding:3px 10px;font-size:12px;width:240px">Search or do anything… <span class="mut">⌘K</span></div><div class="row" style="gap:18px"><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 8px;gap:2px">
+    <div class="cap" style="padding:2px 9px 4px">Work</div>
+    <div class="nav"><span class="sq"></span>Home</div>
+    <div class="nav"><span class="sq"></span>Jobs</div>
+    <div class="nav on"><span class="sq"></span>Tasks</div>
+    <div class="cap" style="padding:12px 9px 4px">Learn</div>
+    <div class="nav"><span class="sq"></span>Start here</div>
+    <div class="nav"><span class="sq"></span>Training</div>
+    <div class="nav"><span class="sq"></span>Assessments</div>
+    <div class="cap" style="padding:12px 9px 4px">Knowledge</div>
+    <div class="nav"><span class="sq"></span>Library</div>
+    <div class="nav"><span class="sq"></span>Assistant</div>
+    <div class="nav"><span class="sq"></span>Milestones</div>
+    <div style="flex:1"></div>
+    <div class="nav"><span class="sq"></span>Help &amp; Feedback</div>
+    <div class="mut" style="font-size:11px;padding:4px 9px">Version 2.22.17</div>
+  </div>
+  <div class="col" style="padding:14px 22px 18px;gap:10px;min-height:0">
+    <div class="row" style="gap:10px"><span class="pill on">L1 ✓</span><span class="pill on">L2 ✓</span><span class="pill on" style="outline:3px solid #ddd">L3</span><span class="pill" style="color:#999;border-color:#bbb">L4</span><span class="pill" style="color:#999;border-color:#bbb">L5</span><span class="mut" style="font-size:12px">To Level 4: 2 tasks → Airframe written</span><span style="flex:1"></span><span class="mut" style="font-size:12px">Milestones →</span></div>
+    <div class="row" style="justify-content:space-between;align-items:baseline"><span class="hd">Your tasks</span><div class="row" style="gap:6px"><span class="mut" style="font-size:12px">Sort</span><span class="pill on">Due</span><span class="pill">Recent</span><span class="pill">Block order</span></div></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap">
+      <span class="pill">Block ▾</span><span class="pill">Module ▾</span><span class="pill on">ACS: AM.II.D ✕</span><span class="pill">Type ▾</span><span class="pill on">Status: open ✕</span><span class="mut" style="font-size:12px;margin-left:4px">11 of 37</span>
+    </div>
+    <div class="b" style="padding:0;flex:1;min-height:0;overflow:hidden">
+      <div class="row" style="padding:7px 12px;border-bottom:1.5px solid #2b2b2b;font-size:11px;font-weight:600;color:#777"><span style="flex:1">Task</span><span style="width:150px;flex:none">Block · module</span><span style="width:92px;flex:none">ACS</span><span style="width:64px;flex:none">Due</span><span style="width:104px;flex:none">Status</span><span style="width:70px;flex:none"></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd;border-left:4px solid #2b2b2b"><div class="col" style="flex:1;min-width:0;gap:1px"><b>task · Hydraulic pump R&amp;R</b><span class="mut" style="font-size:12px">step 4 of 9 · 3D · counts toward Level 4</span></div><span style="width:150px;font-size:12px;flex:none">Block 4 · Pump maintenance</span><span style="width:92px;font-size:12px;flex:none">AM.II.D.K3</span><span style="width:64px;flex:none">Today</span><span style="width:104px;flex:none"><span class="tag t-warn">In progress</span></span><span style="width:70px;flex:none"><span class="btn on" style="padding:2px 10px;font-size:12px">Resume</span></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><div class="col" style="flex:1;min-width:0;gap:1px"><b>worksheet · Torque worksheet</b><span class="mut" style="font-size:12px">6 questions</span></div><span style="width:150px;font-size:12px;flex:none">Block 4 · Pump maintenance</span><span style="width:92px;font-size:12px;flex:none">AM.II.D.S2</span><span style="width:64px;flex:none">Fri</span><span style="width:104px;flex:none"><span class="tag t-off">Not started</span></span><span style="width:70px;flex:none"><span class="btn" style="padding:2px 10px;font-size:12px">Start</span></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><div class="col" style="flex:1;min-width:0;gap:1px"><b>exam · Airframe written</b><span class="mut" style="font-size:12px">60 q · 90 min · recommended after the two above · reaches Level 4</span></div><span style="width:150px;font-size:12px;flex:none">Block 4 exam</span><span style="width:92px;font-size:12px;flex:none">AM.II.D</span><span style="width:64px;flex:none">Thu 16</span><span style="width:104px;flex:none"><span class="tag t-off">Available</span></span><span style="width:70px;flex:none"><span class="btn" style="padding:2px 10px;font-size:12px">Start</span></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><div class="col" style="flex:1;min-width:0;gap:1px"><b>sim · Pump fault simulator · fault set 2</b><span class="mut" style="font-size:12px">2 of 5 scenarios left</span></div><span style="width:150px;font-size:12px;flex:none">Block 4 · Pump maintenance</span><span style="width:92px;font-size:12px;flex:none">AM.II.D.R1</span><span style="width:64px;flex:none">Mon 20</span><span style="width:104px;flex:none"><span class="tag t-warn">In progress</span></span><span style="width:70px;flex:none"><span class="btn" style="padding:2px 10px;font-size:12px">Open</span></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><div class="col" style="flex:1;min-width:0;gap:1px"><b>task · Gear retraction · 3D walkthrough</b><span class="mut" style="font-size:12px">needs revision · see M. Reyes's note</span></div><span style="width:150px;font-size:12px;flex:none">Block 4 · Landing gear</span><span style="width:92px;font-size:12px;flex:none">AM.II.D.K1</span><span style="width:64px;flex:none">Overdue</span><span style="width:104px;flex:none"><span class="tag" style="border-color:#c8471b;color:#c8471b">Needs revision</span></span><span style="width:70px;flex:none"><span class="btn" style="padding:2px 10px;font-size:12px">Fix</span></span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><div class="col" style="flex:1;min-width:0;gap:1px"><b>task · Fuel selector valve inspection</b><span class="mut" style="font-size:12px">9 steps · 3D</span></div><span style="width:150px;font-size:12px;flex:none">Block 5 · Fuel systems</span><span style="width:92px;font-size:12px;flex:none">AM.II.E.K2</span><span style="width:64px;flex:none">Oct 28</span><span style="width:104px;flex:none"><span class="tag t-off">Not started</span></span><span style="width:70px;flex:none"><span class="btn" style="padding:2px 10px;font-size:12px">Start</span></span></div>
+      <div class="d" style="padding:8px 12px;border:0;border-top:1px dashed #9a9a9a;font-size:12px">+ 5 more open · 26 done (clear Status filter)</div>
+    </div>
+    <span class="ann">Block is a column and a filter, not a door. Row click opens the item; "Block order" sort reproduces the old hierarchy for anyone who wants it. A student who never touches a filter still sees everything that matters, in order.</span>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Rail items Exams / Simulators / Library are now catalogs (3D models are reached through tasks and Library) (everything available, allocated or not); Home is only what's allocated to me. Commercial: Block → Job, Module → System, ACS column → the customer's own reference codes or hidden.</div></div>
+
+<!-- 6b -->
+<div class="dv-opt" id="6b"><div class="dv-olabel"><a class="dv-oid" href="#6b">6b</a>Milestones. Now carries the structure the Home no longer does: the level path, and under each level the blocks and modules with completion. The one place a student can see the map; still no drilling, everything expands in place.</div>
+<div class="dv-card wf" style="width:960px;height:520px;display:grid;grid-template-columns:168px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 16px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Avionics · Avionics 2 cohort</span><span style="flex:1"></span><div class="d" style="padding:3px 10px;font-size:12px;width:240px">Search or do anything… <span class="mut">⌘K</span></div><div class="row" style="gap:18px"><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 8px;gap:2px"><div class="nav"><span class="sq"></span>Home</div><div class="nav"><span class="sq"></span>Exams</div><div class="nav"><span class="sq"></span>Simulators</div><div class="nav"><span class="sq"></span>Library</div><div class="nav"><span class="sq"></span>Messages</div><div style="flex:1"></div><div class="nav on"><span class="sq"></span>Milestones</div></div>
+  <div style="padding:16px 22px;display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px">
+    <div class="col" style="gap:8px">
+      <span class="hd">Your path · Avionics</span>
+      <div class="row" style="gap:0;padding:4px 0 10px"><span class="pill on">L1</span><div style="width:60px;height:2px;background:#2b2b2b"></div><span class="pill on">L2</span><div style="width:60px;height:2px;background:#2b2b2b"></div><span class="pill on" style="outline:3px solid #ddd">L3</span><div style="width:60px;height:2px;background:#ccc"></div><span class="pill" style="color:#999;border-color:#bbb">L4</span><div style="width:60px;height:2px;background:#ccc"></div><span class="pill" style="color:#999;border-color:#bbb">L5</span></div>
+      <div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid #ddd;color:#777"><span>▸ Level 1 · Fundamentals · Block 1–2</span><span class="tag t-ok">Reached 12 Aug</span></div>
+      <div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid #ddd;color:#777"><span>▸ Level 2 · Electrical · Block 3</span><span class="tag t-ok">Reached 20 Sep</span></div>
+      <div class="b col" style="padding:10px 12px;gap:6px;margin:6px 0">
+        <div class="row" style="justify-content:space-between"><b>▾ Level 3 · Hydraulics &amp; landing gear · Block 4</b><span class="tag t-warn">In progress</span></div>
+        <div class="row" style="gap:6px;font-size:12px"><span style="width:150px">Hydraulic principles</span><div class="ln" style="flex:1;height:6px;background:#2b2b2b"></div><span class="mut" style="width:60px;text-align:right">3 / 3</span></div>
+        <div class="row" style="gap:6px;font-size:12px"><span style="width:150px">Landing gear systems</span><div style="flex:1;height:6px;border-radius:5px;background:linear-gradient(90deg,#2b2b2b 50%,#dedede 50%)"></div><span class="mut" style="width:60px;text-align:right">1 / 2 ⚠</span></div>
+        <div class="row" style="gap:6px;font-size:12px"><span style="width:150px">Pump maintenance</span><div style="flex:1;height:6px;border-radius:5px;background:linear-gradient(90deg,#2b2b2b 30%,#dedede 30%)"></div><span class="mut" style="width:60px;text-align:right">1 / 3</span></div>
+        <div class="row" style="gap:8px;font-size:12px;margin-top:4px"><span class="mut">Gate:</span><span class="pill">Airframe written</span><span class="mut">→ L4</span><span style="flex:1"></span><span class="btn" style="padding:2px 10px;font-size:12px">Show these on Home</span></div>
+      </div>
+      <div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid #ddd;color:#777"><span>▸ Level 4 · Fuel &amp; pneumatics · Block 5</span><span class="tag t-off">Ahead</span></div>
+      <div class="row" style="justify-content:space-between;padding:6px 0;color:#777"><span>▸ Level 5 · Certification ready · Block 6 + finals</span><span class="tag t-off">Ahead</span></div>
+    </div>
+    <div class="col" style="gap:10px">
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Earned</span><div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Fundamentals</span><span class="pill">Electrical</span><span class="pill">First 3D task</span></div></div>
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">ACS coverage</span><span class="mut" style="font-size:12px">AM.II.D 70% · AM.II.E 0% · weak: AM.II.D.K1</span><span class="mut" style="font-size:12px">→ practice</span></div>
+      <span class="ann">"Show these on Home" applies Block 4 as a filter on Home. That's the whole drill-in: a filter, not a page.</span>
+    </div>
+  </div>
+</div></div>
+
+<!-- 6c -->
+<div class="dv-opt" id="6c"><div class="dv-olabel"><a class="dv-oid" href="#6c">6c</a>Admin: milestone setup. Lives under Content → Course Catalog (the rail shows Course Catalog or Tasks, never both; Tasks is the Commercial equivalent). A level is a name plus a gate: which blocks/modules must be complete and which exam must be passed. Levels default to one per block if nobody configures them.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-columns:168px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 16px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Aviation Institute</span><span style="flex:1"></span><div class="d" style="padding:3px 10px;font-size:12px;width:240px">Search or do anything… <span class="mut">⌘K</span></div><div class="row" style="gap:18px"><span class="ico" style="position:relative">🔔<span class="bdg">7</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 8px;gap:2px"><div class="nav"><span class="sq"></span>Home</div><div class="nav"><span class="sq"></span>People &amp; groups</div><div class="nav"><span class="sq"></span>Control Tower</div><div class="cap" style="padding:10px 9px 4px">Content</div><div class="nav on"><span class="sq"></span>Course Catalog</div><div class="nav"><span class="sq"></span>Tasks</div><div class="nav"><span class="sq"></span>Written Exams</div><div class="nav"><span class="sq"></span>Oral Exams</div><div class="nav"><span class="sq"></span>Library</div><div class="nav"><span class="sq"></span>3D Studio</div><div class="cap" style="padding:10px 9px 4px">Admin</div><div class="nav"><span class="sq"></span>Users &amp; access</div><div class="nav"><span class="sq"></span>Workspace</div></div>
+  <div class="col" style="padding:16px 22px;gap:10px">
+    <div class="row" style="justify-content:space-between"><div class="col" style="gap:1px"><span class="mut" style="font-size:12px">Course Catalog › Avionics</span><span class="hd">Milestones · Avionics</span></div><div class="row" style="gap:6px"><span class="pill">Derived (1 per block)</span><span class="pill on">Custom</span><span class="btn on">Publish</span></div></div>
+    <div class="b" style="padding:0">
+      <div class="row" style="padding:7px 12px;border-bottom:1.5px solid #2b2b2b;font-size:11px;font-weight:600;color:#777"><span style="width:28px"></span><span style="width:60px">Level</span><span style="width:200px">Name</span><span style="flex:1">Requires complete</span><span style="width:170px">Gate exam</span><span style="width:90px">Students at</span><span style="width:30px"></span></div>
+      <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd"><span style="width:28px" class="mut">⠿</span><span style="width:60px">1</span><span style="width:200px">Fundamentals</span><span style="flex:1;font-size:12px"><span class="pill">Block 1</span> <span class="pill">Block 2</span></span><span style="width:170px;font-size:12px"><span class="pill">General written</span></span><span style="width:90px">0</span><span style="width:30px" class="mut">⋯</span></div>
+      <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd"><span style="width:28px" class="mut">⠿</span><span style="width:60px">2</span><span style="width:200px">Electrical</span><span style="flex:1;font-size:12px"><span class="pill">Block 3</span></span><span style="width:170px;font-size:12px"><span class="pill">Electrical written</span> <span class="pill">Oral</span></span><span style="width:90px">4</span><span style="width:30px" class="mut">⋯</span></div>
+      <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd;background:#f3f3f3"><span style="width:28px" class="mut">⠿</span><span style="width:60px">3</span><span style="width:200px"><div class="b" style="padding:2px 6px">Hydraulics &amp; landing gear</div></span><span style="flex:1;font-size:12px"><span class="pill">Block 4</span> <span class="d" style="padding:0 6px;border-radius:999px">+ add block / module</span></span><span style="width:170px;font-size:12px"><span class="pill">Airframe written</span></span><span style="width:90px">11</span><span style="width:30px" class="mut">⋯</span></div>
+      <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd"><span style="width:28px" class="mut">⠿</span><span style="width:60px">4</span><span style="width:200px">Fuel &amp; pneumatics</span><span style="flex:1;font-size:12px"><span class="pill">Block 5</span></span><span style="width:170px;font-size:12px"><span class="pill">Powerplant oral</span></span><span style="width:90px">3</span><span style="width:30px" class="mut">⋯</span></div>
+      <div class="row" style="padding:8px 12px"><span style="width:28px" class="mut">⠿</span><span style="width:60px">5</span><span style="width:200px">Certification ready</span><span style="flex:1;font-size:12px"><span class="pill">Block 6</span> <span class="pill">All prior</span></span><span style="width:170px;font-size:12px"><span class="pill">Final written</span> <span class="pill">Final oral</span></span><span style="width:90px">0</span><span style="width:30px" class="mut">⋯</span></div>
+      <div class="d" style="padding:8px 12px;border:0;border-top:1px dashed #9a9a9a;font-size:12px">+ Add level</div>
+    </div>
+    <div class="row" style="gap:16px"><div class="b col" style="padding:10px;gap:4px;flex:1"><span class="cap">Options</span><div class="row" style="gap:8px;font-size:12px"><span class="sq" style="background:#2b2b2b"></span>Recommend gate exam when requirements complete</div><div class="row" style="gap:8px;font-size:12px"><span class="sq"></span>Block the exam until requirements complete</div><div class="row" style="gap:8px;font-size:12px"><span class="sq"></span>Show cohort comparison to students</div></div>
+    <span class="ann" style="flex:1">Publishing re-evaluates every student's level. "Students at" previews the effect before publish. Gates can be block-, module- or ACS-based so the level model survives the inversion on the student side.</span></div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try: "staff Home as the same flat list (all students' allocations)" · "<a class="dv-oid" href="#6a">6a</a> empty state and first-login state" · "dress <a class="dv-oid" href="#6a">6a</a> in two visual directions"</p>
+</section>
+
+<section class="dv-turn" id="t5">
+<div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">4a reworked with the confirmed vocabulary (Block → Module → Task), every capability first-class, and ⌘K as the second nav layer.</span></div>
+<p class="dv-note">The milestone path stays as orientation but stops being the only way in. The block is the organising object on Home: its modules, tasks, exams and simulators are all visible, and the rail returns so Simulators, 3D, Library and Exams have a permanent front door. ⌘K searches and acts across everything. Shown as a student in an Education workspace; staff version noted below.</p>
+<div class="dv-opts">
+
+<!-- 5a -->
+<div class="dv-opt" id="5a"><div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a>Student Home. Compact rail (icons + labels, collapsible). Path strip is one line. The current block is the stage: modules as columns, each with its tasks; exams and simulators sit in the block as peers, not in a dock.</div>
+<div class="dv-card wf" style="width:960px;height:640px;display:grid;grid-template-columns:168px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 16px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Avionics · Avionics 2 cohort</span><span style="flex:1"></span><div class="d" style="padding:3px 10px;font-size:12px;width:240px">Search or do anything… <span class="mut">⌘K</span></div><div class="row" style="gap:18px"><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 8px;gap:2px">
+    <div class="nav on"><span class="sq"></span>Home</div>
+    <div class="nav"><span class="sq"></span>My work</div>
+    <div class="nav"><span class="sq"></span>Exams</div>
+    <div class="nav"><span class="sq"></span>Simulators</div>
+    
+    <div class="nav"><span class="sq"></span>Library</div>
+    <div class="nav"><span class="sq"></span>Messages</div>
+    <div style="flex:1"></div>
+    <div class="nav"><span class="sq"></span>Milestones</div>
+    <div class="mut" style="font-size:11px;padding:6px 9px">⟨ collapse</div>
+  </div>
+  <div class="col" style="padding:14px 22px 18px;gap:12px;min-height:0">
+    <div class="row" style="gap:10px;flex-wrap:wrap">
+      <span class="pill on">L1 ✓</span><span class="pill on">L2 ✓</span><span class="pill on" style="outline:3px solid #ddd">L3 · Hydraulics &amp; landing gear</span><span class="pill" style="color:#999;border-color:#bbb">L4</span><span class="pill" style="color:#999;border-color:#bbb">L5</span>
+      <span style="flex:1"></span><span class="mut" style="font-size:12px">To Level 4: finish Pump R&amp;R → Airframe written</span>
+    </div>
+    <div class="row" style="justify-content:space-between;align-items:baseline"><span class="hd">Block 4 · Hydraulics &amp; landing gear</span><div class="row" style="gap:6px"><span class="pill on">This block</span><span class="pill">All blocks</span></div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;flex:1;min-height:0">
+      <div class="b col" style="padding:10px;gap:6px">
+        <div class="row" style="justify-content:space-between"><span class="cap">Module 4.1</span><span class="tag t-ok">Done</span></div><b>Hydraulic principles</b>
+        <div class="d" style="padding:6px 8px;font-size:12px;text-decoration:line-through">Pressure &amp; flow worksheet</div>
+        <div class="d" style="padding:6px 8px;font-size:12px;text-decoration:line-through">Schematic reading</div>
+        <div class="d" style="padding:6px 8px;font-size:12px;text-decoration:line-through">Quiz · 12/15</div>
+      </div>
+      <div class="b col" style="padding:10px;gap:6px">
+        <div class="row" style="justify-content:space-between"><span class="cap">Module 4.2</span><span class="tag t-ok">Done</span></div><b>Landing gear systems</b>
+        <div class="d" style="padding:6px 8px;font-size:12px;text-decoration:line-through">Gear retraction · 3D walkthrough</div>
+        <div class="d" style="padding:6px 8px;font-size:12px;text-decoration:line-through">Gear sim · 5 scenarios</div>
+      </div>
+      <div class="b col" style="padding:10px;gap:6px;border-width:2px">
+        <div class="row" style="justify-content:space-between"><span class="cap">Module 4.3</span><span class="tag t-warn">In progress</span></div><b>Pump maintenance</b>
+        <div class="b row" style="padding:7px 8px;font-size:12px;justify-content:space-between"><span>Hydraulic pump R&amp;R · 4/9</span><span class="btn on" style="padding:1px 8px;font-size:11px">Resume</span></div>
+        <div class="d row" style="padding:6px 8px;font-size:12px;justify-content:space-between"><span>Pump fault sim · fault set 2</span><span class="mut">2 left</span></div>
+        <div class="d row" style="padding:6px 8px;font-size:12px;justify-content:space-between"><span>Torque worksheet</span><span class="mut">due Fri</span></div>
+      </div>
+    </div>
+    <div class="b row" style="padding:10px 12px;justify-content:space-between">
+      <div class="row" style="gap:10px"><span class="cap">Block exam</span><b>Airframe written</b><span class="mut" style="font-size:12px">60 q · 90 min · recommended after module 4.3 · passing reaches Level 4</span></div>
+      <div class="row" style="gap:6px"><span class="btn">Practice</span><span class="btn">Start anyway</span></div>
+    </div>
+    <span class="ann">Everything a student does lives in a module or at the block level; the rail answers "show me all simulators / all exams" across blocks. Hidden capability → its row type never appears.</span>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Staff version: same frame, the stage shows the cohort's block (18 students distributed across modules), rail = People &amp; groups · Review · Allocations · Content · Admin. Commercial: Block → Job, no module columns; tasks group by System instead.</div></div>
+
+<!-- 5b -->
+<div class="dv-opt" id="5b"><div class="dv-olabel"><a class="dv-oid" href="#5b">5b</a>⌘K. One overlay for search, navigation and actions, available on every screen. Empty state shows resume points and recent items so it is useful before typing. Student and staff get the same surface with different verbs.</div>
+<div class="dv-card wf" style="width:960px;height:470px;position:relative;background:#ececec">
+  <div style="position:absolute;inset:0;opacity:.35;display:grid;grid-template-columns:168px 1fr"><div style="border-right:1.5px solid #2b2b2b"></div><div></div></div>
+  <div class="b col" style="position:absolute;left:50%;top:28px;transform:translateX(-50%);width:580px;padding:0;gap:0;box-shadow:0 12px 40px rgba(0,0,0,.18)">
+    <div class="row" style="padding:12px 14px;border-bottom:1.5px solid #2b2b2b;gap:10px"><span class="ico" style="width:auto;height:auto">⌕</span><span style="font-size:16px">pump</span><span style="flex:1"></span><span class="mut" style="font-size:11px">esc</span></div>
+    <div class="col" style="padding:8px;gap:2px">
+      <span class="cap" style="padding:4px 8px">Resume</span>
+      <div class="row" style="padding:7px 8px;background:#e6e6e6;border-radius:4px;justify-content:space-between"><div class="row"><span class="sq"></span><span>Hydraulic <b>pump</b> R&amp;R · step 4 of 9</span><span class="mut" style="font-size:12px">Task · Module 4.3</span></div><span class="mut" style="font-size:11px">↵</span></div>
+      <span class="cap" style="padding:8px 8px 4px">Open</span>
+      <div class="row" style="padding:7px 8px;gap:8px"><span class="sq"></span><span><b>Pump</b> fault simulator · fault set 2</span><span class="mut" style="font-size:12px">Simulator</span></div>
+      <div class="row" style="padding:7px 8px;gap:8px"><span class="sq"></span><span>PT6A hydraulic <b>pump</b></span><span class="mut" style="font-size:12px">3D model</span></div>
+      <div class="row" style="padding:7px 8px;gap:8px"><span class="sq"></span><span>Ch. 29 · Hydraulic power · <b>pump</b> assembly</span><span class="mut" style="font-size:12px">Library · saved offline</span></div>
+      <span class="cap" style="padding:8px 8px 4px">Do</span>
+      <div class="row" style="padding:7px 8px;gap:8px"><span class="sq"></span><span>Ask Orion about the hydraulic <b>pump</b></span><span class="mut" style="font-size:12px">grounded in block 4 sources</span></div>
+      <div class="row" style="padding:7px 8px;gap:8px"><span class="sq"></span><span>Practice questions · hydraulic <b>pump</b></span><span class="mut" style="font-size:12px">Study session</span></div>
+    </div>
+    <div class="row" style="padding:8px 14px;border-top:1.5px dashed #9a9a9a;gap:14px;font-size:11px" class="mut"><span class="mut">↑↓ move</span><span class="mut">↵ open</span><span class="mut">⌘↵ open beside</span><span style="flex:1"></span><span class="ann">staff verbs: Allocate…, Message group, Review next, New question</span></div>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Results grouped by what you'd do (Resume · Open · Do), not by object type. Only enabled capabilities contribute rows. "Open beside" is the hook into a split view if we take that from <a href="#4b">4b</a>.</div></div>
+
+<!-- 5c -->
+<div class="dv-opt" id="5c"><div class="dv-olabel"><a class="dv-oid" href="#5c">5c</a>Where the "pop" budget goes. Not chrome: three moments of motion that explain state, each tied to the model. Storyboard; the look-and-feel pass will make these real.</div>
+<div class="dv-card wf" style="width:960px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0">
+  <div class="col" style="padding:18px;gap:10px;border-right:1.5px dashed #9a9a9a">
+    <span class="cap">1 · Step done → task progress</span>
+    <div class="b col" style="padding:12px;gap:8px"><div class="row" style="justify-content:space-between"><span style="font-size:12px">Pump R&amp;R</span><span class="mut" style="font-size:12px">4 → 5 of 9</span></div><div class="row" style="gap:3px"><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b;outline:3px solid #ddd"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span></div><div class="img" style="height:56px;font-size:12px">3D: camera glides from fitting B to the next part</div></div>
+    <span class="ann">The segment fills, the 3D camera moves to the next step's part. The motion is the confirmation; no toast.</span>
+  </div>
+  <div class="col" style="padding:18px;gap:10px;border-right:1.5px dashed #9a9a9a">
+    <span class="cap">2 · Task done → module → block</span>
+    <div class="b col" style="padding:12px;gap:8px"><div class="row" style="gap:6px"><span class="pill on" style="font-size:11px">4.1 ✓</span><span class="pill on" style="font-size:11px">4.2 ✓</span><span class="pill on" style="font-size:11px;outline:3px solid #ddd">4.3 ✓</span></div><div class="ln" style="width:100%;height:6px;background:#2b2b2b"></div><div class="d" style="padding:8px;font-size:12px">Block 4 complete · Airframe written now recommended</div></div>
+    <span class="ann">Progress rolls up visibly: the task card settles into its module column, the module tag flips to Done, the block bar completes, the exam row brightens. One chained sequence, under a second.</span>
+  </div>
+  <div class="col" style="padding:18px;gap:10px">
+    <span class="cap">3 · Exam pass → level</span>
+    <div class="b col" style="padding:12px;gap:8px;align-items:center"><div class="row" style="gap:6px"><span class="pill on">L3</span><span>→</span><span class="pill on" style="font-size:15px;padding:4px 14px">L4</span></div><b style="font-size:14px">Level 4 · Fuel &amp; pneumatics</b><div class="row" style="gap:4px"><span class="pill" style="font-size:11px">Block 5 recommended</span><span class="pill" style="font-size:11px">Fuel sim unlocked</span></div></div>
+    <span class="ann">The path strip at the top of Home advances; the L4 pill becomes the active one and the stage cross-fades to Block 5. The only full-screen moment in the product.</span>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try: "staff Home in <a class="dv-oid" href="#5a">5a</a>'s frame" · "Commercial / radio pilot version of <a class="dv-oid" href="#5a">5a</a> with Systems" · "dress <a class="dv-oid" href="#5a">5a</a> in two visual directions: calm and engineered"</p>
+</section>
+
+<section class="dv-turn" id="t4">
+<div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">Shell alternatives beyond header + side nav. Same student content (<a href="#3a">3a</a>), four different frames. Low-fi; motion described in red.</span></div>
+<p class="dv-note">What makes an app feel alive is usually not the chrome but three things: the content is the navigation, things move in place instead of page-swapping, and there is always one obvious next thing to touch. Each option below bets on a different one. All keep the header right zone (search · bell · avatar) and work for the staff side too; staff notes at the bottom of each.</p>
+<div class="dv-opts">
+
+<!-- 4a -->
+<div class="dv-opt" id="4a"><div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>Path as the spine. No sidebar. The milestone path runs horizontally across the top and IS the navigation: tap a level to scroll its content into view. Below, a single wide stage shows whatever is selected. Secondary places (Library, 3D, Simulators, Messages) live in a compact dock at the bottom.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-rows:48px 92px minmax(0,1fr) 56px">
+  <div class="row" style="padding:0 20px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Avionics 2</span><span style="flex:1"></span><div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="row" style="padding:0 20px;gap:0;align-items:center;border-bottom:1.5px solid #2b2b2b">
+    <div class="col" style="gap:4px;align-items:center;width:130px"><span class="pill on">1</span><span style="font-size:11px" class="mut">Fundamentals ✓</span></div><div style="flex:1;height:2px;background:#2b2b2b"></div>
+    <div class="col" style="gap:4px;align-items:center;width:130px"><span class="pill on">2</span><span style="font-size:11px" class="mut">Electrical ✓</span></div><div style="flex:1;height:2px;background:#2b2b2b"></div>
+    <div class="col" style="gap:4px;align-items:center;width:170px"><span class="pill on" style="outline:3px solid #ddd;font-size:14px;padding:3px 13px">3</span><b style="font-size:12px">Hydraulics · 2 of 3</b></div><div style="flex:1;height:2px;background:#ccc"></div>
+    <div class="col" style="gap:4px;align-items:center;width:130px;color:#999"><span class="pill" style="border-color:#bbb">4</span><span style="font-size:11px">Fuel &amp; pneumatics</span></div><div style="flex:1;height:2px;background:#ccc"></div>
+    <div class="col" style="gap:4px;align-items:center;width:130px;color:#999"><span class="pill" style="border-color:#bbb">5</span><span style="font-size:11px">Certification</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;padding:18px 20px">
+    <div class="b col" style="padding:16px;gap:10px">
+      <div class="row" style="justify-content:space-between"><span class="cap">Level 3 · next up</span><span class="tag t-warn">Last for Level 4</span></div>
+      <span class="hd">Hydraulic pump R&amp;R</span>
+      <span class="mut">Task · step 4 of 9 · 3D scene attached</span>
+      <div class="img" style="flex:1;min-height:120px">3D preview · idle rotation</div>
+      <div class="row" style="justify-content:space-between"><div class="row" style="gap:3px"><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span></div><span class="btn on" style="padding:8px 20px">Resume</span></div>
+    </div>
+    <div class="col" style="gap:10px">
+      <div class="b col" style="padding:12px;gap:4px"><div class="row" style="justify-content:space-between"><b>Airframe written exam</b><span class="tag t-off">After block</span></div><span class="mut" style="font-size:12px">60 questions · passing reaches Level 4</span></div>
+      <div class="b col" style="padding:12px;gap:4px"><div class="row" style="justify-content:space-between"><b>Fuel system simulator</b><span class="mut" style="font-size:12px">Level 5</span></div><span class="mut" style="font-size:12px">Fault set 2 · 2 scenarios left</span></div>
+      <div class="b col" style="padding:12px;gap:4px"><b>Weak areas</b><div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Pitot-static</span><span class="pill">Hydraulic schematics</span></div></div>
+      <span class="ann">Tap level 2 → the strip slides, the stage cross-fades to level 2's results and material. Tap 4 → requirements. The URL changes; no page reload feel.</span>
+    </div>
+  </div>
+  <div class="row" style="justify-content:center;gap:6px;padding:0 20px;border-top:1.5px dashed #9a9a9a">
+    <span class="pill">My work</span><span class="pill">Exams</span><span class="pill">Simulators</span><span class="pill">3D</span><span class="pill">Library</span><span class="pill">Messages</span>
+    <span class="ann" style="margin-left:14px">dock: the places that aren't on the path</span>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Alive because: progress is the first thing you see and the thing you steer with. Staff side: the strip becomes the group's cohort path (18 avatars distributed across levels); tap a level to see who's there. Risk: workspaces without authored levels fall back to blocks, which is fine; workspaces without any structure (pure ticket work) need the dock to become the primary nav.</div></div>
+
+<!-- 4b -->
+<div class="dv-opt" id="4b"><div class="dv-olabel"><a class="dv-oid" href="#4b">4b</a>Workbench. A thin icon rail, and everything you open becomes a tab in a persistent tray at the bottom: a procedure, its 3D model, the exam, Orion. Tabs survive navigation, can be split side by side, and reopen where you left off. The app behaves like a tool, not a website.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:48px minmax(0,1fr) 44px">
+  <div class="row" style="grid-column:1/3;padding:0 16px;gap:14px;border-bottom:1.5px solid #2b2b2b"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><div class="d" style="padding:3px 10px;font-size:12px">Avionics 2 · Level 3 · 2 of 3</div><span style="flex:1"></span><div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:10px 0;gap:6px;align-items:center">
+    <span class="sq" style="width:22px;height:22px;background:#2b2b2b"></span><span class="sq" style="width:22px;height:22px"></span><span class="sq" style="width:22px;height:22px"></span><span class="sq" style="width:22px;height:22px"></span><span class="sq" style="width:22px;height:22px"></span><span class="sq" style="width:22px;height:22px"></span>
+    <div style="flex:1"></div><span class="sq" style="width:22px;height:22px;border-radius:50%"></span>
+    <span class="ann" style="writing-mode:vertical-rl;font-size:10px">labels on hover</span>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0">
+    <div class="col" style="padding:16px 18px;gap:10px;border-right:1.5px solid #2b2b2b">
+      <div class="row" style="justify-content:space-between"><div class="col" style="gap:1px"><b>Hydraulic pump R&amp;R</b><span class="mut" style="font-size:12px">Step 4 of 9</span></div><span class="btn" style="padding:2px 8px">⇆ split</span></div>
+      <span style="font-size:16px;font-weight:600">4. Disconnect the pressure line at fitting B.</span>
+      <span class="mut">Cap both ends. Expect residual fluid.</span>
+      <div class="d" style="padding:8px;font-size:12px">⚠ Pressure must read 0 before continuing</div>
+      <div class="row" style="gap:6px;margin-top:auto"><span class="btn">Ask Orion</span><span class="btn">Source ¶ 29-11</span><span class="btn on">Step done →</span></div>
+    </div>
+    <div class="col" style="padding:16px 18px;gap:10px;background:#fafafa">
+      <div class="row" style="justify-content:space-between"><b>PT6A hydraulic pump · 3D</b><span class="mut" style="font-size:12px">linked to step 4</span></div>
+      <div class="img" style="flex:1">fitting B highlighted · exploded view · rotate</div>
+      <span class="ann">The 3D tab follows the procedure tab's step automatically because they're linked objects. Detach it and it stays put.</span>
+    </div>
+  </div>
+  <div class="row" style="grid-column:1/3;padding:0 12px;gap:4px;border-top:1.5px solid #2b2b2b;background:#f3f3f3">
+    <span class="btn" style="border:0;padding:4px 10px">⌂ Home</span>
+    <span class="btn on" style="padding:4px 10px">Pump R&amp;R · 4/9</span>
+    <span class="btn on" style="padding:4px 10px;background:#555">PT6A pump 3D</span>
+    <span class="btn" style="padding:4px 10px">Airframe exam</span>
+    <span class="btn" style="padding:4px 10px">Orion · 2 threads</span>
+    <span class="btn" style="border:0;padding:4px 10px;color:#999">+</span>
+    <span style="flex:1"></span><span class="ann">tray persists across the whole session; resumes on next login</span>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Alive because: you build your own desk, and nothing you opened disappears. Staff side: a review item and the student's evidence open side by side; an exam draft and its source side by side. Strongest fit for the radio pilot (procedure + 3D + manual at once). Risk: tabs are a power-user idiom; the student Home must still be dead simple, and the tray needs a sane cap (5–6).</div></div>
+
+<!-- 4c -->
+<div class="dv-opt" id="4c"><div class="dv-olabel"><a class="dv-oid" href="#4c">4c</a>Stage and sheets. One screen that never navigates away. A floating top bar, a Home that is a bento of live tiles (each tile is a capability's current state), and everything opens as a sheet sliding over the Home. Close the sheet, the Home is exactly where you left it.</div>
+<div class="dv-card wf" style="width:960px;height:600px;position:relative;background:#f4f4f4">
+  <div class="b row" style="position:absolute;top:14px;left:50%;transform:translateX(-50%);width:600px;height:44px;border-radius:999px;padding:0 10px 0 16px;gap:14px;background:#fff"><b style="font-size:13px">Mx</b><span class="mut" style="font-size:12px">Level 3 · Hydraulics · 2 of 3</span><span style="flex:1"></span><div class="row" style="gap:14px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:28px;height:28px;border-radius:50%"></div></div></div>
+  <div style="position:absolute;top:76px;left:24px;right:24px;bottom:20px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:12px">
+    <div class="b col" style="grid-column:1/3;grid-row:1/3;padding:14px;gap:8px;border-radius:10px"><div class="row" style="justify-content:space-between"><span class="cap">Up next</span><span class="tag t-warn">Last for Level 4</span></div><b style="font-size:17px">Hydraulic pump R&amp;R</b><span class="mut">Step 4 of 9</span><div class="img" style="flex:1;border-radius:6px">3D · slow idle rotation</div><span class="btn on" style="align-self:flex-start">Resume</span></div>
+    <div class="b col" style="padding:14px;gap:6px;border-radius:10px"><span class="cap">Exams</span><b>Airframe written</b><span class="mut" style="font-size:12px">Recommended after block · 60 q</span></div>
+    <div class="b col" style="padding:14px;gap:6px;border-radius:10px"><span class="cap">Simulators</span><b>Fuel system</b><span class="mut" style="font-size:12px">Fault set 2 · 2 left</span></div>
+    <div class="b col" style="padding:14px;gap:6px;border-radius:10px"><span class="cap">Milestones</span><div class="row" style="gap:3px"><span class="pill on" style="font-size:10px;padding:0 6px">1</span><span class="pill on" style="font-size:10px;padding:0 6px">2</span><span class="pill on" style="font-size:10px;padding:0 6px;outline:2px solid #ddd">3</span><span class="pill" style="font-size:10px;padding:0 6px;color:#999">4</span><span class="pill" style="font-size:10px;padding:0 6px;color:#999">5</span></div><span class="mut" style="font-size:12px">Finish block → exam → Level 4</span></div>
+    <div class="b col" style="padding:14px;gap:6px;border-radius:10px"><span class="cap">Messages</span><b>Instructor · M. Reyes</b><span class="mut" style="font-size:12px">"Check your torque values on…"</span></div>
+    <div class="b col" style="padding:14px;gap:6px;border-radius:10px"><span class="cap">3D</span><div class="img" style="height:40px;border-radius:6px">PT6A</div><span class="mut" style="font-size:12px">Recently opened</span></div>
+    <div class="b col" style="padding:14px;gap:6px;border-radius:10px"><span class="cap">Library</span><b>Ch. 29 Hydraulics</b><span class="mut" style="font-size:12px">Saved · offline</span></div>
+    <div class="b col" style="padding:14px;gap:6px;border-radius:10px"><span class="cap">Weak areas</span><div class="row" style="gap:4px;flex-wrap:wrap"><span class="pill" style="font-size:11px">Pitot-static</span><span class="pill" style="font-size:11px">Schematics</span></div></div>
+    <div class="b col" style="padding:14px;gap:6px;border-radius:10px"><span class="cap">Orion</span><div class="d" style="padding:6px;font-size:12px">Ask about anything in Level 3…</div></div>
+  </div>
+  <div class="b col" style="position:absolute;right:0;top:72px;bottom:0;width:300px;padding:16px;gap:10px;border-radius:12px 0 0 0;box-shadow:-8px 0 24px rgba(0,0,0,.12)">
+    <div class="row" style="justify-content:space-between"><span class="cap">Sheet · Exams</span><span class="btn" style="padding:1px 8px">✕</span></div>
+    <b style="font-size:16px">Airframe written exam</b>
+    <span class="mut" style="font-size:12px">Timed · 60 questions · 90 min · passing reaches Level 4</span>
+    <div class="col" style="gap:4px"><span class="mut" style="font-size:12px">Permitted assistance</span><span>None · results after submit</span></div>
+    <div class="d" style="padding:8px;font-size:12px">Best taken after Pump R&amp;R. You can start now.</div>
+    <div class="row" style="gap:6px;margin-top:auto"><span class="btn">Practice first</span><span class="btn on">Start</span></div>
+    <span class="ann">Tiles grow into sheets (shared-element transition). Deep work (procedure runner, exam, simulator) takes the full stage; the bar stays.</span>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Alive because: the Home is a live readout of everything at once and nothing you do leaves it. Composition rule from <a href="#1a">1a</a> is literal: a disabled capability is a missing tile, and the grid reflows. Staff side: tiles are "Needs review 7", "Overdue 3", each group. Risk: bento Homes get noisy fast; cap at 8 tiles and let the workspace order them.</div></div>
+
+<!-- 4d -->
+<div class="dv-opt" id="4d"><div class="dv-olabel"><a class="dv-oid" href="#4d">4d</a>Focus and context. Two columns, always. Left is the one thing you're doing right now; right is the context for it: 3D, source, Orion, evidence, notes. Navigation is a single segmented control (Now · Path · Explore) plus search. Built for the field and the classroom alike.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-rows:56px minmax(0,1fr)">
+  <div class="row" style="padding:0 20px;gap:18px;border-bottom:1.5px solid #2b2b2b">
+    <div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div>
+    <div class="row" style="gap:2px;border:1.5px solid #2b2b2b;border-radius:999px;padding:2px"><span class="btn on" style="border-radius:999px;padding:4px 16px">Now</span><span class="btn" style="border:0;padding:4px 16px">Path</span><span class="btn" style="border:0;padding:4px 16px">Explore</span></div>
+    <span class="mut" style="font-size:12px">Level 3 · 2 of 3 · Pump R&amp;R is last</span>
+    <span style="flex:1"></span>
+    <div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%"></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)">
+    <div class="col" style="padding:28px 32px;gap:14px;border-right:1.5px solid #2b2b2b">
+      <span class="cap">Now · step 4 of 9</span>
+      <span style="font-size:26px;font-weight:700;line-height:1.15">Disconnect the pressure line at fitting B.</span>
+      <span style="font-size:16px">Cap both ends. Expect residual fluid; use the drip tray.</span>
+      <div class="d" style="padding:8px 10px;align-self:flex-start">⚠ Pressure must read 0 before continuing</div>
+      <div class="b row" style="padding:8px 10px;gap:8px"><span class="sq"></span>Photo of capped fittings</div>
+      <div style="flex:1"></div>
+      <div class="row" style="justify-content:space-between"><div class="row" style="gap:3px"><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span></div><span class="btn on" style="padding:9px 24px;font-size:15px">Step done →</span></div>
+      <span class="ann">When nothing is in progress, "Now" shows the up-next list from <a href="#3a">3a</a>. There is never an empty left column.</span>
+    </div>
+    <div class="col" style="background:#fafafa">
+      <div class="row" style="padding:10px 16px;gap:4px;border-bottom:1.5px dashed #9a9a9a"><span class="pill on">3D</span><span class="pill">Source</span><span class="pill">Orion</span><span class="pill">Notes</span><span class="pill">Help</span></div>
+      <div class="img" style="flex:1;margin:16px;border-radius:6px">fitting B · isolated · tap part for name and torque</div>
+      <span class="ann" style="padding:0 16px 16px">Context tabs are the puzzle-piece facets: no 3D in this workspace, no 3D tab. Orion answers reference the step on the left.</span>
+    </div>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Alive because: the app always has an opinion about what you should be doing, and the context follows your hand. Path = <a href="#3b">3b</a>; Explore = Library, 3D, Simulators, Exams as a browsable catalog. Staff side: Now = review queue item on the left, student evidence on the right. Most radical cut in nav; least to learn. Risk: browsing-heavy tasks (admin content management) fight the two-column frame and need their own full-width layout under Explore.</div></div>
+
+</div>
+<p class="dv-next">Try: "<a class="dv-oid" href="#4a">4a</a>'s path strip on top of <a class="dv-oid" href="#4c">4c</a>'s stage" · "show the instructor Home in <a class="dv-oid" href="#4d">4d</a>" · "<a class="dv-oid" href="#4b">4b</a> for the radio pilot runtime" · "pick two and dress them in 2 visual directions each"</p>
+</section>
+
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Milestones in the student journey. Recommended exam path from block completion, levels, moments of accomplishment.</span></div>
+<p class="dv-note">Model used throughout: a <b>block</b> (term content) completes → an <b>exam</b> is recommended → passing it reaches a <b>milestone</b> ("Level N"). "Level" is the user story's word; "path" and "milestone" are mine. Three places this can live; they stack rather than compete.</p>
+<div class="dv-opts">
+
+<!-- 3a -->
+<div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Path on Home. The student's Home from <a href="#2a">2a</a> gains a path strip above "Up next": where I am, what unlocks the next level, and the recommended exam when the block is done.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-columns:200px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 14px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Aviation Institute · Avionics 2</span><span style="flex:1"></span><div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(135deg,#f3f3f3 0 4px,#ddd 4px 8px)"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 10px;gap:2px"><div class="nav on"><span class="sq"></span>Home</div><div class="nav"><span class="sq"></span>My work</div><div class="nav"><span class="sq"></span>Exams</div><div class="nav"><span class="sq"></span>Simulators</div><div class="nav"><span class="sq"></span>Library</div><div class="nav"><span class="sq"></span>Messages</div><div style="flex:1"></div><div class="nav"><span class="sq"></span>Milestones</div></div>
+  <div style="padding:20px 24px" class="col">
+    <div class="b col" style="padding:14px 16px;gap:12px">
+      <div class="row" style="justify-content:space-between"><div class="row" style="gap:10px"><div class="b" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">3</div><div class="col" style="gap:1px"><b>Level 3 · Hydraulics &amp; landing gear</b><span class="mut" style="font-size:12px">Block 4 of 6 · 2 of 3 modules done</span></div></div><span class="mut" style="font-size:12px">Milestones →</span></div>
+      <div class="row" style="gap:0;align-items:center">
+        <div class="row" style="gap:4px"><span class="pill on">1</span><div style="width:40px;height:2px;background:#2b2b2b"></div><span class="pill on">2</span><div style="width:40px;height:2px;background:#2b2b2b"></div><span class="pill on" style="outline:3px solid #ddd">3</span><div style="width:40px;height:2px;background:#ccc"></div><span class="pill" style="color:#999;border-color:#bbb">4</span><div style="width:40px;height:2px;background:#ccc"></div><span class="pill" style="color:#999;border-color:#bbb">5</span><div style="width:40px;height:2px;background:#ccc"></div><span class="pill" style="color:#999;border-color:#bbb">6</span></div>
+        <span style="flex:1"></span>
+        <div class="d row" style="padding:6px 10px;gap:8px;font-size:12px"><span>To reach Level 4:</span><b style="color:#1a1a1a">finish Pump R&amp;R → Airframe written exam</b></div>
+      </div>
+      <span class="ann">The path is derived: block completion recommends the exam; exam pass sets the level. Nothing here is a new data entry task for instructors.</span>
+    </div>
+    <div class="row" style="justify-content:space-between;margin-top:14px"><span class="hd">Up next</span><span class="mut" style="font-size:12px">ordered by what unlocks your level first</span></div>
+    <div class="col" style="gap:6px;margin-top:8px">
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><div class="row"><b>Hydraulic pump R&amp;R</b><span class="tag t-warn">Last for Level 4</span></div><span class="mut">Task · step 4 of 9</span></div><span class="btn on">Resume</span></div>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><div class="row"><b>Written exam · Airframe structures</b><span class="tag t-off">Recommended after block</span></div><span class="mut">Timed · 60 questions · available now, best taken after the block</span></div><span class="btn">Start anyway</span></div>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><b>Fuel system simulator · fault set 2</b><span class="mut">Practice · counts toward Level 5</span></div><span class="btn">Open</span></div>
+    </div>
+    <span class="ann" style="margin-top:8px">"Recommended" never blocks. A student may take the exam early; the path just says what the better order is.</span>
+  </div>
+</div></div>
+
+<!-- 3b -->
+<div class="dv-opt" id="3b"><div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>Milestones as the whole map. The full path: every level, its blocks, the exam that gates it, and what each level earned. Past levels show evidence; future levels show requirements.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-columns:200px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 14px;gap:14px"><div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div><span class="mut">Aviation Institute · Avionics 2</span><span style="flex:1"></span><div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(135deg,#f3f3f3 0 4px,#ddd 4px 8px)"></div></div></div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 10px;gap:2px"><div class="nav"><span class="sq"></span>Home</div><div class="nav"><span class="sq"></span>My work</div><div class="nav"><span class="sq"></span>Exams</div><div class="nav"><span class="sq"></span>Simulators</div><div class="nav"><span class="sq"></span>Library</div><div class="nav"><span class="sq"></span>Messages</div><div style="flex:1"></div><div class="nav on"><span class="sq"></span>Milestones</div></div>
+  <div style="padding:20px 24px;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px">
+    <div class="col" style="gap:0">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px"><span class="hd">Your path · Avionics 2</span><div class="row" style="gap:6px"><span class="pill on">Path</span><span class="pill">Grades</span><span class="pill">Weak areas</span></div></div>
+      <div style="display:grid;grid-template-columns:44px minmax(0,1fr);row-gap:0">
+        <div class="col" style="align-items:center;gap:0"><span class="pill on">1</span><div style="width:2px;flex:1;background:#2b2b2b"></div></div>
+        <div class="row" style="padding:0 0 14px 10px;justify-content:space-between"><div class="col" style="gap:1px"><b>Level 1 · Fundamentals</b><span class="mut" style="font-size:12px">Reached 12 Aug · Written 91</span></div><span class="tag t-ok">Reached</span></div>
+        <div class="col" style="align-items:center;gap:0"><span class="pill on">2</span><div style="width:2px;flex:1;background:#2b2b2b"></div></div>
+        <div class="row" style="padding:0 0 14px 10px;justify-content:space-between"><div class="col" style="gap:1px"><b>Level 2 · Electrical systems</b><span class="mut" style="font-size:12px">Reached 20 Sep · Written 84 · Oral pass</span></div><span class="tag t-ok">Reached</span></div>
+        <div class="col" style="align-items:center;gap:0"><span class="pill on" style="outline:3px solid #ddd">3</span><div style="width:2px;flex:1;background:#ccc"></div></div>
+        <div class="b col" style="padding:10px 12px;margin:0 0 14px 10px;gap:8px">
+          <div class="row" style="justify-content:space-between"><b>Level 3 · Hydraulics &amp; landing gear</b><span class="tag t-warn">In progress</span></div>
+          <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill on">Module 4.1 ✓</span><span class="pill on">Module 4.2 ✓</span><span class="pill">Pump R&amp;R · step 4/9</span></div>
+          <div class="row" style="gap:6px"><span class="mut" style="font-size:12px">Then:</span><span class="pill">Airframe written exam</span><span class="mut" style="font-size:12px">→ Level 4</span></div>
+          <div class="row" style="gap:8px"><span class="btn on">Resume Pump R&amp;R</span><span class="btn">Practice questions</span></div>
+        </div>
+        <div class="col" style="align-items:center;gap:0"><span class="pill" style="color:#999;border-color:#bbb">4</span><div style="width:2px;flex:1;background:#ccc"></div></div>
+        <div class="row" style="padding:0 0 14px 10px;justify-content:space-between;color:#777"><div class="col" style="gap:1px"><b>Level 4 · Fuel &amp; pneumatics</b><span style="font-size:12px">Needs: block 5 · Powerplant oral exam</span></div><span class="tag t-off">Ahead</span></div>
+        <div class="col" style="align-items:center;gap:0"><span class="pill" style="color:#999;border-color:#bbb">5</span></div>
+        <div class="row" style="padding:0 0 0 10px;color:#777"><div class="col" style="gap:1px"><b>Level 5 · Certification ready</b><span style="font-size:12px">Needs: all blocks · final written + oral</span></div></div>
+      </div>
+    </div>
+    <div class="col" style="gap:12px">
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Earned</span><div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Fundamentals</span><span class="pill">Electrical</span><span class="pill">First 3D procedure</span><span class="pill">10 sim scenarios</span></div></div>
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Pace</span><span class="mut" style="font-size:12px">On track for Level 5 by 14 Dec. Cohort median: Level 3.</span></div>
+      <span class="ann">Levels are set by the course author per block (or derived from blocks + exams when not configured). The cohort comparison is optional and off by default; some schools won't want it.</span>
+      <span class="ann">Instructor side: the same path appears per student in <a href="#2b">2b</a>'s group table as the Readiness column.</span>
+    </div>
+  </div>
+</div></div>
+
+<!-- 3c -->
+<div class="dv-opt" id="3c"><div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>Moments of accomplishment. Where the sense of progress is actually felt: finishing the last item of a block, passing the gating exam, and the small step-done confirmations in between. Three states of one pattern.</div>
+<div class="dv-card wf" style="width:960px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0">
+  <div class="col" style="padding:18px;gap:10px;border-right:1.5px dashed #9a9a9a">
+    <span class="cap">1 · Block complete</span>
+    <div class="b col" style="padding:14px;gap:10px;align-items:center;text-align:center">
+      <div class="img" style="width:72px;height:72px;border-radius:50%">mark</div>
+      <b style="font-size:16px">Block 4 done</b>
+      <span class="mut" style="font-size:12px">Hydraulics &amp; landing gear · 3 modules · 9-step task with 3D</span>
+      <div class="d" style="padding:8px;font-size:12px;width:100%">You're ready for the Airframe written exam. Passing it reaches Level 4.</div>
+      <div class="row" style="gap:6px"><span class="btn on">Schedule exam</span><span class="btn">Later</span></div>
+    </div>
+    <span class="ann">Shown once, right after the last item. This is where the recommended exam path gets offered, not buried in a list.</span>
+  </div>
+  <div class="col" style="padding:18px;gap:10px;border-right:1.5px dashed #9a9a9a">
+    <span class="cap">2 · Level reached</span>
+    <div class="b col" style="padding:14px;gap:10px;align-items:center;text-align:center">
+      <div class="row" style="gap:6px"><span class="pill on">3</span><span style="font-size:18px">→</span><span class="pill on" style="font-size:16px;padding:4px 14px">4</span></div>
+      <b style="font-size:16px">Level 4 · Fuel &amp; pneumatics</b>
+      <span class="mut" style="font-size:12px">Airframe written · 88 · 3 weak areas noted</span>
+      <div class="row" style="gap:6px;flex-wrap:wrap;justify-content:center"><span class="pill">Unlocked: Fuel simulator</span><span class="pill">Unlocked: block 5</span></div>
+      <div class="row" style="gap:6px"><span class="btn on">See what's next</span><span class="btn">Review weak areas</span></div>
+    </div>
+    <span class="ann">Follows exam results. "Unlocked" is only literal if the author configured gating; otherwise it reads "Now recommended".</span>
+  </div>
+  <div class="col" style="padding:18px;gap:10px">
+    <span class="cap">3 · In-flow progress</span>
+    <div class="b col" style="padding:0;gap:0">
+      <div class="row" style="padding:8px 12px;border-bottom:1.5px solid #2b2b2b;justify-content:space-between;font-size:12px"><span>Pump R&amp;R · step 7 of 9</span><span class="mut">Last item for Level 4</span></div>
+      <div class="col" style="padding:12px;gap:8px"><div class="ln" style="width:70%"></div><div class="img" style="height:60px">3D</div><div class="row" style="justify-content:space-between"><div class="row" style="gap:3px"><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq" style="background:#2b2b2b"></span><span class="sq"></span><span class="sq"></span></div><span class="btn on">Step done</span></div></div>
+    </div>
+    <span class="ann">Quiet. The work runner shows how close the current item is to a milestone, so the big moments don't come out of nowhere. Motion and feel for all three get designed in the look-and-feel pass.</span>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try: "merge <a class="dv-oid" href="#3a">3a</a> into the Home for good" · "instructor view: author levels for a term" · "what happens on exam fail in <a class="dv-oid" href="#3c">3c</a>" · "this is the screen to dress: look-and-feel directions for <a class="dv-oid" href="#3b">3b</a>"</p>
+</section>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Decision: two separate experiences. Student, and Instructor/Admin. Student Mode is a settings toggle for staff, not a header switch.</span></div>
+<p class="dv-note">Each experience gets its own shell and its own Home, built from the role priorities. The composition rules in <a href="#1a">1a</a> apply inside both. Shown: the two Homes. Student Mode is a plain toggle in settings.</p>
+<div class="dv-opts">
+
+<!-- 2a -->
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Student experience. Rail holds only what a student opens on purpose; Home is "up next". Capabilities not enabled are absent, not greyed.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-columns:200px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 14px;gap:14px">
+    <div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div>
+    <span class="mut">Aviation Institute · Avionics 2</span>
+    <span style="flex:1"></span>
+    <div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(135deg,#f3f3f3 0 4px,#ddd 4px 8px)"></div></div>
+  </div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 10px;gap:2px">
+    <div class="nav on"><span class="sq"></span>Home</div>
+    <div class="nav"><span class="sq"></span>My work</div>
+    <div class="nav"><span class="sq"></span>Exams</div>
+    <div class="nav"><span class="sq"></span>Simulators</div>
+    
+    <div class="nav"><span class="sq"></span>Library</div>
+    <div class="nav"><span class="sq"></span>Messages</div>
+    <div style="flex:1"></div>
+    <div class="nav"><span class="sq"></span>Milestones</div>
+    <div class="coin" style="padding:8px 8px 0">"My work" = the tasks allocated to this student. "Milestones" = the student's own view of Capability insight.</div>
+  </div>
+  <div style="padding:20px 24px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:22px">
+    <div class="col" style="gap:14px">
+      <span class="hd">Up next</span>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><b>Written exam · Airframe structures</b><span class="mut">Timed · 60 questions · due Thu</span></div><span class="btn on">Start</span></div>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><b>Hydraulic pump R&amp;R</b><span class="mut">Task · step 4 of 9 · 3D scene attached</span></div><span class="btn">Resume</span></div>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><b>Fuel system simulator · fault set 2</b><span class="mut">Practice · 2 scenarios left</span></div><span class="btn">Open</span></div>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><b>Oral exam · Powerplant</b><span class="mut">Orion-led · 20 min · opens Mon</span></div><span class="btn" style="color:#999;border-color:#bbb">Not yet</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:6px"><span class="cap">Study your weak areas</span></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="pill">Pitot-static</span><span class="pill">Hydraulic schematics</span><span class="pill">Weight &amp; balance</span></div>
+    </div>
+    <div class="col" style="gap:12px">
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Block 3</span><div class="ln" style="width:70%"></div><span class="mut" style="font-size:12px">62% complete · 1 overdue</span></div>
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Continue in 3D</span><div class="img" style="height:70px">PT6A turbine</div></div>
+      <span class="ann">One list, ordered by due date, mixing exams, procedures and simulators. The student doesn't have to know which capability produced each item.</span>
+    </div>
+  </div>
+</div></div>
+
+<!-- 2b -->
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Instructor / Admin experience. Rail is organised by the staff priorities: people first, then allocation and review, then content. Admin items appear for Admins only.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-columns:200px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 14px;gap:14px">
+    <div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div>
+    <span class="mut">Aviation Institute</span>
+    <span style="flex:1"></span>
+    <div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(135deg,#f3f3f3 0 4px,#ddd 4px 8px)"></div></div>
+  </div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 10px;gap:2px">
+    <div class="nav on"><span class="sq"></span>Home</div>
+    <div class="nav"><span class="sq"></span>People &amp; groups</div>
+    <div class="nav"><span class="sq"></span>Allocations</div>
+    <div class="cap" style="padding:12px 9px 4px">Content</div>
+    <div class="nav"><span class="sq"></span>Course Catalog</div>
+    <div class="nav"><span class="sq"></span>Tasks</div>
+    <div class="nav"><span class="sq"></span>Written Exams</div><div class="nav"><span class="sq"></span>Oral Exams</div>
+    <div class="nav"><span class="sq"></span>Library</div><div class="nav"><span class="sq"></span>3D Studio</div>
+    <div class="cap" style="padding:12px 9px 4px">Admin</div>
+    <div class="nav"><span class="sq"></span>Users &amp; access</div>
+    <div class="nav"><span class="sq"></span>Integrations</div>
+    <div class="nav"><span class="sq"></span>Workspace</div>
+  </div>
+  <div style="padding:20px 24px" class="col">
+    <div class="row" style="justify-content:space-between"><span class="hd">Today</span><div class="row"><span class="btn">New group</span><span class="btn on">Allocate…</span></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px">
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Needs review</span><span class="hd">7</span><span class="mut" style="font-size:12px">4 evidence · 2 check-ins · 1 question draft</span></div>
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Overdue</span><span class="hd">3</span><span class="mut" style="font-size:12px">Avionics 2 · 2 students</span></div>
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Exams this week</span><span class="hd">2</span><span class="mut" style="font-size:12px">Airframe written Thu · Powerplant oral Mon</span></div>
+    </div>
+    <div class="cap" style="margin-top:16px">Groups</div>
+    <div class="b" style="padding:0;margin-top:6px">
+      <div class="row" style="padding:8px 12px;border-bottom:1.5px solid #2b2b2b;font-size:12px;font-weight:600"><span style="width:200px">Group</span><span style="width:90px">Students</span><span style="width:140px">Readiness</span><span style="width:110px">Avg grade</span><span>Attention</span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><span style="width:200px">Avionics 2</span><span style="width:90px">18</span><span style="width:140px"><div class="ln" style="width:70%;height:7px"></div></span><span style="width:110px">84</span><span>2 overdue · 1 failed written</span></div>
+      <div class="row" style="padding:9px 12px;border-bottom:1px solid #ddd"><span style="width:200px">Powerplant 1</span><span style="width:90px">22</span><span style="width:140px"><div class="ln" style="width:45%;height:7px"></div></span><span style="width:110px">79</span><span>Oral exams not scheduled</span></div>
+      <div class="row" style="padding:9px 12px"><span style="width:200px">Evening cohort</span><span style="width:90px">9</span><span style="width:140px"><div class="ln" style="width:90%;height:7px"></div></span><span style="width:110px">91</span><span class="mut">—</span></div>
+    </div>
+    <span class="ann" style="margin-top:10px">Readiness column is a facet of Capability insight; without it the table shows grade and progress only. Group row → group → student → evidence.</span>
+  </div>
+</div></div>
+
+
+      <div style="border-top:1px solid #ddd"></div>
+      <div class="col" style="gap:6px"><span class="mut" style="font-size:12px">View as</span><div class="row" style="gap:6px"><span class="pill on">Myself</span><span class="pill">A student…</span></div></div>
+      <div class="col" style="gap:6px"><span class="mut" style="font-size:12px">Record my activity</span><div class="row" style="gap:6px"><span class="pill on">Don't record</span><span class="pill">Record as my own</span></div></div>
+    </div>
+    <span class="ann">"View as a student" is useful for support and demos but is a privacy decision. "Record" matters if instructors take exams themselves to vet them. Both are open; defaults shown.</span>
+  </div>
+  <div class="col" style="padding:20px 22px;gap:12px">
+    <span class="cap">While in Student Mode</span>
+    <div class="b" style="padding:0">
+      <div class="row" style="padding:6px 12px;background:#2b2b2b;color:#fff;justify-content:space-between;font-size:12px"><span>Student Mode · viewing as yourself · activity not recorded</span><span class="btn" style="border-color:#fff;color:#fff;padding:2px 10px">Exit</span></div>
+      <div style="display:grid;grid-template-columns:120px 1fr;height:170px">
+        <div class="col" style="border-right:1.5px solid #2b2b2b;padding:8px;gap:3px;font-size:12px"><div class="nav on" style="padding:3px 6px">Home</div><div class="nav" style="padding:3px 6px">My work</div><div class="nav" style="padding:3px 6px">Exams</div><div class="nav" style="padding:3px 6px">Simulators</div><div class="nav" style="padding:3px 6px">3D</div><div class="nav" style="padding:3px 6px">Library</div></div>
+        <div class="col" style="padding:10px;gap:6px"><div class="ln" style="width:40%"></div><div class="d" style="height:30px"></div><div class="d" style="height:30px"></div><div class="d" style="height:30px"></div></div>
+      </div>
+    </div>
+    <span>Rail, Home and every screen are the Student experience from <a href="#2a">2a</a>. Nothing from <a href="#2b">2b</a> leaks in. Exit returns to where the staff member left off.</span>
+    <span class="ann">Banner persists so a staff member never mistakes a test attempt for a real one.</span>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try: "next, wireframe the student's work runner (procedure with 3D) and the instructor's review queue" · "show the radio pilot: generated task landing in <a class="dv-oid" href="#2a">2a</a>"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Composition model, then three IA candidates. Web, Viewer-first, low-fi.</span></div>
+<p class="dv-note">Vocabulary is the handoff's. Red = design annotation. <span class="coin">Purple = a label I coined</span> for a working name. Hatched = supplied by an external system. Dashed = capability not enabled in this workspace.</p>
+<div class="dv-opts">
+
+<!-- 1a -->
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Composition model. A capability shows up in exactly three ways: a destination, a facet on something you're already looking at, or an action. Each has one enabled / external / not-enabled rule, so a half-configured workspace still looks finished.</div>
+<div class="dv-card wf" style="width:960px;padding:22px 24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px">
+  <div class="col" style="gap:10px">
+    <span class="cap">1 · Destination</span>
+    <span class="mut">Whole places in the nav. Only capabilities a person opens on purpose.</span>
+    <div class="b col" style="padding:10px;gap:4px">
+      <div class="nav on"><span class="sq"></span>Library</div>
+      
+      <div class="nav off"><span class="sq"></span>Simulators</div>
+      <div class="nav"><span class="sq"></span>Tickets <span class="tag t-ext">via ServiceNow</span></div>
+    </div>
+    <div class="col" style="gap:3px"><span><b>Enabled</b> → appears.</span><span><b>External</b> → appears with its source named; opens Mx's view of their data or deep-links out.</span><span><b>Not enabled</b> → absent. No greyed items, no upsell slots.</span></div>
+    <span class="ann">rule: the nav is never longer than what this workspace actually has</span>
+  </div>
+  <div class="col" style="gap:10px">
+    <span class="cap">2 · Facet</span>
+    <span class="mut">A tab or panel on an object, fed by another capability's output.</span>
+    <div class="b col" style="padding:10px;gap:6px">
+      <b>Hydraulic pump R&amp;R</b><span class="mut" style="font-size:12px">procedure · v4</span>
+      <div class="row" style="gap:0;border-bottom:1.5px solid #2b2b2b;flex-wrap:wrap"><span class="btn" style="border:0;border-bottom:3px solid #2b2b2b;border-radius:0;padding:4px 8px">Steps</span><span class="btn" style="border:0;padding:4px 8px">3D</span><span class="btn" style="border:0;padding:4px 8px">Sources</span><span class="btn" style="border:0;padding:4px 8px">Evidence</span><span class="btn" style="border:0;padding:4px 8px;color:#aaa">Simulator</span></div>
+      <div class="d" style="padding:8px;font-size:12px">Simulator facet hidden here → the tab is simply not rendered</div>
+    </div>
+    <div class="col" style="gap:3px"><span><b>Enabled</b> → facet renders.</span><span><b>External</b> → facet renders read-only with source badge.</span><span><b>Not enabled</b> → facet gone; object is still complete.</span></div>
+    <span class="ann">this is where most puzzle-piece edges live. Dependencies are facets, not journeys.</span>
+  </div>
+  <div class="col" style="gap:10px">
+    <span class="cap">3 · Action</span>
+    <span class="mut">A verb offered in context. Orion, allocation, help requests, review decisions.</span>
+    <div class="b col" style="padding:10px;gap:6px">
+      <div class="row" style="justify-content:space-between"><b>Step 3 · Attach dummy load</b><span class="mut">⋯</span></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="btn">Ask Orion</span><span class="btn">Ask for help</span><span class="btn">Add evidence</span><span class="btn">Open source</span></div>
+      <div class="d" style="padding:8px;font-size:12px">"Open in simulator" would sit here when enabled. Not enabled → the button does not exist.</div>
+    </div>
+    <div class="col" style="gap:3px"><span><b>Enabled</b> → verb present.</span><span><b>External</b> → verb present, hands off and returns.</span><span><b>Not enabled</b> → verb absent.</span></div>
+    <span class="ann">Orion is never a destination of its own. It is an action everywhere, grounded in what you're looking at.</span>
+  </div>
+  <div style="grid-column:1/4;border-top:1.5px dashed #9a9a9a;padding-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="col" style="gap:4px"><span class="cap">Mapping the 14 capabilities</span>
+      <span><b>Destinations:</b> Guided work (as the person's work list) · Library · 3D · Simulation · Assessment (exams) · Allocation/oversight · Operational context · Capability insight · Administration.</span>
+      <span><b>Facets only:</b> Source change awareness · Feedback and expertise capture · Collaboration (comments, conversations).</span>
+      <span><b>Actions only:</b> Orion · Authoring (create/edit as a verb on content, with a full editor surface behind it).</span></div>
+    <div class="col" style="gap:4px"><span class="cap">Role priorities decide the Home</span>
+      <span><b>Viewer:</b> assigned work, exams, simulators, 3D.</span><span><b>Instructor / Editor:</b> grades, progress, readiness of people and groups; allocate; manage groups.</span><span><b>Admin:</b> catalog, exam content, tasks/procedures, integrations.</span>
+      <span class="ann">same shell, different first screen. Nothing is role-locked that permissions don't lock.</span></div>
+  </div>
+</div></div>
+
+<!-- 1b -->
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>IA candidate A — Flat destinations. One left rail, 6–9 items drawn from the workspace's enabled capabilities. Home is the role's priority list. Shown: Viewer, Education workspace with simulators enabled and no operational context.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-columns:200px minmax(0,1fr);grid-template-rows:48px 1fr">
+  <div class="row" style="grid-column:1/3;border-bottom:1.5px solid #2b2b2b;padding:0 14px;gap:14px">
+    <div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div>
+    <span class="mut">Aviation Institute · Avionics 2</span>
+    <span style="flex:1"></span>
+    <div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(135deg,#f3f3f3 0 4px,#ddd 4px 8px)"></div></div>
+  </div>
+  <div class="col" style="border-right:1.5px solid #2b2b2b;padding:12px 10px;gap:2px">
+    <div class="nav on"><span class="sq"></span>Home</div>
+    <div class="nav"><span class="sq"></span>My work</div>
+    <div class="nav"><span class="sq"></span>Exams</div>
+    <div class="nav"><span class="sq"></span>Simulators</div>
+    
+    <div class="nav"><span class="sq"></span>Library</div>
+    <div class="nav"><span class="sq"></span>Messages</div>
+    <div class="d" style="margin-top:10px;padding:8px;font-size:12px">Not here for this Viewer: Allocation, Operations, Insight, Admin</div>
+    <div class="coin" style="padding:8px 8px 0">"My work" = the tasks allocated to this student, across blocks. Workspace vocabulary can rename it.</div>
+  </div>
+  <div style="padding:20px 24px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:22px">
+    <div class="col" style="gap:14px">
+      <span class="hd">Up next</span>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><b>Written exam · Airframe structures</b><span class="mut">Timed · 60 questions · due Thu</span></div><span class="btn on">Start</span></div>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><b>Hydraulic pump R&amp;R</b><span class="mut">Task · step 4 of 9 · 3D scene attached</span></div><span class="btn">Resume</span></div>
+      <div class="b row" style="padding:10px 12px;justify-content:space-between"><div class="col" style="gap:2px"><b>Fuel system simulator · fault set 2</b><span class="mut">Practice · 2 scenarios left</span></div><span class="btn">Open</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:6px"><span class="cap">Weak areas from recent exams</span><span class="mut" style="font-size:12px">→ study</span></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="pill">Pitot-static</span><span class="pill">Hydraulic schematics</span><span class="pill">Weight &amp; balance</span></div>
+    </div>
+    <div class="col" style="gap:12px">
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Progress</span><div class="ln" style="width:70%"></div><span class="mut" style="font-size:12px">Block 3 · 62% complete · 1 overdue</span></div>
+      <div class="b col" style="padding:12px;gap:6px"><span class="cap">Recently opened 3D</span><div class="img" style="height:70px">PT6A turbine</div></div>
+      <span class="ann">Home is a list of things to do, not a dashboard. Insight lives with the instructor.</span>
+    </div>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Fits: easy to scan, rail reflects exactly what's configured. Risk: with everything enabled an Admin sees 11+ items and the rail stops being a map.</div></div>
+
+<!-- 1c -->
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>IA candidate B — Two sides. Everyone has a "Do" side; Editors and Admins also get a "Manage" side. Each side has at most 5 destinations. Shown: an instructor who has switched to Manage.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-rows:48px 1fr">
+  <div class="row" style="border-bottom:1.5px solid #2b2b2b;padding:0 14px;gap:16px">
+    <div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div>
+    <div class="row" style="gap:2px;border:1.5px solid #2b2b2b;border-radius:5px;padding:2px"><span class="btn" style="border:0">Do</span><span class="btn on">Manage</span></div>
+    <div class="row" style="gap:2px"><span class="btn" style="border:0;text-decoration:underline">People</span><span class="btn" style="border:0">Allocate</span><span class="btn" style="border:0">Review</span><span class="btn" style="border:0">Content</span><span class="btn" style="border:0;color:#aaa">Operations</span></div>
+    <span style="flex:1"></span>
+    <div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(135deg,#f3f3f3 0 4px,#ddd 4px 8px)"></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:240px minmax(0,1fr)">
+    <div class="col" style="border-right:1.5px solid #2b2b2b;padding:14px 12px;gap:8px">
+      <span class="cap">Groups</span>
+      <div class="nav on"><span class="sq"></span>Avionics 2 · 18</div>
+      <div class="nav"><span class="sq"></span>Powerplant 1 · 22</div>
+      <div class="nav"><span class="sq"></span>Evening cohort · 9</div>
+      <div class="btn" style="align-self:flex-start;margin-top:4px">+ New group</div>
+      <div class="d" style="margin-top:auto;padding:8px;font-size:12px">Operations greyed in the strip: capability not enabled for this workspace — shown here only to illustrate; real rule is "absent", see <a href="#1a">1a</a></div>
+    </div>
+    <div class="col" style="padding:18px 22px;gap:12px">
+      <div class="row" style="justify-content:space-between"><span class="hd">Avionics 2</span><div class="row"><span class="btn">Message group</span><span class="btn on">Allocate…</span></div></div>
+      <div class="row" style="gap:6px"><span class="pill on">Readiness</span><span class="pill">Grades</span><span class="pill">Progress</span><span class="pill">Review queue · 4</span></div>
+      <div class="b" style="padding:0">
+        <div class="row" style="padding:8px 12px;border-bottom:1.5px solid #2b2b2b;font-size:12px;font-weight:600"><span style="width:180px">Student</span><span style="width:120px">Written</span><span style="width:120px">Oral</span><span style="width:140px">Procedures</span><span>Needs attention</span></div>
+        <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd"><span style="width:180px">J. Ortiz</span><span style="width:120px"><span class="tag t-ok">Pass 88</span></span><span style="width:120px"><span class="tag t-ok">Pass</span></span><span style="width:140px">7 / 9</span><span class="mut">—</span></div>
+        <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd"><span style="width:180px">M. Chen</span><span style="width:120px"><span class="tag t-warn">Fail 64</span></span><span style="width:120px"><span class="tag t-off">Not taken</span></span><span style="width:140px">4 / 9</span><span>Weak: hydraulics · 1 overdue</span></div>
+        <div class="row" style="padding:8px 12px;border-bottom:1px solid #ddd"><span style="width:180px">R. Patel</span><span style="width:120px"><span class="tag t-ok">Pass 92</span></span><span style="width:120px"><span class="tag t-warn">Scheduled</span></span><span style="width:140px">9 / 9</span><span>Evidence awaiting review</span></div>
+        <div class="d" style="padding:8px 12px;border:0;border-top:1px dashed #9a9a9a">+ 15 more</div>
+      </div>
+      <span class="ann">row click → the person. Readiness is customer-configured; the column set is a facet of Capability insight, so it disappears cleanly if that capability isn't enabled and the table falls back to Grades.</span>
+    </div>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Fits: maps directly onto the role priorities; Viewers never see the Manage side. Risk: instructors who also perform work flip sides often; the two strips must feel like one app.</div></div>
+
+<!-- 1d -->
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>IA candidate C — Three nouns. Work · People · Material are the only top-level places. Every capability is a facet or action on one of them. Shown: Admin on Material, where catalog, exam content, Library, 3D and sources live together.</div>
+<div class="dv-card wf" style="width:960px;height:600px;display:grid;grid-template-rows:48px 1fr">
+  <div class="row" style="border-bottom:1.5px solid #2b2b2b;padding:0 14px;gap:16px">
+    <div class="b" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">Mx</div>
+    <div class="row" style="gap:2px"><span class="btn" style="border:0">Work</span><span class="btn" style="border:0">People</span><span class="btn on">Material</span></div>
+    <span style="flex:1"></span>
+    <div class="row" style="gap:18px"><span class="ico">⌕</span><span class="ico" style="position:relative">🔔<span class="bdg">3</span></span><div class="b" style="width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(135deg,#f3f3f3 0 4px,#ddd 4px 8px)"></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:220px minmax(0,1fr)">
+    <div class="col" style="border-right:1.5px solid #2b2b2b;padding:14px 12px;gap:2px">
+      <span class="cap" style="padding:0 9px 6px">Material</span>
+      <div class="nav"><span class="sq"></span>Course Catalog</div>
+      <div class="nav on"><span class="sq"></span>Tasks</div>
+      <div class="nav"><span class="sq"></span>Written Exams</div><div class="nav"><span class="sq"></span>Oral Exams</div>
+      <div class="nav"><span class="sq"></span>Documents &amp; media</div>
+      <div class="nav"><span class="sq"></span>3D models</div>
+      <div class="nav"><span class="sq"></span>Simulators</div>
+      <div class="coin" style="padding:10px 9px 0">"Material" coined to cover Library + catalog + 3D + simulators. Handoff has no umbrella word for this.</div>
+    </div>
+    <div class="col" style="padding:18px 22px;gap:12px">
+      <div class="row" style="justify-content:space-between"><span class="hd">Hydraulic pump R&amp;R</span><div class="row"><span class="tag t-ok">Published v4</span><span class="btn">Allocate</span><span class="btn on">Edit</span></div></div>
+      <div class="row" style="gap:0;border-bottom:1.5px solid #2b2b2b;flex-wrap:wrap"><span class="btn" style="border:0;padding:4px 8px">Steps 9</span><span class="btn" style="border:0;padding:4px 8px">3D scenes 2</span><span class="btn" style="border:0;border-bottom:3px solid #2b2b2b;border-radius:0;padding:4px 8px">Sources 3</span><span class="btn" style="border:0;padding:4px 8px">Questions 6</span><span class="btn" style="border:0;padding:4px 8px">Allocated to 41</span><span class="btn" style="border:0;padding:4px 8px">Versions</span><span class="btn" style="border:0;padding:4px 8px">Comments</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="col" style="gap:6px">
+          <div class="b row" style="padding:8px 10px;justify-content:space-between"><div class="col" style="gap:1px"><b>Maintenance manual ch. 29</b><span class="mut" style="font-size:12px">PDF · rev C · cited by steps 2–7</span></div><span class="tag t-warn">Rev D available</span></div>
+          <div class="b row" style="padding:8px 10px;justify-content:space-between"><div class="col" style="gap:1px"><b>Pump assembly drawing</b><span class="mut" style="font-size:12px">drawing · used by 3D scene 1</span></div><span class="tag t-ok">Current</span></div>
+          <div class="ext row" style="padding:8px 10px;justify-content:space-between"><div class="col" style="gap:1px"><b>Vendor service bulletin</b><span class="mut" style="font-size:12px">from Teamcenter</span></div><span class="tag t-ext">External</span></div>
+        </div>
+        <div class="col" style="gap:6px">
+          <div class="b col" style="padding:10px;gap:4px"><span class="cap">What changed in rev D</span><span class="mut" style="font-size:12px">Steps 4 and 6 cite changed paragraphs. 2 scenes may be affected.</span><span class="btn" style="align-self:flex-start">Review changes</span></div>
+          <span class="ann">Source change awareness is a facet on the source list, not a place. Future horizon: the panel just doesn't appear until it exists.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="dv-olabel" style="color:rgba(0,0,0,.5)">Fits: every edge in the catalog becomes a tab on one of three nouns; scales to all 14 capabilities without the nav growing. Risk: "Material" is new vocabulary, and Viewers mostly only need Work, so the three-noun strip is light for them.</div></div>
+
+</div>
+<p class="dv-next">Try: "go with <a class="dv-oid" href="#1b">1b</a>, show the instructor Home" · "<a class="dv-oid" href="#1d">1d</a> but with <a class="dv-oid" href="#1c">1c</a>'s Do/Manage split" · "show the radio pilot runtime task in each" · "wireframe the Viewer Home for all three side by side"</p>
+</section>
+</x-dc>
+</body>
+</html>
