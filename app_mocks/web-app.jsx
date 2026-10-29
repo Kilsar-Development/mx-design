@@ -4912,7 +4912,7 @@ function WebApp(props) {
   else if (active === "terms") content = <Blocks query={query} onOpenTask={setEditingTask} />;
   else if (active === "tickets") content = <Tickets query={query} />;
   else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
-  else if (active === "training") content = <Training query={query} onOpen={setOpenSim} />;
+  else if (active === "training") content = <Training query={query} onOpen={setOpenSim} role={ctRole} />;
   else if (active === "releaseNotes") content = <ReleaseNotes />;
   else content = <WebPlaceholder tabKey={active} />;
   if (openSim) return <SimulatorRunner sim={openSim} onClose={() => setOpenSim(null)} />;
@@ -4944,7 +4944,43 @@ const TRAINING_SIMS = [
   { id: "propeller-protractor",title: "Propeller Protractor",        desc: "Set blade angle at the reference station with a universal propeller protractor.",                  src: "simulators/propeller-protractor.html" },
 ];
 
-function TrainingCard({ sim, onOpen }) {
+// Signed-in student's simulator allocations, grouped by sim id (individual + group-instance sources).
+function trainingAllocationsBySim() {
+  const CT = window.CT; if (!CT) return {};
+  const ME = CT.STUDENTS[0];
+  const out = {};
+  const add = (simId, a) => { (out[simId] = out[simId] || []).push(a); };
+  CT.buildAssignments().forEach((a) => { if (a.studentId === ME.id && a.type === "simulator") (a.simulators || []).forEach((id) => add(id, { ...a, source: "individual" })); });
+  CT.buildAllocations().forEach((al) => {
+    if (al.type !== "simulator") return;
+    const inst = al.instances.find((i) => i.studentId === ME.id); if (!inst) return;
+    const g = CT.GROUPS.find((x) => x.id === al.groupId);
+    (al.simulators || []).forEach((id) => add(id, { id: al.id + "@" + ME.id, type: al.type, title: al.title, due: al.due, status: inst.status, instructions: al.instructions, simulators: al.simulators, source: "group", groupName: g ? g.name : "Group" }));
+  });
+  Object.values(out).forEach((list) => list.sort((a, b) => { const da = ctParseDue(a.due), db = ctParseDue(b.due); return (da ? da.getTime() : Infinity) - (db ? db.getTime() : Infinity); }));
+  return out;
+}
+
+function TrainingAllocRow({ item, onOpen }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onOpen(); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onOpen(); } }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 40, boxSizing: "border-box", padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8,
+        background: hover ? "var(--kls-surface-container-low)" : "var(--kls-surface-container-lowest)", border: "1px solid var(--kls-outline-variant)", cursor: "pointer",
+        transition: "background var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+      <CTTypeIcon type="simulator" size={16} />
+      <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.source === "group" ? item.groupName + " · " : ""}Due {item.due}</div>
+      </div>
+      <CTStatusPill status={item.status} size="sm" />
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </div>
+  );
+}
+
+function TrainingCard({ sim, onOpen, onChoose, allocations = [] }) {
   const [hover, setHover] = useState(false);
   const ref = useRef(null);
   const [w, setW] = useState(320);
@@ -4957,8 +4993,9 @@ function TrainingCard({ sim, onOpen }) {
   const PREVIEW_W = 1280;
   const scale = w / PREVIEW_W;
   return (
-    <button onClick={() => onOpen(sim)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      style={{ all: "unset", cursor: "pointer", boxSizing: "border-box", display: "flex", flexDirection: "column", textAlign: "left",
+    <div role="button" tabIndex={0} onClick={() => allocations.length ? onChoose(sim, allocations) : onOpen(sim)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); allocations.length ? onChoose(sim, allocations) : onOpen(sim); } }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", boxSizing: "border-box", display: "flex", flexDirection: "column", textAlign: "left", outline: "none",
         background: "var(--kls-surface)", border: "1px solid " + (hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"), borderRadius: 12, overflow: "hidden",
         boxShadow: hover ? "var(--kls-drop-shadow)" : "none", transform: hover ? "translateY(-2px)" : "none",
         transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard), box-shadow var(--kls-dur-fade-animation) var(--kls-ease-standard), border-color var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
@@ -4969,20 +5006,64 @@ function TrainingCard({ sim, onOpen }) {
           background: hover ? "rgba(0,0,0,0.35)" : "transparent", opacity: hover ? 1 : 0, transition: "opacity var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
           <span style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
             display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
-            <MSGlyph name="play_arrow" size={20} />Open
+            <MSGlyph name="play_arrow" size={20} />{allocations.length ? "Open" : "Practice"}
           </span>
         </div>
+        {allocations.length > 0 && (
+          <span style={{ position: "absolute", top: "var(--kls-space-small)", right: "var(--kls-space-small)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)",
+            padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-accent-12)", color: "var(--kls-color-base-white)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", boxShadow: "var(--kls-drop-shadow)" }}>
+            <MSGlyph name="school" size={14} />{allocations.length === 1 ? "1 assigned" : allocations.length + " assigned"}
+          </span>
+        )}
       </div>
       <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
         <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{sim.title}</div>
-        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{sim.desc}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{sim.desc}</div>
       </div>
-    </button>
+    </div>
   );
 }
 
-function Training({ query = "", onOpen }) {
+// Chooser shown when a sim has allocations: practice, or open one of the assignments.
+function TrainingChooser({ sim, allocations, onOpen, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--kls-space-med)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+      <div role="dialog" aria-modal="true" aria-label={sim.title} style={{ position: "relative", width: "min(460px, 100%)", maxHeight: "80vh", background: "var(--kls-surface)",
+        borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
+          <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>{sim.title}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Practice freely, or open one of your assignments.</div>
+          </div>
+          <MeCircleBtn label="Close" onClick={onClose}>
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </MeCircleBtn>
+        </div>
+        <div style={{ padding: "0 var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", overflowY: "auto" }}>
+          <button onClick={() => onOpen(sim)} style={{ ...ctPrimaryBtn, width: "100%", justifyContent: "center" }}>
+            <MSGlyph name="play_arrow" size={20} />Practice
+          </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <div className="kls-text-section-label" style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>Assigned</div>
+            {allocations.map((a) => <TrainingAllocRow key={a.id} item={a} onOpen={() => onOpen(sim, a)} />)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Training({ query = "", onOpen, role = "instructor" }) {
   const term = query.trim().toLowerCase();
+  const [choice, setChoice] = useState(null); // { sim, allocations }
+  const allocs = React.useMemo(() => role === "student" ? trainingAllocationsBySim() : {}, [role]);
   const sims = TRAINING_SIMS.filter((s) => !term || s.title.toLowerCase().includes(term) || s.desc.toLowerCase().includes(term));
   return (
     <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
@@ -4997,11 +5078,12 @@ function Training({ query = "", onOpen }) {
             <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try a different search.</div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "var(--kls-space-med)" }}>
-            {sims.map((s) => <TrainingCard key={s.id} sim={s} onOpen={onOpen} />)}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "var(--kls-space-med)" }}>
+            {sims.map((s) => <TrainingCard key={s.id} sim={s} onOpen={onOpen} onChoose={(sim, allocations) => setChoice({ sim, allocations })} allocations={allocs[s.id] || []} />)}
           </div>
         )}
       </div>
+      {choice && <TrainingChooser sim={choice.sim} allocations={choice.allocations} onClose={() => setChoice(null)} onOpen={(sim, a) => { setChoice(null); onOpen(sim, a); }} />}
     </div>
   );
 }
