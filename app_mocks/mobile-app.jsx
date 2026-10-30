@@ -2693,7 +2693,6 @@ function mctOralSeed(i) {
   const subs = moralSubtopics(t);
   const chosen = subs.slice(0, Math.max(1, Math.ceil(subs.length / 2)));
   const pool = chosen.reduce((n, x) => n + x.q, 0) || moralTopicTotal(t);
-  if (i % 4 === 3) return { studentDefined: true, difficulty: "Medium", qCount: pool };
   return { topic: t.title, acs: chosen.map((x) => x.code), oralAcs: chosen.map((x) => x.id), answerMode: i % 2 ? "write" : "speak",
     difficulty: ["Easy", "Medium", "Hard"][i % 3], qCount: Math.max(1, Math.min(pool, 3 + (i % 3))) };
 }
@@ -3113,7 +3112,7 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
   const [term, setTerm] = useTM(allocation.term || "");
   const [course, setCourse] = useTM(allocation.type === "task" ? (allocation.course || "") : "");
   const [task, setTask] = useTM(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
-  const [studentDefined, setStudentDefined] = useTM(!!allocation.studentDefined);
+  const [studentDefined, setStudentDefined] = useTM(false);
   const [topic, setTopic] = useTM(allocation.topic || "");
   const [qCount, setQCount] = useTM(allocation.qCount || 20);
   const [difficulty, setDifficulty] = useTM(allocation.difficulty || "Medium");
@@ -3145,7 +3144,7 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
     setTerm(allocation.term || "");
     setCourse(allocation.type === "task" ? (allocation.course || "") : "");
     setTask(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
-    setStudentDefined(!!allocation.studentDefined);
+    setStudentDefined(false);
     setTopic(allocation.topic || "");
     setQCount(allocation.qCount || 20);
     setDifficulty(allocation.difficulty || "Medium");
@@ -3262,19 +3261,13 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
               </>
             ) : allocation.type === "oral" ? (
               <>
-                <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
-                  <MCTToggleRow label="Let the student choose parameters" hint="Student picks topics, Speak or Write, difficulty and count when they begin." checked={studentDefined} onChange={setStudentDefined} />
-                </div>
-                {!studentDefined && <MCTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />}
+                {!studentDefined && <MCTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} randomized={randomized} setRandomized={setRandomized} />}
               </>
             ) : allocation.type === "simulator" ? (
               <MCTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
             ) : (
               <>
                 <MCTExamModeCards mode={examMode} setMode={setExamMode} />
-                <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
-                  <MCTToggleRow label="Let the student choose parameters" hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope."} checked={studentDefined} onChange={setStudentDefined} />
-                </div>
                 {!studentDefined && examMode === "exam" && <MCTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />}
                 {!studentDefined && examMode === "study" && <MCTWrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />}
               </>
@@ -3321,14 +3314,13 @@ function MCTAllocationSheet({ allocation, group, contextLabel, roster, onClose, 
               {allocation.type === "task" ? infoRow("Course", allocation.course) : allocation.type === "simulator" ? null : infoRow("Term", allocation.term)}
               {infoRow("Assigned", allocation.assigned)}
               {infoRow("Due date", due)}
-              {allocation.type === "oral" && (allocation.studentDefined
-                ? infoRow("Parameters", "Student's choice")
-                : <>
+              {allocation.type === "oral" && (<>
                     {infoRow("Topics", allocation.topic || "—")}
                     {infoRow("ACS codes", (allocation.acs && allocation.acs.length) ? allocation.acs.length + " selected" : "—")}
                     {infoRow("Answer mode", allocation.answerMode === "write" ? "Write" : "Speak")}
                     {infoRow("Difficulty", allocation.difficulty || "Medium")}
                     {infoRow("Questions", allocation.qCount != null ? String(allocation.qCount) : "—")}
+                    {infoRow("Randomized", allocation.randomized ? "Yes" : "No")}
                   </>)}
               {allocation.type === "simulator" && infoRow("Simulator", MCT_SIMS.filter((x) => (allocation.simulators || []).includes(x.id)).map((x) => x.title).join(", ") || "—")}
               {allocation.instructions && (
@@ -3460,7 +3452,7 @@ function moralSelectionSummary(selected) {
   const title = chosen.length === 0 ? "" : chosen.length === 1 ? chosen[0].title : chosen.length + " topics";
   return { chosen, subCount, pool, acs, title };
 }
-function MCTOralPicker({ selected, setSelected, answerMode, setAnswerMode, difficulty, setDifficulty, count, setCount }) {
+function MCTOralPicker({ selected, setSelected, answerMode, setAnswerMode, difficulty, setDifficulty, count, setCount, randomized, setRandomized }) {
   const [expanded, setExpanded] = useState({});
   const toggleIds = (ids) => { const all = ids.every((id) => selected.has(id)); const next = new Set(selected); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); setSelected(next); };
   const { chosen, subCount, pool } = moralSelectionSummary(selected);
@@ -3544,6 +3536,7 @@ function MCTOralPicker({ selected, setSelected, answerMode, setAnswerMode, diffi
           </div>
           <div style={row}><span style={label}>Pool:</span><span style={value}>{pool} question(s)</span></div>
           <div style={row}><span style={label}>Drawing:</span><span style={value}>{n} question(s)</span></div>
+          <div style={row}><span style={label}>Randomized</span><MCTToggle checked={!!randomized} onChange={setRandomized} /></div>
         </div>
       </div>
     </>
@@ -3941,7 +3934,7 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
       course: type === "task" ? course : type === "simulator" ? "Training" : "Open-ended", term: type === "task" ? term : (term || MCT_TERMS[0]),
       due: dueLabel, status: "not_started", score: null, instructions,
       ...(type === "simulator" ? { simulators: simList.map((x) => x.id) } : {}),
-      ...(type === "oral" ? { difficulty, qCount: Math.min(Number(qCount) || 0, oralSel.pool) || Number(qCount), answerMode, oralAcs: [...oralAcs], topic: oralSel.title, acs: oralSel.acs } : type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, selModules: [...selModules], qCount, orion, randomized }) : {}),
+      ...(type === "oral" ? { difficulty, qCount: Math.min(Number(qCount) || 0, oralSel.pool) || Number(qCount), answerMode, oralAcs: [...oralAcs], topic: oralSel.title, acs: oralSel.acs, randomized } : type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, selModules: [...selModules], qCount, orion, randomized }) : {}),
     }));
     onAssign(created, title);
   }
@@ -3984,19 +3977,13 @@ function MCTAssignSheet({ roster, presetAssignees, onClose, onAssign }) {
           </>
         ) : type === "oral" ? (
           <>
-            <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)", marginTop: "calc(-1 * var(--kls-space-small))" }}>
-              <MCTToggleRow label="Let the student choose parameters" hint="Student picks topics, Speak or Write, difficulty and count when they begin." checked={studentDefined} onChange={setStudentDefined} />
-            </div>
-            {!studentDefined && <MCTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />}
+            {!studentDefined && <MCTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} randomized={randomized} setRandomized={setRandomized} />}
           </>
         ) : type === "simulator" ? (
           <MCTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
         ) : (
           <>
             <MCTExamModeCards mode={examMode} setMode={setExamMode} />
-            <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-small)" }}>
-              <MCTToggleRow label="Let the student choose parameters" hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope."} checked={studentDefined} onChange={setStudentDefined} />
-            </div>
             {!studentDefined && examMode === "exam" && <MCTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />}
             {!studentDefined && examMode === "study" && <MCTWrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />}
           </>
@@ -4785,6 +4772,57 @@ function MStudentOralExams({ go }) {
   return <MOralStudentSetup onBack={() => go("workspace")} onLogs={() => setView("logs")} />;
 }
 
+// Oral exams assigned from Control Tower (mirrors web ORAL_ASSIGNED). No save/resume — Start only.
+const MORAL_ASSIGNED = [
+  { id: 'oa1', assignment: 'Cutting Tools Oral Check', topicId: 'ot1', acsIdx: [0, 1, 2], answerMode: 'speak', level: 'med', count: 3, assigner: 'R. Alvarez', due: 'Nov 12' },
+  { id: 'oa2', assignment: 'Airframe Oral Prep', topicId: 'ot2', acsIdx: [0, 1, 2, 3], answerMode: 'write', level: 'hard', count: 4, assigner: 'M. Chen', due: 'Nov 26' },
+];
+function MOralAssignedSection({ items, onStart }) {
+  if (!items || !items.length) return null;
+  const rows = MWE_sortByDue(items);
+  const F = 'var(--kls-font-sans)';
+  const pill = { display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999, background: 'var(--src-assigned-bg)', color: 'var(--src-assigned-fg)', fontFamily: F, fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)' }}>
+      <span style={{ fontFamily: F, fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--kls-on-surface-variant)' }}>Assigned ({rows.length})</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {rows.map((a) => {
+          const t = MORAL_TOPICS.find((x) => x.id === a.topicId);
+          const subs = t ? moralSubtopics(t) : [];
+          const picked = t && a.acsIdx ? a.acsIdx.map((k) => subs[k]).filter(Boolean) : subs;
+          const nAcs = picked.length || (t ? t.acs.length : 0);
+          const levelLabel = (MORAL_LEVELS.find((l) => l.key === a.level) || MORAL_LEVELS[1]).label;
+          const detail = (t ? t.title : 'Oral Exam') + ' · ' + nAcs + ' ACS code' + (nAcs === 1 ? '' : 's') + ' · ' + a.count + ' question' + (a.count === 1 ? '' : 's') + ' · ' + levelLabel + ' · ' + (a.answerMode === 'write' ? 'Write' : 'Speak');
+          return (
+            <div key={a.id} style={{ background: 'var(--kls-surface)', borderRadius: 'var(--kls-radius-med)', padding: 14, fontFamily: F }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                  <MSGlyph name={a.answerMode === 'write' ? 'keyboard' : 'mic'} size={18} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-tiny)' }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25, color: 'var(--kls-on-surface)' }}>Oral Exam</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-tiny)', fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface)', minWidth: 0 }}>
+                    <WEIcon name="exam" size={12} style={{ flex: 'none', color: 'var(--kls-on-surface-variant)' }} />
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.assignment}</span>
+                  </div>
+                </div>
+                <span style={pill}>Assigned</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', marginTop: 'var(--kls-space-small)' }}>
+                <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 500, color: 'var(--kls-on-surface-variant)', lineHeight: 1.4 }}>
+                  <div>{detail}</div>
+                  <div style={{ marginTop: 2 }}>from {a.assigner} · Due {a.due}</div>
+                </div>
+                <button onClick={() => onStart && onStart(a)} aria-label="Start" style={{ width: 40, height: 40, borderRadius: 999, padding: 0, flexShrink: 0, cursor: 'pointer', display: 'grid', placeItems: 'center', background: 'var(--pa-bg)', color: 'var(--pa-fg)', border: '1px solid transparent' }}><WEIcon name="play" size={18} /></button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function MOralStudentSetup({ onBack, onLogs }) {
   const [calibrated, setCalibrated] = useState(false);
   const [expanded, setExpanded] = useState({ ot1: true });
@@ -4810,6 +4848,7 @@ function MOralStudentSetup({ onBack, onLogs }) {
       <MWEPageHeader title="Oral Exams" subtitle="Practice dynamic questions on various topics." onBack={onBack}
         actions={[{ icon: "history", label: "Exam Logs", onClick: onLogs }, moralCalibrateAction(calibrated, () => setCalibrated((v) => !v))]} />
       <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-tiny) var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <MOralAssignedSection items={MORAL_ASSIGNED} />
         <div style={{ background: "var(--kls-surface)", borderRadius: "var(--kls-radius-med)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
             <span style={label}>How you answer</span>

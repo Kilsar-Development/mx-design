@@ -637,7 +637,6 @@ function ctOralSeed(i) {
   const take = Math.max(1, Math.ceil(subs.length / 2));
   const chosen = subs.slice(0, take);
   const pool = chosen.reduce((n, x) => n + x.q, 0) || oralTopicTotal(t);
-  if (i % 4 === 3) return { studentDefined: true, difficulty: "Medium", qCount: pool };
   return { topic: t.title, acs: chosen.map((x) => x.code), oralAcs: chosen.map((x) => x.id), answerMode: i % 2 ? "write" : "speak",
     difficulty: ["Easy", "Medium", "Hard"][i % 3], qCount: Math.max(1, Math.min(pool, 3 + (i % 3))) };
 }
@@ -1839,7 +1838,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
   const [term, setTerm] = useCtldState(allocation.term || "");
   const [course, setCourse] = useCtldState(allocation.type === "task" ? (allocation.course || "") : "");
   const [task, setTask] = useCtldState(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
-  const [studentDefined, setStudentDefined] = useCtldState(!!allocation.studentDefined);
+  const [studentDefined, setStudentDefined] = useCtldState(false);
   const [topic, setTopic] = useCtldState(allocation.topic || "");
   const [qCount, setQCount] = useCtldState(String(allocation.qCount || 20));
   const [difficulty, setDifficulty] = useCtldState(allocation.difficulty || "Medium");
@@ -1880,7 +1879,7 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
     setTerm(allocation.term || "");
     setCourse(allocation.type === "task" ? (allocation.course || "") : "");
     setTask(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
-    setStudentDefined(!!allocation.studentDefined);
+    setStudentDefined(false);
     setTopic(allocation.topic || "");
     setQCount(String(allocation.qCount || 20));
     setDifficulty(allocation.difficulty || "Medium");
@@ -2013,19 +2012,13 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
                 </>
               ) : allocation.type === "oral" ? (
                 <>
-                  <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
-                    <CTToggleRow label="Let the student choose parameters" hint="Student picks topics, Speak or Write, difficulty and count when they begin." checked={studentDefined} onChange={setStudentDefined} />
-                  </div>
-                  {!studentDefined && <CTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />}
+                  {!studentDefined && <CTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} randomized={randomized} setRandomized={setRandomized} />}
                 </>
               ) : allocation.type === "simulator" ? (
                 <CTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
               ) : (
                 <>
                   <CTExamModeCards mode={examMode} setMode={setExamMode} />
-                  <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
-                    <CTToggleRow label="Let the student choose parameters" hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope when they begin."} checked={studentDefined} onChange={setStudentDefined} />
-                  </div>
                   {!studentDefined && (examMode === "exam"
                     ? <CTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />
                     : <WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />)}
@@ -2082,14 +2075,13 @@ function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, 
                 {allocation.type === "task" ? infoRow("Course", allocation.course) : allocation.type === "simulator" ? null : infoRow("Term", allocation.term)}
                 {infoRow("Assigned", allocation.assigned)}
                 {infoRow("Due date", due)}
-                {allocation.type === "oral" && (allocation.studentDefined
-                  ? infoRow("Parameters", "Student's choice")
-                  : <>
+                {allocation.type === "oral" && (<>
                       {infoRow("Topics", allocation.topic || "—")}
                       {infoRow("ACS codes", (allocation.acs && allocation.acs.length) ? allocation.acs.length + " selected" : "—")}
                       {infoRow("Answer mode", allocation.answerMode === "write" ? "Write" : "Speak")}
                       {infoRow("Difficulty", allocation.difficulty || "Medium")}
                       {infoRow("Questions", allocation.qCount != null ? String(allocation.qCount) : "—")}
+                      {infoRow("Randomized", allocation.randomized ? "Yes" : "No")}
                     </>)}
                 {allocation.type === "simulator" && (
                   <div style={{ paddingTop: "var(--kls-space-small)" }}>
@@ -2585,8 +2577,14 @@ function oralSelectionSummary(selected) {
   const title = chosen.length === 0 ? "" : chosen.length === 1 ? chosen[0].title : chosen.length + " topics";
   return { chosen, subCount, pool, acs, title };
 }
-function CTOralPicker({ selected, setSelected, answerMode, setAnswerMode, difficulty, setDifficulty, count, setCount }) {
+function CTOralPicker({ selected, setSelected, answerMode, setAnswerMode, difficulty, setDifficulty, count, setCount, randomized, setRandomized }) {
   const [expanded, setExpanded] = useState({});
+  const cfgRow = (label, value) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 0" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
   const toggleIds = (ids) => { const all = ids.every((id) => selected.has(id)); const next = new Set(selected); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); setSelected(next); };
   const { chosen, subCount, pool } = oralSelectionSummary(selected);
   const n = Math.min(Number(count) || 0, pool);
@@ -2668,8 +2666,11 @@ function CTOralPicker({ selected, setSelected, answerMode, setAnswerMode, diffic
           <div style={{ width: 40, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{n}</div>
           <button onClick={() => { if (n < pool) setCount(String(n + 1)); }} disabled={n >= pool} style={stepBtn(n >= pool)}>+</button>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
-          <span>Pool {pool} question(s)</span><span>Drawing {n} question(s)</span>
+        {cfgRow("Pool", `${pool} question${pool === 1 ? "" : "s"}`)}
+        {cfgRow("Drawing", `${n} question${n === 1 ? "" : "s"}`)}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Randomized</span>
+          <CTToggle checked={!!randomized} onChange={setRandomized} />
         </div>
         </div>
       </div>
@@ -2839,14 +2840,9 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
             </>
           ) : type === "oral" ? (
             <>
-              <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
-                <CTToggleRow label="Let the student choose parameters"
-                  hint="Student picks topics, Speak or Write, difficulty and count when they begin."
-                  checked={studentDefined} onChange={setStudentDefined} />
-              </div>
 
               {!studentDefined && (
-                <CTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />
+                <CTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} randomized={randomized} setRandomized={setRandomized} />
               )}
             </>
           ) : type === "simulator" ? (
@@ -2854,11 +2850,6 @@ function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
           ) : (
             <>
               <CTExamModeCards mode={examMode} setMode={setExamMode} />
-              <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
-                <CTToggleRow label="Let the student choose parameters"
-                  hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope when they begin."}
-                  checked={studentDefined} onChange={setStudentDefined} />
-              </div>
 
               {!studentDefined && (examMode === "exam"
                 ? <CTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />
@@ -5255,9 +5246,78 @@ function StudentOralExams() {
           <button className="compound-switch__option" role="tab" data-active={tab === "practice"} onClick={() => setTab("practice")}><Icon name="exam" size={14} />Practice Setup</button>
           <button className="compound-switch__option" role="tab" data-active={tab === "logs"} onClick={() => { setTab("logs"); setLog(null); }}><Icon name="history" size={14} />Exam Logs<span className="count">{ORAL_LOGS.length}</span></button>
         </div>
+        {tab === "practice" && <AssignedOralExams items={ORAL_ASSIGNED} onStart={setSession} />}
         {tab === "practice" && <OralStudentSetup onStart={setSession} />}
         {tab === "logs" && !log && <OralLogsTab onOpen={setLog} />}
         {tab === "logs" && log && <OralLogDetail attempt={log} onBack={() => setLog(null)} />}
+      </div>
+    </div>
+  );
+}
+
+// Oral exams assigned from Control Tower. No save/resume — each row is Start only.
+const ORAL_ASSIGNED = [
+  { id: 'oa1', assignment: 'Cutting Tools Oral Check', topicId: 'ot1', acsIdx: [0, 1, 2], answerMode: 'speak', level: 'med', count: 3, assigner: 'R. Alvarez', due: 'Nov 12' },
+  { id: 'oa2', assignment: 'Airframe Oral Prep', topicId: 'ot2', acsIdx: [0, 1, 2, 3], answerMode: 'write', level: 'hard', count: 4, assigner: 'M. Chen', due: 'Nov 26' },
+];
+
+function AssignedOralExams({ items, onStart }) {
+  if (!items || !items.length) return null;
+  const rows = WE_sortByDue(items);
+  const primaryBtn = {
+    height: 40, padding: '0 var(--kls-space-med)', borderRadius: 8, border: '1px solid transparent',
+    background: 'var(--pa-bg)', color: 'var(--pa-fg)',
+    fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', flexShrink: 0,
+  };
+  const pill = {
+    display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999,
+    background: 'var(--src-assigned-bg)', color: 'var(--src-assigned-fg)', fontFamily: 'var(--kls-font-sans)', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap',
+  };
+  const begin = (a) => {
+    const t = ORAL_TOPICS.find((x) => x.id === a.topicId) || ORAL_TOPICS[0];
+    const subs = oralSubtopics(t);
+    const picked = a.acsIdx ? a.acsIdx.map((i) => subs[i]).filter(Boolean) : subs;
+    const acs = picked.length ? picked.map((s) => s.code) : t.acs;
+    const pool = picked.length ? picked.reduce((n, s) => n + s.q, 0) : oralTopicTotal(t);
+    onStart({ topic: { ...t, acs }, level: a.level || 'med', count: Math.max(1, Math.min(a.count || 3, pool)), answerMode: a.answerMode || 'speak', assignment: a.assignment });
+  };
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Assigned ({rows.length})</span>
+      </div>
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        {rows.map((a, i) => {
+          const t = ORAL_TOPICS.find((x) => x.id === a.topicId);
+          const subs = t ? oralSubtopics(t) : [];
+          const picked = t && a.acsIdx ? a.acsIdx.map((k) => subs[k]).filter(Boolean) : subs;
+          const nAcs = picked.length || (t ? t.acs.length : 0);
+          const levelLabel = (ORAL_LEVELS.find((l) => l.key === a.level) || ORAL_LEVELS[1]).label;
+          const detail = `${t ? t.title : 'Oral Exam'} · ${nAcs} ACS code${nAcs === 1 ? '' : 's'} · ${a.count} question${a.count === 1 ? '' : 's'} · ${levelLabel} · ${a.answerMode === 'write' ? 'Write' : 'Speak'}`;
+          return (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? '1px solid var(--line)' : 'none', flexWrap: 'wrap' }}>
+              <span style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'grid', placeItems: 'center' }}>
+                <MSGlyph name={a.answerMode === 'write' ? 'keyboard' : 'mic'} size={16} />
+              </span>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', minWidth: 0 }}>
+                  <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--ink)', flex: 'none' }}>Oral Exam</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-tiny)', fontSize: 12.5, fontWeight: 500, color: 'var(--kls-on-surface)', minWidth: 0 }}>
+                    <Icon name="exam" size={12} style={{ flex: 'none', color: 'var(--kls-on-surface-variant)' }} />
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.assignment}</span>
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 3, fontSize: 12.5, color: 'var(--ink-3)' }}>
+                  <span style={pill}>Assigned</span>
+                  <span>from {a.assigner} · Due {a.due}</span>
+                  <span>{detail}</span>
+                </div>
+              </div>
+              <button style={primaryBtn} onClick={() => begin(a)}>Start <Icon name="arrow-r" size={14} /></button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
