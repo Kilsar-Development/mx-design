@@ -5032,6 +5032,7 @@ function MReleaseSections({ sections }) {
 }
 function MReleaseNotesScreen({ onBack }) {
   const releases = window.MX_RELEASES || [];
+  const soon = window.MX_COMING_SOON && window.MX_COMING_SOON.items && window.MX_COMING_SOON.items.length ? window.MX_COMING_SOON : null;
   const [current, ...past] = releases;
   const [open, setOpen] = useState({});
   if (!current) return null;
@@ -5047,6 +5048,17 @@ function MReleaseNotesScreen({ onBack }) {
         <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, color: "var(--kls-on-surface)" }}>Release Notes</div>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        {soon && (
+          <section style={{ ...card, flex: "none", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>Coming Soon</span>
+              <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: "var(--kls-radius-small)", background: "var(--kls-info-container)", color: "var(--kls-on-info-container)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>In development</span>
+            </div>
+            <ul style={{ margin: 0, padding: "0 0 0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+              {soon.items.map((t, i) => <li key={i} style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{t}</li>)}
+            </ul>
+          </section>
+        )}
         <section style={{ ...card, flex: "none", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
             <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>Version {current.version}</span>

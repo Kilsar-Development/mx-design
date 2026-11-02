@@ -1,4 +1,13 @@
 // Shared release-note data for Web App + Mobile App. Newest first; [0] is the current release.
+// Coming Soon: unreleased work shown above the list. Empty array hides the section.
+window.MX_COMING_SOON = {
+  eta: "Next release",
+  items: [
+    "Oral Exams: instructor-assigned exams with a Pool, Drawing and Randomized allocation.",
+    "Release notes on mobile, reachable from the version number in Settings.",
+    "Control Tower: overdue filter and a per-student progress drawer.",
+  ],
+};
 window.MX_RELEASES = [
   { version: "2.16.5", date: "Oct 14, 2026", summary: "Simulators arrive in Training and can now be assigned from Control Tower.",
     sections: [

@@ -4770,10 +4770,11 @@ function ReleaseSections({ sections }) {
 
 function ReleaseNotes() {
   const releases = window.MX_RELEASES || [];
+  const soon = window.MX_COMING_SOON && window.MX_COMING_SOON.items && window.MX_COMING_SOON.items.length ? window.MX_COMING_SOON : null;
   const [current, ...past] = releases;
   const [open, setOpen] = useState({});
   const scrollRef = useRef(null);
-  const [activeV, setActiveV] = useState(current ? current.version : "");
+  const [activeV, setActiveV] = useState(soon ? "soon" : current ? current.version : "");
   const relTop = (el, c) => el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop;
   const jump = (v) => {
     setOpen((o) => ({ ...o, [v]: true }));
@@ -4798,6 +4799,19 @@ function ReleaseNotes() {
             <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Release Notes</h1>
             <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>What changed in each version.</p>
           </div>
+
+          {/* coming soon — always on top */}
+          {soon && (
+            <section data-release="soon" style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Coming Soon</span>
+                <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-info-container)", color: "var(--kls-on-info-container)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>In development</span>
+              </div>
+              <ul style={{ margin: 0, padding: "0 0 0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+                {soon.items.map((t, i) => <li key={i} style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{t}</li>)}
+              </ul>
+            </section>
+          )}
 
           {/* current release */}
           <section data-release={current.version} style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
@@ -4840,6 +4854,13 @@ function ReleaseNotes() {
         {/* version jump rail */}
         <nav aria-label="Versions" style={{ width: 112, flexShrink: 0, position: "sticky", top: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", paddingTop: 48 }}>
           <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", padding: "0 var(--kls-space-small)", marginBottom: "var(--kls-space-tiny)" }}>Versions</div>
+          {soon && (
+            <button onClick={() => jump("soon")}
+              style={{ all: "unset", boxSizing: "border-box", cursor: "pointer", height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, display: "flex", alignItems: "center",
+                background: activeV === "soon" ? "var(--kls-surface-container-lowest)" : "transparent", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: activeV === "soon" ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
+              Coming Soon
+            </button>
+          )}
           {releases.map((r) => {
             const on = activeV === r.version;
             return (
