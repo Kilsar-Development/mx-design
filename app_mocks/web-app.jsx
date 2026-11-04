@@ -269,14 +269,15 @@ function Header({ systemMessage = null, unread = 0, onAvatar, onBell, onSearch, 
 // `flavor` swaps labels via WorkspaceSettings overrides (termsKey / ticketsKey
 // / coursesKey / assignmentsKey). The icon set is identical across flavors.
 const FLAVOR_LABELS = {
-  education:  { terms: "Catalog",   tickets: "Tickets", library: "Library", training: "Training", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
-  commercial: { terms: "Cases",     tickets: "Tickets", library: "Library", training: "Training", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
+  education:  { terms: "Catalog",   tickets: "Tickets", library: "Library", designStudio: "Design Studio", training: "Training", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
+  commercial: { terms: "Cases",     tickets: "Tickets", library: "Library", designStudio: "Design Studio", training: "Training", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
 };
 
 const SIDEBAR_TABS_BASE = [
   { key: "terms",         icon: "tabs/home" },
   { key: "tickets",       icon: "checkpoint" },
   { key: "library",       icon: "tabs/library" },
+  { key: "designStudio",  svg: SparkleGlyph },
   { key: "training",      symbol: "school" },
   { key: "oralExams",     icon: "chatBubbles" },
   { key: "inventory",     icon: "cube" },
@@ -409,6 +410,7 @@ function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviati
               key={tab.key}
               icon={tab.icon}
               symbol={tab.symbol}
+              svg={tab.svg}
               label={tab.label}
               isActive={active === tab.key}
               showLabel={showLabels}
@@ -468,7 +470,7 @@ function MSGlyph({ name, size = 24, color = "currentColor" }) {
   );
 }
 
-function SidebarOption({ icon, glyph, symbol, label, isActive, showLabel, onClick }) {
+function SidebarOption({ icon, glyph, symbol, svg: Svg, label, isActive, showLabel, onClick }) {
   // Active uses --kls-primary tint; idle uses --kls-on-surface (matches Flutter spec).
   const iconColor = isActive ? "var(--kls-primary)" : "var(--kls-on-surface)";
   const labelColor = "var(--kls-on-surface)";
@@ -490,7 +492,7 @@ function SidebarOption({ icon, glyph, symbol, label, isActive, showLabel, onClic
         width: "100%",
       }}
     >
-      {glyph ? <HelpGlyph size={24} color={iconColor} /> : symbol ? <MSGlyph name={symbol} size={24} color={iconColor} /> : <KlsIcon name={icon} size={24} color={iconColor} />}
+      {Svg ? <Svg size={24} color={iconColor} /> : glyph ? <HelpGlyph size={24} color={iconColor} /> : symbol ? <MSGlyph name={symbol} size={24} color={iconColor} /> : <KlsIcon name={icon} size={24} color={iconColor} />}
       {showLabel && (
         <span
           className="kls-text-navigation"
@@ -4924,6 +4926,7 @@ function WebApp(props) {
   else if (active === "terms") content = <Blocks query={query} onOpenTask={setEditingTask} />;
   else if (active === "tickets") content = <Tickets query={query} />;
   else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
+  else if (active === "designStudio") content = <DesignStudio key={props.authoringKind || "assignment"} kind={props.authoringKind} />;
   else if (active === "training") content = <Training query={query} onOpen={setOpenSim} role={ctRole} />;
   else if (active === "releaseNotes") content = <ReleaseNotes />;
   else content = <WebPlaceholder tabKey={active} />;
@@ -10212,6 +10215,1641 @@ function Tickets({ query = "" }) {
           suggestions={TICKETS_ORION_SUGGESTIONS} addFiles={false} />
       )}
     </div>
+  );
+}
+
+// ── Design Studio (web only) ─────────────────────────────────────────
+// Backend contract: MX-Backend-Frontend-Handoff (feature/design-studio-backend).
+// Mocked client-side. Mirrors the API shapes: session { id, title, status: draft|saved|archived,
+// authoring_kind, draft, draft_revision, saved_revision, messages }. The authoring kind comes from
+// the server (no mode picker); this mock is the Assignment domain.
+function SparkleGlyph({ size = 24, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none", display: "block" }}>
+      <path fill={color} d="M10 3.5l1.55 4.45a3 3 0 0 0 1.85 1.85L17.85 11.35l-4.45 1.55a3 3 0 0 0-1.85 1.85L10 19.2l-1.55-4.45a3 3 0 0 0-1.85-1.85L2.15 11.35l4.45-1.55a3 3 0 0 0 1.85-1.85z" />
+      <path fill={color} d="M18.5 2l.7 2.05a1.2 1.2 0 0 0 .75.75L22 5.5l-2.05.7a1.2 1.2 0 0 0-.75.75L18.5 9l-.7-2.05a1.2 1.2 0 0 0-.75-.75L15 5.5l2.05-.7a1.2 1.2 0 0 0 .75-.75z" />
+      <path fill={color} d="M18.5 15.5l.55 1.6a1 1 0 0 0 .6.6l1.6.55-1.6.55a1 1 0 0 0-.6.6l-.55 1.6-.55-1.6a1 1 0 0 0-.6-.6l-1.6-.55 1.6-.55a1 1 0 0 0 .6-.6z" />
+    </svg>
+  );
+}
+
+function DsArrowGlyph({ dir = "up", size = 16, color = "currentColor" }) {
+  const rot = { up: 0, right: 90, down: 180, left: 270 }[dir];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none", display: "block", transform: `rotate(${rot}deg)` }}>
+      <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DsStopGlyph({ size = 14, color = "currentColor" }) {
+  return <svg width={size} height={size} viewBox="0 0 14 14" aria-hidden="true" style={{ flex: "none", display: "block" }}><rect x="2" y="2" width="10" height="10" rx="2" fill={color} /></svg>;
+}
+
+// The instructional domain is resolved by the server from role + feature flags (no picker).
+// The design's "Authoring kind" tweak sets it here for preview only.
+let DS_KIND = "assignment";
+const DS_KIND_LABEL = { assignment: "Assignment", module: "Module" };
+const dsKindName = (k = DS_KIND) => DS_KIND_LABEL[k];
+const dsKindA = (k = DS_KIND) => (k === "module" ? "a Module" : "an Assignment");
+const dsKindPlural = (k = DS_KIND) => DS_KIND_LABEL[k] + "s";
+
+// What a session can produce. Assignment/Module is the server-resolved instructional domain;
+// models, scenes and animations are standalone Library outputs that never require an Assignment.
+const DS_OUT = {
+  assignment: { label: "Assignment", icon: "itemList" },
+  model: { label: "3D model", icon: "cube" },
+  scene: { label: "Scene", icon: "scene" },
+  animation: { label: "Animation", icon: "animation" },
+};
+
+const DS_SUGGESTIONS = [
+  { kind: "assignment", get text() { return `Write ${dsKindA()} to remove and install the nose gear torque link from the maintenance manual`; } },
+  { kind: "model", text: "Generate a 3D model of a main landing gear wheel and brake assembly" },
+  { kind: "animation", text: "Animate the nose gear retracting into the wheel well" },
+  { kind: "scene", text: "Create a scene showing the torque link inspection points" },
+];
+
+// Ready Library models (GET library/?category=three_d_model&normalization_status=ready)
+const DS_MODELS = [
+  { id: "lm-nlg", name: "Nose landing gear assembly" },
+  { id: "lm-mwb", name: "Main wheel and brake assembly" },
+  { id: "lm-tl", name: "Torque link" },
+];
+
+// Action / model-generation statuses → UI. "active" ones keep the feed polling.
+const DS_ACT = {
+  queued: { label: "Queued", tone: "neutral", active: true },
+  waiting_for_model: { label: "Waiting for model", tone: "neutral", active: true },
+  generating: { label: "Generating", tone: "info", active: true },
+  finalizing: { label: "Finalizing", tone: "info", active: true },
+  ready: { label: "Saved to Library", tone: "success" },
+  awaiting_review: { label: "Ready for review", tone: "warn" },
+  approved: { label: "Saved to Library", tone: "success" },
+  rejected: { label: "Discarded", tone: "neutral" },
+  failed: { label: "Failed", tone: "error" },
+  timed_out: { label: "Timed out", tone: "error" },
+  canceled: { label: "Canceled", tone: "neutral" },
+};
+const DS_TONE = {
+  neutral: ["var(--kls-tertiary)", "var(--kls-on-surface-variant)"],
+  info: ["var(--kls-info-container)", "var(--kls-info)"],
+  success: ["var(--kls-success-container)", "var(--kls-success)"],
+  warn: ["var(--kls-accent-5)", "var(--kls-accent-4)"],
+  error: ["var(--kls-error-container)", "var(--kls-error)"],
+};
+const DS_TIMELINE = {
+  model: [[1500, "generating", "Building geometry"], [3500, "generating", "Adding materials"], [3500, "finalizing", "Preparing the preview"], [2500, "awaiting_review", null]],
+  scene: [[1500, "generating", "Placing the camera and lights"], [4000, "awaiting_review", null]],
+  animation: [[1500, "generating", "Keyframing the motion"], [3500, "generating", "Rendering a preview"], [3000, "awaiting_review", null]],
+};
+function dsAbs(rel, t0) { let t = t0; return rel.map(([ms, status, stage]) => { t += ms; return { at: t, status, stage }; }); }
+function dsNewOutput(spec, waitFor) {
+  const now = Date.now();
+  return { id: dsUid(), kind: spec.kind, name: spec.name, prompt: spec.prompt, model: spec.model || null, revision: 1, approved_revision: null,
+    status: waitFor ? "waiting_for_model" : "queued", stage: null, waitFor: waitFor || null,
+    queue: waitFor ? [] : dsAbs(DS_TIMELINE[spec.kind], now), attached: null, error: null, created_at: now };
+}
+function dsRestart(o, patch) { return { ...o, ...patch, status: "queued", stage: null, error: null, queue: dsAbs(DS_TIMELINE[o.kind], Date.now()) }; }
+
+// Library documents the assistant can cite / link to steps (document_ids).
+const DS_DOCS = {
+  "amm-29": { name: "AMM 29-00-00 · Hydraulic Power", icon: "filetypes/pdf" },
+  "amm-32-21": { name: "AMM 32-21-00 · Nose Landing Gear", icon: "filetypes/pdf" },
+  "amm-32-51": { name: "AMM 32-51-00 · Nose Wheel Steering", icon: "filetypes/pdf" },
+  "amm-32-41": { name: "AMM 32-41-00 · Wheels and Brakes", icon: "filetypes/pdf" },
+  "cmm-32-30": { name: "CMM 32-30-11 · Gear Actuator", icon: "filetypes/pdf" },
+  "sop-ramp": { name: "Ramp Safety SOP", icon: "filetypes/doc" },
+};
+
+const DS_SECTION_LABEL = {
+  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+  textTransform: "uppercase", color: "var(--kls-on-surface-variant)",
+};
+const DS_CARD = {
+  background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+  padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)",
+};
+// Both workspace panels share one header height (fits the 40px tab switch / buttons).
+const DS_PANEL_HEAD = { display: "flex", alignItems: "center", minHeight: 57, boxSizing: "border-box",
+  padding: "var(--kls-space-xsmall) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)", flex: "none" };
+const dsText = (size, weight, color, extra) => ({ fontFamily: "var(--kls-font-sans)", fontSize: size, fontWeight: weight, color, ...extra });
+const DS_FIELD = {
+  width: "100%", boxSizing: "border-box", borderRadius: 8, outline: "none",
+  background: "var(--kls-scaffold-bg)", border: "1px solid var(--kls-outline-variant)",
+  padding: "var(--kls-space-xsmall) var(--kls-space-small)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)",
+};
+
+function dsUid() {
+  try { return crypto.randomUUID(); } catch (e) { return "id-" + Math.random().toString(16).slice(2) + Date.now().toString(16); }
+}
+function dsAgo(ts) {
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return "Just now";
+  if (m < 60) return m + "m ago";
+  const h = Math.round(m / 60);
+  if (h < 24) return h + "h ago";
+  const d = Math.round(h / 24);
+  return d === 1 ? "Yesterday" : d + "d ago";
+}
+const dsStep = (title, instructions, document_ids = [], notes = null) => ({ id: dsUid(), title, instructions, notes, document_ids });
+
+// ── Draft templates the mock assistant "writes" ──
+function dsDraftFor(text) {
+  const t = text.toLowerCase();
+  if (t.includes("torque link")) return {
+    sources: ["amm-32-21", "amm-32-51", "amm-29"],
+    draft: { title: "Nose gear torque link removal and installation", description: "Remove, inspect and reinstall the nose landing gear torque link assembly.", steps: [
+      dsStep("Prepare the aircraft", "Chock the main wheels, install the nose gear ground lock pin and tag the cockpit steering controls. Relieve hydraulic pressure.", ["amm-29", "sop-ramp"]),
+      dsStep("Disconnect the steering", "Disconnect the nose wheel steering linkage from the upper torque link.", ["amm-32-51"]),
+      dsStep("Remove the torque link pins", "Remove the cotter pins, nuts and washers. Support the links while you drive out the bolts and keep the hardware with each link.", ["amm-32-21"]),
+      dsStep("Inspect the links and bushings", "Check for cracks, corrosion and bushing wear. Compare measurements with the wear limits in the manual.", ["amm-32-21"], "Record measurements on the task card."),
+      dsStep("Install the torque link", "Install the links with new bushings as needed. Torque the bolts to the manual value and install new cotter pins.", ["amm-32-21"]),
+      dsStep("Reconnect and check steering", "Reconnect the steering linkage, remove the ground lock pin and do the steering operational check.", ["amm-32-51"]),
+    ] },
+    reply: "I drafted a 6-step procedure from AMM 32-21-00 and the steering chapter. Wear limits and torque values point back to the manual instead of being copied in. Review the steps on the right, then save it as " + dsKindA() + " when it looks right.",
+  };
+  if (t.includes("actuator")) return {
+    sources: ["cmm-32-30", "amm-29"],
+    draft: { title: "Hydraulic actuator inspection", description: "Inspect a landing gear actuator for leaks, damage and rod condition against the manual limits.", steps: [
+      dsStep("Depressurize the system", "Relieve hydraulic pressure and confirm zero pressure on the gauge before touching the actuator.", ["amm-29"]),
+      dsStep("Inspect for leaks", "Wipe the actuator clean, then check the rod seal and fittings for leakage beyond the allowable limit.", ["cmm-32-30"]),
+      dsStep("Inspect the rod", "Check the piston rod for scoring, pitting and chrome damage. Compare any damage with the limits table.", ["cmm-32-30"]),
+      dsStep("Record findings", "Record the results and any out-of-limit findings on the task card."),
+    ] },
+    reply: "Here's a 4-step inspection drafted from CMM 32-30-11. Each check links to the limits table in the manual so students look up the values themselves.",
+  };
+  if (t.includes("wheel") || t.includes("brake")) return {
+    sources: ["amm-32-41", "sop-ramp"],
+    draft: { title: "Wheel and brake assembly replacement", description: "Replace a main wheel and brake assembly and return the aircraft to service.", steps: [
+      dsStep("Jack the aircraft", "Position the jack at the axle jack point and raise the wheel clear of the ground.", ["amm-32-41", "sop-ramp"]),
+      dsStep("Remove the wheel", "Deflate the tire, remove the axle nut and slide the wheel assembly off the axle.", ["amm-32-41"]),
+      dsStep("Replace the brake assembly", "Disconnect the brake line, remove the brake assembly bolts and install the new assembly.", ["amm-32-41"]),
+      dsStep("Install the wheel", "Install the wheel, torque the axle nut to the manual value and inflate the tire.", ["amm-32-41"]),
+      dsStep("Bleed and test the brakes", "Bleed the brake line, lower the aircraft and do the brake operational check.", ["amm-32-41"]),
+    ] },
+    reply: "I drafted a 5-step replacement procedure from AMM 32-41-00. Check the steps on the right; you can reorder or edit any of them.",
+  };
+  return null;
+}
+
+function dsAssetKind(t) {
+  if (/\banimat/.test(t)) return "animation";
+  if (/\bscenes?\b/.test(t)) return "scene";
+  if (/\bmodel\b/.test(t) && /(generate|create|build|make|new)/.test(t)) return "model";
+  return null;
+}
+function dsAssetName(text, kind, model) {
+  let n = text.replace(/\s+from the “.+?” model.*$/i, "")
+    .replace(/^(please\s+)?(generate|create|build|make|animate|draft)\s+/i, "").replace(/^(a|an|the)\s+/i, "")
+    .replace(/^(new\s+)?(3d\s+)?(model|scene|animation)\s+(of|showing|that shows|for)\s+/i, "").replace(/^(a|an|the)\s+/i, "").trim();
+  if (!n || /^(new\s+)?(3d\s+)?(model|scene|animation)$/i.test(n)) n = (model || "New") + " " + DS_OUT[kind].label.toLowerCase();
+  return (n.charAt(0).toUpperCase() + n.slice(1)).slice(0, 255);
+}
+function dsModelFor(session, text) {
+  const q = text.match(/“(.+?)”/);
+  const generated = (session.outputs || []).filter((o) => o.kind === "model" && o.status === "ready").map((o) => o.name);
+  const all = [...DS_MODELS.map((m) => m.name), ...generated];
+  if (q && all.includes(q[1])) return q[1];
+  const t = text.toLowerCase();
+  // Models made in this session win over Library look-alikes when the request names them
+  const own = generated.find((n) => t.includes(n.toLowerCase()));
+  if (own) return own;
+  if (t.includes("nose gear") || t.includes("nose landing")) return "Nose landing gear assembly";
+  if (t.includes("torque link")) return "Torque link";
+  if (t.includes("wheel") || t.includes("brake")) return "Main wheel and brake assembly";
+  return null;
+}
+function dsAssetReply(kind, name, model, withNewModel) {
+  if (kind === "model") return `I started generating “${name}”. It runs in the background and usually takes a few minutes. When it's ready, look it over in the viewer, ask me for changes, and save it to the Library when it's right.`;
+  const k = DS_OUT[kind].label.toLowerCase();
+  if (withNewModel) return `I'll generate a new 3D model first, then build the ${k} “${name}” from it once you've saved the model to the Library.`;
+  return `I'm building the ${k} “${name}” from the “${model}” model in the Library. It runs in the background; nothing is saved to the Library until you choose to.`;
+}
+function dsAssetPlan(kind, name, prompt, model, withNewModel) {
+  const outputs = kind === "model" ? [{ kind, name, prompt }]
+    : withNewModel ? [{ kind: "model", name: name + " model", prompt }, { kind, name, prompt, afterModel: true }]
+    : [{ kind, name, prompt, model }];
+  return { activities: kind === "model" ? ["Reading your request", "Starting model generation"] : ["Finding a model in the Library", "Starting the " + DS_OUT[kind].label.toLowerCase()],
+    sources: [], outputs, reply: dsAssetReply(kind, name, model, withNewModel) };
+}
+
+function dsPlanTurn(session, text, docs = [], focusId = null) {
+  const plan = dsPlanTurnBase(session, text, docs, focusId);
+  if (docs.length) {
+    plan.sources = [...docs, ...(plan.sources || []).filter((x) => !docs.includes(x))];
+    plan.activities = ["Reading " + (docs.length === 1 ? dsDoc(docs[0]).name : docs.length + " documents from the Library"), ...plan.activities.filter((a) => a !== "Searching the Library")];
+    if (!plan.activities.length) plan.activities = ["Reading your documents"];
+  }
+  return plan;
+}
+
+function dsPlanTurnBase(session, text, docs, focusId) {
+  const hasSteps = session.draft.steps.length > 0;
+  const outs = session.outputs || [];
+  // Revision of a standalone output (revise_content action)
+  const rv = text.match(/^Revise “(.+?)”: ([\s\S]+)$/);
+  if (rv) {
+    const o = outs.find((x) => x.name === rv[1]);
+    if (o) return { activities: ["Updating the request"], sources: [], revise: { id: o.id, prompt: rv[2] },
+      reply: `Working on version ${o.revision + 1} of “${o.name}”. ${o.approved_revision ? "The approved version stays in the Library until you approve the new one." : "I'll let you know when it's ready for review."}` };
+  }
+  // Free-text change to what's open in the viewer ("Make the tire larger") → revise_content
+  const focus = focusId && outs.find((x) => x.id === focusId);
+  if (focus && ["awaiting_review", "rejected", "approved", "ready"].includes(focus.status) && !dsAssetKind(text.toLowerCase()) && !/\b(assignment|procedure|step)\b/i.test(text)) {
+    const saved = focus.approved_revision;
+    return { activities: ["Updating the " + DS_OUT[focus.kind].label.toLowerCase()], sources: [], revise: { id: focus.id, prompt: text },
+      reply: focus.kind === "model"
+        ? `Working on version ${focus.revision + 1} of “${focus.name}”. ${saved ? `Version ${saved} stays in the Library until you save the new one.` : "It isn't in the Library until you save it."}`
+        : `Working on version ${focus.revision + 1} of “${focus.name}”. ${saved ? `Version ${saved} stays in the Library until you save the new one.` : "It isn't in the Library until you save it."}` };
+  }
+  // Answer to "which model?" question
+  const last = session.messages[session.messages.length - 1];
+  const pending = last && last.question && last.question.pending;
+  if (pending) {
+    if (/generate a new model/i.test(text)) return dsAssetPlan(pending.kind, pending.name, pending.prompt, null, true);
+    const m = dsModelFor(session, text);
+    if (m) return dsAssetPlan(pending.kind, dsAssetName(pending.prompt, pending.kind, m), pending.prompt, m, false);
+  }
+  // Standalone asset request — no Assignment needed
+  const kind = dsAssetKind(text.toLowerCase());
+  if (kind) {
+    if (kind === "model") return dsAssetPlan("model", dsAssetName(text, "model"), text);
+    const m = dsModelFor(session, text);
+    if (/new model/i.test(text)) return dsAssetPlan(kind, dsAssetName(text, kind), text, null, true);
+    if (m) return dsAssetPlan(kind, dsAssetName(text, kind, m), text, m, false);
+    const k = DS_OUT[kind].label.toLowerCase();
+    const readyGenerated = outs.filter((o) => o.kind === "model" && o.status === "ready").map((o) => o.name);
+    return { activities: ["Finding a model in the Library"], sources: [],
+      reply: `Which 3D model should the ${k} use? I can use one that's ready in the Library or generate a new one first.`,
+      question: { prompt: "Pick a model", pending: { kind, name: dsAssetName(text, kind), prompt: text },
+        options: [...[...readyGenerated, ...DS_MODELS.map((x) => x.name)].slice(0, 3).map((n) => `Use “${n}”`), "Generate a new model first"] } };
+  }
+  const tpl = dsDraftFor(text);
+  if (tpl && !hasSteps) return { activities: ["Searching the Library", "Reading " + DS_DOCS[tpl.sources[0]].name, "Drafting steps"], ...tpl };
+  if (!hasSteps && !docs.length && text.trim().split(/\s+/).length < 6) return {
+    activities: ["Searching the Library"],
+    reply: "I can build that. Which source should I work from?",
+    sources: [],
+    question: { prompt: "Pick a source", options: ["Use the maintenance manual in the Library", "Use the Ramp Safety SOP", "Add documents from the Library…"] },
+  };
+  if (!hasSteps) {
+    const firstAsk = (session.messages.find((m) => m.role === "user") || { content: text }).content;
+    const title = firstAsk.replace(/^(write|draft|build|create|make)\s+(a|an)?\s*/i, "").replace(/\s+procedure.*$/i, "").slice(0, 80) || "New procedure";
+    return {
+      activities: ["Searching the Library", "Drafting steps"],
+      sources: ["sop-ramp"],
+      draft: { title: title.charAt(0).toUpperCase() + title.slice(1), description: "", steps: [
+        dsStep("Prepare", "Make the aircraft and work area safe before starting.", docs.length ? [docs[0]] : ["sop-ramp"]),
+        dsStep("Remove", "Remove the component and keep the hardware together.", docs.slice(0, 1)),
+        dsStep("Inspect", "Inspect against the limits in the manual.", docs.slice(0, 1)),
+        dsStep("Install", "Install the component and torque the hardware to the manual values.", docs.slice(0, 1)),
+        dsStep("Test", "Do the operational check and record the result.", docs.slice(-1)),
+      ] },
+      reply: docs.length
+        ? `I drafted a 5-step outline from ${docs.length === 1 ? "“" + dsDoc(docs[0]).name + "”" : "the " + docs.length + " documents you added"}. Each step links back to its source so you can check the details.`
+        : "I started a 5-step outline. I couldn't match it to a specific manual chapter, so the steps are generic. Tell me the aircraft or add the manual from the Library and I'll make them specific.",
+    };
+  }
+  const stepTitle = text.trim().replace(/^add (a )?step (to |that |for )?/i, "");
+  return {
+    activities: ["Updating the draft"],
+    sources: [],
+    draft: { ...session.draft, steps: [...session.draft.steps, dsStep(stepTitle.charAt(0).toUpperCase() + stepTitle.slice(1, 80), "Describe what the student does in this step.")] },
+    reply: "I added that as step " + (session.draft.steps.length + 1) + ". Edit the instructions on the right if it needs more detail.",
+  };
+}
+
+function dsAssetSeed(kind, name, ask, model, state, at) {
+  const o = { ...dsNewOutput({ kind, name, prompt: ask, model }), ...state, created_at: at };
+  const plan = dsAssetReply(kind, name, model, false);
+  return { id: dsUid(), title: name, status: "draft", authoring_kind: DS_KIND, draft: { title: "", description: "", steps: [] }, draft_revision: 0, saved_revision: null,
+    outputs: [o], updated_at: at, messages: [
+      { id: dsUid(), role: "user", content: ask },
+      { id: dsUid(), role: "assistant", content: plan, status: "done", sources: [], actions: [o.id] }] };
+}
+
+// ── Seed sessions (stand-ins for GET /design-studio/sessions/) ──
+function dsSeedSessions() {
+  const now = Date.now();
+  const torque = dsDraftFor("torque link");
+  const actuator = dsDraftFor("actuator");
+  const wheel = dsDraftFor("wheel");
+  const msgs = (q, a, sources) => [
+    { id: dsUid(), role: "user", content: q },
+    { id: dsUid(), role: "assistant", content: a, status: "done", sources, draftChanged: true },
+  ];
+  return [
+    { id: dsUid(), title: torque.draft.title, status: "saved", authoring_kind: DS_KIND, draft: torque.draft, draft_revision: 3, saved_revision: 3, outputs: [],
+      messages: msgs("Write a procedure to remove and install the nose gear torque link from the maintenance manual", torque.reply, torque.sources), updated_at: now - 2 * 3600e3 },
+    { id: dsUid(), title: actuator.draft.title, status: "draft", authoring_kind: DS_KIND, draft: actuator.draft, draft_revision: 2, saved_revision: null, outputs: [],
+      messages: msgs("Draft an inspection procedure for a hydraulic actuator, with the limits from the manual", actuator.reply, actuator.sources), updated_at: now - 26 * 3600e3 },
+    { id: dsUid(), title: "Main wheel tire change (old)", status: "archived", authoring_kind: DS_KIND, draft: wheel.draft, draft_revision: 4, saved_revision: 4, outputs: [],
+      messages: msgs("Build a wheel and brake assembly replacement procedure", wheel.reply, wheel.sources), updated_at: now - 4 * 24 * 3600e3 },
+    dsAssetSeed("animation", "Nose gear retracting into the wheel well", "Animate the nose gear retracting into the wheel well", "Nose landing gear assembly",
+      { status: "awaiting_review", queue: [] }, now - 40 * 60e3),
+    dsAssetSeed("model", "Main landing gear wheel and brake assembly", "Generate a 3D model of a main landing gear wheel and brake assembly", null,
+      { status: "generating", stage: "Adding materials", queue: [{ at: now + 5000, status: "finalizing", stage: "Preparing the preview" }, { at: now + 9000, status: "awaiting_review", stage: null }] }, now - 4 * 60e3),
+  ];
+}
+
+const DS_STATUS = {
+  draft: { label: "Draft", bg: "var(--kls-tertiary)", fg: "var(--kls-on-surface-variant)" },
+  saved: { label: "Saved", bg: "var(--kls-success-container)", fg: "var(--kls-success)" },
+  archived: { label: "Archived", bg: "transparent", fg: "var(--kls-on-surface-variant)", border: "1px solid var(--kls-outline-variant)" },
+};
+function DsStatusPill({ status }) {
+  if (status !== "archived") return null;
+  const s = DS_STATUS[status];
+  return (
+    <span style={{ ...dsText(12, 600, s.fg), height: 24, padding: "0 var(--kls-space-small)", borderRadius: 999, background: s.bg, border: s.border || "none",
+      display: "inline-flex", alignItems: "center", boxSizing: "border-box", flex: "none" }}>{s.label}</span>
+  );
+}
+const dsUnsaved = (s) => s.draft.steps.length > 0 && s.saved_revision !== s.draft_revision;
+function DsSaveState({ session }) {
+  if (session.status === "archived") return null;
+  const label = session.saved_revision == null ? "Not saved as " + dsKindA(session.authoring_kind) + " yet"
+    : dsUnsaved(session) ? "Unsaved changes" : "Up to date";
+  const warn = session.saved_revision != null && dsUnsaved(session);
+  return <span title={label} style={dsText(13, 500, warn ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)", { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 })}>{label}</span>;
+}
+
+function DsSuggestion({ text, kind, onPick, disabled, compact }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={() => onPick(text)} disabled={disabled} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ ...dsText(13, 500, undefined, { lineHeight: 1.45 }), flex: compact ? "0 1 auto" : "1 1 0", minWidth: 0, textAlign: "left", cursor: disabled ? "default" : "pointer", border: "none", borderRadius: 8,
+        padding: "var(--kls-space-xsmall) var(--kls-space-small)", opacity: disabled && compact ? 0.6 : 1,
+        background: hover && !disabled ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+        color: hover && !disabled ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)",
+        transition: "background 125ms var(--kls-ease-standard)",
+        display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+      {kind && (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", ...dsText(11, 700, "var(--kls-on-surface)", { letterSpacing: "0.06em", textTransform: "uppercase" }) }}>
+          <KlsIcon name={DS_OUT[kind].icon} size={13} color="var(--kls-on-surface)" />{kind === "assignment" ? dsKindName() : DS_OUT[kind].label}
+        </span>
+      )}
+      <span>{text}</span>
+    </button>
+  );
+}
+
+function DsMenuButton({ items, label = "Session actions" }) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+  const btnRef = useRef(null);
+  return (
+    <>
+      <button ref={btnRef} aria-label={label} title={label}
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ width: 32, height: 32, flex: "none", borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+          background: (open || hover) ? "var(--kls-tertiary-container)" : "transparent",
+          display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name="dots" size={16} color="var(--kls-on-surface-variant)" />
+      </button>
+      {open && (
+        <span onClick={(e) => e.stopPropagation()}><FloatingMenu anchorRef={btnRef} align="right" width={184} onClose={() => setOpen(false)}>
+          {items.filter(Boolean).map((it, i) => it === "divider"
+            ? <div key={i} style={{ height: 1, background: "var(--kls-outline-variant)", margin: "var(--kls-space-tiny) var(--kls-space-xsmall)" }} />
+            : <MenuItem key={it.label} danger={it.danger} onClick={() => { setOpen(false); it.onClick(); }}>
+                <KlsIcon name={it.icon} size={16} color={it.danger ? "var(--kls-error)" : "var(--kls-on-surface)"} />{it.label}
+              </MenuItem>)}
+        </FloatingMenu></span>
+      )}
+    </>
+  );
+}
+
+function DsDeleteDialog({ session, onCancel, onConfirm }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onCancel(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  const kind = DS_KIND_LABEL[session.authoring_kind];
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--kls-space-med)" }}>
+      <div onClick={onCancel} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)", animation: "kls-fade 200ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "relative", width: "min(440px, 100%)", background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        padding: "var(--kls-space-large)", animation: "kls-pop 200ms var(--kls-ease-standard)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", marginBottom: "var(--kls-space-small)" }}>
+          <span style={{ width: 40, height: 40, borderRadius: 999, background: "var(--kls-error-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+            <KlsIcon name="trash" size={18} color="var(--kls-error)" />
+          </span>
+          <span style={dsText(18, 600, "var(--kls-on-surface)")}>Delete session?</span>
+        </div>
+        <p style={{ margin: "0 0 var(--kls-space-med)", ...dsText(14, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5 }) }}>
+          “{session.title}” and its conversation will be deleted, and any work still running is canceled.
+          {session.saved_revision != null ? ` The ${kind} you saved from it stays, along with any Library items.` : " Library items it used stay in the Library."} This can’t be undone.
+        </p>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-xsmall)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <button onClick={onConfirm} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
+            background: "var(--kls-error)", color: "var(--kls-on-error, #fff)", ...dsText(14, 700) }}>Delete session</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DsInlineTitle({ value, editing, onDone, style }) {
+  const [v, setV] = useState(value);
+  const ref = useRef(null);
+  useEffect(() => { if (editing) { setV(value); setTimeout(() => ref.current && ref.current.select(), 0); } }, [editing]);
+  if (!editing) return <span style={{ ...style, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</span>;
+  const commit = () => onDone(v.trim() ? v.trim().slice(0, 255) : value);
+  return (
+    <input ref={ref} value={v} onChange={(e) => setV(e.target.value)} onClick={(e) => e.stopPropagation()}
+      onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") onDone(value); }}
+      style={{ ...DS_FIELD, ...style, padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", minWidth: 0, flex: 1 }} />
+  );
+}
+
+// ── Sessions list row ──
+function dsOutputSummary(outs) {
+  if (!outs.length) return null;
+  if (outs.length === 1) return DS_OUT[outs[0].kind].label + " · " + DS_ACT[outs[0].status].label;
+  const review = outs.filter((o) => o.status === "awaiting_review").length;
+  const active = outs.filter((o) => DS_ACT[o.status].active).length;
+  return outs.length + " outputs" + (review ? ` · ${review} ready for review` : active ? ` · ${active} in progress` : "");
+}
+function DsSessionRow({ s, first, renaming, onOpen, onRename, onRenameDone, onArchive, onDelete }) {
+  const [hover, setHover] = useState(false);
+  const steps = s.draft.steps.length;
+  const outs = s.outputs || [];
+  const assetOnly = outs.length > 0 && steps === 0;
+  const anyActive = outs.some((o) => DS_ACT[o.status].active);
+  return (
+    <div onClick={() => !renaming && onOpen()} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", margin: "0 calc(-1 * var(--kls-space-small))",
+        borderTop: first ? "none" : "1px solid var(--kls-outline-variant)", borderRadius: 8, cursor: "pointer",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 36, height: 36, borderRadius: 8, background: "var(--kls-tertiary)", flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+{assetOnly ? <KlsIcon name={DS_OUT[outs[outs.length - 1].kind].icon} size={18} color="var(--kls-on-surface-variant)" />
+          : <SparkleGlyph size={18} color={s.status === "archived" ? "var(--kls-outline)" : "var(--kls-on-surface-variant)"} />}
+      </span>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+        <DsInlineTitle value={s.title} editing={renaming} onDone={onRenameDone}
+          style={dsText(14, 600, s.status === "archived" ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)")} />
+        <span style={dsText(13, 500, "var(--kls-on-surface-variant)")}>
+          {steps === 0 && !outs.length && "Nothing created yet"}
+          {steps > 0 && <>{DS_KIND_LABEL[s.authoring_kind]} · {steps + (steps === 1 ? " step" : " steps")} · {s.saved_revision == null
+            ? "Not saved" : dsUnsaved(s) ? <span style={{ color: "var(--kls-accent-4)" }}>Unsaved changes</span> : "Saved"}</>}
+          {steps > 0 && outs.length > 0 && " · "}
+          {outs.length > 0 && <span style={{ color: outs.some((o) => o.status === "awaiting_review") ? "var(--kls-accent-4)" : undefined }}>{dsOutputSummary(outs)}</span>}
+          {anyActive && <KlsIcon name="refresh" size={11} color="var(--kls-on-surface-variant)" style={{ marginLeft: 6, verticalAlign: "-1px", animation: "int-spin 1.2s linear infinite" }} />}
+        </span>
+      </div>
+      <DsStatusPill status={s.status} />
+      <span style={{ ...dsText(13, 500, "var(--kls-on-surface-variant)"), width: 84, textAlign: "right", flex: "none" }}>{dsAgo(s.updated_at)}</span>
+      <DsMenuButton items={[
+        { label: "Open", icon: "chevronRight", onClick: onOpen },
+        s.status !== "archived" && { label: "Rename", icon: "pencil", onClick: onRename },
+        s.status !== "archived" && { label: "Archive", icon: "stack", onClick: onArchive },
+        "divider",
+        { label: "Delete", icon: "trash", danger: true, onClick: onDelete },
+      ]} />
+    </div>
+  );
+}
+
+// ── Landing: prompt + sessions ──
+// New session dialog → POST sessions/ { title? }
+function DsNewSessionDialog({ onCancel, onCreate }) {
+  const [name, setName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    setTimeout(() => ref.current && ref.current.focus(), 0);
+    function onKey(e) { if (e.key === "Escape") onCancel(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  const create = () => {
+    if (creating) return;
+    setCreating(true);
+    setTimeout(() => onCreate(name.trim().slice(0, 255)), 500);
+  };
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--kls-space-med)" }}>
+      <div onClick={onCancel} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)", animation: "kls-fade 200ms var(--kls-ease-standard)" }} />
+      <div role="dialog" aria-modal="true" aria-labelledby="ds-new-title"
+        style={{ position: "relative", width: "min(480px, 100%)", background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+          padding: "var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", animation: "kls-pop 200ms var(--kls-ease-standard)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <span style={{ width: 40, height: 40, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+            <SparkleGlyph size={20} color="var(--kls-on-surface)" />
+          </span>
+          <span id="ds-new-title" style={dsText(18, 600, "var(--kls-on-surface)")}>New session</span>
+        </div>
+        <label style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", marginTop: "var(--kls-space-tiny)" }}>
+          <span style={DS_SECTION_LABEL}>Session name</span>
+          <input ref={ref} value={name} maxLength={255} disabled={creating} onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") create(); }}
+            placeholder="e.g. Nose gear torque link R&I"
+            style={{ ...DS_FIELD, height: 44, background: "var(--kls-surface)" }} />
+          <span style={dsText(13, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5 })}>Optional. Leave it blank and the session is named after the first thing you create. You can rename it later.</span>
+        </label>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-xsmall)", marginTop: "var(--kls-space-xsmall)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <MeButton tone="primary" onClick={create}>
+            {creating && <KlsIcon name="refresh" size={16} color="currentColor" style={{ animation: "int-spin 900ms linear infinite" }} />}
+            {creating ? "Creating…" : "Create session"}
+          </MeButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DsLanding({ sessions, onStart, onOpen, onRename, onArchive, onDelete }) {
+  const [creating, setCreating] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [renamingId, setRenamingId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
+  const start = () => setCreating(true);
+  const count = (st) => sessions.filter((s) => st === "all" ? s.status !== "archived" : s.status === st).length;
+  const tabs = [
+    { key: "all", label: "Active · " + count("all") },
+    { key: "archived", label: "Archived · " + count("archived") },
+  ];
+  const shown = sessions.filter((s) => filter === "all" ? s.status !== "archived" : s.status === filter).sort((a, b) => b.updated_at - a.updated_at);
+  const noneAtAll = sessions.length === 0;
+  const emptyCopy = { all: "No active sessions.", draft: "No draft sessions.", saved: "No saved sessions.", archived: "No archived sessions." }[filter];
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ margin: "0 0 var(--kls-space-tiny)", ...dsText(24, 600, "var(--kls-on-surface)", { letterSpacing: "-0.025em" }) }}>Design Studio</h1>
+          <p style={{ margin: 0, ...dsText(13.5, 400, "var(--kls-on-surface-variant)") }}>Create {dsKindPlural()}, 3D models, scenes and animations with the assistant from what’s in the Library. Review each result before it’s published or added to {dsKindA()}.</p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <SegmentedTabs tabs={tabs} value={filter} onChange={setFilter} />
+          <LibIconBtn icon="refresh" label="Refresh" onClick={refresh} spin={refreshing} />
+          <div style={{ flex: 1 }} />
+          <button onClick={start} style={{ ...ctPrimaryBtn, flex: "none" }}>
+            <PlusGlyph />New session
+          </button>
+        </div>
+
+        <div style={{ ...DS_CARD, padding: shown.length ? "var(--kls-space-xsmall) var(--kls-space-med)" : "var(--kls-space-med)" }}>
+          {shown.length === 0 ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+              <span style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-tiny)" }}>
+                <SparkleGlyph size={26} color="var(--kls-on-surface-variant)" />
+              </span>
+              <span style={dsText(16, 600, "var(--kls-on-surface)")}>{noneAtAll ? "No sessions yet" : emptyCopy}</span>
+              <span style={dsText(14, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5, maxWidth: 380 })}>
+                {noneAtAll ? `Start a session to create ${dsKindA()}, a 3D model, a scene or an animation with the assistant.` : "Try another filter, or start a new session."}
+              </span>
+              {noneAtAll && <div style={{ marginTop: "var(--kls-space-xsmall)" }}><MeButton tone="primary" onClick={start}><PlusGlyph />New session</MeButton></div>}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {shown.map((s, i) => (
+                <DsSessionRow key={s.id} s={s} first={i === 0} renaming={renamingId === s.id}
+                  onOpen={() => onOpen(s.id)} onRename={() => setRenamingId(s.id)}
+                  onRenameDone={(t) => { setRenamingId(null); onRename(s.id, t); }}
+                  onArchive={() => onArchive(s.id)} onDelete={() => onDelete(s.id)} />
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
+      {creating && <DsNewSessionDialog onCancel={() => setCreating(false)} onCreate={(name) => { setCreating(false); onStart(name); }} />}
+    </div>
+  );
+}
+
+// Empty-session prompt: shown in the conversation until the first message is sent.
+function DsSessionStart({ onPick }) {
+  return (
+    <div style={{ margin: "auto 0", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+        <span style={dsText(18, 600, "var(--kls-on-surface)", { letterSpacing: "-0.015em" })}>What do you want to create?</span>
+        <span style={dsText(14, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5 })}>Describe {dsKindA()}, a 3D model, a scene or an animation. The assistant works from what’s in the Library.</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--kls-space-xsmall)" }}>
+        {DS_SUGGESTIONS.map((t) => <DsSuggestion key={t.text} text={t.text} kind={t.kind} onPick={onPick} />)}
+      </div>
+    </div>
+  );
+}
+
+// ── Workspace: conversation ──
+// ── Library documents for a turn (mentioned_doc_ids) ──
+// Files the assistant can read. Not uploads: these are existing Library items; chat uploads are a separate flow.
+const DS_LIB_TREE = [
+  { id: "dsf-manuals", kind: "folder", name: "Maintenance manuals", added: "2026-03-02",
+    children: Object.entries(DS_DOCS).map(([id, d]) => ({ id, kind: d.icon === "filetypes/doc" ? "doc" : "pdf", name: d.name, bytes: 4200000 + id.length * 731000, type: d.icon === "filetypes/doc" ? "DOCX" : "PDF", added: "2026-03-02" })) },
+  ...LIB_ITEMS,
+];
+const DS_LIB_FLAT = (() => {
+  const out = {};
+  const walk = (items) => items.forEach((i) => { if (i.kind === "folder") walk(i.children || []); else out[i.id] = i; });
+  walk(DS_LIB_TREE);
+  return out;
+})();
+function dsDoc(id) {
+  if (DS_DOCS[id]) return DS_DOCS[id];
+  const i = DS_LIB_FLAT[id];
+  return i ? { name: i.name.replace(/\.(pdf|docx|txt)$/i, ""), icon: (LIB_KINDS[i.kind] || LIB_KINDS.pdf).icon } : null;
+}
+
+function DsPickRow({ item, depth, selected, open, onToggle, onOpen, hidden }) {
+  const [hover, setHover] = useState(false);
+  if (hidden) return null;
+  const folder = item.kind === "folder";
+  const kids = folder ? (item.children || []) : [];
+  const allOn = folder && kids.length > 0 && kids.every((k) => selected.has(k.id));
+  return (
+    <div onClick={() => (folder ? onOpen(item.id) : onToggle(item.id))} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      role={folder ? "button" : "checkbox"} aria-checked={folder ? undefined : selected.has(item.id)} aria-label={item.name}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", height: 44, padding: "0 var(--kls-space-small)",
+        paddingLeft: `calc(var(--kls-space-small) + ${depth * 28}px)`, borderRadius: 8, cursor: "pointer",
+        background: hover ? "var(--kls-tertiary)" : "transparent" }}>
+      {folder
+        ? <KlsIcon name="chevronRight" size={12} color="var(--kls-on-surface-variant)" rotate={open ? 90 : 0} style={{ transition: "transform 125ms var(--kls-ease-standard)" }} />
+        : <DsCheckbox checked={selected.has(item.id)} label={"Select " + item.name} />}
+      <KlsImage name={(LIB_KINDS[item.kind] || LIB_KINDS.pdf).icon} size={18} />
+      <span style={{ flex: 1, minWidth: 0, ...dsText(14, folder ? 600 : 500, "var(--kls-on-surface)", { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }) }}>{item.name}</span>
+      {folder && kids.length > 0 && (
+        <button onClick={(e) => { e.stopPropagation(); kids.forEach((k) => (allOn ? selected.has(k.id) : !selected.has(k.id)) && onToggle(k.id)); }}
+          style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, ...dsText(12, 600, "var(--kls-primary)") }}>
+          {allOn ? "Clear" : "Select all"}
+        </button>
+      )}
+      <span style={{ width: 72, textAlign: "right", flex: "none", ...dsText(12, 500, "var(--kls-on-surface-variant)") }}>
+        {folder ? kids.length + (kids.length === 1 ? " file" : " files") : libSize(item.bytes || 0)}
+      </span>
+    </div>
+  );
+}
+
+function DsLibraryPicker({ initial, onCancel, onAdd }) {
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState(() => new Set(initial));
+  const [open, setOpen] = useState(() => new Set(["dsf-manuals"]));
+  const ref = useRef(null);
+  useEffect(() => {
+    setTimeout(() => ref.current && ref.current.focus(), 0);
+    function onKey(e) { if (e.key === "Escape") onCancel(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  const toggle = (id) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleOpen = (id) => setOpen((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const term = q.trim().toLowerCase();
+  const hit = (i) => !term || i.name.toLowerCase().includes(term);
+  const rows = [];
+  DS_LIB_TREE.forEach((item) => {
+    if (item.kind === "folder") {
+      const kids = (item.children || []).filter(hit);
+      if (term && !kids.length) return;
+      const isOpen = term ? true : open.has(item.id);
+      rows.push(<DsPickRow key={item.id} item={item} depth={0} selected={selected} open={isOpen} onToggle={toggle} onOpen={toggleOpen} />);
+      if (isOpen) kids.forEach((k) => rows.push(<DsPickRow key={k.id} item={k} depth={1} selected={selected} onToggle={toggle} />));
+    } else if (hit(item)) rows.push(<DsPickRow key={item.id} item={item} depth={0} selected={selected} onToggle={toggle} />);
+  });
+  const n = selected.size;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--kls-space-med)" }}>
+      <div onClick={onCancel} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)", animation: "kls-fade 200ms var(--kls-ease-standard)" }} />
+      <div role="dialog" aria-modal="true" aria-labelledby="ds-lib-title"
+        style={{ position: "relative", width: "min(640px, 100%)", maxHeight: "min(720px, calc(100vh - 64px))", background: "var(--kls-surface)", borderRadius: 8,
+          boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", animation: "kls-pop 200ms var(--kls-ease-standard)" }}>
+        <div style={{ padding: "var(--kls-space-large) var(--kls-space-large) var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          <span id="ds-lib-title" style={dsText(18, 600, "var(--kls-on-surface)")}>Add documents from the Library</span>
+          <span style={dsText(14, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5 })}>The assistant reads these when it writes steps and picks details. They stay in the Library; nothing is copied or changed.</span>
+          <div style={{ position: "relative", marginTop: "var(--kls-space-xsmall)" }}>
+            <KlsIcon name="search" size={16} color="var(--kls-on-surface-variant)" style={{ position: "absolute", left: 12, top: 14 }} />
+            <input ref={ref} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search files"
+              style={{ ...DS_FIELD, height: 44, paddingLeft: 36, background: "var(--kls-surface)" }} />
+          </div>
+        </div>
+        <div style={{ flex: 1, minHeight: 160, overflowY: "auto", padding: "0 var(--kls-space-med)" }}>
+          {rows.length ? rows : <div style={{ padding: "var(--kls-space-large)", textAlign: "center", ...dsText(14, 500, "var(--kls-on-surface-variant)") }}>No files match “{q}”.</div>}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", padding: "var(--kls-space-small) var(--kls-space-large) var(--kls-space-large)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, ...dsText(13, 600, "var(--kls-on-surface-variant)") }}>{n ? n + (n === 1 ? " document selected" : " documents selected") : "No documents selected"}</span>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <MeButton tone="primary" onClick={() => onAdd([...selected])}>{initial.length ? "Done" : "Add"}</MeButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DsPendingDoc({ id, onRemove }) {
+  const d = dsDoc(id);
+  if (!d) return null;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", height: 28, maxWidth: 260, padding: "0 var(--kls-space-tiny) 0 var(--kls-space-xsmall)",
+      borderRadius: 6, background: "var(--kls-tertiary)", ...dsText(12, 600, "var(--kls-on-surface)"), boxSizing: "border-box" }}>
+      <KlsImage name={d.icon} size={14} />
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+      <button onClick={onRemove} aria-label={"Remove " + d.name} title="Remove"
+        style={{ width: 20, height: 20, flex: "none", border: "none", background: "transparent", cursor: "pointer", padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
+          ...dsText(15, 500, "var(--kls-on-surface-variant)") }}>×</button>
+    </span>
+  );
+}
+
+function DsDocChip({ id }) {
+  const d = dsDoc(id);
+  if (!d) return null;
+  return (
+    <span title={d.name} style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", height: 26, maxWidth: 260, padding: "0 var(--kls-space-xsmall)",
+      borderRadius: 6, background: "var(--kls-tertiary)", ...dsText(12, 600, "var(--kls-on-surface)"), boxSizing: "border-box" }}>
+      <KlsImage name={d.icon} size={14} />
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+    </span>
+  );
+}
+
+function DsStatusTag({ status, small }) {
+  const a = DS_ACT[status]; const [bg, fg] = DS_TONE[a.tone];
+  return (
+    <span style={{ ...dsText(small ? 11 : 12, 600, fg), height: small ? 20 : 24, padding: "0 var(--kls-space-xsmall)", borderRadius: 999, background: bg,
+      display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", flex: "none", whiteSpace: "nowrap" }}>
+      {a.active && <KlsIcon name="refresh" size={small ? 10 : 12} color={fg} style={{ animation: "int-spin 1.2s linear infinite" }} />}
+      {a.label}
+    </span>
+  );
+}
+function DsActionChip({ o, onClick }) {
+  const [hover, setHover] = useState(false);
+  if (!o) return null;
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", width: "100%", textAlign: "left", cursor: "pointer",
+        padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={DS_OUT[o.kind].icon} size={16} color="var(--kls-on-surface-variant)" />
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <span style={dsText(11, 700, "var(--kls-on-surface-variant)", { letterSpacing: "0.06em", textTransform: "uppercase" })}>{DS_OUT[o.kind].label}{o.revision > 1 ? " · v" + o.revision : ""}</span>
+        <span style={dsText(13, 600, "var(--kls-on-surface)", { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" })}>{o.name}</span>
+      </span>
+      <DsStatusTag status={o.status} small />
+      <KlsIcon name="chevronRight" size={12} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+}
+
+function DsMessage({ m, readOnly, outputs = [], onShowOutput, onAnswer, onRetry }) {
+  if (m.role === "user") {
+    return (
+      <div style={{ alignSelf: "flex-end", maxWidth: "85%", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--kls-space-tiny)" }}>
+        <div style={{ padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 12, borderBottomRightRadius: 4,
+          background: "var(--kls-tertiary)", ...dsText(14, 500, "var(--kls-on-surface)", { lineHeight: 1.5, whiteSpace: "pre-wrap" }) }}>{m.content}</div>
+        {m.docs && m.docs.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "var(--kls-space-tiny)" }}>{m.docs.map((id) => <DsDocChip key={id} id={id} />)}</div>
+        )}
+      </div>
+    );
+  }
+  const streaming = m.status === "streaming";
+  return (
+    <div style={{ display: "flex", gap: "var(--kls-space-small)", alignItems: "flex-start", maxWidth: "92%" }}>
+      <span style={{ width: 28, height: 28, borderRadius: 999, background: "var(--kls-tertiary-container)", flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <SparkleGlyph size={15} color="var(--kls-on-tertiary-container)" />
+      </span>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", paddingTop: "var(--kls-space-tiny)" }}>
+        {streaming && m.activity && !m.content && (
+          <span style={{ ...dsText(13, 500, "var(--kls-on-surface-variant)"), display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            {m.activity}
+            <span style={{ display: "inline-flex", gap: 3 }}>{[0, 1, 2].map((i) => (
+              <span key={i} style={{ width: 4, height: 4, borderRadius: 999, background: "currentColor", animation: `pulse-dot 1.2s ${i * 0.15}s infinite` }} />))}</span>
+          </span>
+        )}
+        {m.content && <div style={dsText(14, 400, "var(--kls-on-surface)", { lineHeight: 1.55, whiteSpace: "pre-wrap" })}>{m.content}{streaming && <span style={{ opacity: 0.5 }}>▍</span>}</div>}
+        {m.status === "interrupted" && (
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", ...dsText(13, 500, "var(--kls-on-surface-variant)") }}>
+            <KlsIcon name="warning" size={14} color="var(--kls-accent-4)" />
+            Stopped. This response wasn’t saved.
+            {!readOnly && <button onClick={onRetry} style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer", ...dsText(13, 600, "var(--kls-primary)", { textDecoration: "underline" }) }}>Try again</button>}
+          </div>
+        )}
+        {m.sources && m.sources.length > 0 && !streaming && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-tiny)" }}>{m.sources.map((id) => <DsDocChip key={id} id={id} />)}</div>
+        )}
+        {m.actions && !streaming && m.actions.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            {m.actions.map((id) => <DsActionChip key={id} o={outputs.find((o) => o.id === id)} onClick={() => onShowOutput(id)} />)}
+          </div>
+        )}
+        {m.draftChanged && !streaming && (
+          <span style={{ ...dsText(12, 600, "var(--kls-on-surface-variant)"), display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)" }}>
+            <KlsIcon name="pencil" size={12} color="var(--kls-on-surface-variant)" />Draft updated
+          </span>
+        )}
+        {m.question && m.status === "awaiting_user" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", padding: "var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)" }}>
+            <span style={DS_SECTION_LABEL}>{m.question.prompt}</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-xsmall)" }}>
+              {m.question.options.map((o) => <DsSuggestion key={o} text={o} compact onPick={onAnswer} disabled={readOnly || !onAnswer} />)}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DsComposer({ busy, disabled, onSend, onStop, seed, docs = [], onAddDocs, onRemoveDoc }) {
+  const [text, setText] = useState("");
+  const taRef = useRef(null);
+  useEffect(() => { if (seed) { setText(seed.text); setTimeout(() => taRef.current && taRef.current.focus(), 0); } }, [seed]);
+  const send = () => { if (!text.trim() || busy || disabled) return; onSend(text.trim()); setText(""); };
+  const canSend = text.trim().length > 0 && !busy && !disabled;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", opacity: disabled ? 0.6 : 1 }}>
+      {(onAddDocs || docs.length > 0) && (
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--kls-space-tiny)" }}>
+          {docs.map((id) => <DsPendingDoc key={id} id={id} onRemove={() => onRemoveDoc(id)} />)}
+          {onAddDocs && <DsAddDocsBtn disabled={disabled || busy} onClick={onAddDocs} />}
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "flex-end", gap: "var(--kls-space-xsmall)", padding: "var(--kls-space-xsmall)", borderRadius: 12,
+        border: "1px solid var(--kls-outline-variant)", background: "var(--kls-scaffold-bg)" }}>
+      <textarea ref={taRef} value={text} onChange={(e) => setText(e.target.value)} rows={1} disabled={disabled}
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+        placeholder={disabled ? "This session is archived" : busy ? "Waiting for the assistant…" : "Ask for changes, or describe what to add"}
+        style={{ flex: 1, resize: "none", minHeight: 40, maxHeight: 160, border: "none", outline: "none", background: "transparent",
+          padding: "var(--kls-space-xsmall)", ...dsText(14, 400, "var(--kls-on-surface)", { lineHeight: 1.5 }) }} />
+      {busy ? (
+        <button onClick={onStop} aria-label="Stop response" title="Stop response"
+          style={{ width: 36, height: 36, flex: "none", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: "pointer",
+            display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <DsStopGlyph color="var(--kls-on-surface)" />
+        </button>
+      ) : (
+        <button onClick={send} disabled={!canSend} aria-label="Send" title="Send"
+          style={{ width: 36, height: 36, flex: "none", borderRadius: 8, border: "none", cursor: canSend ? "pointer" : "default",
+            background: canSend ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <DsArrowGlyph color={canSend ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)"} />
+        </button>
+      )}
+      </div>
+    </div>
+  );
+}
+
+function DsAddDocsBtn({ disabled, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} disabled={disabled} title="Add documents from the Library"
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 28, padding: "0 var(--kls-space-xsmall)", flex: "none", borderRadius: 6, border: "none",
+        cursor: disabled ? "default" : "pointer", background: hover && !disabled ? "var(--kls-tertiary)" : "transparent",
+        display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", ...dsText(13, 600, "var(--kls-on-surface-variant)") }}>
+      <PlusGlyph size={14} />Add document
+    </button>
+  );
+}
+
+// ── Workspace: draft editor ──
+function DsIconBtn({ label, onClick, disabled, children, danger }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick} disabled={disabled}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 28, height: 28, flex: "none", borderRadius: 6, border: "none", padding: 0, cursor: disabled ? "default" : "pointer",
+        background: hover && !disabled ? (danger ? "var(--kls-error-container)" : "var(--kls-tertiary-container)") : "transparent",
+        opacity: disabled ? 0.35 : 1, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{children}</button>
+  );
+}
+
+function DsAutoText({ value, style, minRows = 1, ...rest }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => { const el = ref.current; if (el) { el.style.height = "auto"; el.style.height = el.scrollHeight + 2 + "px"; } }, [value]);
+  return <textarea ref={ref} value={value} rows={minRows} {...rest} style={{ ...style, resize: "none", overflow: "hidden", flex: "none" }} />;
+}
+
+function DsStepCard({ step, index, total, readOnly, onChange, onMove, onRemove }) {
+  const [showNotes, setShowNotes] = useState(!!step.notes);
+  return (
+    <div style={{ display: "flex", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", borderRadius: 8,
+      border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)" }}>
+      <span style={{ width: 28, height: 28, borderRadius: 999, flex: "none", background: "var(--kls-tertiary)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", ...dsText(13, 700, "var(--kls-on-surface)") }}>{index + 1}</span>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+        <input value={step.title} readOnly={readOnly} onChange={(e) => onChange({ title: e.target.value })} placeholder="Step title"
+          style={{ ...DS_FIELD, background: "transparent", border: "1px solid transparent", padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", ...dsText(15, 600, "var(--kls-on-surface)") }}
+          onFocus={(e) => { if (!readOnly) e.target.style.borderColor = "var(--kls-outline-variant)"; }} onBlur={(e) => { e.target.style.borderColor = "transparent"; }} />
+        <DsAutoText value={step.instructions} readOnly={readOnly} minRows={2}
+          onChange={(e) => onChange({ instructions: e.target.value })} placeholder="Instructions"
+          style={{ ...DS_FIELD, resize: "none", minHeight: 48, color: "var(--kls-on-surface-variant)" }} />
+        {showNotes && (
+          <DsAutoText value={step.notes || ""} readOnly={readOnly}
+            onChange={(e) => onChange({ notes: e.target.value || null })} placeholder="Instructor note"
+            style={{ ...DS_FIELD, resize: "none", minHeight: 36, fontSize: 13, background: "transparent", borderStyle: "dashed" }} />
+        )}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--kls-space-tiny)" }}>
+          {step.document_ids.map((id) => <DsDocChip key={id} id={id} />)}
+          {!showNotes && !readOnly && (
+            <button onClick={() => setShowNotes(true)} style={{ border: "none", background: "transparent", cursor: "pointer", padding: "0 var(--kls-space-tiny)", height: 26,
+              ...dsText(12, 600, "var(--kls-on-surface-variant)") }}>+ Add note</button>
+          )}
+        </div>
+      </div>
+      {!readOnly && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <DsIconBtn label="Move up" disabled={index === 0} onClick={() => onMove(-1)}><DsArrowGlyph dir="up" size={14} color="var(--kls-on-surface-variant)" /></DsIconBtn>
+          <DsIconBtn label="Move down" disabled={index === total - 1} onClick={() => onMove(1)}><DsArrowGlyph dir="down" size={14} color="var(--kls-on-surface-variant)" /></DsIconBtn>
+          <DsIconBtn label="Remove step" danger onClick={onRemove}><KlsIcon name="trash" size={14} color="var(--kls-error)" /></DsIconBtn>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DsDraftEditor({ session, readOnly, busy, onDraft }) {
+  const d = session.draft;
+  const kind = DS_KIND_LABEL[session.authoring_kind];
+  const setSteps = (steps) => onDraft({ ...d, steps });
+  const update = (i, patch) => setSteps(d.steps.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  const move = (i, dir) => { const s = d.steps.slice(); const [x] = s.splice(i, 1); s.splice(i + dir, 0, x); setSteps(s); };
+  const addStep = () => setSteps([...d.steps, dsStep("", "")]);
+  const empty = d.steps.length === 0 && !d.title;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)",
+        opacity: busy ? 0.6 : 1, transition: "opacity 200ms var(--kls-ease-standard)" }}>
+        {empty ? (
+          <div style={{ margin: "auto", textAlign: "center", maxWidth: 320, display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            <span style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-tiny)" }}>
+              <KlsIcon name="itemList" size={24} color="var(--kls-on-surface-variant)" />
+            </span>
+            <span style={dsText(16, 600, "var(--kls-on-surface)")}>{busy ? "Working…" : "No " + kind + " draft"}</span>
+            <span style={dsText(14, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5 })}>Ask the assistant for {dsKindA(session.authoring_kind)} and its steps fill in here, or write them yourself. Models, scenes and animations don’t need one.</span>
+            {!readOnly && !busy && <div style={{ marginTop: "var(--kls-space-xsmall)" }}><MeButton onClick={addStep}><PlusGlyph />Add step</MeButton></div>}
+          </div>
+        ) : (
+          <>
+            <input value={d.title} readOnly={readOnly} onChange={(e) => onDraft({ ...d, title: e.target.value })} placeholder={kind + " title"}
+              style={{ ...DS_FIELD, background: "transparent", border: "none", padding: 0, ...dsText(20, 600, "var(--kls-on-surface)", { letterSpacing: "-0.015em" }) }} />
+            <DsAutoText value={d.description} readOnly={readOnly} onChange={(e) => onDraft({ ...d, description: e.target.value })} placeholder="Description"
+              style={{ ...DS_FIELD, background: "transparent", border: "none", padding: 0, resize: "none", color: "var(--kls-on-surface-variant)" }} />
+            <span style={{ ...DS_SECTION_LABEL, marginTop: "var(--kls-space-tiny)" }}>Steps · {d.steps.length}</span>
+            {d.steps.map((s, i) => (
+              <DsStepCard key={s.id} step={s} index={i} total={d.steps.length} readOnly={readOnly}
+                onChange={(p) => update(i, p)} onMove={(dir) => move(i, dir)} onRemove={() => setSteps(d.steps.filter((_, j) => j !== i))} />
+            ))}
+            {!readOnly && (
+              <button onClick={addStep} style={{ height: 40, borderRadius: 8, border: "1px dashed var(--kls-outline-variant)", background: "transparent", cursor: "pointer",
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)", ...dsText(14, 600, "var(--kls-on-surface-variant)") }}>
+                <PlusGlyph size={16} />Add step
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── 3D content tab: viewer + details ──
+// Ready outputs render in the same three.js viewport the Library's Model Editor uses
+// (real build: model / scene / animation version payloads from the Library endpoints).
+// Nothing generated here is in the Library until the user saves it.
+function dsPartsFor(o) {
+  const t = ((o.model || "") + " " + o.name).toLowerCase();
+  if (/gear|wheel|brake|torque|strut|tire|landing/.test(t)) return ME_PART_SETS.t2;
+  if (/engine|compressor|propeller|turbine|fan|hub|blade/.test(t)) return ME_PART_SETS.t1;
+  return ME_PART_SETS.default;
+}
+const DS_VIEWABLE = ["awaiting_review", "approved", "ready", "rejected"];
+const dsSaved = (o) => o.status === "ready" || o.status === "approved" || o.libraryOnly;
+const dsBaseModel = (o) => (o.kind === "model" ? o.name : o.model);
+const DS_ANIM_SECONDS = 6;
+
+// Everything in the session built on the same model (plus the Library model itself when it wasn't generated here).
+function dsConnected(o, outputs) {
+  const base = dsBaseModel(o);
+  if (!base) return [o];
+  const list = outputs.filter((x) => dsBaseModel(x) === base);
+  const hasModel = list.some((x) => x.kind === "model");
+  const lib = hasModel ? [] : [{ id: "lib:" + base, kind: "model", name: base, status: "ready", revision: 1, libraryOnly: true, created_at: 0 }];
+  const order = { model: 0, scene: 1, animation: 2 };
+  return [...lib, ...list].sort((a, b) => order[a.kind] - order[b.kind] || a.created_at - b.created_at);
+}
+
+function DsViewer({ o, progress, onMetrics }) {
+  const [resetKey, setResetKey] = useState(0);
+  const viewable = DS_VIEWABLE.includes(o.status);
+  const a = DS_ACT[o.status];
+  const scene = React.useMemo(() => ({ ...meSeedScene({ id: o.id + ":" + o.revision, name: o.name }),
+    camera: o.kind === "scene" ? { az: 0.55, el: 0.35, dist: 7.5 } : { az: 0.9, el: 0.5, dist: 9 } }), [o.id, o.revision, o.kind]);
+  const sc = { ...scene, explode: o.kind === "animation" ? progress : o.kind === "scene" ? 0.25 : 0 };
+  const overlayBtn = { height: 36, padding: "0 var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", cursor: "pointer",
+    background: "var(--kls-surface)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", ...dsText(13, 600, "var(--kls-on-surface)") };
+  return (
+    <div style={{ position: "relative", flex: 1, minHeight: 240, borderRadius: 12, overflow: "hidden", border: "1px solid var(--kls-outline-variant)",
+      background: "var(--kls-surface-container-lowest)" }}>
+      {viewable ? (
+        <div style={{ position: "absolute", inset: 0, opacity: o.status === "rejected" ? 0.45 : 1 }}>
+          <MeViewport key={o.id + ":" + o.revision} parts={dsPartsFor(o)} scene={sc} resetKey={resetKey} onMetrics={onMetrics}
+            playing={o.kind === "model"} motion={o.kind === "model" ? "spin" : "explode"} />
+        </div>
+      ) : (
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-large)", textAlign: "center" }}>
+          <span style={{ width: 64, height: 64, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <KlsIcon name={DS_OUT[o.kind].icon} size={28} color="var(--kls-on-surface-variant)" />
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", ...dsText(15, 600, a.tone === "error" ? "var(--kls-error)" : "var(--kls-on-surface)") }}>
+            {a.active && <KlsIcon name="refresh" size={14} color="var(--kls-on-surface)" style={{ animation: "int-spin 1.2s linear infinite" }} />}
+            {o.status === "waiting_for_model" ? "Waiting for the model" : a.active ? (o.stage || a.label) : a.label}
+          </span>
+          <span style={dsText(13, 500, "var(--kls-on-surface-variant)", { maxWidth: 320, lineHeight: 1.5 })}>
+            {a.active ? "The preview appears here when it’s ready. You can keep working or leave this page." : "There’s nothing to preview for this version."}
+          </span>
+        </div>
+      )}
+      <div style={{ position: "absolute", top: "var(--kls-space-small)", left: "var(--kls-space-small)", right: "var(--kls-space-small)", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <div style={{ flex: 1 }} />
+        {!o.libraryOnly && <span style={{ ...dsText(12, 600, "var(--kls-on-surface-variant)"), padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 6, background: "var(--kls-surface)" }}>v{o.revision}</span>}
+      </div>
+      {viewable && (
+        <div style={{ position: "absolute", left: "var(--kls-space-small)", right: "var(--kls-space-small)", bottom: "var(--kls-space-small)", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+          <button onClick={() => setResetKey((k) => k + 1)} style={overlayBtn}><KlsIcon name="refresh" size={14} color="var(--kls-on-surface)" />Reset view</button>
+          <div style={{ flex: 1 }} />
+          <span style={{ ...dsText(12, 500, "var(--kls-on-surface-variant)"), padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 6, background: "var(--kls-surface)" }}>Drag to orbit · scroll to zoom</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Animation playback (drives the viewer) — play/pause, scrub, time, speed, loop
+// Same look as FloatingMenu, but opens upward (the playback bar sits at the bottom of the screen).
+function DsUpMenu({ anchorRef, width = 160, onClose, children }) {
+  const [pos, setPos] = useState(null);
+  const menuRef = useRef(null);
+  useLayoutEffect(() => {
+    const r = anchorRef.current && anchorRef.current.getBoundingClientRect();
+    if (r) setPos({ bottom: window.innerHeight - r.top + 6, left: Math.max(8, r.right - width) });
+  }, []);
+  useEffect(() => {
+    const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target) && !(anchorRef.current && anchorRef.current.contains(e.target))) onClose(); };
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("mousedown", onDoc); document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, []);
+  if (!pos) return null;
+  return (
+    <div ref={menuRef} role="listbox" style={{ position: "fixed", bottom: pos.bottom, left: pos.left, width, zIndex: 1000, background: "var(--kls-on-primary)",
+      borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>{children}</div>
+  );
+}
+
+const DS_SPEEDS = [0.25, 0.5, 0.75, 1, 1.5, 2];
+function DsSpeedSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  return (
+    <>
+      <button ref={ref} onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open} aria-label={"Playback speed " + value + "×"}
+        style={{ height: 32, minWidth: 72, padding: "0 var(--kls-space-xsmall)", borderRadius: 8, cursor: "pointer", flex: "none",
+          border: "1px solid var(--kls-outline-variant)", background: open ? "var(--kls-tertiary)" : "transparent",
+          display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-xsmall)", ...dsText(13, 600, "var(--kls-on-surface)") }}>
+        {value}×
+        <KlsIcon name="chevronDown" size={10} color="var(--kls-on-surface-variant)" rotate={open ? 180 : 0} />
+      </button>
+      {open && (
+        <DsUpMenu anchorRef={ref} width={132} onClose={() => setOpen(false)}>
+          <span style={{ ...DS_SECTION_LABEL, padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-tiny)" }}>Speed</span>
+          {DS_SPEEDS.map((s) => (
+            <MenuItem key={s} selected={s === value} onClick={() => { setOpen(false); onChange(s); }}>{s === 1 ? "1× (normal)" : s + "×"}</MenuItem>
+          ))}
+        </DsUpMenu>
+      )}
+    </>
+  );
+}
+
+function DsPlayback({ progress, setProgress, playing, setPlaying, disabled }) {
+  const [speed, setSpeed] = useState(1);
+  const [loop, setLoop] = useState(false);
+  const raf = useRef(0);
+  useEffect(() => {
+    if (!playing) return;
+    let last = performance.now();
+    const step = (now) => {
+      const dt = (now - last) / 1000; last = now;
+      setProgress((p) => {
+        let n = p + (dt * speed) / DS_ANIM_SECONDS;
+        if (n >= 1) { if (loop) n = n % 1; else { n = 1; setPlaying(false); } }
+        return n;
+      });
+      raf.current = requestAnimationFrame(step);
+    };
+    raf.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf.current);
+  }, [playing, speed, loop]);
+  const fmt = (x) => "0:" + String(Math.floor(x * DS_ANIM_SECONDS)).padStart(2, "0");
+  const toggle = () => { if (!playing && progress >= 1) setProgress(0); setPlaying(!playing); };
+  const chip = (on) => ({ height: 28, padding: "0 var(--kls-space-xsmall)", borderRadius: 6, cursor: "pointer", border: "1px solid var(--kls-outline-variant)",
+    background: on ? "var(--kls-tertiary-container)" : "transparent", ...dsText(12, 600, on ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)") });
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", opacity: disabled ? 0.5 : 1, pointerEvents: disabled ? "none" : "auto" }}>
+      <button onClick={toggle} aria-label={playing ? "Pause" : "Play"}
+        style={{ width: 40, height: 40, flex: "none", borderRadius: 999, border: "none", cursor: "pointer", background: "var(--kls-tertiary-container)",
+          display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        {playing
+          ? <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2" y="1.5" width="3.5" height="11" rx="1" fill="var(--kls-on-tertiary-container)" /><rect x="8.5" y="1.5" width="3.5" height="11" rx="1" fill="var(--kls-on-tertiary-container)" /></svg>
+          : <KlsIcon name="play" size={16} color="var(--kls-on-tertiary-container)" />}
+      </button>
+      <span style={dsText(12, 600, "var(--kls-on-surface-variant)", { fontVariantNumeric: "tabular-nums", width: 32 })}>{fmt(progress)}</span>
+      <input type="range" min={0} max={1000} value={Math.round(progress * 1000)} aria-label="Scrub animation"
+        onChange={(e) => { setPlaying(false); setProgress(+e.target.value / 1000); }}
+        style={{ flex: 1, minWidth: 80, accentColor: "var(--kls-primary)", cursor: "pointer" }} />
+      <span style={dsText(12, 600, "var(--kls-on-surface-variant)", { fontVariantNumeric: "tabular-nums", width: 32, textAlign: "right" })}>{fmt(1)}</span>
+      <DsSpeedSelect value={speed} onChange={setSpeed} />
+      <button onClick={() => setLoop((l) => !l)} style={chip(loop)} aria-pressed={loop}>Loop</button>
+    </div>
+  );
+}
+
+function DsInfoGrid({ rows }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "var(--kls-space-small) var(--kls-space-med)" }}>
+      {rows.filter(Boolean).map(([k, v]) => (
+        <div key={k} style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <span style={dsText(11, 700, "var(--kls-on-surface-variant)", { letterSpacing: "0.06em", textTransform: "uppercase" })}>{k}</span>
+          <span title={String(v)} style={dsText(13, 600, "var(--kls-on-surface)", { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" })}>{v}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// One place for every 3D item's actions: the 3D content tab header (right side).
+function DsOutputActions({ o, readOnly, handlers }) {
+  if (!o || o.libraryOnly || readOnly) return null;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flex: "none" }}>
+      {DS_ACT[o.status].active && o.status !== "finalizing" && <MeButton onClick={() => handlers.cancel(o.id)}>Cancel</MeButton>}
+      {o.status === "awaiting_review" && <><MeButton onClick={() => handlers.discard(o.id)}>Discard</MeButton><MeButton tone="primary" onClick={() => handlers.save(o.id)}>Save to Library</MeButton></>}
+      {o.status === "approved" && !o.attached && <MeButton tone="primary" onClick={() => handlers.place(o)}>Add to {dsKindA()}</MeButton>}
+      {["failed", "timed_out", "canceled"].includes(o.status) && <MeButton onClick={() => handlers.retry(o.id)}>Try again</MeButton>}
+    </div>
+  );
+}
+
+function DsOutputDetails({ o, outputs, playback }) {
+  const parts = dsPartsFor(o);
+  const dep = o.waitFor && outputs.find((x) => x.id === o.waitFor);
+  const muted = dsText(13, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5 });
+  const viewable = DS_VIEWABLE.includes(o.status);
+  const lines = [
+    o.kind === "animation" && viewable && <React.Fragment key="pb">{playback}</React.Fragment>,
+    o.kind === "scene" && viewable && <DsInfoGrid key="info" rows={[["Camera", "Three-quarter view"], ["Parts shown", parts.length + " of " + parts.length], ["Lighting", "Studio"], ["Annotations", "None"]]} />,
+    o.status === "waiting_for_model" && <span key="w" style={muted}>Starts when “{dep ? dep.name : "the model"}” is saved to the Library.</span>,
+    o.attached && (
+      <span key="at" style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", ...dsText(13, 600, "var(--kls-success)") }}>
+        <KlsIcon name="itemList" size={14} color="var(--kls-success)" />Added to “{o.attached.target}”{o.attached.step ? " · " + o.attached.step : ""}
+      </span>
+    ),
+    o.status === "rejected" && <span key="r" style={muted}>Discarded{o.approved_revision ? ` · v${o.approved_revision} is still in the Library` : ""}</span>,
+    (o.status === "failed" || o.status === "timed_out") && <span key="f" style={dsText(13, 500, "var(--kls-error)", { lineHeight: 1.5 })}>{o.error || "Generation didn’t finish. Nothing was saved."}</span>,
+    o.status === "canceled" && <span key="c" style={muted}>{o.error || "Canceled. Nothing was saved."}</span>,
+  ].filter(Boolean);
+  if (!lines.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderRadius: 12,
+      border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)" }}>{lines}</div>
+  );
+}
+
+function DsOutputsPanel({ outputs, readOnly, busy, selectedId, onSelect, handlers }) {
+  const [progress, setProgress] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [metrics, setMetrics] = useState(null);
+  const sorted = outputs.slice().sort((a, b) => b.created_at - a.created_at);
+  const candidates = [...sorted, ...outputs.flatMap((x) => dsConnected(x, outputs)).filter((x) => x.libraryOnly)];
+  const o = candidates.find((x) => x.id === selectedId) || sorted[0];
+  useEffect(() => { setPlaying(false); setProgress(0); setMetrics(null); }, [o && o.id, o && o.revision]);
+  if (!outputs.length) {
+    return (
+      <div style={{ margin: "auto", textAlign: "center", maxWidth: 340, display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <span style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-tiny)" }}>
+          <KlsIcon name="cube" size={24} color="var(--kls-on-surface-variant)" />
+        </span>
+        <span style={dsText(16, 600, "var(--kls-on-surface)")}>{busy ? "Working…" : "No 3D content yet"}</span>
+        <span style={dsText(14, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5 })}>Ask the assistant to generate a 3D model, or to build a scene or animation from a model in the Library. Results open here in the viewer.</span>
+      </div>
+    );
+  }
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <DsViewer o={o} progress={progress} onMetrics={setMetrics} />
+      <div style={{ flex: "none", maxHeight: "48%", overflowY: "auto" }}>
+        <DsOutputDetails o={o} outputs={outputs}
+          playback={<DsPlayback progress={progress} setProgress={setProgress} playing={playing} setPlaying={setPlaying} />} />
+      </div>
+    </div>
+  );
+}
+
+// Saved output → Library › 3D Models › "Design Studio" (models; scenes/animations nest under their model)
+function dsAddToLibrary(o) {
+  const today = new Date().toISOString().slice(0, 10);
+  let folder = LIB_MODELS.find((x) => x.id === "tf-ds");
+  if (!folder) { folder = { id: "tf-ds", kind: "folder", name: "Design Studio", bytes: 0, type: "", added: today, children: [] }; LIB_MODELS.unshift(folder); }
+  if (o.kind === "model") {
+    const existing = folder.children.find((x) => x.id === "ds-" + o.id);
+    if (existing) { existing.added = today; return; }
+    folder.children.push({ id: "ds-" + o.id, kind: "model", name: o.name + ".glb", bytes: 14680064 + o.name.length * 262144, type: "GLB", added: today, children: [] });
+    return;
+  }
+  const model = folder.children.find((x) => x.name === o.model + ".glb");
+  if (!model) return; // built on a model that was already in the Library; the real API attaches it there
+  model.children = model.children || [];
+  if (!model.children.some((x) => x.id === "ds-" + o.id))
+    model.children.push({ id: "ds-" + o.id, kind: o.kind, name: o.name, added: today, ...(o.kind === "animation" ? { duration: "0:06", steps: 4 } : {}) });
+}
+
+// Right-panel content picker (combo box): the Assignment/Module draft, then every 3D item grouped by its model.
+function dsAllGroups(outputs) {
+  const sorted = outputs.slice().sort((a, b) => b.created_at - a.created_at);
+  const keys = []; sorted.forEach((x) => { const k = dsBaseModel(x) || x.id; if (!keys.includes(k)) keys.push(k); });
+  return keys.map((k) => {
+    const first = sorted.find((x) => (dsBaseModel(x) || x.id) === k);
+    return { key: k, label: dsBaseModel(first) || first.name, items: dsConnected(first, outputs) };
+  });
+}
+
+function DsContentPicker({ session, outputs, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const kind = DS_KIND_LABEL[session.authoring_kind];
+  const steps = session.draft.steps.length;
+  const groups = dsAllGroups(outputs);
+  const all = groups.flatMap((g) => g.items);
+  const cur = value === "draft" ? null : all.find((x) => x.id === value);
+  const icon = value === "draft" ? "itemList" : cur ? DS_OUT[cur.kind].icon : "cube";
+  const small = value === "draft" ? kind : cur ? DS_OUT[cur.kind].label : "3D content";
+  const name = value === "draft" ? (session.draft.title || kind + " draft") : cur ? cur.name : "Nothing yet";
+  const pick = (v) => { setOpen(false); onChange(v); };
+  const head = (t) => <span style={{ ...DS_SECTION_LABEL, padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-tiny)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t}</span>;
+  return (
+    <>
+      <button ref={ref} onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open} aria-label="Choose what to show"
+        style={{ flex: "0 1 auto", minWidth: 0, maxWidth: 440, height: 40, display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+          padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer", boxSizing: "border-box",
+          border: "1px solid var(--kls-outline-variant)", background: open ? "var(--kls-tertiary)" : "var(--kls-surface)" }}>
+        <KlsIcon name={icon} size={16} color="var(--kls-on-surface-variant)" />
+        <span style={dsText(11, 700, "var(--kls-on-surface-variant)", { letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" })}>{small}</span>
+        <span style={dsText(14, 600, "var(--kls-on-surface)", { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 })}>{name}</span>
+        <KlsIcon name="chevronDown" size={12} color="var(--kls-on-surface-variant)" rotate={open ? 180 : 0} />
+      </button>
+      {open && (
+        <FloatingMenu anchorRef={ref} width={380} onClose={() => setOpen(false)}>
+          <div role="listbox" style={{ maxHeight: 440, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+            {head(kind)}
+            <MenuItem selected={value === "draft"} onClick={() => pick("draft")}>
+              <KlsIcon name="itemList" size={16} color="var(--kls-on-surface-variant)" />
+              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.draft.title || kind + " draft"}</span>
+              <span style={dsText(12, 600, "var(--kls-on-surface-variant)", { whiteSpace: "nowrap" })}>{steps ? steps + (steps === 1 ? " step" : " steps") : "Empty"}</span>
+            </MenuItem>
+            {groups.length === 0 && <>{head("3D content")}<span style={{ ...dsText(13, 500, "var(--kls-on-surface-variant)"), padding: "var(--kls-space-xsmall) var(--kls-space-small)" }}>No models, scenes or animations yet</span></>}
+            {groups.map((g) => (
+              <React.Fragment key={g.key}>
+                {head(g.label)}
+                {g.items.map((x) => (
+                  <MenuItem key={x.id} selected={x.id === value} onClick={() => pick(x.id)}>
+                    <span style={{ width: x.kind === "model" ? 0 : 12, flex: "none" }} />
+                    <KlsIcon name={DS_OUT[x.kind].icon} size={16} color="var(--kls-on-surface-variant)" />
+                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.name}</span>
+                    {x.libraryOnly ? <span style={dsText(12, 600, "var(--kls-on-surface-variant)")}>Library</span> : <DsStatusTag status={x.status} small />}
+                  </MenuItem>
+                ))}
+              </React.Fragment>
+            ))}
+          </div>
+        </FloatingMenu>
+      )}
+    </>
+  );
+}
+
+// Placement picker: an approved standalone output → an editable Assignment (whole, or one step)
+function DsPlaceDialog({ output, targets, onCancel, onConfirm }) {
+  const [ti, setTi] = useState(0);
+  const [step, setStep] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onCancel(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  const t = targets[ti];
+  const confirm = () => { setSaving(true); setTimeout(() => onConfirm({ target: t.name, step: step || null }), 700); }; // attach_content
+  const label = dsText(12, 600, "var(--kls-on-surface-variant)", { letterSpacing: "0.08em", textTransform: "uppercase" });
+  const select = { ...DS_FIELD, height: 44, background: "var(--kls-surface)", cursor: "pointer" };
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--kls-space-med)" }}>
+      <div onClick={onCancel} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)", animation: "kls-fade 200ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "relative", width: "min(480px, 100%)", background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        padding: "var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", animation: "kls-pop 200ms var(--kls-ease-standard)" }}>
+        <span style={dsText(18, 600, "var(--kls-on-surface)")}>Add to {dsKindA()}</span>
+        <span style={dsText(14, 500, "var(--kls-on-surface-variant)", { lineHeight: 1.5 })}>
+          Adds v{output.approved_revision} of “{output.name}” to the {dsKindName()} you pick. Only {dsKindPlural()} you can edit are listed.
+        </span>
+        {targets.length === 0 ? (
+          <span style={dsText(14, 500, "var(--kls-on-surface)")}>You don’t have any {dsKindPlural()} you can edit yet.</span>
+        ) : <>
+          <span style={label}>{dsKindName()}</span>
+          <select value={ti} onChange={(e) => { setTi(+e.target.value); setStep(""); }} style={select}>
+            {targets.map((x, i) => <option key={x.name} value={i}>{x.name}</option>)}
+          </select>
+          <span style={label}>Where</span>
+          <select value={step} onChange={(e) => setStep(e.target.value)} style={select}>
+            <option value="">Whole {dsKindName()}</option>
+            {t.steps.map((st, i) => <option key={i} value={"Step " + (i + 1) + ": " + st}>Step {i + 1}: {st}</option>)}
+          </select>
+        </>}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-xsmall)", marginTop: "var(--kls-space-xsmall)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          {targets.length > 0 && <MeButton tone="primary" onClick={confirm}>{saving ? "Adding…" : "Add"}</MeButton>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Workspace ──
+function DsWorkspace({ session, initialPrompt, targets, onBack, onUpdate, onRename, onArchive, onDelete }) {
+  const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const outputs = session.outputs || [];
+  const [panel, setPanel] = useState(outputs.length && !session.draft.steps.length ? "outputs" : "draft");
+  const [highlight, setHighlight] = useState(null);
+  const [selectedOut, setSelectedOut] = useState(null);
+  const [placing, setPlacing] = useState(null);
+  const [seed, setSeed] = useState(null);
+  const [docs, setDocs] = useState([]);       // Library docs to send with the next message (mentioned_doc_ids)
+  const [picking, setPicking] = useState(false);
+  const timers = useRef([]);
+  const live = useRef(null); // assistant message id currently streaming
+  const scrollRef = useRef(null);
+  const readOnly = session.status === "archived";
+  const kind = DS_KIND_LABEL[session.authoring_kind];
+
+  const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = []; };
+  useEffect(() => () => clearTimers(), []);
+  useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [session.messages.length, busy]);
+
+  const patchMsg = (id, patch) => onUpdate((s) => ({ ...s, messages: s.messages.map((m) => (m.id === id ? { ...m, ...patch } : m)) }));
+  const patchOut = (id, fn) => onUpdate((s) => ({ ...s, updated_at: Date.now(), outputs: s.outputs.map((o) => (o.id === id ? fn(o) : o)) }));
+  const showOutput = (id) => { setPanel("outputs"); setSelectedOut(id); setHighlight(id); setTimeout(() => setHighlight(null), 1600); };
+
+  const runTurn = (text, withDocs = []) => {
+    if (busy || readOnly) return;
+    const latest = outputs.slice().sort((a, b) => b.created_at - a.created_at)[0];
+    const plan = dsPlanTurn(session, text, withDocs, panel === "outputs" ? (selectedOut || (latest && latest.id)) : null);
+    const aId = dsUid();
+    live.current = aId;
+    setBusy(true);
+    onUpdate((s) => ({ ...s, updated_at: Date.now(), messages: [...s.messages,
+      { id: dsUid(), role: "user", content: text, docs: withDocs.length ? withDocs : undefined },
+      { id: aId, role: "assistant", content: "", status: "streaming", activity: plan.activities[0], sources: [] }] }));
+    let t = 0;
+    const at = (ms, fn) => { t += ms; timers.current.push(setTimeout(fn, t)); };
+    plan.activities.slice(1).forEach((a) => at(800, () => patchMsg(aId, { activity: a })));
+    const words = plan.reply.split(" ");
+    at(800, () => {});
+    words.forEach((_, i) => at(32, () => patchMsg(aId, { content: words.slice(0, i + 1).join(" ") })));
+    at(150, () => {
+      // Turn completed → POST sessions/{id}/messages/ with its typed actions (and draft + expected_revision when it changed).
+      // Actions are proposals; status below comes from the action feed (GET actions/?after=…).
+      const created = [];
+      (plan.outputs || []).forEach((spec) => created.push(dsNewOutput(spec, spec.afterModel ? created[created.length - 1].id : null)));
+      const actionIds = plan.revise ? [plan.revise.id] : created.map((o) => o.id);
+      onUpdate((s) => ({
+        ...s,
+        updated_at: Date.now(),
+        title: s.title === "New session" ? (plan.draft ? plan.draft.title : created.length ? created[created.length - 1].name : s.title) : s.title,
+        ...(plan.draft ? { draft: plan.draft, draft_revision: s.draft_revision + 1 } : {}),
+        outputs: plan.revise
+          ? s.outputs.map((o) => (o.id === plan.revise.id ? dsRestart(o, { revision: o.revision + 1, prompt: plan.revise.prompt }) : o))
+          : [...created, ...(s.outputs || [])],
+        messages: s.messages.map((m) => m.id === aId ? { ...m, status: plan.question ? "awaiting_user" : "done", activity: null,
+          sources: plan.sources, question: plan.question || null, draftChanged: !!plan.draft, actions: actionIds.length ? actionIds : undefined } : m),
+      }));
+      if (plan.draft) setPanel("draft");
+      if (plan.question && plan.question.pending) setPanel("outputs");
+      if (actionIds.length) showOutput(actionIds[actionIds.length - 1]);
+      live.current = null; setBusy(false); timers.current = [];
+    });
+  };
+
+  const stop = () => {
+    // POST /design-studio/turn/cancel → the turn is not persisted
+    clearTimers();
+    if (live.current) patchMsg(live.current, { status: "interrupted", activity: null });
+    live.current = null; setBusy(false);
+  };
+
+  const retry = (assistantId) => {
+    const idx = session.messages.findIndex((m) => m.id === assistantId);
+    const userMsg = session.messages[idx - 1];
+    onUpdate((s) => ({ ...s, messages: s.messages.filter((_, i) => i !== idx && i !== idx - 1) }));
+    setTimeout(() => runTurn(userMsg.content, userMsg.docs || []), 0);
+  };
+
+  useEffect(() => { if (initialPrompt) runTurn(initialPrompt); }, []);
+
+  const outHandlers = {
+    // Save to Library = review_content approve (publishes this version). Models also land in Library › 3D Models.
+    save: (id) => patchOut(id, (o) => { const saved = { ...o, status: o.kind === "model" ? "ready" : "approved", approved_revision: o.revision }; dsAddToLibrary(saved); return saved; }),
+    discard: (id) => patchOut(id, (o) => ({ ...o, status: "rejected" })),                                     // review_content: reject
+    cancel: (id) => patchOut(id, (o) => ({ ...o, status: "canceled", stage: null, queue: [], error: null })),
+    retry: (id) => patchOut(id, (o) => (o.waitFor ? { ...o, status: "waiting_for_model", error: null } : dsRestart(o, {}))),
+    revise: (o, note) => runTurn(`Revise “${o.name}”: ${note}`),                                               // revise_content
+    place: (o) => setPlacing(o),
+    useModel: (o, k) => runTurn(`Create ${k === "scene" ? "a scene" : "an animation"} from the “${o.name}” model`),
+  };
+
+  const editDraft = (draft) => onUpdate((s) => ({ ...s, draft, draft_revision: s.draft_revision + 1, updated_at: Date.now() })); // PUT draft/ {expected_revision}
+  const hasDraft = session.draft.steps.length > 0;
+  const canSave = !readOnly && !busy && !saving && hasDraft && dsUnsaved(session);
+  const save = () => {
+    if (!canSave) return;
+    setSaving(true);
+    setTimeout(() => { // POST save/ {expected_revision}
+      onUpdate((s) => ({ ...s, status: "saved", saved_revision: s.draft_revision, updated_at: Date.now() }));
+      setSaving(false);
+    }, 900);
+  };
+  const latestOut = outputs.slice().sort((a, b) => b.created_at - a.created_at)[0];
+  const curOut = outputs.find((x) => x.id === selectedOut) || (selectedOut && selectedOut.startsWith("lib:") ? { libraryOnly: true } : latestOut);
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-large)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <MeCircleBtn label="Back to Design Studio" onClick={onBack}><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></MeCircleBtn>
+        <div style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <DsInlineTitle value={session.title} editing={renaming} onDone={(t) => { setRenaming(false); onRename(t); }}
+            style={dsText(18, 600, "var(--kls-on-surface)", { letterSpacing: "-0.015em", maxWidth: 520 })} />
+          <DsStatusPill status={session.status} />
+        </div>
+        {!readOnly && hasDraft && (
+          <button onClick={save} disabled={!canSave}
+            style={{ ...ctPrimaryBtn, opacity: canSave || saving ? 1 : 0.5, cursor: canSave ? "pointer" : "default" }}>
+            {saving && <KlsIcon name="refresh" size={18} color="currentColor" style={{ animation: "int-spin 900ms linear infinite" }} />}
+            {saving ? "Saving…" : session.saved_revision == null ? "Save " + kind : "Update " + kind}
+          </button>
+        )}
+        <DsMenuButton items={[
+          !readOnly && { label: "Rename", icon: "pencil", onClick: () => setRenaming(true) },
+          !readOnly && { label: "Archive", icon: "stack", onClick: onArchive },
+          "divider",
+          { label: "Delete", icon: "trash", danger: true, onClick: onDelete },
+        ]} />
+      </div>
+
+      {readOnly && (
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", padding: "var(--kls-space-xsmall) var(--kls-space-large)",
+          background: "var(--kls-tertiary)", ...dsText(13, 500, "var(--kls-on-surface-variant)") }}>
+          <KlsIcon name="stack" size={14} color="var(--kls-on-surface-variant)" />
+          This session is archived and read-only. Anything saved or published from it stays in place.
+        </div>
+      )}
+
+      <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "minmax(360px, 5fr) minmax(420px, 6fr)", gap: "var(--kls-space-med)", padding: "var(--kls-space-med) var(--kls-space-large)" }}>
+        <div style={{ ...DS_CARD, padding: 0, gap: 0, minHeight: 0, overflow: "hidden" }}>
+          <div style={DS_PANEL_HEAD}>
+            <span style={DS_SECTION_LABEL}>Conversation</span>
+          </div>
+          <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+            {session.messages.length === 0 && !readOnly && <DsSessionStart onPick={(t) => setSeed({ text: t })} />}
+            {session.messages.map((m) => (
+              <DsMessage key={m.id} m={m} readOnly={readOnly || busy} outputs={outputs} onShowOutput={showOutput}
+                onAnswer={m === session.messages[session.messages.length - 1] ? (t) => (t.startsWith("Add documents from the Library") ? setPicking(true) : runTurn(t)) : null}
+                onRetry={() => retry(m.id)} />
+            ))}
+          </div>
+          <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)" }}>
+            <DsComposer busy={busy} disabled={readOnly} onStop={stop} seed={seed}
+              onSend={(t) => { runTurn(t, docs); setDocs([]); }}
+              docs={docs} onAddDocs={() => setPicking(true)} onRemoveDoc={(id) => setDocs((d) => d.filter((x) => x !== id))} />
+          </div>
+        </div>
+        <div style={{ ...DS_CARD, padding: 0, gap: 0, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ ...DS_PANEL_HEAD, flexWrap: "wrap", gap: "var(--kls-space-xsmall) var(--kls-space-small)" }}>
+            <DsContentPicker session={session} outputs={outputs}
+              value={panel === "draft" ? "draft" : (selectedOut || (latestOut && latestOut.id) || "outputs")}
+              onChange={(v) => { if (v === "draft") setPanel("draft"); else { setPanel("outputs"); setSelectedOut(v); } }} />
+            <div style={{ flex: 1 }} />
+            {panel === "draft" && hasDraft && <DsSaveState session={session} />}
+            {panel === "outputs" && <DsOutputActions o={curOut} readOnly={readOnly || busy} handlers={outHandlers} />}
+          </div>
+          {panel === "draft" ? (
+            <DsDraftEditor session={session} readOnly={readOnly || busy} busy={busy} onDraft={editDraft} />
+          ) : (
+            <div style={{ flex: 1, minHeight: 0, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column" }}>
+              <DsOutputsPanel outputs={outputs} readOnly={readOnly} busy={busy} handlers={outHandlers}
+                selectedId={selectedOut} onSelect={setSelectedOut} />
+            </div>
+          )}
+        </div>
+      </div>
+      {picking && <DsLibraryPicker initial={docs} onCancel={() => setPicking(false)} onAdd={(ids) => { setDocs(ids); setPicking(false); }} />}
+      {placing && (
+        <DsPlaceDialog output={placing} targets={targets} onCancel={() => setPlacing(null)}
+          onConfirm={(where) => { patchOut(placing.id, (o) => ({ ...o, attached: where })); setPlacing(null); }} />
+      )}
+    </div>
+  );
+}
+
+// Background work: stands in for polling GET sessions/{id}/actions/?after=… (and model-generation runs).
+function dsAdvanceOutputs(s, now) {
+  if (!s.outputs || !s.outputs.length) return s;
+  let changed = false;
+  const outputs = s.outputs.map((o) => {
+    let x = o;
+    if (x.status === "waiting_for_model") {
+      const dep = s.outputs.find((d) => d.id === x.waitFor);
+      if (dep && dep.status === "ready") x = { ...x, model: dep.name, waitFor: null, status: "queued", queue: dsAbs(DS_TIMELINE[x.kind], now) };
+      else if (dep && ["failed", "timed_out", "canceled", "rejected"].includes(dep.status)) x = { ...x, status: "canceled", error: "Canceled because the model it needed wasn’t saved." };
+    }
+    if (x.queue && x.queue.length && x.queue[0].at <= now) {
+      const due = x.queue.filter((q) => q.at <= now); const last = due[due.length - 1];
+      x = { ...x, status: last.status, stage: last.stage, queue: x.queue.filter((q) => q.at > now) };
+    }
+    if (x !== o) changed = true;
+    return x;
+  });
+  return changed ? { ...s, outputs } : s;
+}
+
+// ── Router: landing ⇄ workspace ──
+function DesignStudio({ kind = "assignment" }) {
+  DS_KIND = kind === "module" ? "module" : "assignment";
+  const [sessions, setSessions] = useState(dsSeedSessions);
+  const [openId, setOpenId] = useState(null);
+  const [initialPrompt, setInitialPrompt] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const update = (id, fn) => setSessions((all) => all.map((s) => (s.id === id ? fn(s) : s)));
+  const open = sessions.find((s) => s.id === openId);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const now = Date.now();
+      setSessions((all) => { let ch = false; const next = all.map((s) => { const n = dsAdvanceOutputs(s, now); if (n !== s) ch = true; return n; }); return ch ? next : all; });
+    }, 500);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Editable Assignments for placement: saved ones from Studio plus existing ones in the workspace.
+  const targets = [
+    ...sessions.filter((s) => s.saved_revision != null && s.status !== "archived").map((s) => ({ name: s.draft.title, steps: s.draft.steps.map((x) => x.title) })),
+    { name: "Landing gear servicing", steps: ["Prepare the aircraft", "Service the shock strut", "Check strut extension"] },
+  ];
+
+  const start = (name) => {
+    const s = { id: dsUid(), title: name || "New session", status: "draft", authoring_kind: DS_KIND, draft: { title: "", description: "", steps: [] },
+      draft_revision: 0, saved_revision: null, outputs: [], messages: [], updated_at: Date.now() };
+    setSessions((all) => [s, ...all]);
+    setInitialPrompt(null);
+    setOpenId(s.id);
+  };
+  const rename = (id, title) => update(id, (s) => ({ ...s, title, updated_at: Date.now() }));
+  const archive = (id) => update(id, (s) => ({ ...s, status: "archived", updated_at: Date.now(),
+    outputs: (s.outputs || []).map((o) => (DS_ACT[o.status].active ? { ...o, status: "canceled", queue: [], error: "Canceled when the session was archived." } : o)) }));
+  const confirmDelete = () => { setSessions((all) => all.filter((s) => s.id !== deleting.id)); if (openId === deleting.id) setOpenId(null); setDeleting(null); };
+
+  return (
+    <>
+      {open ? (
+        <DsWorkspace key={open.id} session={open} initialPrompt={initialPrompt} targets={targets}
+          onBack={() => {
+            // A session nobody wrote in is discarded (DELETE sessions/{id}/) instead of cluttering the list.
+            const untouched = open.title === "New session" && open.messages.length === 0 && open.draft.steps.length === 0 && !(open.outputs || []).length;
+            if (untouched) setSessions((all) => all.filter((x) => x.id !== open.id));
+            setOpenId(null); setInitialPrompt(null);
+          }}
+          onUpdate={(fn) => update(open.id, fn)} onRename={(t) => rename(open.id, t)}
+          onArchive={() => archive(open.id)} onDelete={() => setDeleting(open)} />
+      ) : (
+        <DsLanding sessions={sessions} onStart={start} onOpen={(id) => { setInitialPrompt(null); setOpenId(id); }}
+          onRename={rename} onArchive={archive} onDelete={(id) => setDeleting(sessions.find((s) => s.id === id))} />
+      )}
+      {deleting && <DsDeleteDialog session={deleting} onCancel={() => setDeleting(null)} onConfirm={confirmDelete} />}
+    </>
   );
 }
 

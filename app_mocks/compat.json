@@ -1,0 +1,120 @@
+{
+  "v": 1,
+  "mode": "omelette",
+  "root": "project/",
+  "title": "MX",
+  "entry": "Web App.dc.html",
+  "pages": [
+    {
+      "path": "Web App.dc.html",
+      "title": "Web App",
+      "kind": "page"
+    },
+    {
+      "path": "Mobile App.dc.html",
+      "title": "Mobile App",
+      "kind": "page"
+    },
+    {
+      "path": "simulators/circuit-trainer.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "simulators/logic-gate.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "simulators/micrometer.html",
+      "title": "Kilsar Micrometer Simulator",
+      "kind": "plain"
+    },
+    {
+      "path": "simulators/power-w.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "simulators/propeller-protractor.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "simulators/six-pack.html",
+      "title": "Kilsar Six-Pack Flight Instruments Simulator",
+      "kind": "plain"
+    },
+    {
+      "path": "simulators/turbocharger.html",
+      "title": "Kilsar Aircraft Turbocharger System Simulator",
+      "kind": "plain"
+    },
+    {
+      "path": "simulators/vapor-cycle.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "uploads/Circuit Trainer.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "uploads/Kilsar Logic Gate Simulator.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "uploads/Kilsar Micrometer Simulator.html",
+      "title": "Kilsar Micrometer Simulator",
+      "kind": "plain"
+    },
+    {
+      "path": "uploads/Kilsar Six-Pack Simulator.html",
+      "title": "Kilsar Six-Pack Flight Instruments Simulator",
+      "kind": "plain"
+    },
+    {
+      "path": "uploads/Kilsar Turbocharger Simulator.html",
+      "title": "Kilsar Aircraft Turbocharger System Simulator",
+      "kind": "plain"
+    },
+    {
+      "path": "uploads/Kilsar Vapor Cycle Simulator.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "uploads/Power W Simulator (1).html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    },
+    {
+      "path": "uploads/Propeller Protractor Simulator.html",
+      "title": "Bundled Page",
+      "kind": "plain"
+    }
+  ],
+  "migratorVersion": "artifact-migrator (claude-design-backend ed667f7ac9c1)",
+  "createdAt": "2026-11-04T10:52:43.418Z",
+  "source": {
+    "v": 1,
+    "app": "claude-design",
+    "url": "https://claude.ai/design/p/22570fd9-2e4e-40d4-beb2-270816805784",
+    "projectId": "22570fd9-2e4e-40d4-beb2-270816805784",
+    "exportedAt": "2026-11-04T10:52:43.418Z"
+  },
+  "report": {
+    "itemsVersion": 2,
+    "pages": {
+      "total": 18,
+      "ok": 18,
+      "partial": 0,
+      "notMigrated": 0
+    },
+    "items": [],
+    "truncated": 0,
+    "truncatedLeftOut": 0
+  }
+}
