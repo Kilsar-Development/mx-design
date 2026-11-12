@@ -44,9 +44,18 @@ mirror() {
   local tmp
   tmp="$(mktemp -d)"
   unzip -o -q "$zip" -d "$tmp"
+  # Newer exports wrap the complete project in a single top-level folder.
+  local source="$tmp" entry
+  local entries=()
+  while IFS= read -r -d '' entry; do
+    entries+=("$entry")
+  done < <(find "$tmp" -mindepth 1 -maxdepth 1 -print0)
+  if [[ ${#entries[@]} -eq 1 && -d "${entries[0]}" ]]; then
+    source="${entries[0]}"
+  fi
   mkdir -p "$REPO_DIR/$target"
-  # trailing slashes matter: copy CONTENTS of tmp into target, delete extras
-  rsync -a --delete "$tmp/" "$REPO_DIR/$target/"
+  # trailing slashes matter: copy CONTENTS of the project, delete extras
+  rsync -a --delete "$source/" "$REPO_DIR/$target/"
   rm -rf "$tmp"
   local n
   n="$(find "$REPO_DIR/$target" -type f | wc -l | tr -d ' ')"
