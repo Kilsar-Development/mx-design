@@ -1,0 +1,42 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Cover</title>
+<style>
+body { padding: 0; background: var(--surface); }
+.cover { position: relative; width: 960px; height: 288px; overflow: hidden; }
+.cover svg { position: absolute; inset: 0; }
+.a { fill: var(--primary); } .deep { fill: var(--onPrimaryContainer); } .amber { fill: var(--accent1); } .tint { fill: var(--inversePrimary); } .ink { fill: var(--inverseSurface); }
+.md { rx: var(--medBorderRadius); } .lg { rx: var(--largeBorderRadius); }
+.txt { position: absolute; left: 32px; bottom: 32px; width: 440px; }
+.name { margin: 0; font-family: var(--font-sans); font-size: 88px; line-height: .92; font-weight: 800; letter-spacing: -.03em; color: var(--onSurface); white-space: nowrap; }
+.tag { margin: 12px 0 0; font-size: 14px; color: var(--onSurfaceVariant); }
+</style></head>
+<body>
+<div class="cover">
+<!--
+blocks: primary 140x140 (2x2 of sizingXLarge + sizingSmall gap); inverseSurface 64x216 and 64x140; accent1 140x64; onPrimaryContainer 140x64; inversePrimary 140x64 as the relief tint
+arrangement: a flush modular grid in the box right of x=480, the bottom row bleeding off the edge
+pattern: tiles cut by the radius tokens, some merged two-wide. Chosen because the README describes a dense app of cards, tables and tiles separated by borders and shape, not by shadow
+scales: pitch sizingXLarge (64) with sizingSmall (12) gaps; corners medBorderRadius, the lead block largeBorderRadius
+-->
+<svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+<rect class="a lg" x="492" y="20" width="140" height="140"/>
+<rect class="ink md" x="644" y="20" width="64" height="216"/>
+<rect class="amber md" x="720" y="20" width="140" height="64"/>
+<rect class="tint md" x="872" y="20" width="64" height="64"/>
+<rect class="a md" x="720" y="96" width="64" height="64"/>
+<rect class="deep md" x="796" y="96" width="140" height="64"/>
+<rect class="tint md" x="492" y="172" width="140" height="64"/>
+<rect class="amber md" x="720" y="172" width="64" height="64"/>
+<rect class="a md" x="796" y="172" width="64" height="64"/>
+<rect class="ink md" x="872" y="172" width="64" height="140"/>
+<rect class="deep md" x="492" y="248" width="64" height="64"/>
+<rect class="a md" x="568" y="248" width="140" height="64"/>
+<rect class="tint md" x="720" y="248" width="64" height="64"/>
+<rect class="deep md" x="796" y="248" width="64" height="64"/>
+</svg>
+<div class="txt"><p class="name">MX DS V3</p><p class="tag">Two hues and a neutral, named for Flutter.</p></div>
+</div>
+</body>
+</html>

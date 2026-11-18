@@ -1,0 +1,65 @@
+{
+ "v": 3,
+ "layout": "files",
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-16T09:56:29Z"
+ },
+ "title": "MX DS V3",
+ "namespace": "MX",
+ "libraries": [],
+ "sections": {},
+ "groups": [
+  "Logos",
+  "Icons",
+  "Flutter"
+ ],
+ "assetGroups": {
+  "Logos": {
+   "name": "Logos",
+   "tile": "l",
+   "order": [
+    "kilsar-mark.svg"
+   ],
+   "files": {
+    "kilsar-mark.svg": {
+     "name": "kilsar-mark.svg",
+     "blob": "6cc870505a3d602dd0f81ab938eeb490",
+     "size": 396,
+     "type": "image/svg+xml"
+    }
+   }
+  },
+  "Icons": {
+   "name": "Icons",
+   "tile": "s",
+   "order": [
+    "orionOutline.png"
+   ],
+   "files": {
+    "orionOutline.png": {
+     "name": "orionOutline.png",
+     "blob": "711c84fe14bca30150f6ff1f85906751",
+     "size": 2631,
+     "type": "image/png"
+    }
+   }
+  },
+  "Flutter": {
+   "name": "Flutter",
+   "tile": "m",
+   "order": [],
+   "files": {}
+  }
+ },
+ "blobs": {},
+ "docs": {
+  "sections": []
+ },
+ "lastChange": {
+  "by": "Joel",
+  "at": "2026-11-16T12:26:10Z",
+  "via": "Cowork",
+  "note": "Added subtitleSemiBold (16/600) for sub-headings."
+ }
+}
