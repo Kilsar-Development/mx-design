@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mx Mobile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="ds/mx/tokens.css">
+<style>
+html,body{margin:0;height:100%}
+body{font-family:var(--font-sans);font-size:14px;font-weight:400;background:var(--surfaceContainerHigh);color:var(--onSurface);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button:focus-visible,input:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+main,.mxm-x{scrollbar-width:none}
+main::-webkit-scrollbar,.mxm-x::-webkit-scrollbar{display:none}
+@keyframes mxm-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:var(--sizingLarge);background:var(--surfaceContainerHigh);color:var(--onSurface);font-size:14px;font-weight:400">
+
+  <div data-screen-label="Mx Mobile" style="width:390px;height:844px;flex:none;display:grid;grid-template-rows:44px 56px minmax(0,1fr) auto;background:var(--surfaceContainerLow);border:1px solid var(--outline);border-radius:var(--largeBorderRadius);overflow:hidden;position:relative">
+
+    <!-- status bar (device chrome, not part of the app) -->
+    <div aria-hidden="true" style="display:flex;align-items:center;justify-content:space-between;padding:0 var(--sizingMed);font-size:14px;font-weight:600">
+      <span>9:41</span>
+      <span style="display:flex;align-items:center;gap:var(--sizingXSmall)">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5" width="3" height="7" rx="1"></rect><rect x="10" y="2" width="3" height="10" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg>
+        <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="21" height="10" rx="3"></rect><rect x="3" y="3" width="15" height="6" rx="1.5" fill="currentColor" stroke="none"></rect><path d="M24 4v4" stroke-linecap="round"></path></svg>
+      </span>
+    </div>
+
+    <!-- app bar: the same for every role -->
+    <header style="display:flex;align-items:center;gap:var(--sizingSmall);padding:0 var(--sizingSmall) 0 var(--sizingMed)">
+      <img src="brand/kilsar-mark.svg" alt="Kilsar" style="width:26px;height:26px;object-fit:contain;filter:{{ logoFilter }}">
+      <span style="display:flex;flex-direction:column;min-width:0;flex:1">
+        <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Aviation Institute</span>
+        <span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">{{ contextLabel }}</span>
+      </span>
+      <button onClick="{{ openSearch }}" aria-label="Search" style="font-family:inherit;border:none;cursor:pointer;width:40px;height:40px;padding:0;border-radius:var(--smallBorderRadius);background:transparent;color:var(--onSurfaceVariant);display:flex;align-items:center;justify-content:center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"></path></svg></button>
+      <button onClick="{{ openBell }}" aria-label="Notifications, 3 unread" style="font-family:inherit;border:none;cursor:pointer;position:relative;width:40px;height:40px;padding:0;border-radius:var(--smallBorderRadius);background:transparent;color:var(--onSurfaceVariant);display:flex;align-items:center;justify-content:center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8zM10 21a2 2 0 0 0 4 0"></path></svg><span aria-hidden="true" style="position:absolute;top:0;right:0;min-width:20px;height:20px;padding:0 var(--sizingXSmall);border-radius:10px;background:var(--accent1);color:var(--accent2);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center">3</span></button>
+      <button onClick="{{ openProfile }}" aria-label="Profile and settings" style="font-family:inherit;border:none;cursor:pointer;width:36px;height:36px;padding:0;border-radius:50%;background:var(--primaryContainer);color:var(--onPrimaryContainer);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">JO</button>
+    </header>
+
+    <!-- content -->
+    <main style="overflow:auto;min-height:0">
+
+      <!-- instructor and admin: role option exists, screens not designed yet -->
+      <sc-if value="{{ notDrawn }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Not designed" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sizingSmall);padding:var(--sizingLarge);text-align:center">
+        <span style="font-size:18px;font-weight:700;text-wrap:balance">{{ notDrawnTitle }}</span>
+        <span style="font-size:14px;font-weight:400;color:var(--onSurfaceVariant);text-wrap:pretty">Only the student role is drawn so far. The frame and the bottom bar here are the student ones, shown as a stand-in.</span>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div data-screen-label="Home" style="display:flex;flex-direction:column;gap:var(--sizingMed);padding:var(--sizingMed) var(--sizingMed) var(--sizingLarge);animation:mxm-in 250ms cubic-bezier(0.42, 0, 0.58, 1)">
+        <div style="display:flex;flex-direction:column;gap:var(--sizingTiny)">
+          <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.02em">Good morning, Jordan</h1>
+          <span style="font-size:13px;font-weight:400;color:var(--onSurfaceVariant)">Thursday 16 October · Block 4 · Pump maintenance</span>
+        </div>
+
+        <!-- 1. the one thing to do now -->
+        <section style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);padding:var(--sizingMed);display:flex;flex-direction:column;gap:var(--sizingSmall)">
+          <div style="display:flex;align-items:center;gap:var(--sizingXSmall);flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--onPrimaryContainer)">Continue</span>
+            <span style="height:24px;padding:0 var(--sizingSmall);border-radius:12px;background:var(--primaryContainer);color:var(--onPrimaryContainer);font-size:12px;font-weight:600;display:inline-flex;align-items:center">Last task before Level 4</span>
+          </div>
+          <span style="font-size:18px;font-weight:700;text-wrap:balance">Hydraulic pump removal &amp; replacement</span>
+          <span style="font-size:13px;font-weight:400;color:var(--onSurfaceVariant)">3D guided · step 4 of 9 · due today</span>
+          <div style="display:flex;align-items:center;gap:var(--sizingSmall)">
+            <div role="progressbar" aria-valuenow="44" aria-valuemin="0" aria-valuemax="100" aria-label="Task progress" style="flex:1;height:6px;border-radius:3px;background:var(--primaryContainer);overflow:hidden"><div style="width:44%;height:100%;border-radius:inherit;background:var(--primary)"></div></div>
+            <span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">44%</span>
+          </div>
+          <button onClick="{{ resume }}" style="font-family:inherit;border:none;cursor:pointer;height:44px;padding:0 var(--sizingMed);border-radius:var(--smallBorderRadius);background:var(--primary);color:var(--onPrimary);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center">Resume</button>
+        </section>
+
+        <!-- 2. exam readiness: what to study and how much is left -->
+        <section style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);padding:var(--sizingMed);display:flex;flex-direction:column;gap:var(--sizingSmall)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--sizingSmall)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--onSurfaceVariant)">Next exam</span>
+            <span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">Passing reaches Level 4</span>
+          </div>
+          <span style="font-size:16px;font-weight:600">Airframe written exam</span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sizingSmall)">
+            <div style="display:flex;flex-direction:column;gap:var(--sizingTiny)">
+              <span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">Questions seen</span>
+              <span style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums">412 of 660</span>
+              <div aria-hidden="true" style="height:6px;border-radius:3px;background:var(--tertiary);overflow:hidden"><div style="width:62%;height:100%;border-radius:inherit;background:var(--inversePrimary)"></div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--sizingTiny)">
+              <span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">Practice average</span>
+              <span style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums">81% · pass mark 70</span>
+              <div aria-hidden="true" style="height:6px;border-radius:3px;background:var(--tertiary);overflow:hidden"><div style="width:81%;height:100%;border-radius:inherit;background:var(--primary)"></div></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--sizingXSmall);font-size:13px;font-weight:400"><span style="width:8px;height:8px;border-radius:50%;background:var(--accent1);flex:none"></span><span>Weak area: <span style="font-family:var(--font-mono);font-size:12px;font-weight:400">AM.II.D.K1</span> Hydraulic schematics</span></div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sizingSmall)">
+            <button onClick="{{ practiceMissed }}" style="font-family:inherit;border:none;cursor:pointer;height:40px;padding:0 var(--sizingSmall);border-radius:var(--smallBorderRadius);background:var(--primaryContainer);color:var(--onPrimaryContainer);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap">Review 8 misses</button>
+            <button onClick="{{ goAssess }}" style="font-family:inherit;border:none;cursor:pointer;height:40px;padding:0 var(--sizingSmall);border-radius:var(--smallBorderRadius);background:transparent;border:1.5px solid var(--outline);color:var(--onSurface);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;white-space:nowrap">Practice</button>
+          </div>
+        </section>
+
+        <!-- 3. the path (Milestones feature) -->
+        <sc-if value="{{ hasMilestones }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ goMilestones }}" style="font-family:inherit;border:none;cursor:pointer;background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);padding:var(--sizingMed);display:flex;flex-direction:column;gap:var(--sizingSmall);text-align:left;color:var(--onSurface);font-size:14px;font-weight:400">
+          <span style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--onSurfaceVariant)">Your path</span><span style="font-size:12px;font-weight:600;color:var(--primary);display:flex;align-items:center;gap:var(--sizingTiny)">Milestones <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg></span></span>
+          <span aria-hidden="true" style="display:flex;align-items:center">
+            <sc-for list="{{ path }}" as="p" hint-placeholder-count="5"><span style="display:flex;align-items:center;flex:{{ p.flex }}"><span style="width:26px;height:26px;border-radius:50%;background:{{ p.bg }};color:{{ p.fg }};border:{{ p.border }};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none">{{ p.n }}</span><span style="flex:1;height:2px;background:{{ p.line }};display:{{ p.lineDisplay }}"></span></span></sc-for>
+          </span>
+          <span style="font-size:13px;font-weight:400"><span style="font-size:13px;font-weight:700">Level 3 · Hydraulics.</span> 2 tasks, then the Airframe written, then Level 4.</span>
+        </button>
+        </sc-if>
+
+        <!-- 4. everything assigned to me -->
+        <section style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);overflow:hidden;display:flex;flex-direction:column">
+          <div class="mxm-x" style="display:flex;align-items:center;gap:var(--sizingXSmall);padding:var(--sizingSmall) var(--sizingMed);overflow-x:auto;border-bottom:1px solid var(--outlineVariant)">
+            <sc-for list="{{ homeChips }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.go }}" aria-pressed="{{ c.on }}" style="font-family:inherit;border:none;cursor:pointer;flex:none;height:32px;padding:0 var(--sizingSmall);border-radius:16px;background:{{ c.bg }};color:{{ c.fg }};font-size:13px;font-weight:{{ c.weight }};display:inline-flex;align-items:center;gap:var(--sizingXSmall);white-space:nowrap">{{ c.label }}<span style="color:{{ c.countFg }}">{{ c.count }}</span></button></sc-for>
+          </div>
+          <sc-for list="{{ homeRows }}" as="r" hint-placeholder-count="4">
+            <button onClick="{{ r.open }}" style="font-family:inherit;border:none;cursor:pointer;width:100%;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:var(--sizingSmall);padding:var(--sizingSmall) var(--sizingMed);min-height:64px;background:transparent;border-bottom:1px solid var(--outlineVariant);text-align:left;color:var(--onSurface);font-size:14px;font-weight:400">
+              <span aria-hidden="true" style="width:40px;height:40px;border-radius:var(--smallBorderRadius);background:{{ r.tileBg }};color:{{ r.tileFg }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">{{ r.badge }}</span>
+              <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</span><span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.meta }}</span></span>
+              <span style="font-size:13px;font-weight:600;color:{{ r.dueFg }};white-space:nowrap">{{ r.due }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ homeEmpty }}" hint-placeholder-val="{{ false }}"><span style="padding:var(--sizingMed);font-size:13px;font-weight:400;color:var(--onSurfaceVariant)">Nothing here right now.</span></sc-if>
+          <button onClick="{{ goWork }}" style="font-family:inherit;border:none;cursor:pointer;min-height:44px;padding:0 var(--sizingMed);background:transparent;color:var(--primary);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between">{{ allLabel }} <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg></button>
+        </section>
+
+        <!-- 5. first-week onboarding, until it is finished -->
+        <button onClick="{{ goStart }}" style="font-family:inherit;border:none;cursor:pointer;background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);padding:var(--sizingSmall) var(--sizingMed);min-height:64px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--sizingSmall);text-align:left;color:var(--onSurface);font-size:14px;font-weight:400">
+          <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600">Start here · your first week</span><span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">3 of 5 done · next: try an oral question</span></span>
+          <span style="color:var(--onSurfaceVariant);display:flex"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg></span>
+        </button>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isWork }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Work" style="display:flex;flex-direction:column;gap:var(--sizingMed);padding:var(--sizingMed) var(--sizingMed) var(--sizingLarge);animation:mxm-in 250ms cubic-bezier(0.42, 0, 0.58, 1)">
+        <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.02em">Work</h1>
+        <sc-if value="{{ hasJobs }}" hint-placeholder-val="{{ true }}">
+        <div role="group" aria-label="Work type" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;height:40px;padding:0 var(--sizingTiny);border-radius:20px;background:var(--tertiary)">
+          <sc-for list="{{ workSegs }}" as="g" hint-placeholder-count="2"><button onClick="{{ g.go }}" aria-pressed="{{ g.on }}" style="font-family:inherit;border:none;cursor:pointer;height:32px;padding:0;border-radius:16px;background:{{ g.bg }};color:{{ g.fg }};box-shadow:{{ g.shadow }};font-size:13px;font-weight:{{ g.weight }};display:flex;align-items:center;justify-content:center;gap:var(--sizingXSmall)">{{ g.label }}<span style="color:var(--onSurfaceVariant)">{{ g.count }}</span></button></sc-for>
+        </div>
+        </sc-if>
+        <sc-if value="{{ showTasks }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:var(--sizingSmall)">
+          <div class="mxm-x" style="display:flex;align-items:center;gap:var(--sizingXSmall);overflow-x:auto"><sc-for list="{{ taskChips }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.go }}" aria-pressed="{{ c.on }}" style="font-family:inherit;border:none;cursor:pointer;flex:none;height:32px;padding:0 var(--sizingSmall);border-radius:16px;background:{{ c.bg }};color:{{ c.fg }};font-size:13px;font-weight:{{ c.weight }};display:inline-flex;align-items:center;gap:var(--sizingXSmall);white-space:nowrap">{{ c.label }}<span style="color:{{ c.countFg }}">{{ c.count }}</span></button></sc-for></div>
+          <section style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);overflow:hidden;display:flex;flex-direction:column">
+            <sc-for list="{{ taskRows }}" as="r" hint-placeholder-count="5">
+            <button onClick="{{ r.open }}" style="font-family:inherit;border:none;cursor:pointer;width:100%;display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:var(--sizingSmall);padding:var(--sizingSmall) var(--sizingMed);min-height:64px;background:transparent;border-bottom:1px solid var(--outlineVariant);text-align:left;color:var(--onSurface);font-size:14px;font-weight:400">
+              <span aria-hidden="true" style="width:40px;height:40px;border-radius:var(--smallBorderRadius);background:{{ r.tileBg }};color:{{ r.tileFg }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">{{ r.badge }}</span>
+              <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</span><span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.meta }}</span></span>
+              <span style="font-size:13px;font-weight:600;color:{{ r.dueFg }};white-space:nowrap">{{ r.due }}</span>
+            </button>
+            </sc-for>
+            <span style="padding:var(--sizingSmall) var(--sizingMed);font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">{{ taskCount }}</span>
+          </section>
+        </div>
+        </sc-if>
+        <sc-if value="{{ showJobs }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:var(--sizingSmall)">
+          <sc-for list="{{ jobs }}" as="j" hint-placeholder-count="2">
+          <button onClick="{{ j.open }}" style="font-family:inherit;border:none;cursor:pointer;background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);padding:var(--sizingMed);display:flex;flex-direction:column;gap:var(--sizingXSmall);text-align:left;color:var(--onSurface);font-size:14px;font-weight:400">
+            <span style="display:flex;align-items:center;justify-content:space-between;gap:var(--sizingSmall)"><span style="font-family:var(--font-mono);font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">{{ j.n }}</span><span style="height:24px;padding:0 var(--sizingSmall);border-radius:12px;background:{{ j.pillBg }};color:{{ j.pillFg }};font-size:12px;font-weight:600;display:inline-flex;align-items:center">{{ j.status }}</span></span>
+            <span style="font-size:14px;font-weight:600">{{ j.title }}</span>
+            <span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">{{ j.meta }}</span>
+          </button>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isAssess }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Assessments" style="display:flex;flex-direction:column;gap:var(--sizingMed);padding:var(--sizingMed) var(--sizingMed) var(--sizingLarge);animation:mxm-in 250ms cubic-bezier(0.42, 0, 0.58, 1)">
+        <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.02em">Assessments</h1>
+        <sc-for list="{{ exams }}" as="e" hint-placeholder-count="2">
+        <section style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);padding:var(--sizingMed);display:flex;flex-direction:column;gap:var(--sizingSmall)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--sizingSmall)"><span style="font-size:16px;font-weight:600">{{ e.title }}</span><span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">{{ e.last }}</span></div>
+          <span style="font-size:13px;font-weight:400;color:var(--onSurfaceVariant)">{{ e.blurb }}</span>
+          <div style="display:flex;align-items:center;gap:var(--sizingSmall)"><div aria-hidden="true" style="flex:1;height:6px;border-radius:3px;background:var(--tertiary);overflow:hidden"><div style="width:{{ e.pct }};height:100%;border-radius:inherit;background:var(--primary)"></div></div><span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant);white-space:nowrap">{{ e.coverage }}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sizingSmall)">
+            <button onClick="{{ e.practice }}" style="font-family:inherit;border:none;cursor:pointer;height:40px;padding:0 var(--sizingSmall);border-radius:var(--smallBorderRadius);background:var(--primary);color:var(--onPrimary);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center">Practice</button>
+            <button onClick="{{ e.history }}" style="font-family:inherit;border:none;cursor:pointer;height:40px;padding:0 var(--sizingSmall);border-radius:var(--smallBorderRadius);background:transparent;border:1.5px solid var(--outline);color:var(--onSurface);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center">History</button>
+          </div>
+        </section>
+        </sc-for>
+        <section style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);overflow:hidden;display:flex;flex-direction:column">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--onSurfaceVariant);padding:var(--sizingSmall) var(--sizingMed);border-bottom:1px solid var(--outlineVariant)">Recent results</span>
+          <sc-for list="{{ results }}" as="r" hint-placeholder-count="3">
+          <button onClick="{{ r.open }}" style="font-family:inherit;border:none;cursor:pointer;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:var(--sizingSmall);padding:var(--sizingSmall) var(--sizingMed);min-height:56px;background:transparent;border-bottom:1px solid var(--outlineVariant);text-align:left;color:var(--onSurface);font-size:14px;font-weight:400">
+            <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</span><span style="font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">{{ r.when }}</span></span>
+            <span style="height:24px;padding:0 var(--sizingSmall);border-radius:12px;background:{{ r.pillBg }};color:{{ r.pillFg }};font-size:12px;font-weight:600;display:inline-flex;align-items:center">{{ r.score }}</span>
+            <span style="color:var(--onSurfaceVariant);display:flex"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg></span>
+          </button>
+          </sc-for>
+        </section>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isOrion }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Orion" style="display:grid;grid-template-rows:minmax(0,1fr) auto;height:100%;animation:mxm-in 250ms cubic-bezier(0.42, 0, 0.58, 1)">
+        <div class="mxm-x" style="display:flex;flex-direction:column;gap:var(--sizingMed);padding:var(--sizingMed) var(--sizingMed) var(--sizingLarge);overflow:auto">
+          <div style="display:flex;flex-direction:column;gap:var(--sizingXSmall);align-items:flex-start">
+            <span aria-hidden="true" style="width:32px;height:32px;background:var(--primary);-webkit-mask:url(assets/icons/orionOutline.png) center/contain no-repeat;mask:url(assets/icons/orionOutline.png) center/contain no-repeat"></span>
+            <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.02em">Ask Orion</h1>
+            <span style="font-size:13px;font-weight:400;color:var(--onSurfaceVariant)">Answers come from your library and the tasks assigned to you.</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--sizingSmall)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--onSurfaceVariant)">Suggested</span>
+            <sc-for list="{{ prompts }}" as="q" hint-placeholder-count="3">
+            <button onClick="{{ q.go }}" style="font-family:inherit;border:none;cursor:pointer;background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);min-height:48px;padding:var(--sizingSmall) var(--sizingMed);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--sizingSmall);text-align:left;color:var(--onSurface);font-size:14px;font-weight:400">{{ q.text }}<span style="color:var(--onSurfaceVariant);display:flex"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg></span></button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--sizingXSmall);padding:var(--sizingSmall) var(--sizingMed);border-top:1px solid var(--outlineVariant);background:var(--surface)">
+          <input aria-label="Message Orion" placeholder="Ask about a task, a code or an exam" style="height:48px;padding:0 var(--sizingSmall);border-radius:var(--smallBorderRadius);border:1px solid var(--outline);background:var(--surface);color:var(--onSurface);font-family:inherit;font-size:14px;font-weight:400;min-width:0;outline:none">
+          <button onClick="{{ send }}" aria-label="Send" style="font-family:inherit;border:none;cursor:pointer;width:48px;height:48px;padding:0;border-radius:var(--smallBorderRadius);background:var(--primary);color:var(--onPrimary);display:flex;align-items:center;justify-content:center"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isMore }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="More" style="display:flex;flex-direction:column;gap:var(--sizingMed);padding:var(--sizingMed) var(--sizingMed) var(--sizingLarge);animation:mxm-in 250ms cubic-bezier(0.42, 0, 0.58, 1)">
+        <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.02em">More</h1>
+        <sc-for list="{{ moreGroups }}" as="g" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:var(--sizingXSmall)">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--onSurfaceVariant);padding:0 var(--sizingTiny)">{{ g.label }}</span>
+          <section style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);overflow:hidden;display:flex;flex-direction:column">
+            <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
+            <button onClick="{{ it.go }}" style="font-family:inherit;border:none;cursor:pointer;width:100%;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:var(--sizingSmall);padding:0 var(--sizingMed);min-height:52px;background:transparent;border-bottom:{{ it.border }};text-align:left;color:var(--onSurface);font-size:14px;font-weight:400">
+              <span style="color:var(--onSurfaceVariant);display:flex"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="{{ it.icon }}"></path></svg></span>
+              <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:400">{{ it.label }}</span></span>
+              <span style="color:var(--onSurfaceVariant);display:flex;align-items:center;gap:var(--sizingXSmall);font-size:12px;font-weight:400">{{ it.hint }}<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 6l6 6-6 6"></path></svg></span>
+            </button>
+            </sc-for>
+          </section>
+        </div>
+        </sc-for>
+      </div>
+      </sc-if>
+    </main>
+
+    <!-- bottom bar: the same frame for every role; items come and go by role and by feature -->
+    <nav aria-label="Main" style="background:var(--surface);border-top:1px solid var(--outlineVariant);display:flex;flex-direction:column">
+      <div style="display:flex;align-items:stretch;padding:0 var(--sizingXSmall)">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+        <button onClick="{{ t.go }}" aria-current="{{ t.current }}" style="font-family:inherit;border:none;cursor:pointer;flex:1;min-width:0;height:60px;padding:0;background:transparent;color:{{ t.fg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sizingTiny);font-size:12px;font-weight:600">
+          <span aria-hidden="true" style="width:56px;height:32px;border-radius:16px;background:{{ t.pill }};display:flex;align-items:center;justify-content:center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;display:{{ t.svgDisplay }}"><path d="{{ t.icon }}"></path></svg>
+            <span style="width:22px;height:22px;background:{{ t.fg }};-webkit-mask:url(assets/icons/orionOutline.png) center/contain no-repeat;mask:url(assets/icons/orionOutline.png) center/contain no-repeat;display:{{ t.maskDisplay }}"></span>
+          </span>
+          <span style="white-space:nowrap">{{ t.label }}</span>
+        </button>
+        </sc-for>
+      </div>
+      <div aria-hidden="true" style="height:20px;display:flex;align-items:center;justify-content:center"><span style="width:134px;height:4px;border-radius:2px;background:var(--onSurface);opacity:.3"></span></div>
+    </nav>
+
+    <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="position:absolute;left:var(--sizingMed);right:var(--sizingMed);bottom:96px;display:flex;justify-content:center;pointer-events:none"><span style="padding:var(--sizingSmall) var(--sizingMed);border-radius:var(--smallBorderRadius);background:var(--inverseSurface);color:var(--onInverseSurface);font-size:14px;font-weight:400;box-shadow:var(--mx-drop-shadow);animation:mxm-in 250ms cubic-bezier(0.42, 0, 0.58, 1)">{{ toast }}</span></div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"role": {"editor": "enum", "default": "student", "options": ["student", "instructor", "admin"], "tsType": "&#39;student&#39; | &#39;instructor&#39; | &#39;admin&#39;", "section": "Prototype"}, "mode": {"editor": "enum", "default": "light", "options": ["light", "dark"], "tsType": "&#39;light&#39; | &#39;dark&#39;", "section": "Prototype"}, "jobs": {"editor": "boolean", "default": true, "tsType": "boolean", "section": "Features"}}'>
+class Component extends DCLogic {
+  state = { tab: 'home', homeF: 'todo', work: 'tasks', taskF: 'all', toast: '' };
+  say(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); }
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    const p = this.props, s = this.state;
+    const dark = (p.mode ?? 'light') === 'dark';
+    const role = p.role ?? 'student', isStudent = role === 'student';
+    const hasJobs = p.jobs ?? true, hasOrion = true, hasMilestones = true; // Orion and Milestones are always on (Joel, 16 Nov 2026)
+    const P = 'var(--primary)', PC = 'var(--primaryContainer)', ONPC = 'var(--onPrimaryContainer)', ONS = 'var(--onSurface)', ONSV = 'var(--onSurfaceVariant)', T = 'var(--tertiary)', AC = 'var(--accent3)', ONAC = 'var(--accent4)', SURF = 'var(--surface)';
+    const soon = () => this.say('Not designed for mobile yet');
+    const go = tab => () => this.setState({ tab });
+    let tab = s.tab; if (tab === 'orion' && !hasOrion) tab = 'home';
+
+    // ---- navigation: one frame, items come and go ----
+    const ICON = {
+      home: 'M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z',
+      work: 'M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2',
+      assess: 'M8 3h8l1 2h3v16H4V5h3zM9 12l2 2 4-4',
+      more: 'M4 6h16M4 12h16M4 18h16',
+      library: 'M12 7c-1.5-1.5-4-2-8-2v13c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2V5c-4 0-6.5.5-8 2zM12 7v13',
+      milestones: 'M4 21V4h12l-2 4 2 4H4M4 12h12',
+      start: 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM10 8.5l5.5 3.5-5.5 3.5z',
+      help: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5M12 17h.01',
+      user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+      notes: 'M6 3h9l4 4v14H6zM15 3v4h4M9 12h6M9 16h6',
+    };
+    const tabs = [
+      { id: 'home', label: 'Home', icon: ICON.home },
+      { id: 'work', label: 'Work', icon: ICON.work },
+      { id: 'assess', label: 'Assessments', icon: ICON.assess },
+      hasOrion && { id: 'orion', label: 'Orion', icon: '', mask: true },
+      { id: 'more', label: 'More', icon: ICON.more },
+    ].filter(Boolean).map(t => { const on = tab === t.id; return { ...t, go: go(t.id), current: on ? 'page' : undefined, fg: on ? ONPC : ONSV, pill: on ? PC : 'transparent', svgDisplay: t.mask ? 'none' : 'block', maskDisplay: t.mask ? 'block' : 'none' }; });
+
+    // ---- data (same sample work as Mx Web) ----
+    const TASKS = [
+      { id: 't1', title: 'Hydraulic pump R&R', meta: 'Step 4 of 9 · 3D guided · counts toward Level 4', due: 'Today', badge: '4/9', kind: 'task', st: 'todo' },
+      { id: 't2', title: 'Gear retraction · 3D walkthrough', meta: 'Needs revision · M. Reyes: "check torque values on step 6"', due: 'Overdue', badge: '!', kind: 'task', st: 'over' },
+      { id: 't3', title: 'Pump fault simulator · fault set 2', meta: '2 of 5 scenarios left', due: 'Mon 20', badge: '3/5', kind: 'sim', st: 'todo' },
+      { id: 't4', title: 'Torque worksheet', meta: '6 questions', due: 'Fri', badge: 'W', kind: 'task', st: 'todo' },
+      { id: 't5', title: 'Airframe written', meta: '60 questions · 90 min · recommended after the two tasks', due: 'Thu 23', badge: 'EX', kind: 'exam', st: 'todo' },
+      { id: 't6', title: 'Hydraulic principles quiz', meta: 'Passed · 88%', due: 'Done', badge: '✓', kind: 'exam', st: 'done' },
+    ];
+    const row = t => ({ ...t, open: soon,
+      tileBg: t.st === 'over' ? AC : t.st === 'done' ? PC : t.badge.includes('/') ? PC : T,
+      tileFg: t.st === 'over' ? ONAC : t.st === 'done' || t.badge.includes('/') ? ONPC : ONSV,
+      dueFg: t.st === 'over' ? ONAC : t.due === 'Today' ? ONS : ONSV });
+    const chip = (label, count, on, fn) => ({ label, count, on, go: fn, bg: on ? PC : T, fg: on ? ONPC : ONS, countFg: on ? ONPC : ONSV, weight: on ? 700 : 600 });
+    const byHome = { todo: TASKS.filter(t => t.st === 'todo'), over: TASKS.filter(t => t.st === 'over'), done: TASKS.filter(t => t.st === 'done') };
+    const homeChips = [['To do', 'todo'], ['Overdue', 'over'], ['Completed', 'done']].map(([l, k]) => chip(l, { todo: 11, over: 1, done: 26 }[k], s.homeF === k, () => this.setState({ homeF: k })));
+    const homeRows = byHome[s.homeF].slice(0, 4).map(row);
+    const tf = s.taskF;
+    const taskList = TASKS.filter(t => t.st !== 'done' && (tf === 'all' || t.kind === tf));
+    const taskChips = [['All', 'all'], ['Tasks', 'task'], ['Simulators', 'sim'], ['Exams', 'exam']].map(([l, k]) => chip(l, '', tf === k, () => this.setState({ taskF: k })));
+    const work = hasJobs ? s.work : 'tasks';
+    const seg = (id, label, count) => { const on = work === id; return { label, count, on, go: () => this.setState({ work: id }), bg: on ? SURF : 'transparent', fg: on ? ONS : ONSV, shadow: on ? 'var(--mx-drop-shadow)' : 'none', weight: on ? 700 : 600 }; };
+    const jobs = [
+      { n: '2461117.105448', title: 'Cessna 177 · 100-hour inspection', meta: '0 of 2 procedures complete · due 03/27/2026', status: 'Pending', pillBg: T, pillFg: ONS, open: soon },
+      { n: '2461140.093012', title: 'King Air C90 · main gear hydraulic leak', meta: '1 of 3 procedures complete · due 03/20/2026', status: 'In progress', pillBg: PC, pillFg: ONPC, open: soon },
+    ];
+    const exams = [
+      { title: 'Written exams', last: 'Last: 84%', blurb: 'Study by subject or ACS code, or sit a timed exam.', pct: '62%', coverage: '412 of 660 seen', practice: soon, history: soon },
+      { title: 'Oral exams', last: 'Last: 3 of 5', blurb: 'Answer out loud or in writing. Orion plays the examiner.', pct: '35%', coverage: '7 of 20 topics', practice: soon, history: soon },
+    ];
+    const results = [
+      { title: 'Airframe written · practice', when: 'Tue 14 Oct · 60 questions', score: '84%', pillBg: PC, pillFg: ONPC, open: soon },
+      { title: 'Hydraulics · oral practice', when: 'Mon 13 Oct · 5 questions', score: '3 of 5', pillBg: T, pillFg: ONS, open: soon },
+      { title: 'General written · practice', when: 'Thu 9 Oct · 40 questions', score: '66%', pillBg: AC, pillFg: ONAC, open: soon },
+    ];
+    const prompts = ['Explain step 4 of Hydraulic pump R&R', 'Quiz me on AM.II.D.K1', 'What is due this week?'].map(text => ({ text, go: soon }));
+    const group = (label, items) => ({ label, items: items.filter(Boolean).map((it, i, a) => ({ ...it, go: it.go || soon, hint: it.hint || '', border: i === a.length - 1 ? 'none' : '1px solid var(--outlineVariant)' })) });
+    const moreGroups = [
+      group('Learn', [{ label: 'Start here', icon: ICON.start, hint: '3 of 5' }]),
+      group('Knowledge', [{ label: 'Library', icon: ICON.library }, hasMilestones && { label: 'Milestones', icon: ICON.milestones, hint: 'Level 3' }]),
+      group('Account', [{ label: 'Profile and settings', icon: ICON.user }, { label: 'Help & Feedback', icon: ICON.help }, { label: 'Release notes', icon: ICON.notes }]),
+    ];
+    const path = [1, 2, 3, 4, 5].map(n => { const st = n < 3 ? 'done' : n === 3 ? 'cur' : 'ahead'; return { n, bg: st === 'done' ? P : st === 'cur' ? PC : 'transparent', fg: st === 'done' ? 'var(--onPrimary)' : st === 'cur' ? ONPC : ONSV, border: st === 'cur' ? '2px solid ' + P : st === 'done' ? 'none' : '1.5px solid var(--outline)', line: n < 3 ? P : 'var(--outline)', lineDisplay: n === 5 ? 'none' : 'block', flex: n === 5 ? 'none' : '1' }; });
+
+    return {
+      theme: dark ? 'dark' : 'light', logoFilter: dark ? 'invert(1)' : 'none', contextLabel: 'Avionics 2',
+      tabs, isHome: isStudent && tab === 'home', isWork: isStudent && tab === 'work', isAssess: isStudent && tab === 'assess', isOrion: isStudent && tab === 'orion', isMore: isStudent && tab === 'more',
+      notDrawn: !isStudent, notDrawnTitle: (role === 'admin' ? 'Admin' : 'Instructor') + ' is not designed for mobile yet',
+      hasJobs, hasMilestones,
+      homeChips, homeRows, homeEmpty: homeRows.length === 0, allLabel: hasJobs ? 'All tasks and jobs' : 'All tasks',
+      workSegs: [seg('tasks', 'Tasks', 12), seg('jobs', 'Jobs', jobs.length)], showTasks: work === 'tasks', showJobs: work === 'jobs',
+      taskChips, taskRows: taskList.map(row), taskCount: taskList.length + ' shown · 12 open in total', jobs,
+      exams, results, prompts, moreGroups, path,
+      resume: soon, practiceMissed: soon, goAssess: go('assess'), goWork: go('work'), goMilestones: soon, goStart: soon,
+      openSearch: soon, openBell: soon, openProfile: go('more'), send: soon,
+      hasToast: !!s.toast, toast: s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

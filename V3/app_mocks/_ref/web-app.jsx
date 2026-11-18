@@ -1,0 +1,13142 @@
+// AUTO-ASSEMBLED unified web app (chrome + router + Control Tower + Team Workspace + drawers + picker).
+// Mounted by "Web App.dc.html" via <x-import component-from-global-scope="WebApp">.
+const { useState, useRef, useEffect, useLayoutEffect } = React;
+// kls-icon.jsx — Single shared icon component for all Kilsar PNG icons.
+// Uses CSS mask trick so token-color recoloring works on any glyph.
+//
+// Usage:
+//   <KlsIcon name="bell" size={24} color="var(--kls-on-surface)" />
+//   <KlsIcon name="tabs/home" size={32} color="var(--kls-on-surface)" />
+//   <KlsIcon path="../../assets/icons/tabs/home.png" size={32} />     // explicit path
+//
+// `name` resolves to the project root: assets/icons/<name>.png
+// `path` overrides with a literal URL (for nested calls / overrides)
+//
+// `rotate` accepts 0/90/180/270 — handy because we only ship chevronDown
+// and chevronRight in the asset set.
+
+const KLS_ICON_BASE = (typeof window !== "undefined" && window.KLS_ICON_BASE) || "/assets/icons";
+
+function KlsIcon({ name, path, size = 24, color = "currentColor", rotate = 0, style = {} }) {
+  const url = path || `${KLS_ICON_BASE}/${name}.png`;
+  const transform = rotate ? `rotate(${rotate}deg)` : undefined;
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "inline-block",
+        width: size,
+        height: size,
+        backgroundColor: color,
+        WebkitMask: `url("${url}") center/contain no-repeat`,
+        mask: `url("${url}") center/contain no-repeat`,
+        transform,
+        flex: "none",
+        ...style,
+      }}
+    />
+  );
+}
+
+// also expose plain-image variant (when you need the original colored PNG, not a mask)
+function KlsImage({ name, path, size, width, height, alt = "", style = {} }) {
+  const url = path || `${KLS_ICON_BASE}/${name}.png`;
+  return (
+    <img
+      src={url}
+      alt={alt}
+      style={{
+        width: width || size,
+        height: height || size,
+        flex: "none",
+        ...style,
+      }}
+    />
+  );
+}
+
+// chrome.jsx — Web app Header + NavSidebar (uses real Kilsar PNG icons + logo)
+
+
+// ── Header ────────────────────────────────────────────────────────
+function Header({ systemMessage = null, unread = 0, onAvatar, onBell, onSearch, searchPlaceholder = "Search" }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const history = ["chemistry midterm", "knot tying", "FCC handbook"];
+
+  return (
+    <div
+      style={{
+        height: "var(--kls-header-height)",
+        padding: "0 var(--kls-header-padding-x)",
+        background: "var(--kls-header-bg)",
+        color: "var(--kls-header-fg)",
+        borderBottom: "var(--kls-header-border)",
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--kls-space-xsmall)",
+        flex: "none",
+      }}
+    >
+      {/* Left zone — reserved for system messages, not a page title (new standard pattern) */}
+      <div
+        style={{
+          fontFamily: "var(--kls-font-sans)",
+          fontSize: "var(--kls-subtitle-small-size)",
+          fontWeight: "var(--kls-subtitle-small-weight)",
+          color: "var(--kls-on-surface-variant)",
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {systemMessage}
+      </div>
+
+      <div style={{ flex: 1 }} />
+
+      {/* Search — collapses to 32px button, expands to 300 */}
+      <div
+        style={{
+          width: searchOpen ? "var(--kls-search-pill-width)" : "var(--kls-search-button-size)",
+          height: 32,
+          position: "relative",
+          transition: "width var(--kls-dur-fade-animation) var(--kls-ease-standard)",
+        }}
+      >
+        {searchOpen ? (
+          <div style={{ position: "relative" }}>
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); onSearch && onSearch(e.target.value); }}
+              placeholder={searchPlaceholder}
+              onBlur={() => { if (!query) setSearchOpen(false); }}
+              style={{
+                width: "100%",
+                height: "var(--kls-search-pill-height)",
+                padding: "0 var(--kls-space-small) 0 var(--kls-space-large)",
+                background: "var(--kls-search-pill-bg)",
+                border: "none",
+                borderRadius: "var(--kls-search-pill-radius)",
+                fontFamily: "var(--kls-font-sans)",
+                fontSize: 14,
+                color: "var(--kls-on-surface)",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+            <span style={{ position: "absolute", left: 10, top: 8, pointerEvents: "none" }}>
+              <KlsIcon name="search" size={16} color="var(--kls-on-surface-variant)" />
+            </span>
+            {/* Suggestions */}
+            {query.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 36,
+                  left: 0,
+                  right: 0,
+                  background: "var(--kls-search-suggestion-bg)",
+                  borderRadius: "var(--kls-search-suggestion-radius)",
+                  boxShadow: "var(--kls-search-suggestion-elevation)",
+                  overflow: "hidden",
+                  zIndex: 10,
+                }}
+              >
+                {history.filter((h) => h.startsWith(query.toLowerCase())).map((h, i, arr) => (
+                  <div key={h}>
+                    <div
+                      style={{
+                        padding: "var(--kls-space-small) var(--kls-space-small)",
+                        fontFamily: "var(--kls-font-sans)",
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: "var(--kls-on-surface)",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-search-suggestion-hover)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      {h}
+                    </div>
+                    {i < arr.length - 1 && <div style={{ height: 1, background: "var(--kls-tertiary)" }} />}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
+            style={{
+              width: 32,
+              height: 32,
+              border: "none",
+              background: "transparent",
+              borderRadius: "50%",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+            }}
+          >
+            <KlsIcon name="search" size={20} color="var(--kls-on-surface)" />
+          </button>
+        )}
+      </div>
+
+      {/* Bell with badge */}
+      <button
+        onClick={onBell}
+        aria-label="Notifications"
+        style={{
+          width: "var(--kls-bell-size)",
+          height: "var(--kls-bell-size)",
+          border: "none",
+          background: "transparent",
+          borderRadius: "50%",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          padding: 0,
+        }}
+      >
+        <KlsIcon name="bell" size={24} color="var(--kls-on-surface)" />
+        {unread > 0 && (
+          <span
+            style={{
+              position: "absolute",
+              top: 2,
+              right: 2,
+              minWidth: "var(--kls-bell-badge-size)",
+              height: "var(--kls-bell-badge-size)",
+              padding: "0 var(--kls-space-xsmall)",
+              background: "var(--kls-bell-badge-bg)",
+              color: "var(--kls-bell-badge-fg)",
+              borderRadius: 9,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "var(--kls-font-sans)",
+              fontSize: 10,
+              fontWeight: 600,
+              lineHeight: 1,
+            }}
+          >
+            {unread}
+          </span>
+        )}
+      </button>
+
+      {/* Avatar */}
+      <button
+        onClick={onAvatar}
+        aria-label="Profile"
+        style={{
+          width: "var(--kls-header-avatar-size)",
+          height: "var(--kls-header-avatar-size)",
+          borderRadius: "50%",
+          border: "none",
+          background: "var(--kls-tertiary-container)",
+          cursor: "pointer",
+          padding: 0,
+          overflow: "hidden",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--kls-on-surface)",
+          fontFamily: "var(--kls-font-sans)",
+          fontSize: 12,
+          fontWeight: 600,
+        }}
+      >
+        AS
+      </button>
+    </div>
+  );
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────
+// `iconPath` lets us pick from /assets/icons/tabs/* when available, or fall back
+// to /assets/icons/*. Names mirror the FeatureFlag.key in Flutter.
+//
+// `flavor` swaps labels via WorkspaceSettings overrides (termsKey / ticketsKey
+// / coursesKey / assignmentsKey). The icon set is identical across flavors.
+const FLAVOR_LABELS = {
+  education:  { terms: "Catalog",   tickets: "Tickets", library: "Library", training: "Training", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
+  commercial: { terms: "Cases",     tickets: "Tickets", library: "Library", training: "Training", oralExams: "Oral Exams", inventory: "Inventory Mgr", assistant: "Assistant", analytics: "Analytics", controlTower: "Control Tower", writtenExams: "Written Exams", integrations: "Integrations" },
+};
+
+const SIDEBAR_TABS_BASE = [
+  { key: "terms",         icon: "tabs/home" },
+  { key: "tickets",       icon: "checkpoint" },
+  { key: "library",       icon: "tabs/library" },
+  { key: "training",      symbol: "school" },
+  { key: "oralExams",     icon: "chatBubbles" },
+  { key: "inventory",     icon: "cube" },
+  { key: "assistant",     icon: "orionOutline" },
+  { key: "analytics",     icon: "tabs/analytics" },
+  { key: "controlTower",  icon: "tower" },
+  { key: "writtenExams", icon: "checkpoint" },
+  { key: "integrations",  symbol: "webhook" },
+];
+
+function tabsForFlavor(flavor) {
+  const labels = FLAVOR_LABELS[flavor] || FLAVOR_LABELS.education;
+  return SIDEBAR_TABS_BASE.map((t) => ({ ...t, label: labels[t.key] }));
+}
+
+// Default export — used by code that doesn't yet pass flavor.
+const SIDEBAR_TABS = tabsForFlavor("education");
+
+function NavSidebar({ active = "library", onSelect, workspaceName = "Acme Aviation Co.", showSpoofBanner = false, version = "v3.14.2", flavor = "education" }) {
+  const tabs = tabsForFlavor(flavor);
+  const [collapsed, setCollapsed] = useState(false);
+  const showLabels = !collapsed;
+
+  return (
+    <div
+      style={{
+        width: collapsed ? "var(--kls-sidebar-width-collapsed)" : "calc(var(--kls-sidebar-width-expanded) + var(--kls-space-large))",
+        background: "var(--kls-sidebar-bg)",
+        padding: "var(--kls-sidebar-padding)",
+        borderRight: "var(--kls-sidebar-border)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        flex: "none",
+        transition: "width var(--kls-dur-fade-animation) var(--kls-ease-standard)",
+        overflow: "hidden",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* TOP */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden", scrollbarWidth: "thin" }}>
+        {/* Workspace logo (Kilsar mark) */}
+        <div style={{ display: "flex", justifyContent: "center", height: 40, alignItems: "center" }}>
+          {showLabels ? (
+            // Full wordmark (splashLogo) — wordmark is wider than collapsed mark
+            <img
+              src="assets/images/splashLogo.png"
+              alt="Kilsar"
+              style={{ height: 28, width: "auto", display: "block", filter: "brightness(0) invert(1)" }}
+            />
+          ) : (
+            // Collapsed: K mark only
+            <KlsIcon name="kilsar" size={32} color="var(--kls-on-surface)" />
+          )}
+        </div>
+
+        {/* Workspace name */}
+        <div style={{ height: 24, display: "flex", justifyContent: "center", alignItems: "center", marginTop: "var(--kls-space-xsmall)"}}>
+          {showLabels && (
+            <div
+              style={{
+                fontFamily: "var(--kls-font-sans)",
+                fontSize: "var(--kls-subtitle-small-size)",
+                fontWeight: "var(--kls-subtitle-small-weight)",
+                color: "var(--kls-on-surface)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {workspaceName}
+            </div>
+          )}
+        </div>
+
+        {/* Spoof banner (or 49px spacer) */}
+        <div style={{ height: 49, display: "flex", alignItems: "center", justifyContent: "center", marginTop: "var(--kls-space-med)"}}>
+          {showSpoofBanner ? (
+            <div
+              style={{
+                background: "var(--kls-accent-5)",
+                color: "var(--kls-accent-4)",
+                padding: showLabels ? "var(--kls-space-xsmall) var(--kls-space-small)" : "var(--kls-space-xsmall)",
+                borderRadius: 8,
+                fontFamily: "var(--kls-font-sans)",
+                fontSize: 12,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--kls-space-xsmall)",
+              }}
+            >
+              <KlsIcon name="info" size={16} color="var(--kls-accent-4)" />
+              {showLabels && "Viewer Mode"}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Collapse chevron — using sidebar-collapse.png, mirrored when collapsed */}
+        <div style={{ paddingLeft: collapsed ? 0 : 12, display: "flex", justifyContent: collapsed ? "center" : "flex-start" }}>
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            style={{
+              width: 32,
+              height: 32,
+              border: "1px solid var(--kls-outline-variant)",
+              background: "var(--kls-surface)",
+              borderRadius: "50%",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+            }}
+          >
+            <KlsIcon
+              name="sidebar-collapse"
+              size={16}
+              color="var(--kls-on-surface)"
+              rotate={collapsed ? 180 : 0}
+            />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", flexDirection: "column", marginTop: "var(--kls-space-xsmall)"}}>
+          {tabs.map((tab) => (
+            <SidebarOption
+              key={tab.key}
+              icon={tab.icon}
+              symbol={tab.symbol}
+              label={tab.label}
+              isActive={active === tab.key}
+              showLabel={showLabels}
+              onClick={() => onSelect && onSelect(tab.key)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* BOTTOM */}
+      <div style={{ display: "flex", flexDirection: "column", flex: "none" }}>
+        <SidebarOption
+          icon="group"
+          label="Workspace"
+          isActive={active === "teamWorkspace"}
+          showLabel={showLabels}
+          onClick={() => onSelect && onSelect("teamWorkspace")}
+        />
+        <SidebarOption
+          glyph
+          label="Help & Feedback"
+          isActive={false}
+          showLabel={showLabels}
+          onClick={() => onSelect && onSelect("help")}
+        />
+
+        {/* Version — opens Release Notes */}
+        <button
+          onClick={() => onSelect && onSelect("releaseNotes")}
+          aria-label={"Release notes, version " + version}
+          style={{
+            all: "unset",
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "center",
+            gap: "var(--kls-space-tiny)",
+            marginTop: "var(--kls-space-small)",
+            fontFamily: "var(--kls-font-sans)",
+            fontSize: 10,
+            fontWeight: 600,
+            color: "var(--kls-on-tertiary)",
+          }}
+        >
+          {showLabels && <span>Version:</span>}
+          <span style={{ textDecoration: "underline", textUnderlineOffset: 2, color: "var(--kls-on-surface)" }}>{version}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Material Symbols glyph (loaded in the DC helmet) — for icons the DS PNG set lacks.
+function MSGlyph({ name, size = 24, color = "currentColor" }) {
+  return (
+    <span className="material-symbols-outlined" aria-hidden="true"
+      style={{ fontSize: size, lineHeight: 1, color, flex: "none", fontVariationSettings: "'opsz' " + size }}>{name}</span>
+  );
+}
+
+function SidebarOption({ icon, glyph, symbol, label, isActive, showLabel, onClick }) {
+  // Active uses --kls-primary tint; idle uses --kls-on-surface (matches Flutter spec).
+  const iconColor = isActive ? "var(--kls-primary)" : "var(--kls-on-surface)";
+  const labelColor = "var(--kls-on-surface)";
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        height: 44,
+        marginTop: "var(--kls-space-small)",
+        padding: "0 var(--kls-space-med)",
+        background: isActive ? "var(--kls-sidebar-tab-bg-active)" : "var(--kls-sidebar-tab-bg-idle)",
+        border: "none",
+        borderRadius: "var(--kls-sidebar-tab-radius)",
+        display: "flex",
+        alignItems: "center",
+        gap: "var(--kls-space-med)",
+        cursor: "pointer",
+        textAlign: "left",
+        width: "100%",
+      }}
+    >
+      {glyph ? <HelpGlyph size={24} color={iconColor} /> : symbol ? <MSGlyph name={symbol} size={24} color={iconColor} /> : <KlsIcon name={icon} size={24} color={iconColor} />}
+      {showLabel && (
+        <span
+          className="kls-text-navigation"
+          style={{
+            color: labelColor,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            lineHeight: 1.5,
+            paddingBottom: 1,
+          }}
+        >
+          {label}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// control-tower-data.jsx — Control Tower seed data, status/type meta, shared UI bits.
+// Education flavor: Students / Tasks / Oral & Written exams.
+// Everything is exposed on window.CT for the screen + drawer files (separate babel scopes).
+
+// ── Status + type meta ──────────────────────────────────────────────────────
+const CT_STATUS = {
+  not_started: { label: "Not started", bg: "var(--kls-tertiary)",         fg: "var(--kls-on-surface-variant)", bar: "var(--kls-outline-variant)" },
+  in_progress: { label: "In progress", bg: "var(--kls-info-container)",    fg: "var(--kls-info)",     bar: "var(--kls-info)" },
+  overdue:     { label: "Overdue",     bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)", bar: "var(--kls-accent-4)" },
+  completed:   { label: "Completed",   bg: "var(--kls-success-container)", fg: "var(--kls-success)",  bar: "var(--kls-success)" },
+};
+
+const CT_TYPES = {
+  task:    { label: "Task",         short: "Task",    icon: "worklog",     passFail: false, dot: "var(--kls-success)" },
+  oral:    { label: "Oral exam",    short: "Oral",    icon: "chatBubbles", passFail: true,  dot: "var(--kls-accent-4)" },
+  written: { label: "Written exam", short: "Written", icon: "checkpoint",  passFail: true,  dot: "var(--kls-info)" },
+  simulator: { label: "Simulator",  short: "Sim",     icon: "worklog", symbol: "school", passFail: false, dot: "var(--kls-accent-12)" },
+};
+
+// ── Roster ──────────────────────────────────────────────────────────────────
+const CT_STUDENTS = [
+  { id: "s1", name: "Joel Bishop",    email: "joel.b@kilsar.com",  lastActive: "2h ago" },
+  { id: "s2", name: "Melodie Stone",  email: "melodie@kilsar.com", lastActive: "40m ago" },
+  { id: "s3", name: "Dana Whitfield", email: "dana@kilsar.com",    lastActive: "Yesterday" },
+  { id: "s4", name: "Marcus Reyes",   email: "marcus@kilsar.com",  lastActive: "5d ago" },
+  { id: "s5", name: "Priya Nair",     email: "priya@kilsar.com",   lastActive: "3h ago" },
+  { id: "s6", name: "Caleb Turner",   email: "caleb@kilsar.com",   lastActive: "1w ago" },
+  { id: "s7", name: "Sofia Alvarez",  email: "sofia@kilsar.com",   lastActive: "Yesterday" },
+  { id: "s8", name: "Liam O'Connor",  email: "liam@kilsar.com",    lastActive: "4d ago" },
+];
+
+// ── Groups (a group is a named set of students; a row in the table) ───────────
+const CT_GROUP_COLORS = {
+  blue:   { bg: "var(--kls-info-container)",    fg: "var(--kls-info)" },
+  green:  { bg: "var(--kls-success-container)", fg: "var(--kls-success)" },
+  orange: { bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)" },
+  purple: { bg: "var(--kls-accent-13)",         fg: "var(--kls-accent-12)" },
+};
+const CT_GROUPS = [
+  { id: "g1", name: "Airframe Team",    color: "orange", icon: "cube",       memberIds: ["s1", "s3"] },
+  { id: "g2", name: "Avionics Lab",     color: "purple", icon: "checkpoint", memberIds: ["s2", "s5"] },
+  { id: "g3", name: "Powerplant Group", color: "green",  icon: "tower",      memberIds: ["s4", "s6"] },
+];
+function ctGroupMembers(group) { return group.memberIds.map((id) => CT_STUDENTS.find((s) => s.id === id)).filter(Boolean); }
+function ctUngroupedStudents() {
+  const inGroup = new Set(CT_GROUPS.flatMap((g) => g.memberIds));
+  return CT_STUDENTS.filter((s) => !inGroup.has(s.id));
+}
+
+// ── Task / course library (existing tasks, chosen by term → course → task) ────
+const CT_TERMS = ["Fall 2024", "Spring 2025"];
+const CT_COURSES = {
+  "Fall 2024":   ["Airframe Structures", "Avionics Fundamentals", "Powerplant Systems"],
+  "Spring 2025": ["Airframe Systems", "Advanced Avionics", "Turbine Theory"],
+};
+const CT_TASK_LIBRARY = {
+  "Airframe Structures":  ["Torque Sequence Worksheet", "Rivet Inspection Log"],
+  "Avionics Fundamentals":["Wiring Diagram Reading", "Bus Architecture Quiz Prep"],
+  "Powerplant Systems":   ["Fuel System Schematic", "Magneto Timing Worksheet"],
+  "Airframe Systems":     ["Hydraulics Troubleshooting", "Landing Gear Rigging"],
+  "Advanced Avionics":    ["Autopilot Config Lab", "Transponder Setup"],
+  "Turbine Theory":       ["Compressor Stage Worksheet", "EGT Analysis"],
+};
+
+const CT_EXAM_TITLES = {
+  oral:    ["Engine Run-Up Oral", "Landing Gear Inspection Oral", "Sheet Metal Repair Oral"],
+  written: ["FAA Regulations Written", "Turbine Theory Written", "Electrical Systems Written"],
+  simulator: ["Six-Pack Flight Instruments", "Turbocharger System", "Circuit Trainer"],
+};
+
+// ── Generate assignment instances (deterministic) ────────────────────────────
+const CT_DUE_PAST = ["Sep 28", "Oct 02", "Oct 09"];
+const CT_DUE_FUTURE = ["Nov 14", "Nov 21", "Dec 03", "Dec 12"];
+const CT_STATUS_CYCLE = ["completed", "in_progress", "not_started", "overdue", "in_progress", "completed", "not_started", "in_progress"];
+
+// Seeded simulator assignments reference TRAINING_SIMS by id (titles mirrored so seeding doesn't depend on load order).
+const CT_SIM_SEED = [
+  { id: "six-pack", title: "Six-Pack Flight Instruments" }, { id: "turbocharger", title: "Turbocharger System" },
+  { id: "circuit-trainer", title: "Circuit Trainer" }, { id: "micrometer", title: "Micrometer" }, { id: "vapor-cycle", title: "Vapor Cycle Cooling" },
+];
+function ctBuildAssignments() {
+  const out = [];
+  let id = 0;
+  CT_STUDENTS.forEach((s, si) => {
+    const n = 4 + (si % 3); // 4–6 each
+    for (let k = 0; k < n; k++) {
+      const type = k === 3 ? "simulator" : ["task", "oral", "written"][(si + k) % 3];
+      let status = CT_STATUS_CYCLE[(si * 2 + k) % CT_STATUS_CYCLE.length];
+
+      let title, course, term;
+      if (type === "task") {
+        term = CT_TERMS[(si + k) % CT_TERMS.length];
+        const courses = CT_COURSES[term];
+        course = courses[(si + k) % courses.length];
+        const lib = CT_TASK_LIBRARY[course];
+        title = lib[k % lib.length];
+      } else {
+        term = CT_TERMS[k % CT_TERMS.length];
+        course = "Open-ended";
+        const pool = CT_EXAM_TITLES[type];
+        title = pool[(si + k) % pool.length];
+      }
+
+      let simulators;
+      if (type === "simulator") {
+        const sim = CT_SIM_SEED[si % CT_SIM_SEED.length];
+        title = sim.title; simulators = [sim.id]; course = "Training";
+        if (status === "overdue") status = "in_progress";
+      }
+      const due = status === "overdue" ? CT_DUE_PAST[(si + k) % CT_DUE_PAST.length] : CT_DUE_FUTURE[(si + k) % CT_DUE_FUTURE.length];
+      const score = (status === "completed" && type !== "task" && type !== "simulator") ? 55 + ((si + k * 7) % 42) : null;
+
+      out.push({ id: "a" + (id++), studentId: s.id, type, title, course, term, due, status, score, ...(simulators ? { simulators } : {}) });
+    }
+  });
+  return out;
+}
+
+// Seeded oral-exam params (topic + ACS codes + mode + count) for demo allocations.
+function ctOralSeed(i) {
+  let topics; try { topics = ORAL_TOPICS; } catch (e) { return null; }
+  if (!topics || !topics.length) return null;
+  const t = topics[i % topics.length];
+  const subs = oralSubtopics(t);
+  const take = Math.max(1, Math.ceil(subs.length / 2));
+  const chosen = subs.slice(0, take);
+  const pool = chosen.reduce((n, x) => n + x.q, 0) || oralTopicTotal(t);
+  if (i % 4 === 3) return { studentDefined: true, difficulty: "Medium", qCount: pool };
+  return { topic: t.title, acs: chosen.map((x) => x.code), oralAcs: chosen.map((x) => x.id), answerMode: i % 2 ? "write" : "speak",
+    difficulty: ["Easy", "Medium", "Hard"][i % 3], qCount: Math.max(1, Math.min(pool, 3 + (i % 3))) };
+}
+
+// ── Group allocations (one piece of work assigned to a whole group) ───────────
+// Each allocation is a distinct task/exam given to every member of the group.
+// `instances` carry the per-assignee progress the segmented bar aggregates.
+const CT_ASSIGNED = ["Sep 10", "Sep 24", "Oct 05", "Oct 18"];
+function ctBuildAllocations() {
+  const out = [];
+  let id = 0;
+  CT_GROUPS.forEach((g, gi) => {
+    const members = ctGroupMembers(g);
+    const n = 3 + (gi % 2); // 3–4 allocations per group
+    for (let k = 0; k < n; k++) {
+      const type = k === 2 ? "simulator" : ["task", "oral", "written"][(gi + k) % 3];
+      let title, course, term, simulators;
+      if (type === "task") {
+        term = CT_TERMS[(gi + k) % CT_TERMS.length];
+        const courses = CT_COURSES[term];
+        course = courses[(gi + k) % courses.length];
+        const lib = CT_TASK_LIBRARY[course];
+        title = lib[k % lib.length];
+      } else if (type === "simulator") {
+        term = CT_TERMS[k % CT_TERMS.length];
+        course = "Training";
+        const sim = CT_SIM_SEED[(gi + 1) % CT_SIM_SEED.length];
+        title = sim.title; simulators = [sim.id];
+      } else {
+        term = CT_TERMS[k % CT_TERMS.length];
+        course = "Open-ended";
+        const pool = CT_EXAM_TITLES[type];
+        title = pool[(gi + k) % pool.length];
+      }
+      const overdueAlloc = (gi + k) % 3 === 0;
+      const due = overdueAlloc ? CT_DUE_PAST[(gi + k) % CT_DUE_PAST.length] : CT_DUE_FUTURE[(gi + k) % CT_DUE_FUTURE.length];
+      const assigned = CT_ASSIGNED[(gi + k) % CT_ASSIGNED.length];
+      const instances = members.map((m, mi) => {
+        let status = CT_STATUS_CYCLE[(gi * 2 + k + mi) % CT_STATUS_CYCLE.length];
+        const score = (status === "completed" && type !== "task" && type !== "simulator") ? 55 + ((mi + k * 7) % 42) : null;
+        return { studentId: m.id, status, score };
+      });
+      const oralSeed = type === "oral" ? ctOralSeed(gi + k) : null;
+      out.push({ id: "al" + (id++), groupId: g.id, type, title, course, term, due, assigned, instances, ...(simulators ? { simulators } : {}), ...(oralSeed || {}),
+        settings: { allowResubmission: type !== "task", notifyOverdue: true } });
+    }
+  });
+  return out;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function ctInitials(name) {
+  const p = (name || "").trim().split(/\s+/);
+  return ((p[0]?.[0] || "?") + (p[1]?.[0] || "")).toUpperCase();
+}
+const CT_DONE = ["completed"];
+function ctRollup(items) {
+  const by = { not_started: 0, in_progress: 0, overdue: 0, completed: 0 };
+  items.forEach((a) => { by[a.status] = (by[a.status] || 0) + 1; });
+  const total = items.length;
+  const done = by.completed;
+  return { by, total, done, overdue: by.overdue, inProgress: by.in_progress };
+}
+
+// ── Shared bits ──────────────────────────────────────────────────────────────
+function CTAvatar({ name, size = 40 }) {
+  return (
+    <div style={{
+      flexShrink: 0, width: size, height: size, borderRadius: 999,
+      background: "var(--kls-tertiary-container)", color: "var(--kls-on-surface-variant)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: "var(--kls-font-sans)", fontWeight: 700, fontSize: Math.round(size * 0.36),
+    }}>{ctInitials(name)}</div>
+  );
+}
+
+// Type glyph — PNG icon, or Material Symbol when the type declares one (Simulator).
+function CTTypeIcon({ type, size = 18, color = "var(--kls-on-surface-variant)" }) {
+  const T = CT_TYPES[type] || CT_TYPES.task;
+  return T.symbol ? <MSGlyph name={T.symbol} size={size} color={color} /> : <KlsIcon name={T.icon} size={size} color={color} />;
+}
+
+function CTStatusPill({ status, size = "md" }) {
+  const m = CT_STATUS[status] || CT_STATUS.not_started;
+  const pad = size === "sm" ? "var(--kls-space-tiny) var(--kls-space-xsmall)" : "var(--kls-space-tiny) var(--kls-space-small)";
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 6, padding: pad, borderRadius: 8,
+      background: m.bg, color: m.fg, fontFamily: "var(--kls-font-sans)",
+      fontSize: size === "sm" ? 11 : 12, fontWeight: 600, whiteSpace: "nowrap",
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: 999, background: m.fg }} />
+      {m.label}
+    </span>
+  );
+}
+
+// Stacked roll-up bar of an item set's statuses.
+function CTRollupBar({ items, height = 8 }) {
+  const order = ["overdue", "in_progress", "not_started", "completed"];
+  const total = items.length || 1;
+  const counts = {};
+  items.forEach((a) => { counts[a.status] = (counts[a.status] || 0) + 1; });
+  return (
+    <div style={{ display: "flex", width: "100%", height, borderRadius: 999, overflow: "hidden", background: "var(--kls-outline-variant)" }}>
+      {order.map((st) => {
+        const n = counts[st] || 0;
+        if (!n) return null;
+        return <div key={st} title={`${CT_STATUS[st].label}: ${n}`} style={{ width: `${(n / total) * 100}%`, background: CT_STATUS[st].bar }} />;
+      })}
+    </div>
+  );
+}
+
+function CTGroupMedallion({ color, icon, size = 40 }) {
+  const c = CT_GROUP_COLORS[color] || CT_GROUP_COLORS.blue;
+  return (
+    <div style={{
+      flexShrink: 0, width: size, height: size, borderRadius: 12, background: c.bg, color: c.fg,
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <KlsIcon name={icon || "group"} size={Math.round(size * 0.5)} color={c.fg} />
+    </div>
+  );
+}
+
+window.CT = {
+  STATUS: CT_STATUS, TYPES: CT_TYPES, STUDENTS: CT_STUDENTS, GROUPS: CT_GROUPS,
+  GROUP_COLORS: CT_GROUP_COLORS, groupMembers: ctGroupMembers, ungrouped: ctUngroupedStudents,
+  TERMS: CT_TERMS, COURSES: CT_COURSES, TASK_LIBRARY: CT_TASK_LIBRARY, EXAM_TITLES: CT_EXAM_TITLES,
+  DUE_FUTURE: CT_DUE_FUTURE, ASSIGNED: CT_ASSIGNED, DONE: CT_DONE,
+  buildAssignments: ctBuildAssignments, buildAllocations: ctBuildAllocations, initials: ctInitials, rollup: ctRollup,
+  Avatar: CTAvatar, StatusPill: CTStatusPill, RollupBar: CTRollupBar, GroupMedallion: CTGroupMedallion,
+};
+
+// control-tower.jsx — Instructor Control Tower: assign work + track student status.
+// Student-centric list with roll-up; click a student for per-assignment detail.
+// Loads after control-tower-data.jsx, teammate-picker.jsx, ct-student-drawer.jsx, ct-assign-drawer.jsx.
+const { useState: useCtState, useMemo: useCtMemo } = React;
+
+// Canonical leading "+" for Add actions — an aligned glyph, not a text character.
+function PlusGlyph({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" aria-hidden="true" style={{ flex: "none", display: "block" }}>
+      <path d="M9 3.25v11.5M3.25 9h11.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const ctPrimaryBtn = {
+  height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
+  background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+  display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+};
+const CT_TH = { textAlign: "left", padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 12,
+  fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)",
+  borderBottom: "1px solid var(--kls-outline-variant)", whiteSpace: "nowrap" };
+const CT_TD = { paddingTop: "var(--kls-space-small)", paddingRight: "var(--kls-space-med)", paddingBottom: "var(--kls-space-small)", paddingLeft: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface)", verticalAlign: "middle" };
+
+function StatCard({ label, value, tone, icon, valueSize = 30, onGo, goTitle }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div style={{ flex: 1, minWidth: 0, background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)",
+      borderRadius: 12, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{label}</span>
+        <span style={{ width: 28, height: 28, borderRadius: 8, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+          <KlsIcon name={icon} size={14} color="var(--kls-on-surface-variant)" />
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: valueSize, fontWeight: 700, lineHeight: valueSize >= 24 ? 1 : 1.25, color: tone || "var(--kls-on-surface)",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: valueSize >= 24 ? "nowrap" : "normal",
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{value}</span>
+        {onGo && (
+          <button onClick={onGo} title={goTitle || "Go"} aria-label={goTitle || "Go"}
+            onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+            style={{ flex: "none", width: 28, height: 28, borderRadius: 999, cursor: "pointer",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              background: hover ? "var(--kls-primary)" : "var(--kls-tertiary-container)",
+              border: "1px solid var(--kls-outline-variant)", transition: "background 125ms var(--kls-ease-standard)" }}>
+            <KlsIcon name="chevronRight" size={16} color={hover ? "var(--kls-on-primary)" : "var(--kls-on-surface-variant)"} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CTFilterChip({ active, label, count, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      display: "inline-flex", alignItems: "center", gap: 8, height: 36, padding: "0 var(--kls-space-small)", borderRadius: 999, cursor: "pointer",
+      background: active ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+      border: `1px solid ${active ? "var(--kls-primary)" : "var(--kls-outline-variant)"}`,
+      color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+      {label}
+      {count != null && <span style={{ minWidth: 18, height: 18, padding: "0 var(--kls-space-xsmall)", boxSizing: "border-box", borderRadius: 999,
+        background: "var(--kls-tertiary-container)", color: "var(--kls-on-surface-variant)", fontSize: 11, fontWeight: 700,
+        display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{count}</span>}
+    </button>
+  );
+}
+
+function CTContextMenu({ x, y, items, onClose }) {
+  const ref = React.useRef(null);
+  const [pos, setPos] = useCtState({ left: x, top: y });
+  React.useEffect(() => {
+    const el = ref.current;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const left = Math.min(x, window.innerWidth - r.width - 8);
+      const top = Math.min(y, window.innerHeight - r.height - 8);
+      setPos({ left, top });
+    }
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  return (
+    <div onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 1600 }}>
+      <div ref={ref} onClick={(e) => e.stopPropagation()} style={{
+        position: "fixed", left: pos.left, top: pos.top, minWidth: 220,
+        background: "var(--kls-on-primary)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        padding: 4, display: "flex", flexDirection: "column" }}>
+        {items.map((it, i) => (
+          <button key={i} onClick={() => { onClose(); it.onClick(); }} style={{
+            height: 52, padding: "0 var(--kls-space-small)", border: "none", background: "transparent", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", borderRadius: 6,
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: it.destructive ? "var(--kls-error)" : "var(--kls-on-secondary)", textAlign: "left" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary-container)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <KlsIcon name={it.icon} size={18} color="currentColor" />
+            <span>{it.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StudentRow({ student, items, expanded, onToggle, onOpenAllocation, onMenuAllocation, onMenu }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const r = CT.rollup(items);
+  return (
+    <>
+      <tr onClick={onToggle} onContextMenu={onMenu} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)",
+          background: hover || expanded ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+        <td style={CT_TD}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <CT.Avatar name={student.name} size={40} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{student.name}</div>
+              <div style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{items.length} assignment{items.length === 1 ? "" : "s"}</div>
+            </div>
+          </div>
+        </td>
+        <td style={CT_TD}></td>
+        <td style={{ ...CT_TD, minWidth: 200 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 90 }}><CT.RollupBar items={items} /></div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+          </div>
+        </td>
+        <td style={CT_TD}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {r.overdue > 0
+              ? <CountBadge n={r.overdue} label="overdue" bg="var(--kls-accent-5)" fg="var(--kls-accent-4)" />
+              : <span style={{ fontSize: 13, color: "var(--kls-on-surface-variant)" }}>—</span>}
+          </div>
+        </td>
+        <td style={{ ...CT_TD, textAlign: "right", width: 40 }}>
+          <KlsIcon name={expanded ? "chevronDown" : "chevronRight"} size={18} color="var(--kls-on-surface-variant)" />
+        </td>
+      </tr>
+      {expanded && items.length === 0 && (
+        <tr style={{ background: "var(--kls-surface-variant)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <td colSpan={5} style={{ ...CT_TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))", color: "var(--kls-on-surface-variant)", fontSize: 13 }}>No allocations for this student yet.</td>
+        </tr>
+      )}
+      {expanded && items.map((a) => (
+        <AllocationRow key={a.id} alloc={ctStudentAlloc(a)} onOpen={() => onOpenAllocation(a.id)} onMenu={(e) => onMenuAllocation(e, a)} />
+      ))}
+    </>
+  );
+}
+
+// Adapt a per-student assignment into an allocation-shaped object so the shared
+// AllocationRow + allocation drawer can render it (single-assignee instance).
+function ctStudentAlloc(a) {
+  return { ...a, assigned: a.assigned || "—",
+    instances: [{ studentId: a.studentId, status: a.status, score: a.score }],
+    settings: a.settings || { allowResubmission: a.type !== "task", notifyOverdue: true } };
+}
+
+// Overlapping avatar stack for the Assignees column. Shows up to `max` avatars,
+// then "+X more". NOTE: clicking the stack should open the shared Teammate dialog
+// popup used on the Tickets and Blocks/Terms screens (not yet wired into this bundle).
+function CTAvatarStack({ students, max = 3, onClick }) {
+  const CT = window.CT;
+  if (!students || students.length === 0) return null;
+  const shown = students.slice(0, max);
+  const extra = students.length - shown.length;
+  return (
+    <div onClick={onClick ? (e) => { e.stopPropagation(); onClick(e); } : undefined}
+      style={{ display: "inline-flex", alignItems: "center", cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ display: "flex" }}>
+        {shown.map((s, i) => (
+          <div key={s.id} title={s.name} style={{ marginLeft: i === 0 ? 0 : -8, borderRadius: 999,
+            position: "relative", zIndex: shown.length - i, boxShadow: "0 0 0 2px var(--kls-surface)" }}>
+            <CT.Avatar name={s.name} size={28} />
+          </div>
+        ))}
+      </div>
+      {extra > 0 && <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>+{extra}</span>}
+    </div>
+  );
+}
+
+function AllocationRow({ alloc, onOpen, onMenu }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const T = CT.TYPES[alloc.type];
+  const r = CT.rollup(alloc.instances);
+  const meta = `${T.label} · ${alloc.type === "task" ? alloc.course : alloc.term} · Due ${alloc.due}`;
+  const students = alloc.instances.map((i) => CT.STUDENTS.find((s) => s.id === i.studentId)).filter(Boolean);
+  return (
+    <tr onClick={onOpen} onContextMenu={onMenu} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-tertiary)" : "var(--kls-surface-variant)", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <td style={{ ...CT_TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <CTTypeIcon type={alloc.type} size={16} />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{alloc.title}</div>
+            <div style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{meta}</div>
+          </div>
+        </div>
+      </td>
+      <td style={CT_TD}>
+        <CTAvatarStack students={students} />
+      </td>
+      <td style={{ ...CT_TD, minWidth: 200 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 90 }}><CT.RollupBar items={alloc.instances} /></div>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+        </div>
+      </td>
+      <td style={CT_TD}>
+        {r.overdue > 0
+          ? <CountBadge n={r.overdue} label="overdue" bg="var(--kls-accent-5)" fg="var(--kls-accent-4)" />
+          : <span style={{ fontSize: 13, color: "var(--kls-on-surface-variant)" }}>—</span>}
+      </td>
+      <td style={{ ...CT_TD, textAlign: "right", width: 40 }}>
+        <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+      </td>
+    </tr>
+  );
+}
+
+function CTGroupRow({ group, allocs, expanded, onToggle, onMenu, onOpenAllocation, onMenuAllocation }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const members = CT.groupMembers(group);
+  const items = allocs.flatMap((a) => a.instances);
+  const r = CT.rollup(items);
+  return (
+    <>
+      <tr onClick={onToggle} onContextMenu={onMenu} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)",
+          background: hover || expanded ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+        <td style={CT_TD}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <CT.GroupMedallion color={group.color} icon={group.icon} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{group.name}</div>
+              <div style={{ fontSize: 12, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{allocs.length} assignment{allocs.length === 1 ? "" : "s"}</div>
+            </div>
+          </div>
+        </td>
+        <td style={CT_TD}>
+          <CTAvatarStack students={members} onClick={() => {}} />
+        </td>
+        <td style={{ ...CT_TD, minWidth: 200 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 90 }}><CT.RollupBar items={items} /></div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{r.done}/{r.total}</span>
+          </div>
+        </td>
+        <td style={CT_TD}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {r.overdue > 0
+              ? <CountBadge n={r.overdue} label="overdue" bg="var(--kls-accent-5)" fg="var(--kls-accent-4)" />
+              : <span style={{ fontSize: 13, color: "var(--kls-on-surface-variant)" }}>—</span>}
+          </div>
+        </td>
+        <td style={{ ...CT_TD, textAlign: "right", width: 40 }}>
+          <KlsIcon name={expanded ? "chevronDown" : "chevronRight"} size={18} color="var(--kls-on-surface-variant)" />
+        </td>
+      </tr>
+      {expanded && allocs.length === 0 && (
+        <tr style={{ background: "var(--kls-surface-variant)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <td colSpan={5} style={{ ...CT_TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))", color: "var(--kls-on-surface-variant)", fontSize: 13 }}>No allocations for this group yet.</td>
+        </tr>
+      )}
+      {expanded && allocs.map((a) => (
+        <AllocationRow key={a.id} alloc={a} onOpen={() => onOpenAllocation(a.id)} onMenu={(e) => onMenuAllocation(e, a)} />
+      ))}
+    </>
+  );
+}
+
+function CountBadge({ n, label, bg, fg }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+      background: bg, color: fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+      {n} {label}
+    </span>
+  );
+}
+
+function ControlTower({ showKpis = true, initialQuick = "all", query = "" }) {
+  const CT = window.CT;
+  const [assignments, setAssignments] = useCtState(() => CT.buildAssignments());
+  const [allocations, setAllocations] = useCtState(() => CT.buildAllocations());
+  const [quick, setQuick] = useCtState(initialQuick); // all|overdue
+  const [expandedGroups, setExpandedGroups] = useCtState({});
+  const [expandedStudents, setExpandedStudents] = useCtState({});
+  const [openAllocId, setOpenAllocId] = useCtState(null);
+  const [assignOpen, setAssignOpen] = useCtState(false);
+  const [assignPreset, setAssignPreset] = useCtState([]);
+  const [ctxMenu, setCtxMenu] = useCtState(null); // {x,y,items}
+  const [toast, setToast] = useCtState(null);
+
+  const roster = useCtMemo(() => ({
+    people: CT.STUDENTS.map((s) => ({ id: s.id, name: s.name, email: s.email })),
+    groups: CT.GROUPS.map((g) => ({ id: g.id, name: g.name, color: g.color, icon: g.icon,
+      count: CT.groupMembers(g).length, memberIds: g.memberIds })),
+  }), []);
+
+  const itemsByStudent = useCtMemo(() => {
+    const m = {};
+    CT.STUDENTS.forEach((s) => { m[s.id] = []; });
+    assignments.forEach((a) => { (m[a.studentId] = m[a.studentId] || []).push(a); });
+    return m;
+  }, [assignments]);
+
+  const allocsByGroup = useCtMemo(() => {
+    const m = {};
+    CT.GROUPS.forEach((g) => { m[g.id] = []; });
+    allocations.forEach((a) => { (m[a.groupId] = m[a.groupId] || []).push(a); });
+    return m;
+  }, [allocations]);
+
+  const totals = useCtMemo(() => {
+    const instances = allocations.flatMap((a) => a.instances);
+    let overdue = 0, inProgress = 0, done = 0;
+    instances.forEach((a) => {
+      if (a.status === "overdue") overdue++;
+      if (a.status === "in_progress") inProgress++;
+      if (CT.DONE.includes(a.status)) done++;
+    });
+    const pct = instances.length ? Math.round((done / instances.length) * 100) : 0;
+    return { overdue, inProgress, pct };
+  }, [allocations]);
+
+  const studentHasOverdue = (s) => (itemsByStudent[s.id] || []).some((a) => a.status === "overdue");
+  const studentInProgress = (s) => (itemsByStudent[s.id] || []).some((a) => a.status === "in_progress");
+  const groupItems = (g) => (allocsByGroup[g.id] || []).flatMap((a) => a.instances);
+  const groupHasOverdue = (g) => groupItems(g).some((a) => a.status === "overdue");
+  const groupInProgress = (g) => groupItems(g).some((a) => a.status === "in_progress");
+
+  const term = query.trim().toLowerCase();
+  const studentMatch = (s) => !term || s.name.toLowerCase().includes(term) || s.email.toLowerCase().includes(term);
+
+  const groups = CT.GROUPS.filter((g) => {
+    const members = CT.groupMembers(g);
+    if (term && !(g.name.toLowerCase().includes(term) || members.some(studentMatch))) return false;
+    if (quick === "overdue" && !groupHasOverdue(g)) return false;
+    if (quick === "in_progress" && !groupInProgress(g)) return false;
+    return true;
+  });
+  const looseStudents = CT.ungrouped().filter((s) => {
+    if (!studentMatch(s)) return false;
+    if (quick === "overdue" && !studentHasOverdue(s)) return false;
+    if (quick === "in_progress" && !studentInProgress(s)) return false;
+    return true;
+  });
+  const overdueCount = CT.GROUPS.filter(groupHasOverdue).length + CT.ungrouped().filter(studentHasOverdue).length;
+  const inProgressCount = CT.GROUPS.filter(groupInProgress).length + CT.ungrouped().filter(studentInProgress).length;
+  const rowCount = groups.length + looseStudents.length;
+
+  function doAssign(created) {
+    setAssignments((cur) => [...created, ...cur]);
+    setAssignOpen(false);
+    setAssignPreset([]);
+    const n = new Set(created.map((c) => c.studentId)).size;
+    const what = created[0] ? created[0].title : "assignment";
+    setToast(`Assigned “${what}” to ${n} student${n === 1 ? "" : "s"}.`);
+    setTimeout(() => setToast(null), 3200);
+  }
+
+  function saveAllocation(updated) {
+    if (allocations.some((a) => a.id === updated.id)) {
+      setAllocations((cur) => cur.map((a) => (a.id === updated.id ? updated : a)));
+    } else {
+      const inst = updated.instances[0] || {};
+      setAssignments((cur) => cur.map((a) => (a.id === updated.id
+        ? { ...a, due: updated.due, title: updated.title, defaultTitle: updated.defaultTitle, customTitle: updated.customTitle, examMode: updated.examMode, examSubject: updated.examSubject, course: updated.course, term: updated.term, instructions: updated.instructions, status: inst.status, score: inst.score } : a)));
+    }
+    setOpenAllocId(null);
+    setToast(`Updated “${updated.title}”.`);
+    setTimeout(() => setToast(null), 3200);
+  }
+  function removeAllocation(alloc) {
+    if (allocations.some((a) => a.id === alloc.id)) setAllocations((cur) => cur.filter((a) => a.id !== alloc.id));
+    else setAssignments((cur) => cur.filter((a) => a.id !== alloc.id));
+    setOpenAllocId(null);
+    setToast(`Removed “${alloc.title}”.`);
+    setTimeout(() => setToast(null), 3200);
+  }
+
+  function openMenu(e, items) {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY, items });
+  }
+  const menuStudent = (e, s) => openMenu(e, [
+    { icon: "worklog", label: "Add assignment", onClick: () => { setAssignPreset([{ type: "person", id: s.id }]); setAssignOpen(true); } },
+  ]);
+  const menuGroup = (e, g) => openMenu(e, [
+    { icon: "worklog", label: "Add assignment", onClick: () => { setAssignPreset([{ type: "group", id: g.id }]); setAssignOpen(true); } },
+  ]);
+  const menuAllocation = (e, a) => openMenu(e, [
+    { icon: "pencil", label: "Edit", onClick: () => setOpenAllocId(a.id) },
+    { icon: "trash", label: "Remove", destructive: true, onClick: () => removeAllocation(a) },
+  ]);
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        {/* Page header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Control Tower</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Assign tasks and exams, and track what your students have done.</p>
+          </div>
+          <button style={ctPrimaryBtn} onClick={() => { setAssignPreset([]); setAssignOpen(true); }}>
+            <PlusGlyph />Assign
+          </button>
+        </div>
+
+        {/* KPIs */}
+        {showKpis && (
+        <div style={{ display: "flex", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+          <StatCard label="Students" value={CT.STUDENTS.length} icon="group" />
+          <StatCard label="In progress" value={totals.inProgress} tone={totals.inProgress ? "var(--kls-info)" : null} icon="worklog" />
+          <StatCard label="Overdue" value={totals.overdue} tone={totals.overdue ? "var(--kls-accent-4)" : null} icon="clock" />
+          <StatCard label="Completion" value={totals.pct + "%"} icon="checkpoint" />
+        </div>
+        )}
+
+        {/* List card */}
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {/* Quick filters */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)", flexWrap: "wrap" }}>
+            <CTFilterChip active={quick === "all"} label="All" onClick={() => setQuick("all")} />
+            <CTFilterChip active={quick === "in_progress"} label="In progress" count={inProgressCount} onClick={() => setQuick("in_progress")} />
+            <CTFilterChip active={quick === "overdue"} label="Has overdue" count={overdueCount} onClick={() => setQuick("overdue")} />
+          </div>
+
+          {/* Table */}
+          {rowCount === 0 ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+              <div style={{ fontSize: 14, color: "var(--kls-on-surface-variant)", marginTop: 4 }}>Try clearing the search or filters.</div>
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <th style={CT_TH}>Group / Student</th>
+                  <th style={CT_TH}>Assignees</th>
+                  <th style={CT_TH}>Progress</th>
+                  <th style={CT_TH}>Needs attention</th>
+                  <th style={{ ...CT_TH, width: 40 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {groups.map((g) => (
+                  <CTGroupRow key={g.id} group={g} allocs={allocsByGroup[g.id] || []}
+                    expanded={!!expandedGroups[g.id]}
+                    onToggle={() => setExpandedGroups((e) => ({ ...e, [g.id]: !e[g.id] }))}
+                    onMenu={(e) => menuGroup(e, g)}
+                    onOpenAllocation={(id) => setOpenAllocId(id)}
+                    onMenuAllocation={menuAllocation} />
+                ))}
+                {looseStudents.map((s) => (
+                  <StudentRow key={s.id} student={s} items={itemsByStudent[s.id] || []}
+                    expanded={!!expandedStudents[s.id]}
+                    onToggle={() => setExpandedStudents((e) => ({ ...e, [s.id]: !e[s.id] }))}
+                    onOpenAllocation={(id) => setOpenAllocId(id)}
+                    onMenuAllocation={menuAllocation}
+                    onMenu={(e) => menuStudent(e, s)} />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* Drawers */}
+      {assignOpen && (
+        <window.CTAssignDrawer
+          roster={roster}
+          presetAssignees={assignPreset}
+          onClose={() => { setAssignOpen(false); setAssignPreset([]); }}
+          onAssign={doAssign} />
+      )}
+
+      {openAllocId && (() => {
+        const groupAlloc = allocations.find((a) => a.id === openAllocId);
+        const assignAlloc = !groupAlloc ? assignments.find((a) => a.id === openAllocId) : null;
+        const alloc = groupAlloc || (assignAlloc ? ctStudentAlloc(assignAlloc) : null);
+        if (!alloc) return null;
+        const group = groupAlloc ? CT.GROUPS.find((g) => g.id === groupAlloc.groupId) : null;
+        const student = assignAlloc ? CT.STUDENTS.find((s) => s.id === assignAlloc.studentId) : null;
+        const contextLabel = group ? group.name : (student ? student.name : "");
+        return (
+          <window.CTAllocationDrawer
+            allocation={alloc}
+            group={group}
+            contextLabel={contextLabel}
+            roster={roster}
+            onClose={() => setOpenAllocId(null)}
+            onSave={saveAllocation}
+            onRemove={removeAllocation} />
+        );
+      })()}
+
+      {ctxMenu && (
+        <CTContextMenu x={ctxMenu.x} y={ctxMenu.y} onClose={() => setCtxMenu(null)}
+          items={ctxMenu.items} />
+      )}
+
+      {/* Snackbar */}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1700,
+          maxWidth: 540, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+          borderRadius: 12, boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-small) var(--kls-space-med)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Student Control Tower ─────────────────────────────────────────────────────
+// The same Control Tower, seen by a student: their OWN past/current assignments.
+// Merges individual assignments + the work allocated to their group (their instance).
+// Past = completed; Current = everything not completed. Read-only detail drawer
+// carries the action button. `layout` (sections | list | cards) explores treatments.
+const CT_MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+function ctParseDue(s) {
+  if (!s) return null;
+  const parts = String(s).split(" ");
+  const m = CT_MONTHS[parts[0]];
+  if (m == null) return null;
+  return new Date(2024, m, parseInt(parts[1], 10) || 1);
+}
+const CT_TODAY = new Date(2024, 10, 18); // Nov 18, 2024 — "today" for the demo
+function ctActionLabel(status, type) {
+  if (type === "simulator") return status === "completed" ? "Open again" : status === "not_started" ? "Open simulator" : "Continue";
+  if (status === "completed") return type === "task" ? "View submission" : "View result";
+  if (status === "not_started") return "Start";
+  if (status === "overdue") return "Start now";
+  return "Continue"; // in_progress
+}
+function ctDueRelative(item) {
+  const d = ctParseDue(item.due);
+  if (!d) return item.due;
+  const days = Math.round((d - CT_TODAY) / 86400000);
+  if (item.status === "completed") return `Due ${item.due}`;
+  if (days < 0) return `${-days}d overdue`;
+  if (days === 0) return "Due today";
+  if (days === 1) return "Due tomorrow";
+  if (days <= 7) return `Due in ${days}d`;
+  return `Due ${item.due}`;
+}
+
+// Deterministic mock step progress for a task — stepped bar ("X of Y Done").
+function ctTaskSteps(item) {
+  let h = 0; const s = String(item.id);
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  const total = 4 + (h % 5); // 4..8 steps
+  let done;
+  if (item.status === "completed") done = total;
+  else if (item.status === "not_started") done = 0;
+  else done = 1 + (h % (total - 1)); // 1..total-1
+  return { done, total };
+}
+
+function StudentStepBar({ done, total, color }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} style={{ flex: 1, height: 6, borderRadius: 999, background: i < done ? color : "var(--kls-outline-variant)" }} />
+      ))}
+    </div>
+  );
+}
+
+// Mock active blocks (ACS-coded) for the student dashboard.
+const CT_STUDENT_BLOCKS = [
+  { id: "b1", title: "124498.3938", codes: ["AM.I.A.K10"],              tasks: 8, modules: 1, students: 1 },
+  { id: "b2", title: "124512.4471", codes: ["AM.I.B.K3", "AM.I.B.K4"],  tasks: 5, modules: 2, students: 1 },
+  { id: "b3", title: "124533.1180", codes: ["PP.II.C.K7"],              tasks: 3, modules: 1, students: 1 },
+];
+
+function StudentTypeGlyph({ type, size = 40 }) {
+  const T = window.CT.TYPES[type];
+  return (
+    <span style={{ flexShrink: 0, width: size, height: size, borderRadius: 12, background: "var(--kls-tertiary)",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      <CTTypeIcon type={type} size={Math.round(size * 0.45)} />
+    </span>
+  );
+}
+
+function StudentAssignRow({ item, onOpen }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const T = CT.TYPES[item.type];
+  const via = item.source === "group" ? item.groupName : "Assigned to you";
+  const meta = `${T.label} · ${item.type === "task" ? item.course : item.term} · ${via}`;
+  const overdue = item.status === "overdue";
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)",
+        cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <StudentTypeGlyph type={item.type} size={40} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta}</div>
+      </div>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+        color: overdue ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)" }}>{ctDueRelative(item)}</span>
+      <CT.StatusPill status={item.status} />
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </div>
+  );
+}
+
+function StudentAssignCard({ item, onOpen }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const T = CT.TYPES[item.type];
+  const via = item.source === "group" ? item.groupName : "Assigned to you";
+  const overdue = item.status === "overdue";
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", cursor: "pointer",
+        background: "var(--kls-surface)", border: `1px solid ${hover ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"}`,
+        borderRadius: 12, transition: "border-color 80ms var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)" }}>
+        <StudentTypeGlyph type={item.type} size={40} />
+        <CT.StatusPill status={item.status} />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{item.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 2 }}>{T.label} · {item.type === "task" ? item.course : item.term}</div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)",
+        paddingTop: "var(--kls-space-small)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{via}</span>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+          color: overdue ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)" }}>{ctDueRelative(item)}</span>
+      </div>
+    </div>
+  );
+}
+
+function StudentSortButton({ dir, onToggle }) {
+  const [hover, setHover] = useCtState(false);
+  return (
+    <button onClick={onToggle} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", height: 36, padding: "0 var(--kls-space-small)", borderRadius: 999, cursor: "pointer",
+        background: hover ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+        color: "var(--kls-on-tertiary)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+      <KlsIcon name="date" size={16} color="var(--kls-on-surface-variant)" />
+      Due date
+      <span style={{ fontSize: 13, color: "var(--kls-on-surface-variant)" }}>{dir === "asc" ? "↑" : "↓"}</span>
+    </button>
+  );
+}
+
+function StudentAssignTableRow({ item, onOpen }) {
+  const [hover, setHover] = useCtState(false);
+  const CT = window.CT;
+  const T = CT.TYPES[item.type];
+  const via = item.source === "group" ? item.groupName : "Assigned to you";
+  const sub = `${item.type === "task" ? item.course : item.term} · ${via}`;
+  const overdue = item.status === "overdue";
+  const rowTd = { ...CT_TD, borderBottom: "1px solid var(--kls-outline-variant)" };
+  return (
+    <tr onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <td style={rowTd}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+          <StudentTypeGlyph type={item.type} size={40} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>
+          </div>
+        </div>
+      </td>
+      <td style={rowTd}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 var(--kls-space-xsmall)", borderRadius: 8,
+          background: "var(--kls-tertiary)", color: "var(--kls-on-surface-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: T.dot, flex: "none" }}></span>
+          {T.label}
+        </span>
+      </td>
+      <td style={{ ...rowTd, textAlign: "right", whiteSpace: "nowrap" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: overdue ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)" }}>{ctDueRelative(item)}</span>
+          <CT.StatusPill status={item.status} />
+          <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function StudentDashPanel({ title, count, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{title}</span>
+        <span style={{ minWidth: 22, height: 22, padding: "0 var(--kls-space-xsmall)", boxSizing: "border-box", borderRadius: 999, background: "var(--kls-tertiary)", color: "var(--kls-on-surface-variant)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{count}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column" }}>{children}</div>
+    </div>
+  );
+}
+
+function StudentDashEmpty({ icon, line, sub }) {
+  return (
+    <div style={{ padding: "var(--kls-space-large) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--kls-space-tiny)" }}>
+      <span style={{ width: 44, height: 44, borderRadius: 12, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-tiny)" }}>
+        <KlsIcon name={icon} size={20} color="var(--kls-on-surface-variant)" />
+      </span>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{line}</div>
+      <div style={{ fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", textWrap: "pretty", maxWidth: "34ch" }}>{sub}</div>
+    </div>
+  );
+}
+
+function StudentTaskRow({ item, onOpen, last }) {
+  const [hover, setHover] = useCtState(false);
+  const { done, total } = ctTaskSteps(item);
+  const color = item.status === "overdue" ? "var(--kls-accent-4)" : "var(--kls-info)";
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 68, boxSizing: "border-box", padding: "var(--kls-space-small) var(--kls-space-med)", cursor: "pointer",
+        borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <StudentTypeGlyph type={item.type} size={36} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-tiny)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}><StudentStepBar done={done} total={total} color={color} /></div>
+          <span style={{ flex: "none", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: color, whiteSpace: "nowrap" }}>{done} of {total} Done</span>
+        </div>
+      </div>
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </div>
+  );
+}
+
+function StudentBlockRow({ block, onOpen, last }) {
+  const [hover, setHover] = useCtState(false);
+  return (
+    <div onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 68, boxSizing: "border-box", padding: "var(--kls-space-small) var(--kls-space-med)", cursor: "pointer",
+        borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <span style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 12, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name="date" size={17} color="var(--kls-on-surface-variant)" />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{block.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{block.codes.join(" · ")}</div>
+      </div>
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </div>
+  );
+}
+
+function StudentControlTower({ query = "", onNavigate, onOpenSim }) {
+  const CT = window.CT;
+  const ME = CT.STUDENTS[0]; // Joel Bishop — the signed-in student
+  const [status, setStatus] = useCtState("all"); // all|todo|overdue|completed
+  const [typeFilter, setTypeFilter] = useCtState("all"); // all|task|oral|written
+  const [sortDir, setSortDir] = useCtState("asc");
+  const [openId, setOpenId] = useCtState(null);
+
+  const items = useCtMemo(() => {
+    const out = [];
+    CT.buildAssignments().forEach((a) => { if (a.studentId === ME.id) out.push({ ...a, source: "individual" }); });
+    CT.buildAllocations().forEach((al) => {
+      const inst = al.instances.find((i) => i.studentId === ME.id);
+      if (!inst) return;
+      const g = CT.GROUPS.find((x) => x.id === al.groupId);
+      out.push({ id: al.id + "@" + ME.id, type: al.type, title: al.title, course: al.course, term: al.term,
+        due: al.due, status: inst.status, score: inst.score, instructions: al.instructions, simulators: al.simulators,
+        source: "group", groupName: g ? g.name : "Group" });
+    });
+    return out;
+  }, []);
+
+  const counts = useCtMemo(() => {
+    const c = { todo: 0, overdue: 0, completed: 0, inProgress: 0, dueThisWeek: 0 };
+    items.forEach((i) => {
+      if (i.status === "completed") c.completed++;
+      else if (i.status === "overdue") c.overdue++;
+      else { c.todo++; if (i.status === "in_progress") c.inProgress++; }
+      if (i.status !== "completed") {
+        const d = ctParseDue(i.due);
+        if (d) { const days = Math.round((d - CT_TODAY) / 86400000); if (days >= 0 && days <= 7) c.dueThisWeek++; }
+      }
+    });
+    return c;
+  }, [items]);
+
+  const term = query.trim().toLowerCase();
+  const filtered = useCtMemo(() => {
+    const f = items.filter((i) => {
+      if (status === "todo" && !(i.status === "not_started" || i.status === "in_progress")) return false;
+      if (status === "overdue" && i.status !== "overdue") return false;
+      if (status === "completed" && i.status !== "completed") return false;
+      if (typeFilter !== "all" && i.type !== typeFilter) return false;
+      if (term && !i.title.toLowerCase().includes(term)) return false;
+      return true;
+    });
+    f.sort((a, b) => {
+      const da = ctParseDue(a.due), db = ctParseDue(b.due);
+      const va = da ? da.getTime() : Infinity, vb = db ? db.getTime() : Infinity;
+      return sortDir === "asc" ? va - vb : vb - va;
+    });
+    return f;
+  }, [items, status, typeFilter, term, sortDir]);
+
+  const openItem = openId ? items.find((i) => i.id === openId) : null;
+
+  const pending = items.filter((i) => i.status !== "completed").length;
+  const examsCompleted = items.filter((i) => i.status === "completed" && i.type !== "task").length;
+
+  // Dashboard: current tasks (open tasks, 0..n) + active blocks (terms with open work, 0..n)
+  const currentTasks = useCtMemo(() => items
+    .filter((i) => i.type === "task" && i.status !== "completed")
+    .sort((a, b) => {
+      const da = ctParseDue(a.due), db = ctParseDue(b.due);
+      return (da ? da.getTime() : Infinity) - (db ? db.getTime() : Infinity);
+    }), [items]);
+  const activeBlocks = CT_STUDENT_BLOCKS;
+
+  const kpis = [
+    { label: "Pending Assignments", value: pending, tone: pending ? "var(--kls-accent-4)" : null, icon: "worklog" },
+    { label: "Total Exams Completed", value: examsCompleted, tone: "var(--kls-info)", icon: "checkpoint" },
+  ];
+
+  const emptyBlock = (
+    <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+      <div style={{ fontSize: 14, color: "var(--kls-on-surface-variant)", marginTop: 4 }}>Try a different filter.</div>
+    </div>
+  );
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        {/* Page header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Control Tower</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Everything assigned to you — what's due and what you're working on.</p>
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div style={{ display: "flex", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+          {kpis.map((k) => <StatCard key={k.label} label={k.label} value={k.value} tone={k.tone} icon={k.icon} valueSize={k.valueSize} onGo={k.onGo} goTitle={k.goTitle} />)}
+        </div>
+
+        {/* Dashboard: Current Tasks + Active Blocks (each 0..n) */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "var(--kls-space-small)" }}>
+          <StudentDashPanel title="Continue Working" count={currentTasks.length}>
+            {currentTasks.length === 0
+              ? <StudentDashEmpty icon="checkpoint" line="No tasks in progress." sub="You're all caught up on assigned work." />
+              : currentTasks.map((i, idx) => (
+                  <StudentTaskRow key={i.id} item={i} last={idx === currentTasks.length - 1} onOpen={() => setOpenId(i.id)} />
+                ))}
+          </StudentDashPanel>
+          <StudentDashPanel title="Active Blocks" count={activeBlocks.length}>
+            {activeBlocks.length === 0
+              ? <StudentDashEmpty icon="date" line="No active blocks." sub="You have no open work in any block right now." />
+              : activeBlocks.map((b, idx) => (
+                  <StudentBlockRow key={b.id} block={b} last={idx === activeBlocks.length - 1} onOpen={() => onNavigate && onNavigate("terms")} />
+                ))}
+          </StudentDashPanel>
+        </div>
+
+        {/* Assignments table (instructor look & feel) */}
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {/* Filters */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+              <CTFilterChip active={status === "all"} label="All" onClick={() => setStatus("all")} />
+              <CTFilterChip active={status === "todo"} label="To do" count={counts.todo} onClick={() => setStatus("todo")} />
+              <CTFilterChip active={status === "overdue"} label="Overdue" count={counts.overdue} onClick={() => setStatus("overdue")} />
+              <CTFilterChip active={status === "completed"} label="Completed" count={counts.completed} onClick={() => setStatus("completed")} />
+            </div>
+          </div>
+          {/* Table */}
+          {filtered.length === 0 ? emptyBlock : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <th style={CT_TH}>Assignment</th>
+                  <th style={CT_TH}>Type</th>
+                  <th style={{ ...CT_TH, textAlign: "right", cursor: "pointer", userSelect: "none" }} onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}>
+                    Due date
+                    <span style={{ marginLeft: 6, display: "inline-block", transform: sortDir === "desc" ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>▲</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((i) => <StudentAssignTableRow key={i.id} item={i} onOpen={() => setOpenId(i.id)} />)}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {openItem && <StudentAssignmentDrawer item={openItem} onClose={() => setOpenId(null)} onOpenSim={onOpenSim} />}
+    </div>
+  );
+}
+
+function StudentAssignmentDrawer({ item, onClose, onOpenSim }) {
+  const CT = window.CT;
+  const T = CT.TYPES[item.type];
+  const [shown, setShown] = useCtState(false);
+  React.useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose && onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  const drawerWidth = "min(460px, calc(100vw - 24px))";
+  const via = item.source === "group" ? item.groupName : "Assigned directly to you";
+  const showScore = item.status === "completed" && item.type !== "task" && item.score != null;
+
+  const label = (t) => (
+    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-tiny)" }}>{t}</div>
+  );
+  const infoRow = (l, value) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) 0", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{l}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", textAlign: "right" }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: drawerWidth,
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))", transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <StudentTypeGlyph type={item.type} size={44} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{T.label}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{item.title}</div>
+          </div>
+          <button onClick={onClose} aria-label="Close"
+            style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div>
+            {label("Status")}
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+              <CT.StatusPill status={item.status} />
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600,
+                color: item.status === "overdue" ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)" }}>{ctDueRelative(item)}</span>
+            </div>
+          </div>
+          <div>
+            {label("Details")}
+            {infoRow("Type", T.label)}
+            {item.type === "task" ? infoRow("Course", item.course) : item.type === "simulator" ? null : infoRow("Term", item.term)}
+            {infoRow("Assigned via", via)}
+            {infoRow("Due date", item.due)}
+            {showScore && infoRow("Result", `${item.score}%`)}
+          </div>
+          {item.type === "simulator" && (
+            <div>
+              {label("Simulator")}
+              <CTSimList ids={item.simulators || []} onOpen={onOpenSim} />
+            </div>
+          )}
+          <div>
+            {label("Instructions")}
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>
+              {item.instructions || "No instructions were provided for this assignment."}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer action */}
+        <div style={{ padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          <button onClick={item.type === "simulator" && onOpenSim ? () => { const sim = TRAINING_SIMS.find((x) => (item.simulators || [])[0] === x.id); if (sim) onOpenSim(sim); } : undefined}
+            style={{ ...ctPrimaryBtn, width: "100%", justifyContent: "center" }}>
+            {ctActionLabel(item.status, item.type)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── App shell ────────────────────────────────────────────────────────────────
+
+// (student drawer removed — student rows now expand inline like groups)
+
+
+// ct-allocation-drawer.jsx — Allocation detail: work assigned to a whole group.
+//   Shows info + each assignee's progress. Header Edit button flips to edit mode; Save persists.
+// Reads window.CT.
+const { useState: useCtldState, useEffect: useCtldEffect } = React;
+
+function CTAllocLabel({ children }) {
+  return (
+    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+      textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-small)" }}>{children}</div>
+  );
+}
+
+function CTAllocProgressRow({ inst, last }) {
+  const CT = window.CT;
+  const s = CT.STUDENTS.find((x) => x.id === inst.studentId) || { name: "Unknown" };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-small) 0",
+      borderBottom: last ? "none" : "1px solid var(--kls-outline-variant)" }}>
+      <CT.Avatar name={s.name} size={36} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          {inst.score != null ? `Score ${inst.score}%` : "No score yet"}
+        </div>
+      </div>
+      <CT.StatusPill status={inst.status} />
+    </div>
+  );
+}
+
+function CTAllocationDrawer({ allocation, group, contextLabel, roster, onClose, onSave, onRemove }) {
+  const CT = window.CT;
+  const T = CT.TYPES[allocation.type];
+  const initialAssignees = group
+    ? [{ type: "group", id: group.id }]
+    : (allocation.instances[0] ? [{ type: "person", id: allocation.instances[0].studentId }] : []);
+
+  const [shown, setShown] = useCtldState(false);
+  const [editing, setEditing] = useCtldState(false);
+  const [due, setDue] = useCtldState(allocation.due);
+  const [term, setTerm] = useCtldState(allocation.term || "");
+  const [course, setCourse] = useCtldState(allocation.type === "task" ? (allocation.course || "") : "");
+  const [task, setTask] = useCtldState(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
+  const [studentDefined, setStudentDefined] = useCtldState(!!allocation.studentDefined);
+  const [topic, setTopic] = useCtldState(allocation.topic || "");
+  const [qCount, setQCount] = useCtldState(String(allocation.qCount || 20));
+  const [difficulty, setDifficulty] = useCtldState(allocation.difficulty || "Medium");
+  const [oralAcs, setOralAcs] = useCtldState(() => new Set(allocation.oralAcs || []));
+  const [answerMode, setAnswerMode] = useCtldState(allocation.answerMode || "speak");
+  const [selModules, setSelModules] = useCtldState(() => new Set(allocation.selModules || []));
+  const [selSims, setSelSims] = useCtldState(() => new Set(allocation.simulators || []));
+  const [instructions, setInstructions] = useCtldState(allocation.instructions || "");
+  const [orion, setOrion] = useCtldState(allocation.orion !== false);
+  const [randomized, setRandomized] = useCtldState(!!allocation.randomized);
+  const [customTitle, setCustomTitle] = useCtldState(allocation.customTitle || "");
+  const [examMode, setExamMode] = useCtldState(allocation.examMode || "study");
+  const [examSubject, setExamSubject] = useCtldState(allocation.examSubject || "general");
+  const [assignees, setAssignees] = useCtldState(initialAssignees);
+  const [pickerOpen, setPickerOpen] = useCtldState(false);
+
+  useCtldEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape" && !pickerOpen) onClose && onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, [pickerOpen]);
+
+  const r = CT.rollup(allocation.instances);
+  const drawerWidth = "min(max(50vw, 500px), 960px, calc(100vw - 24px))";
+  const oralTopics = (window.KILSAR_DATA && window.KILSAR_DATA.blocks) ? window.KILSAR_DATA.blocks.map((b) => b.title) : [];
+  const courses = term ? (CT.COURSES[term] || []) : [];
+  const tasks = course ? (CT.TASK_LIBRARY[course] || []) : [];
+  const chips = assignees.map((s) => {
+    if (s.type === "group") { const g = (roster.groups || []).find((x) => x.id === s.id); return { ...s, label: g && g.name, color: g && g.color }; }
+    const p = (roster.people || []).find((x) => x.id === s.id); return { ...s, label: p && p.name };
+  }).filter((c) => c.label);
+  const oralSel = oralSelectionSummary(oralAcs);
+  const valid = assignees.length > 0 && (allocation.type === "task" ? !!task : allocation.type === "oral" ? (studentDefined || oralSel.pool > 0) : allocation.type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
+
+  function cancelEdit() {
+    setDue(allocation.due);
+    setTerm(allocation.term || "");
+    setCourse(allocation.type === "task" ? (allocation.course || "") : "");
+    setTask(allocation.type === "task" ? (allocation.defaultTitle || allocation.title) : "");
+    setStudentDefined(!!allocation.studentDefined);
+    setTopic(allocation.topic || "");
+    setQCount(String(allocation.qCount || 20));
+    setDifficulty(allocation.difficulty || "Medium");
+    setSelModules(new Set(allocation.selModules || []));
+    setSelSims(new Set(allocation.simulators || []));
+    setInstructions(allocation.instructions || "");
+    setOrion(allocation.orion !== false);
+    setRandomized(!!allocation.randomized);
+    setCustomTitle(allocation.customTitle || "");
+    setExamMode(allocation.examMode || "study");
+    setExamSubject(allocation.examSubject || "general");
+    setAssignees(initialAssignees);
+    setEditing(false);
+  }
+  function buildUpdated() {
+    const studentIds = [...new Set(assignees.flatMap((a) => a.type === "group"
+      ? (((roster.groups || []).find((g) => g.id === a.id) || {}).memberIds || [])
+      : [a.id]))];
+    const prev = {};
+    allocation.instances.forEach((i) => { prev[i.studentId] = i; });
+    const instances = studentIds.length
+      ? studentIds.map((id) => prev[id] || { studentId: id, status: "not_started", score: null })
+      : allocation.instances;
+    const base = allocation.defaultTitle || allocation.title;
+    const examSubjectName = ((FAA_EXAMS.find((e) => e.id === examSubject) || FAA_EXAMS[0]) || {}).subject || "";
+    const simList = TRAINING_SIMS.filter((x) => selSims.has(x.id));
+    const defaultTitle = allocation.type === "task" ? (task || base)
+      : (allocation.type === "written" && examMode === "exam") ? examSubjectName + " Exam"
+      : allocation.type === "simulator" ? (simList.length === 1 ? simList[0].title : simList.length + " Simulators") : base;
+    const ct = customTitle.trim();
+    return { ...allocation, due, defaultTitle, customTitle: ct, examMode, examSubject, simulators: simList.map((x) => x.id),
+      title: ct || defaultTitle,
+      course: allocation.type === "task" ? course : allocation.course,
+      term: term || allocation.term,
+      studentDefined, topic: allocation.type === "oral" ? (oralSel.title || topic) : topic,
+      qCount: allocation.type === "oral" && !studentDefined ? (Math.min(Number(qCount) || 0, oralSel.pool) || Number(qCount)) : qCount, difficulty, selModules: [...selModules], orion, randomized, instructions, instances,
+      ...(allocation.type === "oral" ? { answerMode, oralAcs: [...oralAcs], acs: oralSel.acs } : {}) };
+  }
+
+  const stat = (label, value, tone) => (
+    <div style={{ flex: 1, minWidth: 0, background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 22, fontWeight: 700, color: tone || "var(--kls-on-surface)" }}>{value}</div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)", marginTop: 2 }}>{label}</div>
+    </div>
+  );
+
+  const infoRow = (label, value) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "var(--kls-space-small) 0", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", textAlign: "right" }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{
+        position: "absolute", top: 12, bottom: 12, right: 12, width: drawerWidth,
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <CTTypeIcon type={allocation.type} size={22} />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{allocation.title}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{T.label} · {contextLabel || (group ? group.name : "")}</div>
+          </div>
+          {!editing && (
+            <button onClick={() => setEditing(true)} style={{ height: 36, padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer",
+              background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
+              fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 700 }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              <KlsIcon name="pencil" size={15} color="currentColor" /> Edit
+            </button>
+          )}
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 36, height: 36, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          {/* progress summary */}
+          <div>
+            <CTAllocLabel>Progress</CTAllocLabel>
+            <div style={{ display: "flex", gap: "var(--kls-space-small)", marginBottom: "var(--kls-space-small)" }}>
+              {stat("Completed", `${r.done}/${r.total}`)}
+              {stat("In progress", r.inProgress, r.inProgress ? "var(--kls-info)" : null)}
+              {stat("Overdue", r.overdue, r.overdue ? "var(--kls-accent-4)" : null)}
+            </div>
+            <CT.RollupBar items={allocation.instances} height={8} />
+          </div>
+
+          {editing ? (
+            <>
+              {/* Title (optional) */}
+              <div>
+                <CTLabel>Title (optional)</CTLabel>
+                <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)}
+                  placeholder="Add a title (optional)" style={ctInput} />
+              </div>
+              {/* Type (locked) */}
+              <div>
+                <CTLabel>Type</CTLabel>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, height: 48, boxSizing: "border-box", padding: "0 var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface-variant)" }}>
+                  <CTTypeIcon type={allocation.type} size={18} />
+                  <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{T.label}</span>
+                  <span style={{ marginLeft: "auto", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Can’t be changed</span>
+                </div>
+              </div>
+
+              {/* Type-specific controls (mirrors the Assign flow) */}
+              {allocation.type === "task" ? (
+                <>
+                  <div><CTLabel>Term</CTLabel><CTSelect value={term} options={CT.TERMS} placeholder="Select a term" onChange={(v) => { setTerm(v); setCourse(""); setTask(""); }} /></div>
+                  <div><CTLabel>Course</CTLabel><CTSelect value={course} options={courses} placeholder={term ? "Select a course" : "Choose a term first"} disabled={!term} onChange={(v) => { setCourse(v); setTask(""); }} /></div>
+                  <div><CTLabel>Task</CTLabel><CTSelect value={task} options={tasks} placeholder={course ? "Select a task" : "Choose a course first"} disabled={!course} onChange={setTask} /></div>
+                </>
+              ) : allocation.type === "oral" ? (
+                <>
+                  <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+                    <CTToggleRow label="Let the student choose parameters" hint="Student picks topics, Speak or Write, difficulty and count when they begin." checked={studentDefined} onChange={setStudentDefined} />
+                  </div>
+                  {!studentDefined && <CTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />}
+                </>
+              ) : allocation.type === "simulator" ? (
+                <CTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
+              ) : (
+                <>
+                  <CTExamModeCards mode={examMode} setMode={setExamMode} />
+                  <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+                    <CTToggleRow label="Let the student choose parameters" hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope when they begin."} checked={studentDefined} onChange={setStudentDefined} />
+                  </div>
+                  {!studentDefined && (examMode === "exam"
+                    ? <CTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />
+                    : <WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />)}
+                </>
+              )}
+
+              {/* Instructions */}
+              <div>
+                <CTLabel>Instructions (optional)</CTLabel>
+                <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3} placeholder="What should students focus on or prepare?"
+                  style={{ ...ctInput, height: "auto", padding: "var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
+              </div>
+
+              {/* Assignees */}
+              <div>
+                <CTLabel trailing={chips.length > 0 ? (<span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{chips.length} selected</span>) : null}>Assign to</CTLabel>
+                {chips.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                    {chips.map((c) => {
+                      const dot = c.type === "group" ? ((window.PK_COLORS[c.color] || window.PK_COLORS.blue).fg) : "var(--kls-primary)";
+                      return (
+                        <span key={c.type + c.id} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 32, paddingLeft: 10, paddingRight: 6, borderRadius: 999, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+                          <span style={{ width: 8, height: 8, borderRadius: 999, background: dot }} />
+                          {c.label}
+                          <button onClick={() => setAssignees((cur) => cur.filter((x) => !(x.type === c.type && x.id === c.id)))} aria-label={"Remove " + c.label} style={{ width: 20, height: 20, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent", color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                            <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, stroke: "currentColor", fill: "none", strokeWidth: 2 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <button onClick={() => setPickerOpen(true)} style={{ width: "100%", height: 48, borderRadius: 8, cursor: "pointer", background: "transparent", border: "1px dashed var(--kls-outline)", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+                  <KlsIcon name="group" size={16} color="var(--kls-on-surface)" /> Choose students / groups
+                </button>
+              </div>
+
+              {/* Due date */}
+              <div>
+                <CTLabel>Due date</CTLabel>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, boxSizing: "border-box", padding: "0 var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)" }}>
+                  <KlsIcon name="date" size={16} color="var(--kls-on-surface-variant)" />
+                  <input value={due} onChange={(e) => setDue(e.target.value)} placeholder="No due date"
+                    style={{ border: "none", outline: "none", background: "transparent", width: 160, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* details */}
+              <div>
+                <CTAllocLabel>Details</CTAllocLabel>
+                {infoRow("Type", T.label)}
+                {allocation.type === "task" ? infoRow("Course", allocation.course) : allocation.type === "simulator" ? null : infoRow("Term", allocation.term)}
+                {infoRow("Assigned", allocation.assigned)}
+                {infoRow("Due date", due)}
+                {allocation.type === "oral" && (allocation.studentDefined
+                  ? infoRow("Parameters", "Student's choice")
+                  : <>
+                      {infoRow("Topics", allocation.topic || "—")}
+                      {infoRow("ACS codes", (allocation.acs && allocation.acs.length) ? allocation.acs.length + " selected" : "—")}
+                      {infoRow("Answer mode", allocation.answerMode === "write" ? "Write" : "Speak")}
+                      {infoRow("Difficulty", allocation.difficulty || "Medium")}
+                      {infoRow("Questions", allocation.qCount != null ? String(allocation.qCount) : "—")}
+                    </>)}
+                {allocation.type === "simulator" && (
+                  <div style={{ paddingTop: "var(--kls-space-small)" }}>
+                    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-xsmall)" }}>Simulator</div>
+                    <CTSimList ids={allocation.simulators || []} />
+                  </div>
+                )}
+                {allocation.instructions && (
+                  <div style={{ paddingTop: "var(--kls-space-small)" }}>
+                    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: 4 }}>Instructions</div>
+                    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)", lineHeight: 1.5 }}>{allocation.instructions}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* student progress */}
+              <div>
+                <CTAllocLabel>Student progress</CTAllocLabel>
+                {allocation.instances.map((inst, i) => (
+                  <CTAllocProgressRow key={inst.studentId} inst={inst} last={i === allocation.instances.length - 1} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          {editing ? (
+            <>
+              <button onClick={() => onRemove && onRemove(allocation)} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+                background: "transparent", color: "var(--kls-error)", border: "1px solid var(--kls-outline-variant)", display: "inline-flex", alignItems: "center", gap: 8,
+                fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
+                <KlsIcon name="trash" size={16} color="var(--kls-error)" /> Delete
+              </button>
+              <div style={{ display: "inline-flex", gap: 8 }}>
+                <button onClick={cancelEdit} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+                  background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Cancel</button>
+                <button onClick={() => onSave && onSave(buildUpdated())} disabled={!valid} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: valid ? "pointer" : "default",
+                  background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", opacity: valid ? 1 : 0.5,
+                  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Save changes</button>
+              </div>
+            </>
+          ) : (
+            <button onClick={onClose} style={{ height: 44, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", marginLeft: "auto",
+              background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Close</button>
+          )}
+        </div>
+      </div>
+      {pickerOpen && (
+        <window.TeammatePicker
+          title="Choose students / groups"
+          mode="multi"
+          kinds={["people", "groups"]}
+          peopleRoster={roster.people}
+          groups={roster.groups}
+          initialSelection={assignees}
+          onClose={() => setPickerOpen(false)}
+          onSubmit={(sel) => { setAssignees(sel); setPickerOpen(false); }} />
+      )}
+    </div>
+  );
+}
+
+window.CTAllocationDrawer = CTAllocationDrawer;
+
+// ct-assign-drawer.jsx — Assign a Task / Oral exam / Written exam to students.
+//   • Task: pick Term → Course → existing Task.
+//   • Oral / Written exam: open-ended — instructor defines parameters, or lets the student choose.
+//   • Assignees chosen via the TeammatePicker (students).
+// Reads window.CT, window.TeammatePicker.
+const { useState: useCtadState, useEffect: useCtadEffect } = React;
+
+function CTLabel({ children, trailing }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{children}</span>
+      <span style={{ flex: 1 }} />
+      {trailing}
+    </div>
+  );
+}
+
+const ctInput = {
+  width: "100%", boxSizing: "border-box", height: 48, padding: "0 var(--kls-space-small)", borderRadius: 8,
+  background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)", outline: "none",
+};
+
+function CTSelect({ value, options, placeholder, disabled, onChange }) {
+  return (
+    <div style={{ position: "relative", opacity: disabled ? 0.5 : 1 }}>
+      <select value={value || ""} disabled={disabled} onChange={(e) => onChange(e.target.value)}
+        style={{ ...ctInput, appearance: "none", WebkitAppearance: "none", cursor: disabled ? "not-allowed" : "pointer",
+          color: value ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", paddingRight: 40 }}>
+        <option value="" disabled>{placeholder}</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <svg viewBox="0 0 24 24" style={{ position: "absolute", right: 12, top: 15, width: 18, height: 18, pointerEvents: "none",
+        stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.6 }}>
+        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+function CTToggle({ checked, onChange }) {
+  return (
+    <button onClick={() => onChange(!checked)} aria-pressed={checked} style={{
+      width: 44, height: 26, borderRadius: 999, border: "none", cursor: "pointer", padding: 2, flexShrink: 0,
+      background: checked ? "var(--kls-primary)" : "var(--kls-outline-variant)",
+      display: "inline-flex", alignItems: "center", transition: "background 120ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 22, height: 22, borderRadius: 999, background: "var(--kls-surface)",
+        transform: checked ? "translateX(18px)" : "translateX(0)", transition: "transform 120ms var(--kls-ease-standard)",
+        boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+    </button>
+  );
+}
+
+function CTToggleRow({ label, hint, checked, onChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</div>
+        {hint && <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 1 }}>{hint}</div>}
+      </div>
+      <CTToggle checked={checked} onChange={onChange} />
+    </div>
+  );
+}
+
+function CTTypeCard({ active, icon, symbol, label, sub, accent, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      flex: 1, display: "flex", flexDirection: "column", textAlign: "left", cursor: "pointer",
+      padding: "var(--kls-space-small)", borderRadius: 8,
+      border: active ? `2px solid ${accent}` : "1.5px solid var(--kls-outline-variant)",
+      background: active ? `color-mix(in srgb, ${accent} 8%, transparent)` : "var(--kls-surface)",
+      transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <span style={{ display: "inline-flex" }}>
+          {symbol ? <MSGlyph name={symbol} size={18} color={active ? accent : "var(--kls-on-surface)"} /> : <KlsIcon name={icon} size={18} color={active ? accent : "var(--kls-on-surface)"} />}
+        </span>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-primary)" }}>{label}</span>
+      </div>
+      <div style={{ marginTop: "var(--kls-space-xsmall)", minHeight: "2.9em", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.45 }}>{sub}</div>
+    </button>
+  );
+}
+
+function CTCheck({ checked, indeterminate, onClick }) {
+  const on = checked || indeterminate;
+  return (
+    <button onClick={(e) => { e.stopPropagation(); onClick && onClick(); }} aria-label="toggle" style={{
+      width: 18, height: 18, borderRadius: 4, flexShrink: 0, cursor: "pointer", padding: 0,
+      border: on ? "1.5px solid var(--kls-primary)" : "1.5px solid var(--kls-outline)",
+      background: on ? "var(--kls-primary)" : "transparent", color: "var(--kls-on-primary)",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {checked && <svg viewBox="0 0 24 24" style={{ width: 12, height: 12, stroke: "currentColor", fill: "none", strokeWidth: 3 }}><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+      {indeterminate && !checked && <span style={{ width: 8, height: 2, background: "currentColor", borderRadius: 1 }} />}
+    </button>
+  );
+}
+
+// Question-pool taxonomy for the Written exam assign flow: Term → Course → ACS code (leaf).
+// Each course is tagged with an FAA subject so the subject filter still applies.
+const CT_POOL = [
+  { id: "t-f24", name: "Fall 2024", courses: [
+    { id: "c-pp1", name: "Powerplant Systems", subject: "Powerplant", codes: [
+      { id: "pp1a", code: "PA.I.A",  desc: "Reciprocating engine theory & construction", count: 18, mastery: 0.74 },
+      { id: "pp1b", code: "PA.I.B",  desc: "Valves & valve mechanisms", count: 22, mastery: 0.81 },
+      { id: "pp3a", code: "PA.III.A", desc: "Magnetos & ignition timing", count: 26, mastery: 0.84 },
+    ]},
+    { id: "c-af1", name: "Airframe Structures", subject: "Airframe", codes: [
+      { id: "af1a", code: "AM.II.A.K1", desc: "Sheet metal layout & forming", count: 34, mastery: 0.72 },
+      { id: "af1b", code: "AM.II.A.K2", desc: "Riveting & fastener selection", count: 16, mastery: 0.59 },
+    ]},
+    { id: "c-gen1", name: "General & Regulations", subject: "General", codes: [
+      { id: "g1k1",  code: "AM.I.A.K1",  desc: "Electron theory (conventional flow vs. electron flow).", count: 3, mastery: 0.66 },
+      { id: "g1k10", code: "AM.I.A.K10", desc: "Current.", count: 5, mastery: 0.9 },
+      { id: "g1k11", code: "AM.I.A.K11", desc: "Resistance.", count: 7, mastery: 0.78 },
+      { id: "g1far", code: "GE.I.A",     desc: "FAR Part 43 — maintenance records", count: 12, mastery: 0.86 },
+    ]},
+  ]},
+  { id: "t-s25", name: "Spring 2025", courses: [
+    { id: "c-pp2", name: "Turbine Theory", subject: "Powerplant", codes: [
+      { id: "pp2a", code: "PA.IV.A", desc: "Compressor stages & airflow", count: 20, mastery: 0.71 },
+      { id: "pp2b", code: "PA.IV.B", desc: "EGT & engine instruments", count: 14, mastery: -1 },
+    ]},
+    { id: "c-af2", name: "Airframe Systems", subject: "Airframe", codes: [
+      { id: "af2a", code: "AM.II.B.K1", desc: "Hydraulics & pneumatics", count: 28, mastery: 0.64 },
+      { id: "af2b", code: "AM.II.B.K2", desc: "Landing gear systems", count: 24, mastery: 0.71 },
+    ]},
+    { id: "c-gen2", name: "Physics & Math", subject: "General", codes: [
+      { id: "g2a", code: "GE.II.A", desc: "Mathematics for aviation", count: 16, mastery: 0.72 },
+      { id: "g2b", code: "GE.II.B", desc: "Physics principles", count: 19, mastery: 0.68 },
+    ]},
+  ]},
+];
+
+// Radio dot — no canonical DS radio; built to the DS checkbox spec (18 · 1.5px · outline/primary).
+function CTRadio({ checked }) {
+  return (
+    <span style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, boxSizing: "border-box",
+      border: checked ? "1.5px solid var(--kls-primary)" : "1.5px solid var(--kls-outline)",
+      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {checked && <span style={{ width: 9, height: 9, borderRadius: 999, background: "var(--kls-primary)" }} />}
+    </span>
+  );
+}
+
+// Exam-mode picker for the Written exam assign flow: FAA subject (fixed count + time)
+// + the read-only settings summary. Subjects come from FAA_EXAMS (single source).
+function CTExamSubjectPicker({ subject, setSubject }) {
+  const exams = FAA_EXAMS;
+  const active = exams.find((e) => e.id === subject) || exams[0];
+  const hours = (e) => Math.round((e.duration || 7200) / 3600) + "h";
+  const metaLabel = { fontFamily: "var(--kls-font-sans)", fontSize: 11, fontWeight: 500, color: "var(--kls-on-surface-variant)" };
+  const metaValue = { fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" };
+  const cfgRow = (label, value) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+  return (
+    <>
+      <div>
+        <CTLabel>Topics</CTLabel>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-small)" }}>Question count and time limit are fixed by the FAA.</div>
+        <div style={{ borderRadius: 8, border: "1px solid var(--kls-outline-variant)", overflow: "hidden" }}>
+          {exams.map((e, i) => {
+            const sel = e.id === active.id;
+            return (
+              <div key={e.id} onClick={() => setSubject(e.id)} style={{
+                display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", cursor: "pointer",
+                borderTop: i ? "1px solid var(--kls-outline-variant)" : "none",
+                background: sel ? "color-mix(in srgb, var(--kls-accent-12) 10%, transparent)" : "var(--kls-surface)" }}>
+                <span style={{ paddingTop: 2 }}><CTRadio checked={sel} /></span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{e.subject}</div>
+                  <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.45, marginTop: 2, textWrap: "pretty" }}>{e.blurb}</div>
+                </div>
+                <div style={{ flexShrink: 0, textAlign: "right", display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={metaLabel}>Questions</span>
+                  <span style={metaValue}>{e.count}</span>
+                  <span style={{ ...metaLabel, marginTop: "var(--kls-space-tiny)" }}>Time</span>
+                  <span style={metaValue}>{hours(e)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+        {cfgRow("Subject", active.subject)}
+        {cfgRow("Questions", active.count)}
+        {cfgRow("Time", hours(active))}
+        {cfgRow("Passing score", "70%")}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-xsmall)" }}>
+          <span style={{ flexShrink: 0, marginTop: 1 }}><KlsIcon name="orionOutline" size={16} color="var(--kls-on-surface-variant)" /></span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface)", lineHeight: 1.45 }}>Orion AI assistance unavailable during exam.</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Study | Exam mode cards for the Written exam assign flow.
+function CTExamModeCards({ mode, setMode }) {
+  return (
+    <div>
+      <CTLabel>Mode</CTLabel>
+      <div style={{ display: "flex", gap: 8 }}>
+        <CTTypeCard active={mode === "study"} icon="itemList" label="Study" sub="AI enabled · feedback after each Q" accent="var(--kls-info)" onClick={() => setMode("study")} />
+        <CTTypeCard active={mode === "exam"} icon="checkpoint" label="Exam" sub="FAA simulation · AI locked" accent="var(--kls-accent-12)" onClick={() => setMode("exam")} />
+      </div>
+    </div>
+  );
+}
+
+// Study-mode question-pool picker (Term → Course → ACS code) for the Written exam assign flow.
+function WrittenTopicPicker({ selModules, setSelModules, count, setCount, orion, setOrion, randomized, setRandomized }) {
+  const [expanded, setExpanded] = useCtadState({});
+  const [subj, setSubj] = useCtadState("All");
+  const subjects = ["All", "Powerplant", "Airframe", "General"];
+  const allCodes = CT_POOL.flatMap((t) => t.courses.flatMap((c) => c.codes));
+  const pool = allCodes.reduce((a, c) => a + (selModules.has(c.id) ? c.count : 0), 0);
+  const n = Number(count) || 0;
+  const drawing = Math.min(n, pool);
+  const toggleOne = (id) => setSelModules((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  const toggleSet = (ids) => setSelModules((prev) => { const s = new Set(prev); const all = ids.every((id) => s.has(id)); ids.forEach((id) => all ? s.delete(id) : s.add(id)); return s; });
+  const toggleExpand = (id) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
+
+  const qStyle = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0 };
+  const stepBtn = { width: 36, height: 32, display: "grid", placeItems: "center", border: "none", background: "transparent", borderRadius: 8, padding: 0, fontSize: 20, lineHeight: 1 };
+  const chev = (open, onClick) => (
+    <button onClick={onClick} aria-label="expand" style={{ width: 20, height: 20, border: "none", background: "transparent", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0, flexShrink: 0 }}>
+      <KlsIcon name={open ? "chevronDown" : "chevronRight"} size={16} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+  const cfgRow = (label, value) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 0" }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <>
+      <div>
+        <CTLabel>Topics</CTLabel>
+        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", flexWrap: "wrap", marginBottom: "var(--kls-space-small)" }}>
+          {subjects.map((s) => {
+            const active = subj === s;
+            return (
+              <button key={s} onClick={() => setSubj(s)} style={{
+                height: 32, padding: "0 var(--kls-space-small)", borderRadius: 999, cursor: "pointer",
+                fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600,
+                background: active ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+                border: `1px solid ${active ? "var(--kls-primary)" : "var(--kls-outline-variant)"}`,
+                color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)" }}>{s}</button>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          {CT_POOL.map((t) => {
+            const courses = subj === "All" ? t.courses : t.courses.filter((c) => c.subject === subj);
+            if (!courses.length) return null;
+            const tCodes = courses.flatMap((c) => c.codes);
+            const tIds = tCodes.map((c) => c.id);
+            const tAll = tIds.every((id) => selModules.has(id));
+            const tSome = tIds.some((id) => selModules.has(id));
+            const tTotal = tCodes.reduce((a, c) => a + c.count, 0);
+            const tOpen = !!expanded[t.id];
+            return (
+              <div key={t.id} style={{ borderRadius: 8, border: "1px solid var(--kls-outline-variant)", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small)", background: "var(--kls-surface-variant)" }}>
+                  {chev(tOpen, () => toggleExpand(t.id))}
+                  <CTCheck checked={tAll} indeterminate={tSome && !tAll} onClick={() => toggleSet(tIds)} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontWeight: 600, fontSize: 14, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>{t.name}</span>
+                  </div>
+                  <span style={qStyle}>{tTotal} Q</span>
+                </div>
+                {tOpen && courses.map((c) => {
+                  const cIds = c.codes.map((x) => x.id);
+                  const cAll = cIds.every((id) => selModules.has(id));
+                  const cSome = cIds.some((id) => selModules.has(id));
+                  const cTotal = c.codes.reduce((a, x) => a + x.count, 0);
+                  const cOpen = !!expanded[c.id];
+                  return (
+                    <React.Fragment key={c.id}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-large)", borderTop: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)" }}>
+                        {chev(cOpen, () => toggleExpand(c.id))}
+                        <CTCheck checked={cAll} indeterminate={cSome && !cAll} onClick={() => toggleSet(cIds)} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontFamily: "var(--kls-font-sans)", fontWeight: 600, fontSize: 14, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>{c.name}</span>
+                        </div>
+                        <span style={qStyle}>{cTotal} Q</span>
+                      </div>
+                      {cOpen && c.codes.map((x) => {
+                        const sel = selModules.has(x.id);
+                        return (
+                          <div key={x.id} onClick={() => toggleOne(x.id)} style={{
+                            display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+                            padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) calc(var(--kls-space-large) + var(--kls-space-med))",
+                            cursor: "pointer", borderTop: "1px solid var(--kls-outline-variant)",
+                            background: sel ? "color-mix(in srgb, var(--kls-info) 8%, transparent)" : "transparent" }}>
+                            <CTCheck checked={sel} onClick={() => toggleOne(x.id)} />
+                            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: 8 }}>
+                              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", flexShrink: 0 }}>{x.code}</span>
+                              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{x.desc}</span>
+                            </div>
+                            <span style={qStyle}>{x.count} Q</span>
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Question Count:</span>
+            {pool > 0 && <button onClick={() => setCount(String(pool))} style={{ border: "none", background: "transparent", padding: 0, color: "var(--kls-info)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>(All)</button>}
+          </div>
+          <button onClick={() => setCount(String(Math.max(1, n - 1)))} style={{ ...stepBtn, cursor: "pointer", color: "var(--kls-on-surface-variant)" }}>−</button>
+          <div style={{ width: 40, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{n}</div>
+          <button onClick={() => { if (n < pool) setCount(String(n + 1)); }} style={{ ...stepBtn, color: n >= pool ? "var(--kls-outline-variant)" : "var(--kls-on-surface-variant)", cursor: n >= pool ? "default" : "pointer" }}>+</button>
+        </div>
+        {cfgRow("Pool", `${pool} question${pool === 1 ? "" : "s"}`)}
+        {cfgRow("Drawing", `${drawing} question${drawing === 1 ? "" : "s"}`)}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Orion Enabled</span>
+          <CTToggle checked={orion} onChange={setOrion} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--kls-space-small)", padding: "3px 0" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Randomized</span>
+          <CTToggle checked={randomized} onChange={setRandomized} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Read-only simulator rows (allocation detail / student drawer). onOpen makes rows launch the runner.
+function CTSimList({ ids, onOpen }) {
+  const sims = (ids || []).map((id) => TRAINING_SIMS.find((x) => x.id === id)).filter(Boolean);
+  if (!sims.length) return <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No simulator selected.</div>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+      {sims.map((sim) => (
+        <button key={sim.id} onClick={onOpen ? () => onOpen(sim) : undefined} disabled={!onOpen}
+          style={{ all: "unset", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-xsmall) var(--kls-space-xsmall)",
+            borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", cursor: onOpen ? "pointer" : "default" }}>
+          <span style={{ width: 64, aspectRatio: "16 / 10", borderRadius: 4, overflow: "hidden", position: "relative", flex: "none", background: "var(--kls-surface-container-low)" }}>
+            <iframe src={sim.src} title="" tabIndex={-1} scrolling="no" aria-hidden="true"
+              style={{ position: "absolute", top: 0, left: 0, width: 1280, height: 800, border: 0, transformOrigin: "0 0", transform: "scale(0.05)", pointerEvents: "none" }} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{sim.title}</span>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sim.desc}</span>
+          </span>
+          {onOpen && <MSGlyph name="play_arrow" size={20} color="var(--kls-on-surface-variant)" />}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Simulator picker for the Simulator assign flow — compact selectable grid of TRAINING_SIMS.
+function CTSimCell({ sim, selected, onClick }) {
+  const [hover, setHover] = useCtadState(false);
+  const ref = useRef(null);
+  const [w, setW] = useCtadState(200);
+  useCtadEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver((e) => setW(e[0].contentRect.width));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  const PREVIEW_W = 1280;
+  const accent = "var(--kls-accent-12)";
+  return (
+    <button onClick={onClick} role="radio" aria-checked={selected} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ all: "unset", cursor: "pointer", boxSizing: "border-box", display: "flex", flexDirection: "column", textAlign: "left", position: "relative",
+        background: selected ? `color-mix(in srgb, ${accent} 8%, transparent)` : "var(--kls-surface)",
+        border: selected ? `2px solid ${accent}` : "1.5px solid " + (hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"),
+        borderRadius: 8, overflow: "hidden", transition: "border-color var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <div ref={ref} style={{ position: "relative", width: "100%", aspectRatio: "16 / 10", background: "var(--kls-surface-container-low)", overflow: "hidden", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <iframe src={sim.src} title={sim.title + " preview"} tabIndex={-1} scrolling="no"
+          style={{ position: "absolute", top: 0, left: 0, width: PREVIEW_W, height: PREVIEW_W * 10 / 16, border: 0, transformOrigin: "0 0", transform: "scale(" + (w / PREVIEW_W) + ")", pointerEvents: "none", background: "var(--kls-surface)" }} />
+      </div>
+      <div style={{ padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-small)", display: "flex", alignItems: "flex-start", gap: "var(--kls-space-xsmall)" }}>
+        <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, lineHeight: 1.35, color: "var(--kls-on-surface)" }}>{sim.title}</div>
+      </div>
+    </button>
+  );
+}
+function CTSimulatorPicker({ selSims, setSelSims }) {
+  const toggle = (id) => setSelSims(new Set([id]));
+  return (
+    <div>
+      <CTLabel>Simulator</CTLabel>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "var(--kls-space-small)" }}>
+        {TRAINING_SIMS.map((sim) => <CTSimCell key={sim.id} sim={sim} selected={selSims.has(sim.id)} onClick={() => toggle(sim.id)} />)}
+      </div>
+    </div>
+  );
+}
+
+// Oral-exam parameters for the assign/edit drawers — same controls as the student setup
+// (ACS topic tree · Speak/Write · difficulty · pool-aware count). Defined later in the file
+// (ORAL_TOPICS, oralSubtopics, ORAL_LEVELS, OralCheck, OralAnswerCard) — resolved at render time.
+const ORAL_LEVEL_LABEL_TO_KEY = { Easy: "easy", Medium: "med", Hard: "hard" };
+const ORAL_LEVEL_KEY_TO_LABEL = { easy: "Easy", med: "Medium", hard: "Hard" };
+function oralLeafIds(t) { const subs = oralSubtopics(t); return subs.length ? subs.map((x) => x.id) : [t.id]; }
+function oralSelectionSummary(selected) {
+  const chosen = ORAL_TOPICS.filter((t) => oralLeafIds(t).some((id) => selected.has(id)));
+  const subCount = chosen.reduce((n, t) => n + oralSubtopics(t).filter((x) => selected.has(x.id)).length, 0);
+  const pool = chosen.reduce((n, t) => { const subs = oralSubtopics(t); return n + (subs.length ? subs.filter((x) => selected.has(x.id)).reduce((m, x) => m + x.q, 0) : oralTopicTotal(t)); }, 0);
+  const acs = chosen.flatMap((t) => oralSubtopics(t).filter((x) => selected.has(x.id)).map((x) => x.code));
+  const title = chosen.length === 0 ? "" : chosen.length === 1 ? chosen[0].title : chosen.length + " topics";
+  return { chosen, subCount, pool, acs, title };
+}
+function CTOralPicker({ selected, setSelected, answerMode, setAnswerMode, difficulty, setDifficulty, count, setCount }) {
+  const [expanded, setExpanded] = useState({});
+  const toggleIds = (ids) => { const all = ids.every((id) => selected.has(id)); const next = new Set(selected); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); setSelected(next); };
+  const { chosen, subCount, pool } = oralSelectionSummary(selected);
+  const n = Math.min(Number(count) || 0, pool);
+  const levelKey = ORAL_LEVEL_LABEL_TO_KEY[difficulty] || "med";
+  const curLevel = ORAL_LEVELS.find((l) => l.key === levelKey) || ORAL_LEVELS[1];
+  const qStyle = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0, minWidth: 40, textAlign: "right" };
+  const stepBtn = (dis) => ({ width: 36, height: 32, display: "grid", placeItems: "center", border: "none", background: "transparent", borderRadius: 8, padding: 0, fontSize: 20, lineHeight: 1, cursor: dis ? "default" : "pointer", color: dis ? "var(--kls-outline-variant)" : "var(--kls-on-surface-variant)" });
+  const panel = { background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" };
+  return (
+    <>
+      <div>
+        <CTLabel>How the student answers</CTLabel>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+          <OralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+          <OralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type the answer · no mic needed" onClick={() => setAnswerMode("write")} />
+        </div>
+      </div>
+      <div>
+        <CTLabel>Difficulty</CTLabel>
+        <div role="tablist" aria-label="Difficulty" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: "var(--kls-space-tiny)", padding: 2, height: 40, boxSizing: "border-box", borderRadius: 8, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+          {ORAL_LEVELS.map((l) => { const on = levelKey === l.key; return (
+            <button key={l.key} role="tab" aria-selected={on} onClick={() => setDifficulty(ORAL_LEVEL_KEY_TO_LABEL[l.key])} style={{ height: 34, padding: 0, borderRadius: 8, border: "none", cursor: "pointer", whiteSpace: "nowrap",
+              background: on ? "var(--kls-surface)" : "transparent", color: on ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)", boxShadow: on ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>{l.label}</button>
+          ); })}
+        </div>
+        <div style={{ marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.4 }}>{curLevel.desc.replace(" - ", " · ")}</div>
+      </div>
+      <div>
+        <CTLabel trailing={chosen.length > 0 ? <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{chosen.length} topic(s) · {subCount} ACS code(s)</span> : null}>Topics</CTLabel>
+        <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 12, padding: "var(--kls-space-tiny)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", maxHeight: 360, overflowY: "auto" }}>
+          {ORAL_TOPICS.map((t) => {
+            const subs = oralSubtopics(t), ids = oralLeafIds(t);
+            const all = ids.every((id) => selected.has(id)), some = ids.some((id) => selected.has(id)), open = !!expanded[t.id];
+            return (
+              <div key={t.id}>
+                <div style={{ display: "flex", alignItems: "center", padding: "var(--kls-space-xsmall) var(--kls-space-small)", background: "var(--kls-surface-variant)", borderRadius: 8, gap: "var(--kls-space-xsmall)" }}>
+                  <button disabled={!subs.length} onClick={() => setExpanded({ ...expanded, [t.id]: !open })} aria-label={open ? "Collapse" : "Expand"}
+                    style={{ width: 24, height: 24, padding: 0, border: "none", background: "transparent", cursor: "pointer", flexShrink: 0, visibility: subs.length ? "visible" : "hidden", display: "grid", placeItems: "center" }}>
+                    <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 2, transform: open ? "rotate(90deg)" : "none" }}><path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                  <OralCheck checked={all} indeterminate={some && !all} onChange={() => toggleIds(ids)} />
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+                      <span style={{ fontFamily: "var(--kls-font-sans)", fontWeight: 600, fontSize: 14, color: "var(--kls-on-surface)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</span>
+                      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", flexShrink: 0 }}>{subs.length ? subs.length + " ACS codes" : "No ACS codes"}</span>
+                    </div>
+                    {t.desc && <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc}</span>}
+                  </div>
+                  <span style={qStyle}>{oralTopicTotal(t)} Q</span>
+                </div>
+                {open && subs.map((x) => {
+                  const on = selected.has(x.id);
+                  return (
+                    <div key={x.id} onClick={() => toggleIds([x.id])} style={{ display: "flex", alignItems: "center", padding: "var(--kls-space-xsmall) var(--kls-space-small) var(--kls-space-xsmall) calc(var(--kls-space-large) + var(--kls-space-med))", gap: "var(--kls-space-xsmall)", cursor: "pointer", background: on ? "color-mix(in srgb, var(--kls-info) 12%, transparent)" : "transparent", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+                      <OralCheck checked={on} onChange={() => toggleIds([x.id])} />
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)", lineHeight: 1.3, whiteSpace: "nowrap" }}>{x.code}</span>
+                        {x.desc && <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.3, textWrap: "pretty" }}>{x.desc}</span>}
+                      </div>
+                      <span style={qStyle}>{x.q} Q</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <CTLabel>Settings</CTLabel>
+        <div style={panel}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Question count</span>
+            <button onClick={() => { if (pool > 0) setCount(String(pool)); }} style={{ border: "none", background: "transparent", padding: 0, color: "var(--kls-info)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>(All)</button>
+          </div>
+          <button onClick={() => setCount(String(Math.max(1, n - 1)))} disabled={n <= 1} style={stepBtn(n <= 1)}>−</button>
+          <div style={{ width: 40, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{n}</div>
+          <button onClick={() => { if (n < pool) setCount(String(n + 1)); }} disabled={n >= pool} style={stepBtn(n >= pool)}>+</button>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          <span>Pool {pool} question(s)</span><span>Drawing {n} question(s)</span>
+        </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Compact question-count stepper (oral exams; written uses the pool-aware stepper above).
+function CTStepper({ value, setValue, min = 1, max = 200 }) {
+  const n = Number(value) || 0;
+  const stepBtn = { width: 36, height: 32, display: "grid", placeItems: "center", border: "none", background: "transparent", borderRadius: 8, padding: 0, fontSize: 20, lineHeight: 1, cursor: "pointer", color: "var(--kls-on-surface-variant)" };
+  return (
+    <div style={{ display: "flex", alignItems: "center", background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+      <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>Question count</span>
+      <button onClick={() => setValue(String(Math.max(min, n - 1)))} style={stepBtn}>−</button>
+      <div style={{ width: 40, textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{n}</div>
+      <button onClick={() => setValue(String(Math.min(max, n + 1)))} style={stepBtn}>+</button>
+    </div>
+  );
+}
+
+function CTAssignDrawer({ roster, presetAssignees = [], onClose, onAssign }) {
+  const [shown, setShown] = useCtadState(false);
+  const [type, setType] = useCtadState("task"); // task|oral|written
+  const [term, setTerm] = useCtadState("");
+  const [course, setCourse] = useCtadState("");
+  const [task, setTask] = useCtadState("");
+  // exam params
+  const [studentDefined, setStudentDefined] = useCtadState(false);
+  const [topic, setTopic] = useCtadState("");
+  const [qCount, setQCount] = useCtadState("20");
+  const [difficulty, setDifficulty] = useCtadState("Medium");
+  const [oralAcs, setOralAcs] = useCtadState(() => new Set());
+  const [answerMode, setAnswerMode] = useCtadState("speak");
+  const [timeLimit, setTimeLimit] = useCtadState("60");
+  const [passScore, setPassScore] = useCtadState("70");
+  const [instructions, setInstructions] = useCtadState("");
+  const [selModules, setSelModules] = useCtadState(() => new Set());
+  const [selSims, setSelSims] = useCtadState(() => new Set());
+  const [orion, setOrion] = useCtadState(true);
+  const [randomized, setRandomized] = useCtadState(false);
+  const [customTitle, setCustomTitle] = useCtadState("");
+  const [examMode, setExamMode] = useCtadState("study"); // study|exam (written only)
+  const [examSubject, setExamSubject] = useCtadState("general");
+  // shared
+  const [assignees, setAssignees] = useCtadState(presetAssignees); // [{type,id}]
+  const [due, setDue] = useCtadState("");
+  const [pickerOpen, setPickerOpen] = useCtadState(false);
+
+  useCtadEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape" && !pickerOpen) onClose && onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, [pickerOpen]);
+
+  const CT = window.CT;
+  const isExam = type !== "task";
+  const oralTopics = (window.KILSAR_DATA && window.KILSAR_DATA.blocks) ? window.KILSAR_DATA.blocks.map((b) => b.title) : [];
+
+  const courses = term ? (CT.COURSES[term] || []) : [];
+  const tasks = course ? (CT.TASK_LIBRARY[course] || []) : [];
+
+  // resolve assignee chips (people + groups)
+  const chips = assignees.map((s) => {
+    if (s.type === "group") { const g = (roster.groups || []).find((x) => x.id === s.id); return { ...s, label: g?.name, color: g?.color }; }
+    const p = roster.people.find((x) => x.id === s.id); return { ...s, label: p?.name };
+  }).filter((c) => c.label);
+
+  const oralSel = oralSelectionSummary(oralAcs);
+  const valid = assignees.length > 0 && (type === "task" ? !!task : type === "oral" ? (studentDefined || oralSel.pool > 0) : type === "simulator" ? selSims.size > 0 : (studentDefined || examMode === "exam" || selModules.size > 0));
+
+  function buildAndAssign() {
+    if (!valid) return;
+    const dueLabel = due ? new Date(due + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "2-digit" }) : null;
+    const expanded = assignees.flatMap((a) => {
+      if (a.type === "group") { const g = (roster.groups || []).find((x) => x.id === a.id); return g ? g.memberIds : []; }
+      return [a.id];
+    });
+    const studentIds = [...new Set(expanded)];
+    const examSubjectName = ((FAA_EXAMS.find((e) => e.id === examSubject) || FAA_EXAMS[0]) || {}).subject || "";
+    const simList = TRAINING_SIMS.filter((x) => selSims.has(x.id));
+    const defaultTitle = type === "task" ? task
+      : type === "written" ? (examMode === "exam" ? examSubjectName + " Exam" : "Written Exam")
+      : type === "simulator" ? (simList.length === 1 ? simList[0].title : simList.length + " Simulators")
+      : (studentDefined ? "Oral Exam" : (oralSel.title || "Oral Exam"));
+    const ct = customTitle.trim();
+    const title = ct || defaultTitle;
+    const created = studentIds.map((sid, i) => ({
+      id: "n" + Date.now() + "_" + i, studentId: sid, type,
+      title, defaultTitle, customTitle: ct, course: type === "task" ? course : "Open-ended", term: type === "task" ? term : (term || CT.TERMS[0]),
+      due: dueLabel, status: "not_started", score: null,
+      ...(type === "oral" ? { difficulty, qCount: Math.min(Number(qCount) || 0, oralSel.pool) || Number(qCount), answerMode, oralAcs: [...oralAcs], topic: oralSel.title, acs: oralSel.acs } : {}),
+      ...(type === "written" ? (examMode === "exam" ? { examMode, examSubject } : { examMode, orion, randomized }) : {}),
+      ...(type === "simulator" ? { simulators: simList.map((x) => x.id) } : {}),
+    }));
+    onAssign && onAssign(created);
+  }
+
+  const drawerWidth = "min(max(50vw, 500px), 960px, calc(100vw - 24px))";
+  const num = { ...ctInput, height: 44 };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{
+        position: "absolute", top: 12, bottom: 12, right: 12, width: drawerWidth,
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ width: 36, height: 36, borderRadius: 12, background: "var(--kls-tertiary-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <KlsIcon name="worklog" size={18} color="var(--kls-on-tertiary-container)" />
+          </span>
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)" }}>New assignment</span>
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 36, height: 36, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          {/* Title (optional) */}
+          <div>
+            <CTLabel>Title (optional)</CTLabel>
+            <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)}
+              placeholder="Add a title (optional)" style={ctInput} />
+          </div>
+          {/* Type */}
+          <div>
+            <CTLabel>Type</CTLabel>
+            <div style={{ display: "flex", gap: 8 }}>
+              <CTTypeCard active={type === "task"} icon="worklog" label="Task" sub="Hands-on procedures and tasks to perform." accent="var(--kls-success)" onClick={() => setType("task")} />
+              <CTTypeCard active={type === "oral"} icon="chatBubbles" label="Oral exam" sub="Practice dynamic questions on various topics." accent="var(--kls-accent-4)" onClick={() => setType("oral")} />
+              <CTTypeCard active={type === "written"} icon="checkpoint" label="Written exam" sub="Prepare for your FAA exam." accent="var(--kls-info)" onClick={() => setType("written")} />
+              <CTTypeCard active={type === "simulator"} symbol="school" label="Simulator" sub="Interactive systems to explore hands-on." accent="var(--kls-accent-12)" onClick={() => setType("simulator")} />
+            </div>
+          </div>
+
+          {/* Task picker */}
+          {type === "task" ? (
+            <>
+              <div>
+                <CTLabel>Term</CTLabel>
+                <CTSelect value={term} options={CT.TERMS} placeholder="Select a term"
+                  onChange={(v) => { setTerm(v); setCourse(""); setTask(""); }} />
+              </div>
+              <div>
+                <CTLabel>Course</CTLabel>
+                <CTSelect value={course} options={courses} placeholder={term ? "Select a course" : "Choose a term first"}
+                  disabled={!term} onChange={(v) => { setCourse(v); setTask(""); }} />
+              </div>
+              <div>
+                <CTLabel>Task</CTLabel>
+                <CTSelect value={task} options={tasks} placeholder={course ? "Select a task" : "Choose a course first"}
+                  disabled={!course} onChange={setTask} />
+              </div>
+            </>
+          ) : type === "oral" ? (
+            <>
+              <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+                <CTToggleRow label="Let the student choose parameters"
+                  hint="Student picks topics, Speak or Write, difficulty and count when they begin."
+                  checked={studentDefined} onChange={setStudentDefined} />
+              </div>
+
+              {!studentDefined && (
+                <CTOralPicker selected={oralAcs} setSelected={setOralAcs} answerMode={answerMode} setAnswerMode={setAnswerMode} difficulty={difficulty} setDifficulty={setDifficulty} count={qCount} setCount={setQCount} />
+              )}
+            </>
+          ) : type === "simulator" ? (
+            <CTSimulatorPicker selSims={selSims} setSelSims={setSelSims} />
+          ) : (
+            <>
+              <CTExamModeCards mode={examMode} setMode={setExamMode} />
+              <div style={{ background: "var(--kls-surface-variant)", borderRadius: 12, padding: "var(--kls-space-small)" }}>
+                <CTToggleRow label="Let the student choose parameters"
+                  hint={examMode === "exam" ? "Student picks the subject when they begin." : "Student sets topic, length, and scope when they begin."}
+                  checked={studentDefined} onChange={setStudentDefined} />
+              </div>
+
+              {!studentDefined && (examMode === "exam"
+                ? <CTExamSubjectPicker subject={examSubject} setSubject={setExamSubject} />
+                : <WrittenTopicPicker selModules={selModules} setSelModules={setSelModules} count={qCount} setCount={setQCount} orion={orion} setOrion={setOrion} randomized={randomized} setRandomized={setRandomized} />
+              )}
+            </>
+          )}
+
+          {/* Instructions — all types */}
+          <div>
+            <CTLabel>Instructions (optional)</CTLabel>
+            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3}
+              placeholder="What should students focus on or prepare?"
+              style={{ ...ctInput, height: "auto", padding: "var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
+          </div>
+
+          {/* Assignees */}
+          <div>
+            <CTLabel trailing={chips.length > 0 ? (
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", textTransform: "none", letterSpacing: 0 }}>{chips.length} selected</span>
+            ) : null}>Assign to</CTLabel>
+            {chips.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                {chips.map((c) => {
+                  const dot = c.type === "group"
+                    ? ((window.PK_COLORS[c.color] || window.PK_COLORS.blue).fg)
+                    : "var(--kls-primary)";
+                  return (
+                    <span key={c.type + c.id} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 32, paddingLeft: 10, paddingRight: 6,
+                      borderRadius: 999, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+                      fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+                      <span style={{ width: 8, height: 8, borderRadius: 999, background: dot }} />
+                      {c.label}
+                      <button onClick={() => setAssignees((cur) => cur.filter((x) => !(x.type === c.type && x.id === c.id)))} aria-label={"Remove " + c.label}
+                        style={{ width: 20, height: 20, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+                          color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, stroke: "currentColor", fill: "none", strokeWidth: 2 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <button onClick={() => setPickerOpen(true)} style={{
+              width: "100%", height: 48, borderRadius: 8, cursor: "pointer", background: "transparent",
+              border: "1px dashed var(--kls-outline)", color: "var(--kls-on-surface)",
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+              <KlsIcon name="group" size={16} color="var(--kls-on-surface)" />
+              {chips.length ? "Choose students / groups" : "Choose students / groups"}
+            </button>
+          </div>
+
+          {/* Due + options */}
+          <div>
+            <CTLabel>Due date (optional)</CTLabel>
+            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={ctInput} />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          <button onClick={onClose} style={{ height: 48, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+            background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Cancel</button>
+          <button disabled={!valid} onClick={buildAndAssign} style={{
+            flex: 1, height: 48, borderRadius: 8, border: "none", cursor: valid ? "pointer" : "not-allowed",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 700, opacity: valid ? 1 : 0.45 }}>
+            Assign{chips.length ? ` to ${chips.length}` : ""}
+          </button>
+        </div>
+      </div>
+
+      {pickerOpen && (
+        <window.TeammatePicker
+          title="Choose students / groups"
+          mode="multi"
+          kinds={["people", "groups"]}
+          peopleRoster={roster.people}
+          groups={roster.groups}
+          initialSelection={assignees}
+          onClose={() => setPickerOpen(false)}
+          onSubmit={(sel) => { setAssignees(sel); setPickerOpen(false); }} />
+      )}
+    </div>
+  );
+}
+
+window.CTAssignDrawer = CTAssignDrawer;
+
+// teammate-picker.jsx — Teammate Picker dialog (people + groups), single or multi select.
+//   • Centered DialogOverlay (surface card, radius med, drop shadow, blurred scrim).
+//   • Title is caller-supplied. mode="single" → radio · mode="multi" → checkbox.
+//   • kinds = ["people","groups"] decides which tabs show.
+//   • A group is itself a selectable entity (returns {type:"group", id}).
+//   • Selections surface as removable chips above the footer.
+//   • DS tokens only; tabs follow CompoundSwitch spec; rows use inverted selection accent.
+const { useState: usePkState, useMemo: usePkMemo, useRef: usePkRef, useEffect: usePkEffect } = React;
+
+// ───────────────────────── Seed data ─────────────────────────
+const PK_PEOPLE = [
+  { id: "m4",  name: "Joel Frank",       email: "joel@kilsar.com",            role: "Admin" },
+  { id: "m5",  name: "Joel Instructor",  email: "joel+test@kilsar.com",       role: "Instructor" },
+  { id: "m6",  name: "Joel Student",     email: "joel+student@kilsar.com",    role: "Student" },
+  { id: "m7",  name: "Justin Carpenter", email: "admin@kilsar.com",           role: "Admin" },
+  { id: "m3",  name: "Brendan Lawlor",   email: "brendan@kilsar.com",         role: "Instructor" },
+  { id: "m10", name: "Melodie Harris",   email: "melodie@kilsar.com",         role: "Instructor" },
+  { id: "m11", name: "Melodie Student",  email: "melodie+student@kilsar.com", role: "Student" },
+  { id: "m12", name: "Spencer Carr",     email: "scarr@kilsar.com",           role: "Admin" },
+  { id: "m8",  name: "Dana Whitfield",   email: "dana@kilsar.com",            role: "Student" },
+];
+const PK_GROUPS = [
+  { id: "g1", name: "Workspace Admins", color: "blue",   icon: "tower",      count: 5 },
+  { id: "g2", name: "Instructors",      color: "green",  icon: "person",     count: 4 },
+  { id: "g3", name: "Airframe Cohort",  color: "orange", icon: "cube",       count: 3 },
+  { id: "g4", name: "Avionics Lab",     color: "purple", icon: "checkpoint", count: 2 },
+];
+
+const PK_COLORS = {
+  blue:   { bg: "var(--kls-info-container)",    fg: "var(--kls-info)" },
+  green:  { bg: "var(--kls-success-container)", fg: "var(--kls-success)" },
+  orange: { bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)" },
+  purple: { bg: "var(--kls-accent-13)",         fg: "var(--kls-accent-12)" },
+  red:    { bg: "var(--kls-error-container)",   fg: "var(--kls-error)" },
+};
+
+function pkInitials(name) {
+  const parts = (name || "").trim().split(/\s+/);
+  return ((parts[0]?.[0] || "?") + (parts[1]?.[0] || "")).toUpperCase();
+}
+
+// ───────────────────────── Bits ─────────────────────────
+function PkAvatar({ name, size = 40 }) {
+  return (
+    <div style={{
+      flexShrink: 0, width: size, height: size, borderRadius: 999,
+      background: "var(--kls-tertiary-container)", color: "var(--kls-on-surface-variant)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: "var(--kls-font-sans)", fontWeight: 700, fontSize: Math.round(size * 0.36),
+    }}>{pkInitials(name)}</div>
+  );
+}
+
+function PkMedallion({ color, icon, size = 40 }) {
+  const c = PK_COLORS[color] || PK_COLORS.blue;
+  return (
+    <div style={{
+      flexShrink: 0, width: size, height: size, borderRadius: 12, background: c.bg, color: c.fg,
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <KlsIcon name={icon || "group"} size={Math.round(size * 0.5)} color={c.fg} />
+    </div>
+  );
+}
+
+// Selection indicator — checkbox (multi) or radio (single). Accent = primary.
+function PkIndicator({ checked, single }) {
+  const radius = single ? 999 : 6;
+  return (
+    <span style={{
+      width: 22, height: 22, borderRadius: radius, flexShrink: 0,
+      border: checked ? "none" : "1.5px solid var(--kls-on-surface-variant)",
+      background: checked ? "var(--kls-primary)" : "transparent",
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      transition: "background 80ms var(--kls-ease-standard), border-color 80ms var(--kls-ease-standard)",
+    }}>
+      {checked && (single ? (
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--kls-on-primary)" }} />
+      ) : (
+        <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-primary)", fill: "none", strokeWidth: 3 }}>
+          <path d="M5 12l5 5 9-10" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+function PkRow({ checked, single, onToggle, leading, title, subtitle, trailing }) {
+  const [hover, setHover] = usePkState(false);
+  return (
+    <button onClick={onToggle}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        width: "100%", display: "flex", alignItems: "center", gap: 14, textAlign: "left",
+        padding: "var(--kls-space-small) var(--kls-space-small)", border: "none", cursor: "pointer",
+        borderRadius: 12, background: checked ? "var(--kls-tertiary-container)" : (hover ? "var(--kls-tertiary)" : "transparent"),
+        transition: "background 80ms var(--kls-ease-standard)",
+      }}>
+      <PkIndicator checked={checked} single={single} />
+      {leading}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</span>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtitle}</span>
+      </span>
+      {trailing}
+    </button>
+  );
+}
+
+function PkChip({ label, color, onRemove }) {
+  const dot = color ? (PK_COLORS[color] || PK_COLORS.blue).fg : "var(--kls-primary)";
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 8, height: 32, paddingLeft: 10, paddingRight: 6,
+      borderRadius: 999, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)", maxWidth: 200,
+    }}>
+      <span style={{ width: 8, height: 8, borderRadius: 999, background: dot, flexShrink: 0 }} />
+      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+      <button onClick={onRemove} aria-label={"Remove " + label}
+        style={{ width: 20, height: 20, borderRadius: 999, border: "none", cursor: "pointer", flexShrink: 0,
+          background: "transparent", color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary-container)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+        <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, stroke: "currentColor", fill: "none", strokeWidth: 2 }}>
+          <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+        </svg>
+      </button>
+    </span>
+  );
+}
+
+// Segmented tabs (CompoundSwitch spec): track h40 pad2 gap4 radius8 bg tertiary border outline-variant.
+function PkTabs({ tabs, value, onChange }) {
+  return (
+    <div style={{
+      display: "inline-flex", gap: 4, padding: 2, height: 40, boxSizing: "border-box",
+      background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", borderRadius: 8,
+    }}>
+      {tabs.map((t) => {
+        const active = t.key === value;
+        return (
+          <button key={t.key} onClick={() => onChange(t.key)}
+            style={{
+              height: 36, padding: "0 18px", borderRadius: 8, border: "none", cursor: "pointer",
+              display: "inline-flex", alignItems: "center", gap: 8,
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+              background: active ? "var(--kls-surface)" : "transparent",
+              color: active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
+              boxShadow: active ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+              transition: "background 80ms var(--kls-ease-standard), color 80ms var(--kls-ease-standard)",
+            }}>
+            {t.label}
+            <span style={{
+              minWidth: 20, height: 18, padding: "0 var(--kls-space-xsmall)", borderRadius: 999, boxSizing: "border-box",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11, fontWeight: 700,
+              background: active ? "var(--kls-tertiary-container)" : "var(--kls-tertiary-container)",
+              color: active ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)",
+            }}>{t.count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PkSort({ dir, onToggle }) {
+  return (
+    <button onClick={onToggle}
+      style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "transparent", border: "none",
+        cursor: "pointer", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+        letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", padding: 0 }}>
+      Name
+      <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, stroke: "currentColor", fill: "none", strokeWidth: 1.8,
+        transform: dir === "desc" ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>
+        <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
+// ───────────────────────── The dialog ─────────────────────────
+function TeammatePicker({
+  title = "Choose a teammate",
+  mode = "single",            // "single" | "multi"
+  kinds = ["people", "groups"],
+  initialSelection = [],
+  peopleRoster, groups: groupRoster,   // optional roster override; default to seed data
+  onClose, onSubmit,
+}) {
+  const ALL_PEOPLE = peopleRoster || PK_PEOPLE;
+  const ALL_GROUPS = groupRoster || PK_GROUPS;
+  const single = mode === "single";
+  const [shown, setShown] = usePkState(false);
+  const [tab, setTab] = usePkState(kinds[0]);
+  const [q, setQ] = usePkState("");
+  const [dir, setDir] = usePkState("asc");
+  const [searchFocus, setSearchFocus] = usePkState(false);
+  const [sel, setSel] = usePkState(initialSelection); // [{type,id}]
+
+  usePkEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose && onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+
+  const isSel = (type, id) => sel.some((s) => s.type === type && s.id === id);
+  const toggle = (type, id) => {
+    setSel((cur) => {
+      const has = cur.some((s) => s.type === type && s.id === id);
+      if (single) return has ? [] : [{ type, id }];
+      return has ? cur.filter((s) => !(s.type === type && s.id === id)) : [...cur, { type, id }];
+    });
+  };
+  const remove = (type, id) => setSel((cur) => cur.filter((s) => !(s.type === type && s.id === id)));
+
+  const term = q.trim().toLowerCase();
+  const people_ = usePkMemo(() => {
+    let r = ALL_PEOPLE.filter((p) => !term || p.name.toLowerCase().includes(term) || p.email.toLowerCase().includes(term));
+    r = [...r].sort((a, b) => a.name.localeCompare(b.name) * (dir === "asc" ? 1 : -1));
+    return r;
+  }, [term, dir]);
+  const groups = usePkMemo(() => {
+    let r = ALL_GROUPS.filter((g) => !term || g.name.toLowerCase().includes(term));
+    r = [...r].sort((a, b) => a.name.localeCompare(b.name) * (dir === "asc" ? 1 : -1));
+    return r;
+  }, [term, dir]);
+  const people = people_;
+
+  const tabs = [];
+  if (kinds.includes("people")) tabs.push({ key: "people", label: "People", count: ALL_PEOPLE.length });
+  if (kinds.includes("groups")) tabs.push({ key: "groups", label: "Groups", count: ALL_GROUPS.length });
+
+  // chips (resolve labels)
+  const chips = sel.map((s) => {
+    if (s.type === "group") { const g = ALL_GROUPS.find((x) => x.id === s.id); return { ...s, label: g?.name, color: g?.color }; }
+    const p = ALL_PEOPLE.find((x) => x.id === s.id); return { ...s, label: p?.name };
+  }).filter((c) => c.label);
+
+  const list = tab === "groups" ? groups : people;
+  const empty = list.length === 0;
+  const canSubmit = sel.length > 0;
+  const width = "min(560px, calc(100vw - 32px))";
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={onClose}
+        style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(6px)",
+          opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{
+        position: "relative", width, maxHeight: "min(680px, calc(100vh - 40px))",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        background: "var(--kls-surface)", borderRadius: 16, boxShadow: "var(--kls-drop-shadow)",
+        border: "1px solid var(--kls-outline-variant)",
+        transform: shown ? "translateY(0) scale(1)" : "translateY(8px) scale(0.98)", opacity: shown ? 1 : 0,
+        transition: "transform 250ms var(--kls-ease-standard), opacity 250ms var(--kls-ease-standard)",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med) var(--kls-space-med)" }}>
+          <span style={{ width: 36, height: 36, borderRadius: 12, background: "var(--kls-tertiary-container)",
+            display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <KlsIcon name="group" size={18} color="var(--kls-on-tertiary-container)" />
+          </span>
+          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", lineHeight: 1.25 }}>{title}</span>
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 36, height: 36, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Controls: tabs + search + sort */}
+        <div style={{ padding: "0 var(--kls-space-med) var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          {tabs.length > 1 && <div><PkTabs tabs={tabs} value={tab} onChange={setTab} /></div>}
+
+          <div style={{
+            height: 48, display: "flex", alignItems: "center", gap: 10, padding: "0 var(--kls-space-small)",
+            borderRadius: 8, background: "var(--kls-surface)",
+            border: `1px solid ${searchFocus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"}`,
+            transition: "border-color 120ms var(--kls-ease-standard)",
+          }}>
+            <KlsIcon name="search" size={18} color="var(--kls-on-surface-variant)" />
+            <input value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder={tab === "groups" ? "Search groups" : "Search people"}
+              onFocus={() => setSearchFocus(true)} onBlur={() => setSearchFocus(false)}
+              style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+                fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <PkSort dir={dir} onToggle={() => setDir((d) => (d === "asc" ? "desc" : "asc"))} />
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>
+              {list.length} {tab === "groups" ? (list.length === 1 ? "group" : "groups") : (list.length === 1 ? "person" : "people")}
+            </span>
+          </div>
+        </div>
+
+        {/* List */}
+        <div style={{ flex: 1, minHeight: 120, overflowY: "auto", padding: "var(--kls-space-tiny) var(--kls-space-small) var(--kls-space-med)" }}>
+          {empty ? (
+            <div style={{ height: "100%", minHeight: 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 24, textAlign: "center" }}>
+              <span style={{ width: 56, height: 56, borderRadius: 16, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <KlsIcon name="search" size={24} color="var(--kls-on-surface-variant)" />
+              </span>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)" }}>No matches</span>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", maxWidth: 280 }}>Try a different name or clear the search.</span>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {tab === "groups"
+                ? groups.map((g) => (
+                    <PkRow key={g.id} single={single} checked={isSel("group", g.id)} onToggle={() => toggle("group", g.id)}
+                      leading={<PkMedallion color={g.color} icon={g.icon} />}
+                      title={g.name} subtitle={g.count + (g.count === 1 ? " member" : " members")} />
+                  ))
+                : people.map((p) => (
+                    <PkRow key={p.id} single={single} checked={isSel("person", p.id)} onToggle={() => toggle("person", p.id)}
+                      leading={<PkAvatar name={p.name} />}
+                      title={p.name} subtitle={p.email} />
+                  ))}
+            </div>
+          )}
+        </div>
+
+        {/* Selected chips */}
+        {!single && chips.length > 0 && (
+          <div style={{ borderTop: "1px solid var(--kls-outline-variant)", padding: "var(--kls-space-med) var(--kls-space-med)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{chips.length} selected</span>
+              <button onClick={() => setSel([])} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0,
+                fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-primary)" }}>Clear all</button>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxHeight: 84, overflowY: "auto" }}>
+              {chips.map((c) => <PkChip key={c.type + c.id} label={c.label} color={c.color} onRemove={() => remove(c.type, c.id)} />)}
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", borderTop: (single || chips.length === 0) ? "1px solid var(--kls-outline-variant)" : "none" }}>
+          <button onClick={onClose} style={{
+            height: 48, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", background: "transparent",
+            color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Cancel</button>
+          <button disabled={!canSubmit} onClick={() => canSubmit && onSubmit && onSubmit(sel)} style={{
+            flex: 1, height: 48, borderRadius: 8, border: "none", cursor: canSubmit ? "pointer" : "not-allowed",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 700, opacity: canSubmit ? 1 : 0.45,
+            transition: "opacity 120ms var(--kls-ease-standard)" }}>
+            {single ? "Select" : (canSubmit ? `Select ${sel.length}` : "Select")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.TeammatePicker = TeammatePicker;
+window.PK_PEOPLE = PK_PEOPLE;
+window.PK_GROUPS = PK_GROUPS;
+window.PkAvatar = PkAvatar;
+window.PkMedallion = PkMedallion;
+window.pkInitials = pkInitials;
+window.PK_COLORS = PK_COLORS;
+
+// workspace-screen.jsx — Team Workspace members management (center context pane)
+// Built on the MX/Kilsar Design System. Chrome (Header + NavSidebar) comes from
+// chrome.jsx; this file implements the center pane to spec:
+//   • Data Table treatment (sortable header, hover rows, per-row menu)  → preview/data-table.html
+//   • Role editor uses the canonical neutral Dropdown                    → preview/dropdown.html
+//   • Status uses StatusPill (success container)                         → bundle StatusPill / status-badges.html
+//   • Avatar (tertiary-container, initials)                              → bundle Avatar
+
+
+// ───────────────────────── Data (from the live screen) ─────────────────────────
+const SEED_MEMBERS = [
+  { id: "m1",  name: "",                email: "matt@kilsar.com",                 role: "Admin",      status: "active", title: "Program Director",      joined: "Jan 14, 2024", lastActive: "2 hours ago" },
+  { id: "m2",  name: "",                email: "darren@kilsar.com",               role: "Admin",      status: "active", title: "Operations Lead",       joined: "Jan 14, 2024", lastActive: "Yesterday" },
+  { id: "m3",  name: "Brendan Lawlor",  email: "brendan@kilsar.com",              role: "Admin",      status: "active", title: "Lead Instructor",       joined: "Feb 03, 2024", lastActive: "3 hours ago" },
+  { id: "m4",  name: "Joel Frank",      email: "joel@kilsar.com",                 role: "Admin",      status: "active", title: "Curriculum Admin",      joined: "Feb 20, 2024", lastActive: "Just now" },
+  { id: "m5",  name: "Joel Instructor", email: "joel+test@kilsar.com",            role: "Instructor", status: "active", title: "A&P Instructor",        joined: "Mar 11, 2024", lastActive: "Yesterday" },
+  { id: "m6",  name: "Joel Student",    email: "joel+student@kilsar.com",         role: "Student",    status: "active", title: "Student — Airframe",    joined: "Sep 02, 2024", lastActive: "5 days ago" },
+  { id: "m7",  name: "Justin Carpenter",email: "admin@kilsar.com",                role: "Admin",      status: "active", title: "Systems Admin",         joined: "Jan 14, 2024", lastActive: "1 hour ago" },
+  { id: "m8",  name: "Justin Carpenter",email: "kilsar@aviationmaintenance.edu",  role: "Student",    status: "active", title: "Student — Powerplant",  joined: "Sep 02, 2024", lastActive: "2 days ago" },
+  { id: "m9",  name: "Justin Carpenter",email: "justin@kilsar.com",               role: "Admin",      status: "active", title: "Workspace Owner",       joined: "Jan 14, 2024", lastActive: "Just now" },
+  { id: "m10", name: "Melodie Harris",  email: "melodie@kilsar.com",              role: "Admin",      status: "active", title: "Instructor",            joined: "Apr 08, 2024", lastActive: "4 hours ago" },
+  { id: "m11", name: "Melodie Student", email: "melodie+student@kilsar.com",      role: "Student",    status: "active", title: "Student — Avionics",    joined: "Sep 02, 2024", lastActive: "Yesterday" },
+  { id: "m12", name: "Spencer Carr",    email: "scarr@kilsar.com",                role: "Admin",      status: "active", title: "Facilities Admin",      joined: "May 19, 2024", lastActive: "6 days ago" },
+];
+
+const ROLES = ["Admin", "Instructor", "Student"];
+const ROLE_DOTS = { Admin: "var(--kls-primary)", Instructor: "var(--kls-info)", Student: "var(--kls-on-surface-variant)" };
+
+// ───────────────────────── Groups (seed) ─────────────────────────
+// group_role is PER-GROUP (a user can be a Creator in one group and a plain Member in
+// another), so it lives on the group — never on the global member record. Exactly one
+// immutable `creatorId`; everyone else is an Editor (in `editorIds`) or a Member (default).
+const SEED_GROUPS = [
+  { id: "g1", name: "Workspace Admins",  color: "blue",   icon: "tower",       description: "Owners and operators with full workspace access.", memberIds: ["m1", "m2", "m7", "m9", "m12"], creatorId: "m9", editorIds: ["m1"] },
+  { id: "g2", name: "Instructors",       color: "green",  icon: "person",      description: "Teaching staff across all programs.",              memberIds: ["m3", "m4", "m5", "m10"], creatorId: "m3", editorIds: ["m4"] },
+  { id: "g3", name: "Airframe Cohort",   color: "orange", icon: "cube",        description: "Fall 2024 airframe & powerplant students.",        memberIds: ["m6", "m8", "m11"], creatorId: "m6", editorIds: [] },
+  { id: "g4", name: "Avionics Lab",      color: "purple", icon: "checkpoint",  description: "Students and TAs assigned to the avionics bench.",  memberIds: ["m11", "m5"], creatorId: "m5", editorIds: ["m11"] },
+];
+
+// Resolve a member's group_role within a given group draft/record.
+const CURRENT_USER_ID = "m9"; // the signed-in user — becomes Creator of groups they create
+const GROUP_ROLE_RANK = { creator: 0, editor: 1, member: 2 };
+function groupRoleOf(g, id) {
+  if (!g) return "member";
+  if (id === g.creatorId) return "creator";
+  return (g.editorIds || []).includes(id) ? "editor" : "member";
+}
+const GROUP_ROLE_PALETTE = {
+  creator: { bg: "var(--kls-primary-container)", fg: "var(--kls-on-primary-container)", label: "Creator" },
+  editor:  { bg: "var(--kls-info-container)",     fg: "var(--kls-on-info-container)",     label: "Editor" },
+  member:  { bg: "var(--kls-tertiary)",           fg: "var(--kls-on-surface-variant)",    label: "Member" },
+};
+
+// Recent-activity feed, shaped by role (representative sample for the profile view).
+function activityFor(member) {
+  const byRole = {
+    Admin: [
+      { icon: "worklog",    text: "Updated workspace permissions",        when: "2h ago" },
+      { icon: "group",      text: "Invited 3 members to the workspace",    when: "Yesterday" },
+      { icon: "checkpoint", text: "Archived Block 124498.3938",            when: "4d ago" },
+    ],
+    Instructor: [
+      { icon: "checkpoint", text: "Graded Engine Run-Up oral exam",         when: "3h ago" },
+      { icon: "worklog",    text: "Published Module: Turbine Basics",       when: "2d ago" },
+      { icon: "chatBubble", text: "Left feedback on Assignment 4",          when: "6d ago" },
+    ],
+    Student: [
+      { icon: "checkpoint", text: "Completed Written Exam: FAA Regs",       when: "5h ago" },
+      { icon: "worklog",    text: "Submitted Assignment 4",                 when: "Yesterday" },
+      { icon: "chatBubble", text: "Started Block: Engine Teardown",         when: "1w ago" },
+    ],
+  };
+  return byRole[member.role] || byRole.Admin;
+}
+
+function initialsFor(member) {
+  const n = (member.name || "").trim();
+  if (n) {
+    const parts = n.split(/\s+/);
+    return (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
+  }
+  return (member.email[0] || "?").toUpperCase();
+}
+
+// ───────────────────────── Avatar (DS spec) ─────────────────────────
+function WSAvatar({ initials, size = 36, photo = null }) {
+  return (
+    <div style={{
+      flexShrink: 0, width: size, height: size, borderRadius: 999, overflow: "hidden",
+      background: photo ? `center/cover no-repeat url("${photo}")` : "var(--kls-tertiary-container)",
+      color: "var(--kls-on-surface-variant)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontWeight: 700, fontSize: Math.round(size * 0.36), fontFamily: "var(--kls-font-sans)",
+    }}>{photo ? "" : initials}</div>
+  );
+}
+
+// ───────────────────────── StatusPill (DS spec) ─────────────────────────
+const STATUS_PALETTE = {
+  active:    { bg: "var(--kls-success-container)",  fg: "var(--kls-on-success-container)",  label: "Active",   dot: "var(--kls-success)" },
+  invited:   { bg: "var(--kls-info-container)",     fg: "var(--kls-on-info-container)",     label: "Invited",  dot: "var(--kls-info)" },
+  suspended: { bg: "var(--kls-error-container)",    fg: "var(--kls-on-error-container)",    label: "Suspended",dot: "var(--kls-error)" },
+};
+function WSStatusPill({ status }) {
+  const p = STATUS_PALETTE[status] || STATUS_PALETTE.active;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "var(--kls-space-tiny) var(--kls-space-small) var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 999, background: p.bg, color: p.fg,
+      fontSize: 12, fontWeight: 600, fontFamily: "var(--kls-font-sans)", whiteSpace: "nowrap",
+    }}>
+      <span style={{ width: 7, height: 7, borderRadius: 999, background: p.dot, flexShrink: 0 }} />
+      {p.label}
+    </span>
+  );
+}
+
+// ───────────────────────── Floating menu primitive (fixed, anchored) ─────────────────────────
+// Renders below `anchorRef`, closes on outside-click / scroll / Esc.
+function FloatingMenu({ anchorRef, align = "left", width = 200, onClose, children }) {
+  const [pos, setPos] = useState(null);
+  const menuRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const a = anchorRef.current;
+    if (!a) return;
+    const r = a.getBoundingClientRect();
+    const left = align === "right" ? r.right - width : r.left;
+    setPos({ top: r.bottom + 6, left: Math.max(8, left), width });
+  }, [anchorRef, align, width]);
+
+  useEffect(() => {
+    function onDoc(e) { if (menuRef.current && !menuRef.current.contains(e.target) && !(anchorRef.current && anchorRef.current.contains(e.target))) onClose(); }
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    function onScroll() { onClose(); }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [anchorRef, onClose]);
+
+  if (!pos) return null;
+  return (
+    <div ref={menuRef} style={{
+      position: "fixed", top: pos.top, left: pos.left, width: pos.width, zIndex: 1000,
+      background: "var(--kls-on-primary)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+      padding: 6, display: "flex", flexDirection: "column", gap: 2,
+    }}>{children}</div>
+  );
+}
+
+function MenuItem({ children, selected, danger, onClick }) {
+  const [hover, setHover] = useState(false);
+  const base = danger ? "var(--kls-error)" : "var(--kls-on-surface)";
+  return (
+    <button
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      onClick={onClick}
+      style={{
+        textAlign: "left", border: "none", cursor: "pointer",
+        padding: "var(--kls-space-small) var(--kls-space-small)", borderRadius: 6,
+        background: selected ? "var(--kls-tertiary)" : (hover ? "var(--kls-tertiary-container)" : "transparent"),
+        color: base, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+        display: "flex", alignItems: "center", gap: 10, width: "100%",
+      }}>
+      {children}
+    </button>
+  );
+}
+
+// ───────────────────────── Role Dropdown (canonical neutral DS Dropdown) ─────────────────────────
+function RoleDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+  const btnRef = useRef(null);
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={() => setOpen((o) => !o)}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{
+          height: 40, padding: "0 var(--kls-space-xsmall) 0 var(--kls-space-small)", minWidth: 156,
+          borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+          background: hover ? "var(--kls-tertiary)" : "transparent",
+          display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer",
+          fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)",
+        }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: ROLE_DOTS[value] || "var(--kls-on-surface-variant)", flexShrink: 0 }} />
+        {value}
+        <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, marginLeft: "auto", stroke: "currentColor", fill: "none", strokeWidth: 1.6, transform: open ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <FloatingMenu anchorRef={btnRef} width={180} onClose={() => setOpen(false)}>
+          {ROLES.map((r) => (
+            <MenuItem key={r} selected={r === value} onClick={() => { onChange(r); setOpen(false); }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: ROLE_DOTS[r] || "var(--kls-on-surface-variant)", flexShrink: 0 }} />
+              {r}
+            </MenuItem>
+          ))}
+        </FloatingMenu>
+      )}
+    </>
+  );
+}
+
+// ───────────────────────── Row action menu (per-row chevron → context menu) ─────────────────────────
+// ⚠️ IMPLEMENTER NOTE — FUTURE FEATURE, NOT PART OF V1.
+// The per-row "⋯" actions menu (Edit member / View profile / Remove from workspace)
+// is scoped for a later release. It is shown here for design completeness only —
+// do not wire it up or ship it in V1. No visual change requested; this is a
+// scope marker for the build.
+function RowMenu({ onEdit, onView, onRemove }) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+  const btnRef = useRef(null);
+  return (
+    <>
+      <button
+        ref={btnRef}
+        aria-label="Row actions"
+        onClick={() => setOpen((o) => !o)}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{
+          width: 32, height: 32, borderRadius: 8, border: "none", cursor: "pointer",
+          background: (open || hover) ? "var(--kls-tertiary-container)" : "transparent",
+          color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        }}>
+        <KlsIcon name="dots" size={16} color="var(--kls-on-surface-variant)" />
+      </button>
+      {open && (
+        <FloatingMenu anchorRef={btnRef} align="right" width={184} onClose={() => setOpen(false)}>
+          <MenuItem onClick={() => { setOpen(false); onView(); }}><KlsIcon name="person" size={16} color="var(--kls-on-surface)" />View profile</MenuItem>
+          <MenuItem onClick={() => { setOpen(false); onEdit(); }}><KlsIcon name="pencil" size={16} color="var(--kls-on-surface)" />Edit member</MenuItem>
+          <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "var(--kls-space-tiny) var(--kls-space-xsmall)" }} />
+          <MenuItem danger onClick={() => { setOpen(false); onRemove(); }}><KlsIcon name="trash" size={16} color="var(--kls-error)" />Remove from workspace</MenuItem>
+        </FloatingMenu>
+      )}
+    </>
+  );
+}
+
+// Shared table cell styles.
+const TH = {
+  textAlign: "left", padding: "var(--kls-space-small) var(--kls-space-med)",
+  fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+  borderBottom: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)",
+  position: "sticky", top: 0, background: "var(--kls-surface)", zIndex: 1,
+};
+const TD = {
+  padding: "var(--kls-space-small) var(--kls-space-med)", fontSize: 14, fontWeight: 500,
+  color: "var(--kls-on-surface)", verticalAlign: "middle", fontFamily: "var(--kls-font-sans)",
+};
+
+// Count chip used next to a card title.
+function CountChip({ n }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", height: 24, padding: "0 var(--kls-space-small)",
+      borderRadius: 999, background: "var(--kls-tertiary)", color: "var(--kls-on-surface-variant)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+    }}>{n}</span>
+  );
+}
+
+const primaryBtn = {
+  height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "none", cursor: "pointer",
+  background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+  display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+};
+
+// ───────────────────────── Segmented tabs (CompoundSwitch spec) ─────────────────────────
+function SegmentedTabs({ tabs, value, onChange, variant }) {
+  if (variant === "underline") {
+    return (
+      <div style={{ display: "flex", gap: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        {tabs.map((t) => {
+          const active = t.key === value;
+          return (
+            <button key={t.key} onClick={() => onChange(t.key)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", padding: "var(--kls-space-small) var(--kls-space-tiny) var(--kls-space-small)",
+                fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: active ? 700 : 500,
+                color: active ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)",
+                borderBottom: active ? "2px solid var(--kls-primary)" : "2px solid transparent", marginBottom: -1,
+                display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <KlsIcon name={t.icon} size={16} color={active ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)"} />{t.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+  // pill segmented — canonical CompoundSwitch (compound-switch.html):
+  // track h40 · pad 2 · gap 4 · radius 8 · tertiary · active tile surface · labelMediumSemiBold (12/600)
+  return (
+    <div style={{ display: "inline-flex", flex: "none", height: 40, padding: 2, gap: 4, borderRadius: 8,
+      background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+      {tabs.map((t) => {
+        const active = t.key === value;
+        const fg = active ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)";
+        return (
+          <button key={t.key} onClick={() => onChange(t.key)}
+            style={{ height: 36, flex: "none", whiteSpace: "nowrap", padding: "0 18px", borderRadius: 8, border: 0, cursor: "pointer",
+              background: active ? "var(--kls-surface)" : "transparent",
+              boxShadow: active ? "0 1px 2px rgba(0,0,0,0.04)" : "none",
+              color: fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {t.icon && <KlsIcon name={t.icon} size={16} color={fg} />}
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ───────────────────────── Card shell ─────────────────────────
+// Single surface container. `header` renders in the top row (tabs or title) with
+// `action` pinned to the right — matching the DS pattern (tabs live INSIDE the card).
+function Card({ header, action, children }) {
+  return (
+    <div style={{ background: "var(--kls-surface)", borderRadius: 16, padding: "var(--kls-space-small) 0", overflow: "hidden" }}>
+      {(header || action) && (
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)", marginBottom: "var(--kls-space-tiny)", flexWrap: "wrap" }}>
+          {header}
+          <div style={{ flex: 1 }} />
+          {action}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function CardTitle({ label, count }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</span>
+      <CountChip n={count} />
+    </div>
+  );
+}
+
+// ───────────────────────── Members table body ─────────────────────────
+function MembersBody({ members, setMembers, flags }) {
+  const [sortDir, setSortDir] = useState("asc");
+  const [drawer, setDrawer] = useState(null); // { id, mode } | null
+  const [ctx, setCtx] = useState(null); // { id, x, y } | null — right-click context menu
+
+  const setRole = (id, role) => setMembers((ms) => ms.map((m) => (m.id === id ? { ...m, role } : m)));
+  const removeMember = (id) => setMembers((ms) => ms.filter((m) => m.id !== id));
+  const saveMember = (u) => setMembers((ms) => ms.map((m) => (m.id === u.id ? { ...m, ...u } : m)));
+  const activeMember = drawer ? members.find((m) => m.id === drawer.id) : null;
+
+  const sorted = [...members];
+  if (sortDir) {
+    sorted.sort((a, b) => {
+      const an = (a.name || "").toLowerCase(), bn = (b.name || "").toLowerCase();
+      if (!an && bn) return 1;
+      if (an && !bn) return -1;
+      const cmp = an.localeCompare(bn);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }
+  const toggleSort = () => setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+
+  return (
+    <>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--kls-font-sans)" }}>
+        <thead>
+          <tr>
+            <th style={{ ...TH, cursor: "pointer", userSelect: "none" }} onClick={toggleSort}>
+              Name
+              <span style={{ marginLeft: 6, display: "inline-block", color: "var(--kls-on-surface-variant)", transform: sortDir === "desc" ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>▾</span>
+            </th>
+            <th style={TH}>Email</th>
+            <th style={TH}>Role</th>
+            <th style={TH}>Status</th>
+            <th style={{ ...TH, width: 48 }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((m) => (
+            <MemberRow key={m.id} m={m} td={TD}
+              onRole={(r) => setRole(m.id, r)}
+              onRemove={() => removeMember(m.id)}
+              onView={() => setDrawer({ id: m.id, mode: "view" })}
+              onEdit={() => setDrawer({ id: m.id, mode: "edit" })}
+              onContext={(e) => { e.preventDefault(); setCtx({ id: m.id, x: Math.min(e.clientX, window.innerWidth - 196), y: e.clientY }); }} />
+          ))}
+        </tbody>
+      </table>
+
+      {ctx && (() => {
+        const cm = members.find((m) => m.id === ctx.id);
+        if (!cm) return null;
+        return (
+          <CursorMenu x={ctx.x} y={ctx.y} onClose={() => setCtx(null)}>
+            <MenuItem onClick={() => { setCtx(null); setDrawer({ id: cm.id, mode: "view" }); }}><KlsIcon name="person" size={16} color="var(--kls-on-surface)" />View profile</MenuItem>
+            <MenuItem onClick={() => { setCtx(null); setDrawer({ id: cm.id, mode: "edit" }); }}><KlsIcon name="pencil" size={16} color="var(--kls-on-surface)" />Edit member</MenuItem>
+            <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "var(--kls-space-tiny) var(--kls-space-xsmall)" }} />
+            <MenuItem danger onClick={() => { setCtx(null); removeMember(cm.id); }}><KlsIcon name="trash" size={16} color="var(--kls-error)" />Remove member</MenuItem>
+          </CursorMenu>
+        );
+      })()}
+
+      {activeMember && (
+        <MemberDrawer
+          member={activeMember} mode={drawer.mode} flags={flags}
+          onClose={() => setDrawer(null)}
+          onSwitchToEdit={() => setDrawer({ id: drawer.id, mode: "edit" })}
+          onSave={(updated) => { saveMember(updated); setDrawer(null); }} />
+      )}
+    </>
+  );
+}
+
+// ───────────────────────── Groups table body ─────────────────────────
+// Editor + delete state is lifted to the parent so the card-header "New group"
+// action can open the create drawer.
+function GroupsBody({ groups, setGroups, members, editor, setEditor, deleteId, setDeleteId }) {
+  const memberById = (id) => members.find((m) => m.id === id);
+  const membersOf = (g) => g.memberIds.map(memberById).filter(Boolean);
+  const [expanded, setExpanded] = useState({});
+  const toggle = (id) => setExpanded((e) => ({ ...e, [id]: !e[id] }));
+  const [ctx, setCtx] = useState(null); // { id, x, y } | null — right-click context menu
+  const setMemberGroupRole = (groupId, memberId, role) => setGroups((gs) => gs.map((g) => {
+    if (g.id !== groupId || memberId === g.creatorId) return g; // Creator is immutable
+    const editors = new Set(g.editorIds || []);
+    if (role === "editor") editors.add(memberId); else editors.delete(memberId);
+    return { ...g, editorIds: [...editors] };
+  }));
+
+  function saveGroup(draft) {
+    if (draft.id) {
+      setGroups((gs) => gs.map((g) => (g.id === draft.id ? { ...g, ...draft } : g)));
+    } else {
+      const id = "g" + (Date.now().toString(36));
+      setGroups((gs) => [...gs, { ...draft, id }]);
+    }
+    setEditor(null);
+  }
+  function confirmDelete() {
+    setGroups((gs) => gs.filter((g) => g.id !== deleteId));
+    setDeleteId(null);
+  }
+
+  const editing = editor && editor.id ? groups.find((g) => g.id === editor.id) : null;
+  const deleteTarget = deleteId ? groups.find((g) => g.id === deleteId) : null;
+
+  return (
+    <>
+      {groups.length === 0 ? (
+        <div style={{ padding: "var(--kls-space-large) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+            <KlsIcon name="group" size={26} color="var(--kls-on-surface-variant)" />
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>No groups yet</div>
+          <div style={{ fontSize: 14, color: "var(--kls-on-surface-variant)", marginTop: 4, maxWidth: 320, marginInline: "auto" }}>Organize members into cohorts, teams, or labs. Create your first group to get started.</div>
+          <button style={{ ...primaryBtn, marginTop: 16 }} onClick={() => setEditor({ mode: "create" })}>
+            <PlusGlyph />New group
+          </button>
+        </div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--kls-font-sans)" }}>
+          <thead>
+            <tr>
+              <th style={TH}>Group</th>
+              <th style={TH}>Members</th>
+              <th style={TH}>Group Role</th>
+              <th style={{ ...TH, width: 40 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((g) => (
+              <GroupRow key={g.id} g={g} members={membersOf(g)}
+                expanded={!!expanded[g.id]} onToggle={() => toggle(g.id)}
+                onEdit={() => setEditor({ mode: "edit", id: g.id })}
+                onContext={(e) => { e.preventDefault(); setCtx({ id: g.id, x: Math.min(e.clientX, window.innerWidth - 196), y: e.clientY }); }}
+                onMemberRole={setMemberGroupRole} />
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {ctx && (() => {
+        const cg = groups.find((g) => g.id === ctx.id);
+        if (!cg) return null;
+        return (
+          <CursorMenu x={ctx.x} y={ctx.y} onClose={() => setCtx(null)}>
+            <MenuItem onClick={() => { setCtx(null); setEditor({ mode: "edit", id: cg.id }); }}><KlsIcon name="pencil" size={16} color="var(--kls-on-surface)" />Edit group</MenuItem>
+            <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "var(--kls-space-tiny) var(--kls-space-xsmall)" }} />
+            <MenuItem danger onClick={() => { setCtx(null); setDeleteId(cg.id); }}><KlsIcon name="trash" size={16} color="var(--kls-error)" />Delete group</MenuItem>
+          </CursorMenu>
+        );
+      })()}
+
+      {editor && (
+        <GroupDrawer
+          group={editing} mode={editor.mode} allMembers={members}
+          onClose={() => setEditor(null)} onSave={saveGroup} />
+      )}
+      {deleteTarget && (
+        <DeleteGroupDialog group={deleteTarget} onCancel={() => setDeleteId(null)} onConfirm={confirmDelete} />
+      )}
+    </>
+  );
+}
+
+// Circular row action button (CircleButton spec: 32 · radius 999 · outline border · 16px icon).
+function RowCircleButton({ title, onClick, children }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button title={title} aria-label={title} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 999, cursor: "pointer", flexShrink: 0,
+        border: "1px solid var(--kls-outline)", background: hover ? "var(--kls-tertiary-container)" : "var(--kls-surface)",
+        color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+      {children}
+    </button>
+  );
+}
+
+// Context menu anchored at a cursor point (right-click). Same items as the row menu.
+function CursorMenu({ x, y, onClose, children }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    function onDoc(e) { if (ref.current && !ref.current.contains(e.target)) onClose(); }
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onClose, true);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onClose, true); };
+  }, [onClose]);
+  return (
+    <div ref={ref} style={{ position: "fixed", top: y, left: x, width: 184, zIndex: 1000,
+      background: "var(--kls-on-primary)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+      padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>{children}</div>
+  );
+}
+
+// Expanded member sub-row — Control Tower style: indented, surface-variant tint, real
+// table columns. The Group Role column carries the per-group role control (Creator locked).
+function GroupMemberSubRow({ g, m, onMemberRole }) {
+  const [hover, setHover] = useState(false);
+  const isCreator = m.id === g.creatorId;
+  return (
+    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ borderBottom: "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "var(--kls-surface-variant)", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <td style={{ ...TD, paddingLeft: "calc(var(--kls-space-large) + var(--kls-space-med))" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <WSAvatar initials={initialsFor(m)} size={32} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name || <span style={{ color: "var(--kls-on-surface-variant)", fontWeight: 500 }}>No name set</span>}</div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</div>
+          </div>
+        </div>
+      </td>
+      <td style={TD}></td>
+      <td style={TD} onClick={(e) => e.stopPropagation()}>
+        {isCreator
+          ? <GroupRolePill role="creator" />
+          : <GroupRoleControl role={groupRoleOf(g, m.id)} onChange={(r) => onMemberRole(g.id, m.id, r)} />}
+      </td>
+      <td style={{ ...TD, width: 40 }}></td>
+    </tr>
+  );
+}
+
+function GroupRow({ g, members, expanded, onToggle, onEdit, onContext, onMemberRole }) {
+  const [hover, setHover] = useState(false);
+  const ordered = [...members].sort((a, b) =>
+    (GROUP_ROLE_RANK[groupRoleOf(g, a.id)] - GROUP_ROLE_RANK[groupRoleOf(g, b.id)]) || (a.name || a.email).localeCompare(b.name || b.email));
+  return (
+    <>
+      <tr onClick={onToggle} onContextMenu={onContext}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)", background: (hover || expanded) ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+        <td style={TD}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <GroupMedallion color={g.color} icon={g.icon} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{g.name}</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 420 }}>{g.description || `${members.length} member${members.length === 1 ? "" : "s"}`}</div>
+            </div>
+          </div>
+        </td>
+        <td style={TD}><AvatarStack members={members} /></td>
+        <td style={TD}></td>
+        <td style={{ ...TD, textAlign: "right", width: 40 }} onClick={(e) => e.stopPropagation()}>
+          <RowCircleButton title="Edit group" onClick={onEdit}>
+            <KlsIcon name="pencil" size={16} color="var(--kls-on-surface)" />
+          </RowCircleButton>
+        </td>
+      </tr>
+      {expanded && ordered.map((m) => (
+        <GroupMemberSubRow key={g.id + "_" + m.id} g={g} m={m} onMemberRole={onMemberRole} />
+      ))}
+    </>
+  );
+}
+
+function GroupRowMenu({ onView, onEdit, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
+  const btnRef = useRef(null);
+  return (
+    <>
+      <button ref={btnRef} aria-label="Group actions" onClick={() => setOpen((o) => !o)}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ width: 32, height: 32, borderRadius: 8, border: "none", cursor: "pointer",
+          background: (open || hover) ? "var(--kls-tertiary-container)" : "transparent",
+          color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name="dots" size={16} color="var(--kls-on-surface-variant)" />
+      </button>
+      {open && (
+        <FloatingMenu anchorRef={btnRef} align="right" width={184} onClose={() => setOpen(false)}>
+          <MenuItem onClick={() => { setOpen(false); onView(); }}><KlsIcon name="group" size={16} color="var(--kls-on-surface)" />View group</MenuItem>
+          <MenuItem onClick={() => { setOpen(false); onEdit(); }}><KlsIcon name="pencil" size={16} color="var(--kls-on-surface)" />Edit group</MenuItem>
+          <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "var(--kls-space-tiny) var(--kls-space-xsmall)" }} />
+          <MenuItem danger onClick={() => { setOpen(false); onDelete(); }}><KlsIcon name="trash" size={16} color="var(--kls-error)" />Delete group</MenuItem>
+        </FloatingMenu>
+      )}
+    </>
+  );
+}
+
+// ───────────────────────── The center pane ─────────────────────────
+function WorkspaceMembers({ flags, surface = "tabs" }) {
+  const [members, setMembers] = useState(SEED_MEMBERS);
+  const [groups, setGroups] = useState(SEED_GROUPS);
+  const [tab, setTab] = useState("members"); // members | groups
+  const [groupEditor, setGroupEditor] = useState(null); // { mode, id? } | null
+  const [groupDeleteId, setGroupDeleteId] = useState(null);
+
+  const tabDefs = [
+    { key: "members", label: "Members", count: members.length, icon: "person" },
+    { key: "groups",  label: "Groups",  count: groups.length,  icon: "group" },
+  ];
+
+  const inviteBtn = (
+    <button style={primaryBtn}><PlusGlyph />Invite</button>
+  );
+  const newGroupBtn = (
+    <button style={primaryBtn} onClick={() => setGroupEditor({ mode: "create" })}><PlusGlyph />New group</button>
+  );
+
+  const membersBody = <MembersBody members={members} setMembers={setMembers} flags={flags} />;
+  const groupsBody = (
+    <GroupsBody groups={groups} setGroups={setGroups} members={members}
+      editor={groupEditor} setEditor={setGroupEditor} deleteId={groupDeleteId} setDeleteId={setGroupDeleteId} />
+  );
+
+  const stacked = surface === "stacked";
+
+  const pageHeader = (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Team Workspace</h1>
+        <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Manage members and groups in your workspace.</p>
+      </div>
+      {!stacked && (tab === "members" ? inviteBtn : newGroupBtn)}
+    </div>
+  );
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        {pageHeader}
+
+        {stacked ? (
+          <>
+            <Card header={<CardTitle label="Team members" count={members.length} />} action={inviteBtn}>{membersBody}</Card>
+            <Card header={<CardTitle label="Groups" count={groups.length} />} action={newGroupBtn}>{groupsBody}</Card>
+          </>
+        ) : (
+          <>
+            <div style={{ display: "flex" }}>
+              <SegmentedTabs tabs={tabDefs} value={tab} onChange={setTab} variant={surface === "underline" ? "underline" : "pill"} />
+            </div>
+            <Card>{tab === "members" ? membersBody : groupsBody}</Card>
+          </>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+function MemberRow({ m, td, onRole, onRemove, onView, onEdit, onContext }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <tr
+      onClick={onView}
+      onContextMenu={onContext}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", borderBottom: "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 80ms var(--kls-ease-standard)" }}>
+      <td style={td}>
+        <button
+          onClick={onView}
+          title="View profile"
+          style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, cursor: "pointer",
+            font: "inherit", color: "var(--kls-on-surface)", textAlign: "left" }}>
+          <WSAvatar initials={initialsFor(m)} />
+          {m.name
+            ? <span>{m.name}</span>
+            : <span style={{ color: "var(--kls-on-surface-variant)", fontWeight: 500 }}>No name set</span>}
+        </button>
+      </td>
+      <td style={{ ...td, color: "var(--kls-on-surface-variant)" }}>{m.email}</td>
+      <td style={td} onClick={(e) => e.stopPropagation()}><RoleDropdown value={m.role} onChange={onRole} /></td>
+      <td style={td}><WSStatusPill status={m.status} /></td>
+      <td style={{ ...td, textAlign: "right" }} onClick={(e) => e.stopPropagation()}><RowMenu onEdit={onEdit} onView={onView} onRemove={onRemove} /></td>
+    </tr>
+  );
+}
+
+// ───────────────────────── App shell assembly ─────────────────────────
+
+// member-drawer.jsx — Edit / View member, one DrawerOverlay serving both modes.
+//   • DrawerOverlay spec: right, 426px, 12px inset, surface card, radius 8, drop shadow, over scrim
+//   • Fields use IconTextField spec (h48, surface, outline-variant, radius 8)
+//   • Field labels = uppercase section label (labelMediumSemiBold · .08em · on-surface-variant)
+//   • Editability is gated per field by feature flags (passed in `flags`).
+//   • mode="view" forces every field read-only regardless of flags.
+const { useState: useDrawerState, useEffect: useDrawerEffect, useRef: useDrawerRef } = React;
+
+const STATUS_OPTIONS = [
+  { key: "active",    label: "Active" },
+  { key: "invited",   label: "Invited" },
+  { key: "suspended", label: "Suspended" },
+];
+
+// Label above each field.
+function FieldLabel({ children }) {
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{children}</span>
+    </div>
+  );
+}
+
+// Editable text input (IconTextField spec) or a static, identical-looking box (not clickable).
+function DrawerText({ value, onChange, type = "text", editable, placeholder }) {
+  const [focus, setFocus] = useDrawerState(false);
+  const empty = !value;
+  const box = {
+    height: 48, display: "flex", alignItems: "center", padding: "0 var(--kls-space-small)",
+    background: "var(--kls-surface)", borderRadius: 8,
+    fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+  };
+  if (editable) {
+    return (
+      <div style={{ ...box, border: `1px solid ${focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"}`, transition: "border-color 120ms" }}>
+        <input
+          type={type} value={value} placeholder={placeholder}
+          onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+      </div>
+    );
+  }
+  // static — looks the same as editing, just not interactive
+  return (
+    <div style={{ ...box, border: "1px solid var(--kls-outline-variant)", color: empty ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>
+      {value || placeholder || "—"}
+    </div>
+  );
+}
+
+// Generic select control (role + status), reuses the table's FloatingMenu + MenuItem.
+// pillOnly: when static, render just the value (e.g. a bare status pill) with no field box.
+function DrawerSelect({ value, options, editable, renderValue, pillOnly, onChange }) {
+  const [open, setOpen] = useDrawerState(false);
+  const [hover, setHover] = useDrawerState(false);
+  const btnRef = useDrawerRef(null);
+  const display = renderValue ? renderValue(value) : value;
+  if (!editable) {
+    if (pillOnly) {
+      return <div style={{ minHeight: 48, display: "flex", alignItems: "center" }}>{display}</div>;
+    }
+    return (
+      <div style={{
+        minHeight: 48, display: "flex", alignItems: "center", padding: "0 var(--kls-space-small)",
+        background: "var(--kls-surface)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+      }}>{display}</div>
+    );
+  }
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={() => setOpen((o) => !o)}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{
+          height: 48, width: "100%", padding: "0 var(--kls-space-xsmall) 0 var(--kls-space-small)", borderRadius: 8,
+          border: "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "var(--kls-surface)",
+          display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer",
+          fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)",
+        }}>
+        {display}
+        <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, marginLeft: "auto", stroke: "currentColor", fill: "none", strokeWidth: 1.6, transform: open ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <FloatingMenu anchorRef={btnRef} width={btnRef.current ? btnRef.current.offsetWidth : 240} onClose={() => setOpen(false)}>
+          {options.map((opt) => (
+            <MenuItem key={opt.key || opt} selected={(opt.key || opt) === value} onClick={() => { onChange(opt.key || opt); setOpen(false); }}>
+              {opt.render ? opt.render() : (opt.label || opt)}
+            </MenuItem>
+          ))}
+        </FloatingMenu>
+      )}
+    </>
+  );
+}
+
+function ActivityRow({ item }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
+      <span style={{ width: 32, height: 32, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <KlsIcon name={item.icon} size={16} color="var(--kls-on-surface-variant)" />
+      </span>
+      <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{item.text}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>{item.when}</span>
+    </div>
+  );
+}
+
+function MetaCell({ icon, label, value }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+        <KlsIcon name={icon} size={14} color="var(--kls-on-surface-variant)" />
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      </div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{value}</div>
+    </div>
+  );
+}
+
+function MemberDrawer({ member, mode, flags, onClose, onSwitchToEdit, onSave }) {
+  const [editing, setEditing] = useDrawerState(mode === "edit");
+  const isEdit = editing;
+  // local draft (only meaningful in edit mode)
+  const [draft, setDraft] = useDrawerState(member);
+  const [photo, setPhoto] = useDrawerState(null);
+  const [shown, setShown] = useDrawerState(false);
+  const fileRef = useDrawerRef(null);
+
+  useDrawerEffect(() => { setDraft(member); setPhoto(null); setEditing(mode === "edit"); }, [member, mode]);
+  useDrawerEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+
+  const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }));
+  const canEdit = (field) => isEdit && flags[field];
+  const anyEditable = ["name", "email", "title", "role", "status"].some((f) => flags[f]);
+  function cancelEdit() { setDraft(member); setPhoto(null); setEditing(false); }
+
+  function pickPhoto(e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhoto(reader.result);
+    reader.readAsDataURL(f);
+  }
+
+  const v = isEdit ? draft : member;
+  const displayName = v.name || "No name set";
+
+  const drawerWidth = "min(426px, calc(100vw - 24px))";
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      {/* Scrim */}
+      <div
+        onClick={onClose}
+        style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+
+      {/* Drawer panel */}
+      <div style={{
+        position: "absolute", top: 12, bottom: 12, right: 12, width: drawerWidth,
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+            {isEdit ? "Edit member" : "Member profile"}
+          </span>
+          {!isEdit && anyEditable && (
+            <button onClick={() => setEditing(true)} style={{ height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer",
+              background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
+              fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 700 }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--kls-tertiary)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              <KlsIcon name="pencil" size={15} color="currentColor" /> Edit
+            </button>
+          )}
+          <button
+            onClick={onClose} aria-label="Close"
+            style={{ width: 32, height: 32, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body (scrolls) */}
+        <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
+
+          {/* Identity */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ position: "relative" }}>
+              <WSAvatar initials={initialsFor(member)} size={72} photo={photo} />
+              {canEdit("avatar") || (isEdit && flags.avatar) ? (
+                <button
+                  onClick={() => fileRef.current && fileRef.current.click()}
+                  aria-label="Upload photo"
+                  style={{ position: "absolute", right: -2, bottom: -2, width: 28, height: 28, borderRadius: 999,
+                    border: "2px solid var(--kls-surface)", background: "var(--kls-tertiary-container)", cursor: "pointer",
+                    display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                  <KlsIcon name="camera" size={14} color="var(--kls-on-tertiary-container)" />
+                </button>
+              ) : null}
+              <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: "none" }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: v.name ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>{displayName}</div>
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.email}</div>
+              {isEdit && flags.avatar && (
+                <button onClick={() => fileRef.current && fileRef.current.click()}
+                  style={{ marginTop: 8, height: 28, padding: "0 10px", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", background: "transparent", cursor: "pointer",
+                    display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+                  <KlsIcon name="upload" size={13} color="var(--kls-on-surface)" />{photo ? "Replace photo" : "Upload photo"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Fields */}
+          <div>
+            <FieldLabel>Name</FieldLabel>
+            <DrawerText value={v.name} onChange={(x) => set("name", x)} editable={canEdit("name")} placeholder="No name set" />
+          </div>
+          <div>
+            <FieldLabel>Email</FieldLabel>
+            <DrawerText value={v.email} type="email" onChange={(x) => set("email", x)} editable={canEdit("email")} />
+          </div>
+          <div>
+            <FieldLabel>Title</FieldLabel>
+            <DrawerText value={v.title} onChange={(x) => set("title", x)} editable={canEdit("title")} placeholder="No title" />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <FieldLabel>Role</FieldLabel>
+              <DrawerSelect value={v.role} options={ROLES} editable={canEdit("role")} onChange={(x) => set("role", x)} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <FieldLabel>Status</FieldLabel>
+              <DrawerSelect
+                value={v.status}
+                options={STATUS_OPTIONS}
+                editable={canEdit("status")}
+                pillOnly
+                renderValue={(s) => <WSStatusPill status={s} />}
+                onChange={(x) => set("status", x)} />
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          {isEdit ? (
+            <>
+              <button onClick={cancelEdit} style={btnSecondary}>Cancel</button>
+              <button onClick={() => onSave(draft)} style={btnPrimary}>Save changes</button>
+            </>
+          ) : (
+            <button onClick={onClose} style={btnSecondary}>Close</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// PrimaryActionButton / SecondaryActionButton specs (h40, radius 8 web)
+const btnPrimary = {
+  height: 40, padding: "0 18px", borderRadius: 8, border: "none", cursor: "pointer",
+  background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+};
+const btnSecondary = {
+  height: 40, padding: "0 18px", borderRadius: 8, cursor: "pointer",
+  background: "transparent", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+};
+
+window.MemberDrawer = MemberDrawer;
+
+// group-drawer.jsx — Create / Edit a user group, plus the delete-confirm dialog.
+// Reuses shared primitives from workspace-screen.jsx (WSAvatar, initialsFor,
+// FloatingMenu, MenuItem, btnPrimary/btnSecondary) — same global babel scope.
+//   • DrawerOverlay spec: right, 426px, 12px inset, surface card, radius 8, drop shadow, scrim
+//   • Member picker = searchable list with inverted checkboxes (selection rows)
+//   • Color/icon = curated DS accent medallions
+//   • Delete = AlertPrompt centered card (radius small, dropShadow, blurred scrim)
+const { useState: useGroupState, useEffect: useGroupEffect, useRef: useGroupRef } = React;
+
+// Curated medallion palette from DS accent / container tokens.
+const GROUP_COLORS = [
+  { key: "blue",    bg: "var(--kls-info-container)",    fg: "var(--kls-info)" },
+  { key: "green",   bg: "var(--kls-success-container)", fg: "var(--kls-success)" },
+  { key: "orange",  bg: "var(--kls-accent-5)",          fg: "var(--kls-accent-4)" },
+  { key: "purple",  bg: "var(--kls-accent-13)",         fg: "var(--kls-accent-12)" },
+  { key: "red",     bg: "var(--kls-error-container)",   fg: "var(--kls-error)" },
+  { key: "neutral", bg: "var(--kls-tertiary)",          fg: "var(--kls-on-surface-variant)" },
+];
+const GROUP_ICONS = ["group", "person", "cube", "tower", "checkpoint", "worklog", "chatBubbles", "orionOutline"];
+
+function colorFor(key) {
+  return GROUP_COLORS.find((c) => c.key === key) || GROUP_COLORS[0];
+}
+
+// Colored, icon'd medallion used in the table + drawer header.
+function GroupMedallion({ color, icon, size = 40 }) {
+  const c = colorFor(color);
+  return (
+    <div style={{
+      flexShrink: 0, width: size, height: size, borderRadius: 12,
+      background: c.bg, color: c.fg,
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <KlsIcon name={icon || "group"} size={Math.round(size * 0.5)} color={c.fg} />
+    </div>
+  );
+}
+
+// Small overlapping avatar stack for the members column.
+function AvatarStack({ members, max = 4 }) {
+  const shown = members.slice(0, max);
+  const extra = members.length - shown.length;
+  return (
+    <div style={{ display: "flex", alignItems: "center" }}>
+      {shown.map((m, i) => (
+        <div key={m.id} style={{ marginLeft: i === 0 ? 0 : -10, border: "2px solid var(--kls-surface)", borderRadius: 999 }}>
+          <WSAvatar initials={initialsFor(m)} size={28} />
+        </div>
+      ))}
+      {extra > 0 && (
+        <div style={{
+          marginLeft: -10, width: 28, height: 28, borderRadius: 999, border: "2px solid var(--kls-surface)",
+          background: "var(--kls-tertiary)", color: "var(--kls-on-surface-variant)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "var(--kls-font-sans)", fontSize: 11, fontWeight: 700,
+        }}>+{extra}</div>
+      )}
+      {members.length === 0 && (
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No members</span>
+      )}
+    </div>
+  );
+}
+
+// Inverted checkbox (selection-row variant): 22×22, radius 6, 1.5px border.
+function PickerCheck({ checked }) {
+  return (
+    <span style={{
+      width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+      border: checked ? "none" : "1.5px solid var(--kls-on-surface-variant)",
+      background: checked ? "var(--kls-on-surface)" : "transparent",
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+    }}>
+      {checked && (
+        <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-surface)", fill: "none", strokeWidth: 3 }}>
+          <path d="M5 12l5 5 9-10" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+// Searchable multi-select member picker. Selected rows expose a group_role control;
+// the Creator row is locked (checked, no remove, shown as a Creator pill).
+function MemberPicker({ allMembers, selectedIds, onToggle, roleOf, onRole, creatorId }) {
+  const [q, setQ] = useGroupState("");
+  const [focus, setFocus] = useGroupState(false);
+  const term = q.trim().toLowerCase();
+  const list = allMembers.filter((m) =>
+    !term || (m.name || "").toLowerCase().includes(term) || m.email.toLowerCase().includes(term)
+  );
+  return (
+    <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 8, overflow: "hidden" }}>
+      {/* search box */}
+      <div style={{
+        height: 44, display: "flex", alignItems: "center", gap: 8, padding: "0 var(--kls-space-small)",
+        borderBottom: "1px solid var(--kls-outline-variant)",
+        background: focus ? "var(--kls-tertiary)" : "var(--kls-surface)", transition: "background 120ms",
+      }}>
+        <KlsIcon name="search" size={16} color="var(--kls-on-surface-variant)" />
+        <input
+          value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people"
+          onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+          style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+      </div>
+      {/* rows */}
+      <div style={{ maxHeight: 268, overflowY: "auto" }}>
+        {list.length === 0 && (
+          <div style={{ padding: "var(--kls-space-med) var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface-variant)" }}>No matches.</div>
+        )}
+        {list.map((m) => {
+          const checked = selectedIds.includes(m.id);
+          const isCreator = m.id === creatorId;
+          const role = roleOf ? roleOf(m.id) : "member";
+          return (
+            <div key={m.id}
+              style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-xsmall) var(--kls-space-small)",
+                background: checked ? "var(--kls-tertiary)" : "transparent",
+              }}>
+              <button
+                onClick={() => !isCreator && onToggle(m.id)}
+                disabled={isCreator}
+                title={isCreator ? "The Creator can't be removed" : undefined}
+                style={{
+                  flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12,
+                  border: "none", background: "transparent", padding: 0, textAlign: "left",
+                  cursor: isCreator ? "default" : "pointer",
+                }}>
+                {isCreator
+                  ? <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, flexShrink: 0, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.8 }}><rect x="5" y="11" width="14" height="9" rx="2" strokeLinejoin="round" /><path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" /></svg>
+                  : <PickerCheck checked={checked} />}
+                <WSAvatar initials={initialsFor(m)} size={32} />
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: m.name ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name || "No name set"}</span>
+                  <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.email}</span>
+                </span>
+              </button>
+              {checked
+                ? (isCreator
+                    ? <GroupRolePill role="creator" />
+                    : <GroupRoleControl role={role} onChange={(r) => onRole && onRole(m.id, r)} />)
+                : <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", flexShrink: 0 }}>{m.role}</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GroupFieldLabel({ children, trailing }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{children}</span>
+      <span style={{ flex: 1 }} />
+      {trailing}
+    </div>
+  );
+}
+
+// ───────────────────────── Group role: read pill + edit control ─────────────────────────
+function GroupRolePill({ role }) {
+  const p = GROUP_ROLE_PALETTE[role] || GROUP_ROLE_PALETTE.member;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", height: 24, padding: "0 var(--kls-space-small)",
+      borderRadius: 999, background: p.bg, color: p.fg, whiteSpace: "nowrap",
+      fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+    }}>{p.label}</span>
+  );
+}
+
+// Compact Member/Editor picker (Creator is immutable and never offered here).
+function GroupRoleControl({ role, onChange }) {
+  const [open, setOpen] = useGroupState(false);
+  const [hover, setHover] = useGroupState(false);
+  const btnRef = useRef(null);
+  const p = GROUP_ROLE_PALETTE[role] || GROUP_ROLE_PALETTE.member;
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{
+          height: 32, padding: "0 var(--kls-space-xsmall) 0 var(--kls-space-small)", minWidth: 108,
+          borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+          background: hover || open ? "var(--kls-tertiary)" : "transparent",
+          display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", cursor: "pointer",
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface)",
+        }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: p.fg, flexShrink: 0 }} />
+        {p.label}
+        <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, marginLeft: "auto", stroke: "currentColor", fill: "none", strokeWidth: 1.6, transform: open ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <FloatingMenu anchorRef={btnRef} align="right" width={148} onClose={() => setOpen(false)}>
+          {["member", "editor"].map((r) => (
+            <MenuItem key={r} selected={r === role} onClick={() => { onChange(r); setOpen(false); }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: GROUP_ROLE_PALETTE[r].fg, flexShrink: 0 }} />
+              {GROUP_ROLE_PALETTE[r].label}
+            </MenuItem>
+          ))}
+        </FloatingMenu>
+      )}
+    </>
+  );
+}
+
+// ───────────────────────── Group create/edit drawer ─────────────────────────
+function GroupDrawer({ group, mode, allMembers, onClose, onSave }) {
+  const isCreate = mode === "create";
+  const blank = { id: null, name: "", description: "", color: "blue", icon: "group", memberIds: [CURRENT_USER_ID], creatorId: CURRENT_USER_ID, editorIds: [] };
+  const [draft, setDraft] = useGroupState(group || blank);
+  const [shown, setShown] = useGroupState(false);
+
+  useGroupEffect(() => { setDraft(group || blank); }, [group, mode]);
+  useGroupEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+
+  const set = (k, val) => setDraft((d) => ({ ...d, [k]: val }));
+  const toggleMember = (id) => setDraft((d) => {
+    if (id === d.creatorId) return d; // the Creator can't be removed
+    const has = d.memberIds.includes(id);
+    return {
+      ...d,
+      memberIds: has ? d.memberIds.filter((x) => x !== id) : [...d.memberIds, id],
+      editorIds: has ? (d.editorIds || []).filter((x) => x !== id) : (d.editorIds || []),
+    };
+  });
+  const setMemberRole = (id, role) => setDraft((d) => {
+    if (id === d.creatorId) return d; // Creator is immutable — no transfer
+    const editors = new Set(d.editorIds || []);
+    if (role === "editor") editors.add(id); else editors.delete(id);
+    return { ...d, editorIds: [...editors] };
+  });
+  const roleOf = (id) => groupRoleOf(draft, id);
+  const selectedMembers = allMembers
+    .filter((m) => draft.memberIds.includes(m.id))
+    .sort((a, b) => (GROUP_ROLE_RANK[roleOf(a.id)] - GROUP_ROLE_RANK[roleOf(b.id)]) || (a.name || a.email).localeCompare(b.name || b.email));
+  const canSave = draft.name.trim().length > 0;
+  const drawerWidth = "min(460px, calc(100vw - 24px))";
+
+  const inputBox = {
+    width: "100%", boxSizing: "border-box", padding: "0 var(--kls-space-small)", height: 48,
+    background: "var(--kls-surface)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+    fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)", outline: "none",
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{
+        position: "absolute", top: 12, bottom: 12, right: 12, width: drawerWidth,
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <GroupMedallion color={draft.color} icon={draft.icon} size={36} />
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+            {isCreate ? "New group" : "Edit group"}
+          </span>
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 32, height: 32, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
+          <div>
+            <GroupFieldLabel>Group name</GroupFieldLabel>
+            <input value={draft.name} placeholder="e.g. Airframe Cohort" autoFocus
+              onChange={(e) => set("name", e.target.value)} style={inputBox} />
+          </div>
+
+          <div>
+            <GroupFieldLabel>Description</GroupFieldLabel>
+            <textarea value={draft.description} placeholder="What is this group for?"
+              onChange={(e) => set("description", e.target.value)} rows={3}
+              style={{ ...inputBox, height: "auto", padding: "var(--kls-space-small) var(--kls-space-small)", resize: "vertical", lineHeight: 1.45 }} />
+          </div>
+
+          {/* Color */}
+          <div>
+            <GroupFieldLabel>Color</GroupFieldLabel>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {GROUP_COLORS.map((c) => {
+                const active = draft.color === c.key;
+                return (
+                  <button key={c.key} onClick={() => set("color", c.key)} aria-label={c.key}
+                    style={{ width: 32, height: 32, borderRadius: 999, cursor: "pointer", background: c.bg,
+                      border: active ? "2px solid var(--kls-on-surface)" : "2px solid transparent",
+                      outline: active ? "2px solid var(--kls-surface)" : "none", outlineOffset: -4,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ width: 12, height: 12, borderRadius: 999, background: c.fg }} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Icon */}
+          <div>
+            <GroupFieldLabel>Icon</GroupFieldLabel>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {GROUP_ICONS.map((ic) => {
+                const active = draft.icon === ic;
+                return (
+                  <button key={ic} onClick={() => set("icon", ic)} aria-label={ic}
+                    style={{ width: 40, height: 40, borderRadius: 8, cursor: "pointer",
+                      background: active ? "var(--kls-tertiary-container)" : "transparent",
+                      border: active ? "1px solid var(--kls-on-surface-variant)" : "1px solid var(--kls-outline-variant)",
+                      display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <KlsIcon name={ic} size={20} color="var(--kls-on-surface)" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Members */}
+          <div>
+            <GroupFieldLabel trailing={
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-on-surface-variant)", letterSpacing: 0, textTransform: "none" }}>
+                {selectedMembers.length} selected
+              </span>
+            }>Members</GroupFieldLabel>
+            <MemberPicker allMembers={allMembers} selectedIds={draft.memberIds} onToggle={toggleMember}
+              roleOf={roleOf} onRole={setMemberRole} creatorId={draft.creatorId} />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          <button onClick={onClose} style={btnSecondary}>Cancel</button>
+          <button onClick={() => canSave && onSave(draft)} disabled={!canSave}
+            style={{ ...btnPrimary, opacity: canSave ? 1 : 0.5, cursor: canSave ? "pointer" : "not-allowed" }}>
+            {isCreate ? "Create group" : "Save changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────── Delete confirm (AlertPrompt + DialogOverlay) ─────────────────────────
+function DeleteGroupDialog({ group, onCancel, onConfirm }) {
+  const [shown, setShown] = useGroupState(false);
+  useGroupEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onCancel(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={onCancel} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)", opacity: shown ? 1 : 0, transition: "opacity 200ms var(--kls-ease-standard)" }} />
+      <div style={{
+        position: "relative", width: "min(420px, 100%)", background: "var(--kls-surface)",
+        borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", padding: 24,
+        transform: shown ? "scale(1)" : "scale(0.96)", opacity: shown ? 1 : 0,
+        transition: "transform 200ms var(--kls-ease-standard), opacity 200ms var(--kls-ease-standard)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+          <span style={{ width: 40, height: 40, borderRadius: 999, background: "var(--kls-error-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <KlsIcon name="trash" size={18} color="var(--kls-error)" />
+          </span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>Delete group?</span>
+        </div>
+        <p style={{ margin: "0 0 var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)" }}>
+          “{group.name}” will be deleted. Its {group.memberIds.length} member{group.memberIds.length === 1 ? "" : "s"} stay in the workspace — only the group is removed. This can’t be undone.
+        </p>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <button onClick={onCancel} style={btnSecondary}>Cancel</button>
+          <button onClick={onConfirm}
+            style={{ height: 40, padding: "0 18px", borderRadius: 8, border: "none", cursor: "pointer",
+              background: "var(--kls-error)", color: "var(--kls-on-error, #fff)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Delete group</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.GroupDrawer = GroupDrawer;
+window.DeleteGroupDialog = DeleteGroupDialog;
+window.GroupMedallion = GroupMedallion;
+window.AvatarStack = AvatarStack;
+window.GROUP_COLORS = GROUP_COLORS;
+
+
+// ── Unified web shell: one chrome + router over the feature screens ──
+function webLabelMeta(key) {
+  const all = tabsForFlavor("education").concat([
+    { key: "teamWorkspace", label: "Workspace", icon: "group" },
+    { key: "logout", label: "Logout", icon: "tabs/logout" },
+  ]);
+  return all.find((t) => t.key === key) || { key, label: key, icon: "worklog" };
+}
+// ════════════════════════════════════════════════════════════════════
+// RELEASE NOTES — opened from the sidebar version string
+// ════════════════════════════════════════════════════════════════════
+const RN_KIND_COLOR = { New: "var(--kls-success)", Improved: "var(--kls-info)", Fixed: "var(--kls-accent-4)" };
+
+function ReleaseSections({ sections }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+      {sections.map((sec) => (
+        <div key={sec.kind}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginBottom: "var(--kls-space-xsmall)" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "var(--kls-radius-pill)", background: RN_KIND_COLOR[sec.kind] || "var(--kls-outline)" }} />
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{sec.kind}</span>
+          </div>
+          <ul style={{ margin: 0, padding: "0 0 0 var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            {sec.items.map((t, i) => <li key={i} style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{t}</li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReleaseNotes() {
+  const releases = window.MX_RELEASES || [];
+  const [current, ...past] = releases;
+  const [open, setOpen] = useState({});
+  const scrollRef = useRef(null);
+  const [activeV, setActiveV] = useState(current ? current.version : "");
+  const relTop = (el, c) => el.getBoundingClientRect().top - c.getBoundingClientRect().top + c.scrollTop;
+  const jump = (v) => {
+    setOpen((o) => ({ ...o, [v]: true }));
+    const c = scrollRef.current;
+    const el = c && c.querySelector('[data-release="' + v + '"]');
+    if (el && c) c.scrollTop = relTop(el, c) - 20;
+    setActiveV(v);
+  };
+  const onScroll = () => {
+    const c = scrollRef.current; if (!c) return;
+    const nodes = Array.from(c.querySelectorAll("[data-release]"));
+    let best = nodes[0];
+    for (const n of nodes) if (relTop(n, c) - c.scrollTop <= 80) best = n;
+    if (best) setActiveV(best.getAttribute("data-release"));
+  };
+  if (!current) return null;
+  return (
+    <div ref={scrollRef} onScroll={onScroll} style={{ position: "relative", flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", gap: "var(--kls-space-large)", alignItems: "flex-start" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Release Notes</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>What changed in each version.</p>
+          </div>
+
+          {/* current release */}
+          <section data-release={current.version} style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Version {current.version}</span>
+              <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Current</span>
+              <span style={{ marginLeft: "auto", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{current.date}</span>
+            </div>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{current.summary}</p>
+            <ReleaseSections sections={current.sections} />
+          </section>
+
+          {/* past releases */}
+          {past.length > 0 && (
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-small)" }}>Past releases</div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            {past.map((r) => {
+              const isOpen = !!open[r.version];
+              return (
+                <section key={r.version} data-release={r.version} style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+                  <button onClick={() => setOpen((o) => ({ ...o, [r.version]: !isOpen }))} aria-expanded={isOpen}
+                    style={{ all: "unset", boxSizing: "border-box", cursor: "pointer", width: "100%", display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-med)" }}>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", flexShrink: 0 }}>Version {r.version}</span>
+                    <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.summary}</span>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)", flexShrink: 0 }}>{r.date}</span>
+                    <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, flexShrink: 0, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.8, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: "0 var(--kls-space-med) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)", paddingTop: "var(--kls-space-med)" }}>
+                      <ReleaseSections sections={r.sections} />
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* version jump rail */}
+        <nav aria-label="Versions" style={{ width: 112, flexShrink: 0, position: "sticky", top: 0, display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", paddingTop: 48 }}>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", padding: "0 var(--kls-space-small)", marginBottom: "var(--kls-space-tiny)" }}>Versions</div>
+          {releases.map((r) => {
+            const on = activeV === r.version;
+            return (
+              <button key={r.version} onClick={() => jump(r.version)}
+                style={{ all: "unset", boxSizing: "border-box", cursor: "pointer", height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+                  background: on ? "var(--kls-surface-container-lowest)" : "transparent", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, color: on ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
+                {r.version}{r === current && <span style={{ fontSize: 10, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>CURRENT</span>}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+function WebPlaceholder({ tabKey }) {
+  const m = webLabelMeta(tabKey);
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ textAlign: "center", maxWidth: 360, padding: "var(--kls-space-large)" }}>
+        <div style={{ width: 64, height: 64, borderRadius: 16, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+          <KlsIcon name={m.icon || "worklog"} size={28} color="var(--kls-on-surface-variant)" />
+        </div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>{m.label}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: 6, lineHeight: 1.5 }}>This screen isn’t built in the mock yet. Control Tower and Workspace are the live ones.</div>
+      </div>
+    </div>
+  );
+}
+function WebApp(props) {
+  const groupsSurface = props.groupsSurface || "tabs";
+  const showKpis = props.showKpis !== false;
+  const role = props.role || "instructor";
+  const examRole = role;
+  const examSummaryMode = props.examSummaryMode || "From attempt";
+  const ctRole = role;
+  const studentLayout = props.studentLayout || "sections";
+  const [active, setActive] = useState("library");
+  const [query, setQuery] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [editing3D, setEditing3D] = useState(null);
+  const [openSim, setOpenSim] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const flags = { name: true, email: false, title: true, role: true, status: false, avatar: true };
+  const onSelect = (key) => {
+    if (key === "help") { setHelpOpen(true); return; }
+    if (key === "logout") return;
+    setActive(key);
+  };
+  let content;
+  if (active === "controlTower") content = ctRole === "student"
+    ? <StudentControlTower layout={studentLayout} query={query} onNavigate={onSelect} onOpenSim={setOpenSim} />
+    : <ControlTower showKpis={showKpis} initialQuick="all" query={query} />;
+  else if (active === "teamWorkspace") content = <WorkspaceMembers flags={flags} surface={groupsSurface} />;
+  else if (active === "writtenExams") content = <WrittenExams role={examRole} summaryMode={examSummaryMode} />;
+  else if (active === "oralExams") content = examRole === "student" ? <StudentOralExams /> : <OralExams query={query} />;
+  else if (active === "integrations") content = <Integrations query={query} />;
+  else if (active === "faq") content = <FaqScreen query={query} onFeedback={() => setHelpOpen(true)} />;
+  else if (active === "terms") content = <Blocks query={query} onOpenTask={setEditingTask} />;
+  else if (active === "tickets") content = <Tickets query={query} />;
+  else if (active === "library") content = <Library query={query} onOpen={setEditing3D} />;
+  else if (active === "training") content = <Training query={query} onOpen={setOpenSim} role={ctRole} />;
+  else if (active === "releaseNotes") content = <ReleaseNotes />;
+  else content = <WebPlaceholder tabKey={active} />;
+  if (openSim) return <SimulatorRunner sim={openSim} onClose={() => setOpenSim(null)} />;
+  if (editing3D) return <ModelEditor node={editing3D} onClose={() => setEditing3D(null)} />;
+  if (editingTask) return <TaskEditor task={editingTask} onClose={() => setEditingTask(null)} />;
+  return (
+    <div style={{ height: "100vh", display: "flex", background: "var(--kls-scaffold-bg)", overflow: "hidden" }}>
+      <NavSidebar active={active} workspaceName="EduDev" version="2.16.5" flavor="education" onSelect={onSelect} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <Header unread={47} onSearch={setQuery} onAvatar={() => setProfileOpen(true)} searchPlaceholder={active === "controlTower" ? (ctRole === "student" ? "Search assignments" : "Search students") : active === "faq" ? "Search FAQs" : active === "training" ? "Search simulators" : "Search"} />
+        {content}
+      </div>
+      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} onHelp={() => { setProfileOpen(false); setHelpOpen(true); }} />
+      <FeedbackDialog open={helpOpen} onClose={() => setHelpOpen(false)} onBrowseFaqs={() => { setHelpOpen(false); setActive("faq"); }} />
+    </div>
+  );
+}
+// ════════════════════════════════════════════════════════════════════
+// TRAINING — simulator grid + in-app runner
+// ════════════════════════════════════════════════════════════════════
+const TRAINING_SIMS = [
+  { id: "six-pack",            title: "Six-Pack Flight Instruments", desc: "Fly the six primary instruments and watch how pitch, bank, speed and altitude read out together.",  src: "simulators/six-pack.html" },
+  { id: "turbocharger",        title: "Turbocharger System",         desc: "Trace exhaust, compressor and wastegate behavior as manifold pressure and altitude change.",       src: "simulators/turbocharger.html" },
+  { id: "vapor-cycle",         title: "Vapor Cycle Cooling",         desc: "Follow refrigerant through compressor, condenser, expansion valve and evaporator.",                  src: "simulators/vapor-cycle.html" },
+  { id: "circuit-trainer",     title: "Circuit Trainer",             desc: "Build series and parallel circuits and measure voltage, current and resistance.",                    src: "simulators/circuit-trainer.html" },
+  { id: "logic-gate",          title: "Logic Gate Simulator",        desc: "Wire AND, OR, NOT and compound gates, then test outputs against truth tables.",                      src: "simulators/logic-gate.html" },
+  { id: "power-w",             title: "Four-Stroke Cycle",           desc: "Step through intake, compression, power and exhaust across 720° of crankshaft rotation, with valve lead, lag and ignition timing.",                       src: "simulators/power-w.html" },
+  { id: "micrometer",          title: "Micrometer",                  desc: "Read an outside micrometer to the thousandth across sleeve, thimble and vernier scales.",            src: "simulators/micrometer.html" },
+  { id: "propeller-protractor",title: "Propeller Protractor",        desc: "Set blade angle at the reference station with a universal propeller protractor.",                  src: "simulators/propeller-protractor.html" },
+];
+
+// Signed-in student's simulator allocations, grouped by sim id (individual + group-instance sources).
+function trainingAllocationsBySim() {
+  const CT = window.CT; if (!CT) return {};
+  const ME = CT.STUDENTS[0];
+  const out = {};
+  const add = (simId, a) => { (out[simId] = out[simId] || []).push(a); };
+  CT.buildAssignments().forEach((a) => { if (a.studentId === ME.id && a.type === "simulator") (a.simulators || []).forEach((id) => add(id, { ...a, source: "individual" })); });
+  CT.buildAllocations().forEach((al) => {
+    if (al.type !== "simulator") return;
+    const inst = al.instances.find((i) => i.studentId === ME.id); if (!inst) return;
+    const g = CT.GROUPS.find((x) => x.id === al.groupId);
+    (al.simulators || []).forEach((id) => add(id, { id: al.id + "@" + ME.id, type: al.type, title: al.title, due: al.due, status: inst.status, instructions: al.instructions, simulators: al.simulators, source: "group", groupName: g ? g.name : "Group" }));
+  });
+  Object.values(out).forEach((list) => list.sort((a, b) => { const da = ctParseDue(a.due), db = ctParseDue(b.due); return (da ? da.getTime() : Infinity) - (db ? db.getTime() : Infinity); }));
+  return out;
+}
+
+function TrainingAllocRow({ item, onOpen }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onOpen(); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onOpen(); } }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 40, boxSizing: "border-box", padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8,
+        background: hover ? "var(--kls-surface-container-low)" : "var(--kls-surface-container-lowest)", border: "1px solid var(--kls-outline-variant)", cursor: "pointer",
+        transition: "background var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+      <CTTypeIcon type="simulator" size={16} />
+      <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.source === "group" ? item.groupName + " · " : ""}Due {item.due}</div>
+      </div>
+      <CTStatusPill status={item.status} size="sm" />
+      <KlsIcon name="chevronRight" size={16} color="var(--kls-on-surface-variant)" />
+    </div>
+  );
+}
+
+function TrainingCard({ sim, onOpen, onChoose, allocations = [] }) {
+  const [hover, setHover] = useState(false);
+  const ref = useRef(null);
+  const [w, setW] = useState(320);
+  useEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver((e) => setW(e[0].contentRect.width));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  const PREVIEW_W = 1280;
+  const scale = w / PREVIEW_W;
+  return (
+    <div role="button" tabIndex={0} onClick={() => allocations.length ? onChoose(sim, allocations) : onOpen(sim)} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); allocations.length ? onChoose(sim, allocations) : onOpen(sim); } }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", boxSizing: "border-box", display: "flex", flexDirection: "column", textAlign: "left", outline: "none",
+        background: "var(--kls-surface)", border: "1px solid " + (hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"), borderRadius: 12, overflow: "hidden",
+        boxShadow: hover ? "var(--kls-drop-shadow)" : "none", transform: hover ? "translateY(-2px)" : "none",
+        transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard), box-shadow var(--kls-dur-fade-animation) var(--kls-ease-standard), border-color var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+      <div ref={ref} style={{ position: "relative", width: "100%", aspectRatio: "16 / 10", background: "var(--kls-surface-container-low)", overflow: "hidden", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <iframe src={sim.src} title={sim.title + " preview"} tabIndex={-1} scrolling="no"
+          style={{ position: "absolute", top: 0, left: 0, width: PREVIEW_W, height: PREVIEW_W * 10 / 16, border: 0, transformOrigin: "0 0", transform: "scale(" + scale + ")", pointerEvents: "none", background: "var(--kls-surface)" }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          background: hover ? "rgba(0,0,0,0.35)" : "transparent", opacity: hover ? 1 : 0, transition: "opacity var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+          <span style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+            display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
+            <MSGlyph name="play_arrow" size={20} />{allocations.length ? "Open" : "Practice"}
+          </span>
+        </div>
+        {allocations.length > 0 && (
+          <span style={{ position: "absolute", top: "var(--kls-space-small)", right: "var(--kls-space-small)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)",
+            padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-accent-12)", color: "var(--kls-color-base-white)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", boxShadow: "var(--kls-drop-shadow)" }}>
+            <MSGlyph name="school" size={14} />{allocations.length === 1 ? "1 assigned" : allocations.length + " assigned"}
+          </span>
+        )}
+      </div>
+      <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{sim.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{sim.desc}</div>
+      </div>
+    </div>
+  );
+}
+
+// Chooser shown when a sim has allocations: practice, or open one of the assignments.
+function TrainingChooser({ sim, allocations, onOpen, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--kls-space-med)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+      <div role="dialog" aria-modal="true" aria-label={sim.title} style={{ position: "relative", width: "min(460px, 100%)", maxHeight: "80vh", background: "var(--kls-surface)",
+        borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
+          <div style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>{sim.title}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Practice freely, or open one of your assignments.</div>
+          </div>
+          <MeCircleBtn label="Close" onClick={onClose}>
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </MeCircleBtn>
+        </div>
+        <div style={{ padding: "0 var(--kls-space-med) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", overflowY: "auto" }}>
+          <button onClick={() => onOpen(sim)} style={{ ...ctPrimaryBtn, width: "100%", justifyContent: "center" }}>
+            <MSGlyph name="play_arrow" size={20} />Practice
+          </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <div className="kls-text-section-label" style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>Assigned</div>
+            {allocations.map((a) => <TrainingAllocRow key={a.id} item={a} onOpen={() => onOpen(sim, a)} />)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Training({ query = "", onOpen, role = "instructor" }) {
+  const term = query.trim().toLowerCase();
+  const [choice, setChoice] = useState(null); // { sim, allocations }
+  const allocs = React.useMemo(() => role === "student" ? trainingAllocationsBySim() : {}, [role]);
+  const sims = TRAINING_SIMS.filter((s) => !term || s.title.toLowerCase().includes(term) || s.desc.toLowerCase().includes(term));
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div>
+          <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Training</h1>
+          <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Interactive simulators for hands-on practice.</p>
+        </div>
+        {sims.length === 0 ? (
+          <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try a different search.</div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "var(--kls-space-med)" }}>
+            {sims.map((s) => <TrainingCard key={s.id} sim={s} onOpen={onOpen} onChoose={(sim, allocations) => setChoice({ sim, allocations })} allocations={allocs[s.id] || []} />)}
+          </div>
+        )}
+      </div>
+      {choice && <TrainingChooser sim={choice.sim} allocations={choice.allocations} onClose={() => setChoice(null)} onOpen={(sim, a) => { setChoice(null); onOpen(sim, a); }} />}
+    </div>
+  );
+}
+
+function SimulatorRunner({ sim, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--kls-scaffold-bg)", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: 64, flex: "none", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        padding: "0 var(--kls-space-med)", background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <MeCircleBtn label="Back to Training" onClick={onClose}>
+          <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sim.title}</div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Training · Simulator</div>
+        </div>
+      </div>
+      <iframe src={sim.src} title={sim.title} style={{ flex: 1, width: "100%", border: 0, background: "var(--kls-surface)" }} />
+    </div>
+  );
+}
+// ════════════════════════════════════════════════════════════════════
+// ORAL EXAMS (student) — topic picker
+// ════════════════════════════════════════════════════════════════════
+const ORAL_TOPICS = [
+  { id: "ot1", title: "Cutting Tools", subject: "General", desc: "", acs: ["AM.I.A.K11", "AM.I.A.K11b", "AM.I.A.K11d", "AM.I.G.K1", "AM.I.G.K12"], easy: 0, med: 5, hard: 0 },
+  { id: "ot2", title: "Helicopters", subject: "Airframe", desc: "", acs: ["AM.I.A.K1", "AM.I.A.K10", "AM.I.A.K11", "AM.I.A.K11a", "AM.I.A.K11b", "AM.I.A.K11c", "AM.I.A.K11d", "AM.I.A.K12"], easy: 0, med: 2, hard: 0 },
+  { id: "ot3", title: "joel test", subject: "General", desc: "", acs: [], easy: 0, med: 3, hard: 0 },
+  { id: "ot4", title: "Sample Topic Sample Topic Sample Topic Sample Topic Sample Topic", subject: "Powerplant", desc: Array(10).fill("Test Desciption.  and a long one....").join(" "), acs: [], easy: 5, med: 5, hard: 0 },
+  { id: "ot5", title: "Test Exam - Blue", subject: "Airframe", desc: "", acs: [], easy: 0, med: 20, hard: 0 },
+  { id: "ot6", title: "Test Exam - Fire Safety", subject: "General", desc: "a test exam about fire safety", acs: ["AM.I.A.K1", "AM.I.A.K11", "AM.I.A.K11b"], easy: 0, med: 5, hard: 0 },
+];
+const ORAL_DIFF = [
+  { key: "easy", label: "Easy",   bg: "var(--kls-accent-2)",  fg: "var(--kls-accent-3)" },
+  { key: "med",  label: "Medium", bg: "var(--kls-accent-5)",  fg: "var(--kls-accent-6)" },
+  { key: "hard", label: "Hard",   bg: "var(--kls-accent-14)", fg: "var(--kls-accent-15)" },
+];
+const oralSecondaryBtn = {
+  height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)", cursor: "pointer",
+  background: "var(--kls-surface-container-high)", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+};
+
+function OralExams({ query = "" }) {
+  const [tab, setTab] = useState("available");
+  const [sortDir, setSortDir] = useState("asc");
+  const [refreshing, setRefreshing] = useState(false);
+  const [setupTopic, setSetupTopic] = useState(null);
+  const [session, setSession] = useState(null);
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
+  const term = query.trim().toLowerCase();
+  const list = ORAL_TOPICS
+    .filter((t) => !term || t.title.toLowerCase().includes(term) || t.desc.toLowerCase().includes(term) || t.acs.some((c) => c.toLowerCase().includes(term)))
+    .slice().sort((a, b) => { const c = a.title.localeCompare(b.title, undefined, { sensitivity: "base" }); return sortDir === "asc" ? c : -c; });
+  if (session) return <OralSpeakRunner session={session} onExit={() => setSession(null)} />;
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, lineHeight: 1.2, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Oral Exams</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, fontWeight: 400, color: "var(--kls-on-surface-variant)" }}>Practice dynamic questions on various topics.</p>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ minWidth: 0, overflowX: "auto" }}><SegmentedTabs tabs={[{ key: "available", label: "Available" }, { key: "logs", label: "Exam Logs" }]} value={tab} onChange={setTab} /></div>
+          <LibIconBtn icon="refresh" label="Refresh" onClick={refresh} spin={refreshing} />
+        </div>
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {tab === "logs" ? (
+            <OralEmpty title="No exam logs yet" body="Finished oral exams will show up here." />
+          ) : list.length === 0 ? (
+            <OralEmpty title="Nothing matches" body="Try a different search." />
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <th style={INT_TH}>
+                    <button onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                      style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", font: "inherit", letterSpacing: "inherit", textTransform: "inherit", color: "inherit" }}>
+                      Topic<MSGlyph name={sortDir === "asc" ? "arrow_upward" : "arrow_downward"} size={14} color="var(--kls-on-surface-variant)" />
+                    </button>
+                  </th>
+                  <th style={{ ...INT_TH, width: 200 }}>Questions</th>
+                </tr>
+              </thead>
+              <tbody>{list.map((t) => <OralTopicRow key={t.id} topic={t} />)}</tbody>
+            </table>
+          )}
+        </div>
+      </div>
+      {setupTopic && <OralSetupDialog topic={setupTopic} onClose={() => setSetupTopic(null)} onStart={(cfg) => { setSetupTopic(null); setSession(cfg); }} />}
+    </div>
+  );
+}
+
+// ── Student Oral Exams: setup (topic tree + config) and Exam Logs ──
+const oralTopicTotal = (t) => (t.easy || 0) + (t.med || 0) + (t.hard || 0);
+// ACS code descriptions (FAA ACS text); CT_POOL supplies any it already defines.
+const ORAL_ACS_DESC = {
+  "AM.I.A.K11a": "a. Series circuits.", "AM.I.A.K11b": "b. Parallel circuits.", "AM.I.A.K11c": "c. Series-parallel circuits.", "AM.I.A.K11d": "d. Voltage drop.",
+  "AM.I.A.K12": "Power and energy.", "AM.I.G.K1": "Precision measurement tools and their use.", "AM.I.G.K12": "Hand tools and power tools.",
+};
+const oralAcsDesc = (code) => { const c = CT_POOL.flatMap((t) => t.courses.flatMap((x) => x.codes)).find((x) => x.code === code); return (c && c.desc) || ORAL_ACS_DESC[code] || ""; };
+// Subtopics = the ACS codes assembled from the topic's questions; the pool is split across them (pool is fixed — difficulty only changes hints + time).
+function oralSubtopics(t) {
+  const n = t.acs.length; if (!n) return [];
+  const total = oralTopicTotal(t), base = Math.floor(total / n), extra = total % n;
+  return t.acs.map((code, i) => ({ id: t.id + ":" + code, code, desc: oralAcsDesc(code), q: base + (i < extra ? 1 : 0) }));
+}
+const ORAL_LOGS = [
+  { id: "ol1", date: "2026-10-09T14:20:00", topicId: "ot1", title: "Cutting Tools", assignment: "Shop Tools Oral Check", acs: ["AM.I.A.K11", "AM.I.A.K11b"], mode: "speak", level: "med", duration: "08:42",
+    questions: [
+      { acs: "AM.I.A.K11b", text: "When selecting a saw blade for cutting composite materials on an aircraft, what characteristics should you consider to ensure a clean cut and minimize delamination, and why are these characteristics important?", answer: "A fine-tooth or diamond-grit blade so the fibers get cut rather than torn, and keep the feed slow so heat doesn't build up and soften the resin.", hints: 1, pass: true },
+      { acs: "AM.I.A.K11", text: "Describe how you would choose the correct drill bit point angle for drilling aluminum versus stainless steel, and what happens if the wrong angle is used.", answer: "Aluminum takes a sharper point, around 118 degrees. Stainless needs a flatter one, closer to 135. Too sharp on stainless and the bit walks and work-hardens the surface.", hints: 0, pass: true },
+      { acs: "AM.I.A.K11d", text: "What is the purpose of a reamer, and when would you ream a hole instead of drilling it to final size?", answer: "It brings a hole to final size with a smoother finish. You'd ream when the fastener needs a close tolerance fit.", hints: 0, pass: true },
+      { acs: "AM.I.G.K1", text: "Explain how you inspect a cutting tool for wear or damage before use, and what signs would make you remove it from service.", answer: "Check the edges for chips and look for bluing on the shank.", hints: 2, pass: false },
+      { acs: "AM.I.G.K12", text: "What safety precautions should you follow when using a pneumatic cutoff wheel near aircraft structure?", answer: "Guard on, face shield, and check what's behind the cut — lines, wiring, fuel cells. Keep sparks away from anything flammable.", hints: 0, pass: true },
+    ] },
+  { id: "ol2", date: "2026-10-03T09:05:00", topicId: "ot6", title: "Test Exam - Fire Safety", acs: ["AM.I.A.K1", "AM.I.A.K11"], mode: "write", level: "easy", duration: "11:15",
+    questions: [
+      { acs: "AM.I.A.K1", text: "What class of fire extinguisher is appropriate for an electrical fire in the hangar, and why?", answer: "Class C — it's non-conductive so it won't carry current back to you. CO2 or dry chemical.", hints: 0, pass: true },
+      { acs: "AM.I.A.K11", text: "Describe the precautions you take before performing hot work near a fuel cell.", answer: "Defuel and purge the tank, verify with a combustible gas detector, have a fire watch and extinguisher staged.", hints: 1, pass: true },
+      { acs: "AM.I.A.K11b", text: "What are the three elements of the fire triangle and how does each extinguisher type remove one?", answer: "Heat, fuel, oxygen. Water cools, CO2 displaces oxygen, dry chem interrupts the chain reaction.", hints: 0, pass: true },
+    ] },
+  { id: "ol3", date: "2026-09-26T16:40:00", topicId: "ot2", title: "Helicopters", assignment: "Rotorcraft Systems Review", acs: ["AM.I.A.K10", "AM.I.A.K12"], mode: "speak", level: "hard", duration: "03:58",
+    questions: [
+      { acs: "AM.I.A.K10", text: "How do you identify a hydraulic line's pressure rating and fluid type from its markings?", answer: "Color-coded tape bands and the printed spec on the hose. Red for fuel, blue for hydraulic... I'm not certain of the pressure marking.", hints: 0, pass: false },
+      { acs: "AM.I.A.K12", text: "What ground-handling precautions are specific to a helicopter with the rotor system installed?", answer: "Tie down the blades, keep clear of the tail rotor arc, use the correct ground-handling wheels and never push on the blades.", hints: 0, pass: true },
+    ] },
+];
+const oralLogScore = (a) => a.questions.filter((q) => q.pass).length / a.questions.length;
+const oralDate = (d) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const oralLevelLabel = (k) => (ORAL_LEVELS.find((l) => l.key === k) || ORAL_LEVELS[1]).label;
+
+// Calibrate icon: "tune" glyph; when calibrated, a small success check badge overlays the corner.
+function CalibrateIcon({ done, size = 18 }) {
+  return (
+    <span style={{ position: "relative", display: "inline-flex", width: size, height: size, flexShrink: 0 }}>
+      <MSGlyph name="tune" size={size} color={done ? "var(--kls-success)" : "var(--kls-accent-4)"} />
+      {done && <span style={{ position: "absolute", right: -4, bottom: -4, width: 11, height: 11, borderRadius: "var(--kls-radius-pill)", background: "var(--kls-success)", border: "1.5px solid var(--kls-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <svg viewBox="0 0 24 24" width="7" height="7" fill="none" stroke="var(--kls-on-success)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4.5 4.5L20 6" /></svg>
+      </span>}
+    </span>
+  );
+}
+function StudentOralExams() {
+  const [tab, setTab] = useState("practice");
+  const [calibrated, setCalibrated] = useState(false);
+  const [session, setSession] = useState(null);
+  const [log, setLog] = useState(null);
+  if (session) return <OralSpeakRunner session={session} onExit={() => setSession(null)} />;
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div className="page" data-screen-label="Oral Exams (student)">
+        <div className="page__head">
+          <div>
+            <div className="page__title">Oral Exams</div>
+            <div className="page__sub">Practice dynamic questions on various topics.</div>
+          </div>
+          <button style={oralSecondaryBtn} onClick={() => setCalibrated((v) => !v)} aria-pressed={calibrated}><CalibrateIcon done={calibrated} size={18} />{calibrated ? "Calibrated" : "Calibrate"}</button>
+        </div>
+        <div className="compound-switch" role="tablist">
+          <button className="compound-switch__option" role="tab" data-active={tab === "practice"} onClick={() => setTab("practice")}><Icon name="exam" size={14} />Practice Setup</button>
+          <button className="compound-switch__option" role="tab" data-active={tab === "logs"} onClick={() => { setTab("logs"); setLog(null); }}><Icon name="history" size={14} />Exam Logs<span className="count">{ORAL_LOGS.length}</span></button>
+        </div>
+        {tab === "practice" && <OralStudentSetup onStart={setSession} />}
+        {tab === "logs" && !log && <OralLogsTab onOpen={setLog} />}
+        {tab === "logs" && log && <OralLogDetail attempt={log} onBack={() => setLog(null)} />}
+      </div>
+    </div>
+  );
+}
+
+// DS Checkbox (preview/checkbox.html) — sm mark: 18×18 · radius 5 · 1.5px border · 14px check · M3 green-check variant; indeterminate uses the inverted dash.
+const OralCheck = ({ checked, indeterminate, onChange }) => (
+  <button onClick={(e) => { e.stopPropagation(); onChange(); }} aria-checked={indeterminate ? "mixed" : !!checked} role="checkbox" style={{
+    width: 18, height: 18, borderRadius: 5, flexShrink: 0, padding: 0, cursor: "pointer",
+    border: "1.5px solid " + (checked || indeterminate ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)"),
+    background: indeterminate ? "var(--kls-on-surface)" : "transparent",
+    display: "inline-flex", alignItems: "center", justifyContent: "center", transition: "background-color 80ms" }}>
+    {checked && !indeterminate && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--kls-color-green-300)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l4.5 4.5L20 6" /></svg>}
+    {indeterminate && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--kls-surface)" strokeWidth="3" strokeLinecap="round"><path d="M6 12h12" /></svg>}
+  </button>
+);
+
+function OralStudentSetup({ onStart }) {
+  const [expanded, setExpanded] = useState({ ot1: true });
+  const [selected, setSelected] = useState(() => new Set(oralSubtopics(ORAL_TOPICS[0]).map((s) => s.id)));
+  const [level, setLevel] = useState("med");
+  const [answerMode, setAnswerMode] = useState("speak");
+  const [count, setCount] = useState(3);
+  const leafIds = (t) => { const subs = oralSubtopics(t); return subs.length ? subs.map((s) => s.id) : [t.id]; };
+  const toggleIds = (ids) => { const all = ids.every((id) => selected.has(id)); const next = new Set(selected); ids.forEach((id) => (all ? next.delete(id) : next.add(id))); setSelected(next); };
+  const topics = ORAL_TOPICS;
+  const chosen = ORAL_TOPICS.filter((t) => leafIds(t).some((id) => selected.has(id)));
+  const subCount = chosen.reduce((n, t) => n + oralSubtopics(t).filter((s) => selected.has(s.id)).length, 0);
+  const pool = chosen.reduce((n, t) => { const subs = oralSubtopics(t); return n + (subs.length ? subs.filter((s) => selected.has(s.id)).reduce((m, s) => m + s.q, 0) : oralTopicTotal(t)); }, 0);
+  const drawing = Math.min(count, pool);
+  const curLevel = ORAL_LEVELS.find((l) => l.key === level);
+  const begin = () => {
+    const acs = chosen.flatMap((t) => oralSubtopics(t).filter((s) => selected.has(s.id)).map((s) => s.code));
+    const topic = chosen.length === 1 ? chosen[0] : { id: chosen[0].id, title: chosen.length + " topics", desc: chosen.map((t) => t.title).join(", "), acs };
+    onStart({ topic: { ...topic, acs: acs.length ? acs : topic.acs }, level, count: drawing, answerMode });
+  };
+  const label = { fontSize: 12, fontWeight: 600, color: "var(--ink-3)" };
+  const qCount = { fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", flexShrink: 0, minWidth: 40, textAlign: "right" };
+  return (
+    <div className="setup-grid">
+      <div className="card" style={{ padding: 0, minWidth: 0 }}>
+        <div className="setup-topics-head" style={{ padding: "14px 18px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", minWidth: 0 }}>
+            <h3 style={{ margin: 0, whiteSpace: "nowrap" }}>Topics</h3>
+            <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>Pick topics and ACS codes to build a custom oral exam.</div>
+          </div>
+        </div>
+        <div style={{ padding: "var(--kls-space-tiny)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+          {topics.map((t) => {
+            const subs = oralSubtopics(t), ids = leafIds(t);
+            const all = ids.every((id) => selected.has(id)), some = ids.some((id) => selected.has(id)), open = !!expanded[t.id];
+            return (
+              <div key={t.id}>
+                <div style={{ display: "flex", alignItems: "center", padding: "10px 14px", background: "var(--bg-inset)", borderRadius: 8, gap: 10 }}>
+                  <button className="btn btn--ghost btn--sm" disabled={!subs.length} style={{ width: 24, padding: 0, flexShrink: 0, visibility: subs.length ? "visible" : "hidden" }} onClick={() => setExpanded({ ...expanded, [t.id]: !open })}>
+                    <Icon name={open ? "chev-d" : "chev-r"} size={12} />
+                  </button>
+                  <OralCheck checked={all} indeterminate={some && !all} onChange={() => toggleIds(ids)} />
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.title}</span>
+                      <span style={{ fontSize: 12, color: "var(--ink-3)", whiteSpace: "nowrap", flexShrink: 0 }}>{subs.length ? subs.length + " ACS codes" : "No ACS codes"}</span>
+                    </div>
+                    {t.desc && <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-3)", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc}</span>}
+                  </div>
+                  <span style={qCount}>{oralTopicTotal(t)} Q</span>
+                </div>
+                {open && subs.map((s) => {
+                  const on = selected.has(s.id);
+                  return (
+                    <div key={s.id} onClick={() => toggleIds([s.id])} style={{ display: "flex", alignItems: "center", padding: "var(--kls-space-xsmall) 14px var(--kls-space-xsmall) 76px", gap: 10, cursor: "pointer", background: on ? "color-mix(in srgb, var(--exam-blue) 12%, transparent)" : "transparent", borderBottom: "1px solid var(--line)" }}>
+                      <OralCheck checked={on} onChange={() => toggleIds([s.id])} />
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3, whiteSpace: "nowrap" }}>{s.code}</span>
+                        {s.desc && <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-3)", lineHeight: 1.3, textWrap: "pretty" }}>{s.desc}</span>}
+                      </div>
+                      <span style={qCount}>{s.q} Q</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="setup-config" style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 76, minWidth: 0 }}>
+        <div className="card" style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <span style={label}>How you answer</span>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+              <OralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+              <OralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type your answer · no mic needed" onClick={() => setAnswerMode("write")} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontSize: 12, fontWeight: 500, color: "var(--ink-3)" }}>
+              <MSGlyph name="lock" size={16} color="var(--kls-on-surface-variant)" />Locked once the exam starts.
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <span style={label}>Difficulty</span>
+            <div role="tablist" aria-label="Difficulty" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: "var(--kls-space-tiny)", padding: 2, height: 40, boxSizing: "border-box", borderRadius: 8, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)" }}>
+              {ORAL_LEVELS.map((l) => { const on = level === l.key; return (
+                <button key={l.key} role="tab" aria-selected={on} onClick={() => setLevel(l.key)} style={{ height: 34, padding: 0, borderRadius: 8, border: "none", cursor: "pointer", whiteSpace: "nowrap",
+                  background: on ? "var(--kls-surface)" : "transparent", color: on ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)", boxShadow: on ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>{l.label}</button>
+              ); })}
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-3)", lineHeight: 1.4 }}>{curLevel.desc.replace(" - ", " · ")}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <CountStepper value={drawing} availablePool={pool} onChange={setCount} onSelectAll={() => setCount(pool)} />
+            <ConfigRow label="Topics" value={chosen.length + (subCount ? " · " + subCount + " ACS code(s)" : "")} />
+            <ConfigRow label="Pool" value={pool + " question(s)"} />
+            <ConfigRow label="Drawing" value={drawing + " question(s)"} />
+          </div>
+          <button disabled={drawing === 0} onClick={begin} style={{ width: "100%", height: 40, padding: "0 var(--kls-space-med)", border: "1px solid transparent", borderRadius: 8, background: "var(--exam-blue)",
+            color: drawing === 0 ? "var(--kls-on-surface-variant)" : "var(--kls-color-base-white)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)", cursor: drawing === 0 ? "default" : "pointer" }}>Begin Oral Exam</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const ORAL_LOG_COLS = "120px minmax(200px,1.2fr) minmax(140px,1fr) 90px 100px 90px 80px 72px 24px";
+function OralLogsTab({ onOpen }) {
+  const head = ["Date", "Topic", "Assignment", "Mode", "Difficulty", "Questions", "Time", "Score", ""];
+  const rows = ORAL_LOGS.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  return (
+    <div className="card" style={{ padding: 0 }}>
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ minWidth: 1000 }}>
+          <div style={{ display: "grid", gridTemplateColumns: ORAL_LOG_COLS, gap: 14, alignItems: "center", padding: "10px 18px", borderBottom: "1px solid var(--line)" }}>
+            {head.map((l, i) => <span key={i} style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-4)", textAlign: i >= 5 && i <= 7 ? "right" : "left" }}>{l}</span>)}
+          </div>
+          {rows.map((a, i) => {
+            const score = oralLogScore(a);
+            const tone = score >= 0.8 ? "var(--good)" : score >= 0.7 ? "var(--warn)" : "var(--bad)";
+            return (
+              <button key={a.id} onClick={() => onOpen(a)} style={{ background: "transparent", width: "100%", padding: "14px 18px", textAlign: "left", cursor: "pointer", borderWidth: 0, borderTop: i === 0 ? 0 : "1px solid var(--line)", borderStyle: "solid", borderColor: "var(--line)",
+                display: "grid", gridTemplateColumns: ORAL_LOG_COLS, gap: 14, alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: "var(--ink-3)", whiteSpace: "nowrap" }}>{oralDate(a.date)}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
+                  <div className="mono" style={{ fontSize: 11.5, color: "var(--ink-4)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.acs.join(" · ")}</div>
+                </div>
+                {a.assignment
+                  ? <span style={{ fontSize: 13, color: "var(--ink-2)", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.assignment}</span>
+                  : <span style={{ fontSize: 13, color: "var(--ink-4)" }}>—</span>}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", fontSize: 13, color: "var(--ink)" }}><MSGlyph name={a.mode === "speak" ? "mic" : "keyboard"} size={16} color="var(--kls-on-surface-variant)" />{a.mode === "speak" ? "Speak" : "Write"}</span>
+                <span style={{ fontSize: 13, color: "var(--ink)" }}>{oralLevelLabel(a.level)}</span>
+                <span style={{ fontSize: 13, color: "var(--ink)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a.questions.length}</span>
+                <span style={{ fontSize: 13, color: "var(--ink-3)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a.duration}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: tone, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{Math.round(score * 100)}%</span>
+                <span style={{ display: "inline-flex", color: "var(--ink-4)" }}><Icon name="chev-r" size={12} /></span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OralLogDetail({ attempt: a, onBack }) {
+  const passed = a.questions.filter((q) => q.pass).length, score = passed / a.questions.length, missed = a.questions.length - passed;
+  const tone = score >= 0.8 ? "var(--good)" : score >= 0.7 ? "var(--warn)" : "var(--bad)";
+  const meta = { fontSize: 12.5, color: "var(--ink-3)" };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+      <button className="btn btn--ghost btn--sm" onClick={onBack} style={{ alignSelf: "flex-start", paddingLeft: 0 }}><Icon name="chev-l" size={12} />Exam Logs</button>
+      <div className="card" style={{ padding: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-med)", flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--ink)" }}>{a.title}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: "var(--kls-space-tiny)", ...meta }}>
+            <span>{oralDate(a.date)}</span><span>·</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)" }}><MSGlyph name={a.mode === "speak" ? "mic" : "keyboard"} size={14} color="var(--kls-on-surface-variant)" />{a.mode === "speak" ? "Speak" : "Write"}</span><span>·</span>
+            <span>{oralLevelLabel(a.level)}</span><span>·</span>
+            <span>{a.questions.length} questions</span><span>·</span>
+            <span>{a.duration}</span>
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: tone, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>{Math.round(score * 100)}%</div>
+          <div style={meta}>{passed} of {a.questions.length} passed</div>
+        </div>
+        <div style={{ flexBasis: "100%", display: "flex", justifyContent: "flex-start", gap: 8, flexWrap: "wrap" }}>
+          {missed > 0 && <button style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}><Icon name="sparkles" size={16} />Quiz from these {missed} misses</button>}
+          <button style={erSecondaryBtn}>Retake same setup</button>
+        </div>
+      </div>
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        {a.questions.map((q, i) => (
+          <div key={i} style={{ padding: "var(--kls-space-med) 18px", borderTop: i ? "1px solid var(--line)" : "none", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", ...meta }}>
+              <span style={{ fontWeight: 600 }}>Q{i + 1}</span>
+              <span className="mono">{q.acs}</span>
+              <span style={{ flex: 1 }} />
+              <span>{q.hints} hint{q.hints === 1 ? "" : "s"} used</span>
+              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: q.pass ? "var(--kls-success-container)" : "var(--kls-error-container)", color: q.pass ? "var(--kls-on-success-container)" : "var(--kls-on-error-container)" }}>{q.pass ? "Pass" : "Needs work"}</span>
+            </div>
+            <div style={{ fontSize: 14.5, fontWeight: 500, color: "var(--ink)", lineHeight: 1.5, textWrap: "pretty" }}>{q.text}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>Your answer</span>
+              <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.55, textWrap: "pretty" }}>{q.answer}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OralTopicRow({ topic, onOpen }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <tr onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: onOpen ? "pointer" : "default", background: hover && onOpen ? "var(--kls-surface-container-low)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <td style={{ ...INT_TD, paddingTop: "var(--kls-space-med)", paddingBottom: "var(--kls-space-med)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{topic.title}</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.5, textWrap: "pretty" }}>{topic.desc || "No description"}</div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.5 }}>{topic.acs.length ? topic.acs.join(", ") : "No associated ACS codes"}</div>
+        </div>
+      </td>
+      <td style={INT_TD}>
+        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+          {ORAL_DIFF.map((d) => (
+            <span key={d.key} title={d.label + " questions"} style={{ minWidth: 32, textAlign: "center", padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+              background: d.bg, color: d.fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{topic[d.key]}</span>
+          ))}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+const ORAL_LEVELS = [
+  { key: "easy", label: "Easy",   desc: "Up to 3 hints - Extra time per question" },
+  { key: "med",  label: "Medium", desc: "Up to 2 hints - Standard time per question" },
+  { key: "hard", label: "Hard",   desc: "No hints - Reduced time per question" },
+];
+const oralLevelOpt = (l) => l.label + ":  " + l.desc;
+
+function OralSetupDialog({ topic, onClose, onStart }) {
+  const firstLevel = ORAL_LEVELS.find((l) => topic[l.key] > 0) || ORAL_LEVELS[1];
+  const [level, setLevel] = useState(firstLevel.key);
+  const pool = topic[level] || 0;
+  const [count, setCount] = useState(pool);
+  const [answerMode, setAnswerMode] = useState("speak");
+  const [closeHover, setCloseHover] = useState(false);
+  const cardRef = useRef(null);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const pickLevel = (opt) => { const l = ORAL_LEVELS.find((x) => oralLevelOpt(x) === opt); if (l) { setLevel(l.key); setCount(topic[l.key] || 0); } };
+  const levelOpts = ORAL_LEVELS.filter((l) => topic[l.key] > 0).map(oralLevelOpt);
+  const curLevel = ORAL_LEVELS.find((l) => l.key === level);
+  const fieldLabel = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-xsmall)" };
+  return (
+    <div onMouseDown={(e) => { if (cardRef.current && !cardRef.current.contains(e.target)) onClose(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+        backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+        background: "color-mix(in oklab, var(--kls-surface) 80%, transparent)", animation: "kls-fade 180ms var(--kls-ease-standard)" }}>
+      <div ref={cardRef} role="dialog" aria-modal="true" aria-label="Practice Exam Setup"
+        style={{ width: 520, maxWidth: "calc(100vw - 48px)", maxHeight: "calc(100vh - 48px)", background: "var(--kls-surface)", borderRadius: 12,
+          boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden", animation: "kls-pop 200ms var(--kls-ease-standard)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-small)" }}>
+          <MSGlyph name="quiz" size={24} color="var(--kls-primary)" />
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Practice Exam Setup</span>
+          <button aria-label="Close" onClick={onClose} onMouseEnter={() => setCloseHover(true)} onMouseLeave={() => setCloseHover(false)}
+            style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+              background: closeHover ? "color-mix(in oklab, var(--kls-on-surface) 9%, transparent)" : "transparent" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="var(--kls-on-surface)" strokeWidth="1.9" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+        <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
+        <div style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)", overflowY: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{topic.title}</div>
+            <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)" }}>{topic.acs.length ? topic.acs.join(", ") : "No associated ACS codes"}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{topic.desc || "No description provided."}</div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: "var(--kls-space-xsmall)" }}>
+            {ORAL_DIFF.map((d) => (
+              <span key={d.key} style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: d.bg, color: d.fg,
+                fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{d.label}: {topic[d.key]}</span>
+            ))}
+          </div>
+          <div>
+            <div style={fieldLabel}>Difficulty</div>
+            <CTSelect value={oralLevelOpt(curLevel)} options={levelOpts} placeholder="Select difficulty" onChange={pickLevel} />
+          </div>
+          <div>
+            <div style={fieldLabel}>Number of Questions ({count})</div>
+            <input type="range" min={pool > 0 ? 1 : 0} max={pool} value={count} disabled={pool === 0}
+              onChange={(e) => setCount(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "var(--kls-primary)" }} />
+          </div>
+          <div>
+            <div style={fieldLabel}>How you answer</div>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "var(--kls-space-small)" }}>
+              <OralAnswerCard active={answerMode === "speak"} glyph="mic" label="Speak" sub="Answer out loud · mic + start/stop" onClick={() => setAnswerMode("speak")} />
+              <OralAnswerCard active={answerMode === "write"} glyph="keyboard" label="Write" sub="Type your answer · no mic needed" onClick={() => setAnswerMode("write")} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginTop: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+              <MSGlyph name="lock" size={16} color="var(--kls-on-surface-variant)" />Locked once the test starts.
+            </div>
+          </div>
+        </div>
+        <div style={{ padding: "0 var(--kls-space-med) var(--kls-space-med)" }}>
+          <button disabled={count === 0} onClick={() => onStart && onStart({ topic, level, count, answerMode })}
+            style={{ ...ctPrimaryBtn, width: "100%", justifyContent: "center", opacity: count === 0 ? 0.5 : 1, cursor: count === 0 ? "not-allowed" : "pointer" }}>Start Test</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OralAnswerCard({ active, glyph, label, sub, onClick }) {
+  const accent = "var(--exam-blue)";
+  return (
+    <button onClick={onClick} aria-pressed={active} style={{
+      display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", textAlign: "left", cursor: "pointer",
+      padding: "var(--kls-space-small)", borderRadius: 8,
+      border: active ? "2px solid " + accent : "1.5px solid var(--kls-outline-variant)",
+      background: active ? "color-mix(in srgb, " + accent + " 8%, transparent)" : "var(--kls-surface)",
+      transition: "all var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <MSGlyph name={glyph} size={20} color={active ? "var(--exam-blue-ink)" : "var(--kls-on-surface)"} />
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{label}</span>
+      </div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.45, color: "var(--kls-on-surface-variant)" }}>{sub}</div>
+    </button>
+  );
+}
+
+const ORAL_QUESTIONS = {
+  ot1: [
+    { acs: "AM.I.A.K11b", text: "When selecting a saw blade for cutting composite materials on an aircraft, what characteristics should you consider to ensure a clean cut and minimize delamination, and why are these characteristics important?",
+      hints: ["Think about tooth count and tooth geometry.", "Consider the blade material and how heat builds up during the cut."] },
+    { acs: "AM.I.A.K11", text: "Describe how you would choose the correct drill bit point angle for drilling aluminum versus stainless steel, and what happens if the wrong angle is used.",
+      hints: ["Harder materials generally call for a flatter point.", "Think about chip formation and work hardening."] },
+    { acs: "AM.I.A.K11d", text: "What is the purpose of a reamer, and when would you ream a hole instead of drilling it to final size?",
+      hints: ["Compare the finish and tolerance each tool produces.", "Think about fastener fit requirements."] },
+    { acs: "AM.I.G.K1", text: "Explain how you inspect a cutting tool for wear or damage before use, and what signs would make you remove it from service.",
+      hints: ["Look at the cutting edges and the shank.", "Consider discoloration from overheating."] },
+    { acs: "AM.I.G.K12", text: "What safety precautions should you follow when using a pneumatic cutoff wheel near aircraft structure?",
+      hints: ["Think about guards, PPE, and sparks.", "Consider what is on the other side of the cut."] },
+  ],
+};
+const ORAL_LEVEL_RULES = { easy: { hints: 3, secs: 240 }, med: { hints: 2, secs: 180 }, hard: { hints: 0, secs: 120 } };
+function oralQuestionsFor(topic, count) {
+  const bank = ORAL_QUESTIONS[topic.id] || ORAL_QUESTIONS.ot1.map((q) => ({ ...q, acs: topic.acs[0] || q.acs }));
+  return Array.from({ length: count }, (_, i) => bank[i % bank.length]);
+}
+const oralFmt = (n) => String(Math.floor(n / 60)).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0");
+
+function OralSpeakRunner({ session, onExit }) {
+  const { topic, level, count, answerMode } = session;
+  const [draft, setDraft] = useState("");
+  const rules = ORAL_LEVEL_RULES[level] || ORAL_LEVEL_RULES.med;
+  const questions = React.useMemo(() => oralQuestionsFor(topic, count), [topic, count]);
+  const [idx, setIdx] = useState(0);
+  const [secs, setSecs] = useState(rules.secs);
+  const [recording, setRecording] = useState(false);
+  const [recSecs, setRecSecs] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [shownHints, setShownHints] = useState(0);
+  const [backHover, setBackHover] = useState(false);
+  const q = questions[idx];
+  const hintsLeft = rules.hints - hintsUsed;
+  const next = () => {
+    setRecording(false); setRecSecs(0); setShownHints(0);
+    if (idx + 1 >= questions.length) { onExit(); return; }
+    setIdx(idx + 1); setSecs(rules.secs);
+  };
+  useEffect(() => {
+    const t = setInterval(() => {
+      setSecs((v) => (v > 0 ? v - 1 : 0));
+      setRecSecs((v) => v + 1);
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => { if (secs === 0) next(); }, [secs]);
+  useEffect(() => { if (!recording) setRecSecs(0); }, [recording]);
+  const toggleRec = () => { if (recording) next(); else setRecording(true); };
+  const showHint = () => {
+    if (hintsLeft <= 0 || shownHints >= q.hints.length) return;
+    setHintsUsed((n) => n + 1); setShownHints((n) => n + 1);
+  };
+  const hintDisabled = hintsLeft <= 0 || shownHints >= q.hints.length;
+  const pill = { padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)", color: "var(--kls-on-tertiary)",
+    fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap" };
+  return (
+    <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ flex: 1, minHeight: 0, padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+          <button aria-label="Back" onClick={onExit} onMouseEnter={() => setBackHover(true)} onMouseLeave={() => setBackHover(false)}
+            style={{ width: 40, height: 40, flex: "none", borderRadius: 999, border: "1px solid var(--kls-outline)", padding: 0, cursor: "pointer",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              background: backHover ? "var(--kls-tertiary)" : "var(--kls-surface)", transition: "background 125ms var(--kls-ease-standard)" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="var(--kls-on-surface)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <h1 style={{ minWidth: 0, margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 24, lineHeight: 1.2, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>{topic.title}</h1>
+          </div>
+          <div style={{ ...erPill, padding: "var(--kls-space-xsmall) var(--kls-space-med)", borderRadius: 999, color: secs <= 30 ? "var(--kls-error)" : "var(--kls-on-surface)", fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums", gap: "var(--kls-space-small)" }}>
+            <Icon name="clock" size={18} />{oralFmt(secs)}
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          {rules.hints > 0 && (
+            <button onClick={showHint} disabled={hintDisabled}
+              style={{ ...oralSecondaryBtn, opacity: hintDisabled ? 0.5 : 1, cursor: hintDisabled ? "not-allowed" : "pointer" }}>
+              <MSGlyph name="info" size={20} color="var(--kls-on-surface)" />Hint ({hintsLeft})
+            </button>
+          )}
+          </div>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+              <div style={{ height: 6, borderRadius: 999, background: "var(--kls-tertiary)", overflow: "hidden" }}>
+                <div style={{ width: ((idx + 1) / questions.length * 100) + "%", height: "100%", borderRadius: 999, background: "var(--kls-success)", transition: "width 250ms var(--kls-ease-standard)" }} />
+              </div>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{idx + 1} of {questions.length}</span>
+            </div>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 8, padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--kls-space-small)" }}>
+                <span style={pill}>Question {idx + 1}</span>
+                <span style={pill}>{q.acs}</span>
+              </div>
+              <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{q.text}</p>
+            </div>
+            {q.hints.slice(0, shownHints).map((h, i) => (
+              <div key={i} style={{ display: "flex", gap: "var(--kls-space-small)", alignItems: "flex-start", padding: "var(--kls-space-small) var(--kls-space-med)", borderRadius: 8, background: "var(--kls-info-container)" }}>
+                <MSGlyph name="info" size={20} color="var(--kls-on-info-container)" />
+                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-info-container)" }}>
+                  <strong style={{ fontWeight: 700 }}>Hint {i + 1}: </strong>{h}
+                </div>
+              </div>
+            ))}
+          </div>
+          {answerMode === "write" ? (
+          <form onSubmit={(e) => { e.preventDefault(); if (draft.trim()) { setDraft(""); next(); } }}
+            style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+            <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+              <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type your answer to Orion..." aria-label="Your answer"
+                style={{ ...ctInput, paddingRight: 48, color: "var(--kls-on-surface)" }} />
+              <button type="submit" aria-label="Send answer" disabled={!draft.trim()}
+                style={{ position: "absolute", right: "var(--kls-space-tiny)", top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: 8, border: 0, padding: 0,
+                  background: "transparent", cursor: draft.trim() ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <MSGlyph name="send" size={20} color={draft.trim() ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"} />
+              </button>
+            </div>
+            <button type="button" onClick={() => { setDraft(""); next(); }} style={oralSecondaryBtn}><MSGlyph name="keyboard_double_arrow_right" size={20} color="var(--kls-on-surface)" />Skip</button>
+          </form>
+          ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: "var(--kls-space-med)", padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: recording ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+              {recording ? <><span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--kls-error)" }} />Recording · {oralFmt(recSecs)}</> : "Tap to start answering"}
+            </span>
+            <button aria-label={recording ? "Stop recording" : "Start recording"} onClick={toggleRec}
+              style={{ width: 56, height: 56, borderRadius: 999, padding: 0, cursor: "pointer", border: "2px solid var(--kls-on-surface)",
+                background: "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ width: recording ? 20 : 44, height: recording ? 20 : 44, borderRadius: recording ? 4 : 999, background: "var(--kls-accent-4)",
+                transition: "all 250ms var(--kls-ease-standard)" }} />
+            </button>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={next} style={oralSecondaryBtn}><MSGlyph name="keyboard_double_arrow_right" size={20} color="var(--kls-on-surface)" />Skip</button>
+            </div>
+          </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OralEmpty({ title, body }) {
+  return (
+    <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+      <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+        <KlsIcon name="chatBubbles" size={26} color="var(--kls-on-surface-variant)" />
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{title}</div>
+      <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)", maxWidth: 320, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>{body}</div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// INTEGRATIONS (web only) — pair one or more workspace events with a webhook URL
+// ════════════════════════════════════════════════════════════════════
+const INTEGRATION_EVENTS = [
+  { key: "assignment.created",   label: "Assignment created" },
+  { key: "assignment.submitted", label: "Assignment submitted" },
+  { key: "assignment.graded",    label: "Assignment graded" },
+  { key: "assignment.overdue",   label: "Assignment overdue" },
+  { key: "exam.completed",       label: "Written exam completed" },
+  { key: "exam.failed",          label: "Written exam failed" },
+  { key: "module.completed",     label: "Module completed" },
+  { key: "student.enrolled",     label: "Student enrolled" },
+  { key: "student.removed",      label: "Student removed" },
+  { key: "course.published",     label: "Course published" },
+];
+const intEventLabel = (k) => (INTEGRATION_EVENTS.find((e) => e.key === k) || { label: k }).label;
+
+const SEED_INTEGRATIONS = [
+  { id: "i1", events: ["assignment.graded", "assignment.submitted"], url: "https://hooks.edudev.io/lms/grade-sync", enabled: true },
+  { id: "i2", events: ["student.enrolled", "student.removed"],        url: "https://api.aim.edu/v2/roster/enroll",   enabled: true },
+  { id: "i3", events: ["exam.failed"],                                 url: "https://hooks.slack.com/services/T02/B71/xk9", enabled: false },
+];
+
+const INT_TH = { textAlign: "left", padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)",
+  fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)",
+  borderBottom: "1px solid var(--kls-outline-variant)", whiteSpace: "nowrap" };
+const INT_TD = { padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 14,
+  fontWeight: 500, color: "var(--kls-on-surface)", borderBottom: "1px solid var(--kls-outline-variant)", verticalAlign: "middle" };
+const INT_MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
+
+// Endpoint check — mocked round-trip. Format gate first, then a "reachability" probe.
+const intUrlFormatOk = (u) => /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/\S*)?$/i.test(u.trim());
+function intProbe(url) {
+  // Deterministic mock: placeholder / local / non-public hosts fail the probe.
+  const host = (url.trim().match(/^https:\/\/([^/:]+)/i) || [])[1] || "";
+  const bad = /(^|\.)(example\.(com|org|net)|localhost|test|invalid)$/i.test(host) || /^\d+\.\d+\.\d+\.\d+$/.test(host);
+  return new Promise((res) => setTimeout(() => res(bad
+    ? { state: "failed", detail: "No response from " + host + " — check the host is publicly reachable." }
+    : { state: "verified", detail: "Responded 200 OK in 214 ms." }), 1200));
+}
+
+function Integrations({ query = "" }) {
+  const [rows, setRows] = useState(SEED_INTEGRATIONS);
+  const [editing, setEditing] = useState(null);
+  const term = query.trim().toLowerCase();
+  const list = rows.filter((r) => !term || r.url.toLowerCase().includes(term) || r.events.some((e) => intEventLabel(e).toLowerCase().includes(term)));
+
+  const save = (draft) => {
+    setRows((prev) => draft.id
+      ? prev.map((r) => (r.id === draft.id ? { ...draft } : r))
+      : prev.concat([{ ...draft, id: "i" + Date.now() }]));
+    setEditing(null);
+  };
+  const remove = (id) => { setRows((prev) => prev.filter((r) => r.id !== id)); setEditing(null); };
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Integrations</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Pair workspace events with a webhook URL. We POST the event payload each time one fires.</p>
+          </div>
+          <button onClick={() => setEditing({ events: [], url: "", enabled: true })} style={ctPrimaryBtn}>New integration</button>
+        </div>
+
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {list.length === 0 ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+                <MSGlyph name="webhook" size={26} color="var(--kls-on-surface-variant)" />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{rows.length === 0 ? "No integrations yet" : "Nothing matches"}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)", maxWidth: 320, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
+                {rows.length === 0 ? "Pair events with a webhook URL and we'll start delivering payloads." : "Try a different search."}
+              </div>
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <th style={INT_TH}>Events</th>
+                  <th style={INT_TH}>Webhook URL</th>
+                  <th style={{ ...INT_TH, width: 110 }}>Enabled</th>
+                  <th style={{ ...INT_TH, width: 96, textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((r) => <IntegrationRow key={r.id} row={r}
+                  onToggle={() => setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, enabled: !x.enabled } : x)))}
+                  onEdit={() => setEditing({ ...r, events: r.events.slice() })}
+                  onDelete={() => remove(r.id)} />)}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {editing && <IntegrationDrawer draft={editing} onChange={setEditing} onSave={save} onDelete={remove} onClose={() => setEditing(null)} />}
+    </div>
+  );
+}
+
+function IntEventTag({ label }) {
+  return (
+    <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-tertiary)", whiteSpace: "nowrap" }}>{label}</span>
+  );
+}
+
+function IntegrationRow({ row, onToggle, onEdit, onDelete }) {
+  const [hover, setHover] = useState(false);
+  const shown = row.events.slice(0, 2);
+  const rest = row.events.length - shown.length;
+  return (
+    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ background: hover ? "var(--kls-surface-container-low)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <td style={INT_TD}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-tiny)" }}>
+          {shown.map((e) => <IntEventTag key={e} label={intEventLabel(e)} />)}
+          {rest > 0 && <IntEventTag label={"+" + rest} />}
+        </div>
+      </td>
+      <td style={{ ...INT_TD, fontFamily: INT_MONO, fontSize: 13, color: "var(--kls-on-surface-variant)", wordBreak: "break-all" }}>{row.url}</td>
+      <td style={INT_TD}><IntSwitch on={row.enabled} label="Enabled" onClick={onToggle} /></td>
+      <td style={{ ...INT_TD, textAlign: "right", whiteSpace: "nowrap" }}>
+        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", justifyContent: "flex-end" }}>
+          <IntIconBtn label="Edit" icon="pencil" onClick={onEdit} />
+          <IntIconBtn label="Delete" icon="trash" onClick={onDelete} tone="var(--kls-error)" />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function IntIconBtn({ label, icon, onClick, tone }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 8, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={16} color={tone || "var(--kls-on-surface-variant)"} />
+    </button>
+  );
+}
+
+function IntegrationDrawer({ draft, onChange, onSave, onDelete, onClose }) {
+  const [shown, setShown] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [check, setCheck] = useState({ state: "idle", detail: "", url: "" }); // idle|checking|verified|failed
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+
+  const url = draft.url.trim();
+  const formatOk = intUrlFormatOk(url);
+  const verified = check.state === "verified" && check.url === url;
+  const runCheck = () => {
+    if (!formatOk) return;
+    setCheck({ state: "checking", detail: "", url });
+    intProbe(url).then((r) => setCheck({ ...r, url }));
+  };
+  // Validate as soon as a full URL lands in the field (paste or typing settles).
+  useEffect(() => {
+    if (!formatOk) { setCheck({ state: "idle", detail: "", url: "" }); return; }
+    if (check.url === url && check.state !== "idle") return;
+    const t = setTimeout(runCheck, 400);
+    return () => clearTimeout(t);
+  }, [url, formatOk]);
+
+  const canSave = draft.events.length > 0 && verified;
+  const label = (t) => (
+    <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", marginBottom: "var(--kls-space-tiny)" }}>{t}</div>
+  );
+  const toggleEvent = (k) => onChange({ ...draft, events: draft.events.includes(k) ? draft.events.filter((x) => x !== k) : draft.events.concat([k]) });
+  const eventSummary = draft.events.length === 0 ? "Choose events"
+    : draft.events.length === 1 ? intEventLabel(draft.events[0])
+    : draft.events.length + " events selected";
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div role="dialog" aria-modal="true" aria-label={draft.id ? "Edit integration" : "New integration"}
+        style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: "min(426px, calc(100vw - 24px))",
+          background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden",
+          transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))", transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" }}>{draft.id ? "Edit integration" : "New integration"}</span>
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 36, height: 36, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent", color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div>
+            {label("Events")}
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setMenuOpen((v) => !v)}
+                style={{ width: "100%", height: 40, padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer",
+                  border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, textAlign: "left",
+                  color: draft.events.length ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{eventSummary}</span>
+                <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, stroke: "var(--kls-on-surface-variant)", fill: "none", strokeWidth: 1.9, transform: menuOpen ? "rotate(180deg)" : "none", transition: "transform 125ms var(--kls-ease-standard)" }}>
+                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {menuOpen && (
+                <div style={{ position: "absolute", top: 44, left: 0, right: 0, zIndex: 5, maxHeight: 300, overflowY: "auto",
+                  background: "var(--kls-on-primary)", border: "1px solid var(--kls-outline-variant)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-xsmall) 0" }}>
+                  {INTEGRATION_EVENTS.map((e) => (
+                    <IntMenuItem key={e.key} label={e.label} selected={draft.events.includes(e.key)} onClick={() => toggleEvent(e.key)} />
+                  ))}
+                </div>
+              )}
+            </div>
+            {draft.events.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-tiny)", marginTop: "var(--kls-space-small)" }}>
+                {draft.events.map((k) => (
+                  <button key={k} onClick={() => toggleEvent(k)} title="Remove"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+                      border: "none", cursor: "pointer", background: "var(--kls-tertiary)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-tertiary)" }}>
+                    {intEventLabel(k)}
+                    <svg viewBox="0 0 24 24" style={{ width: 12, height: 12, stroke: "currentColor", fill: "none", strokeWidth: 2.4 }}><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" /></svg>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            {label("Webhook URL")}
+            <input value={draft.url} onChange={(ev) => onChange({ ...draft, url: ev.target.value })} onBlur={runCheck}
+              placeholder="https://example.com/hooks/kilsar" spellCheck={false}
+              style={{ width: "100%", height: 48, boxSizing: "border-box", padding: "0 var(--kls-space-small)", borderRadius: 8,
+                border: "1px solid " + ((url && !formatOk) || check.state === "failed" ? "var(--kls-error)" : verified ? "var(--kls-success)" : "var(--kls-outline-variant)"),
+                background: "var(--kls-surface)", color: "var(--kls-on-surface)", outline: "none", fontFamily: INT_MONO, fontSize: 13 }} />
+            <IntCheckStatus url={url} formatOk={formatOk} check={check} onRecheck={runCheck} />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", paddingTop: "var(--kls-space-tiny)" }}>
+            <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>Enabled</span>
+            <IntSwitch on={draft.enabled} label="Enabled" onClick={() => onChange({ ...draft, enabled: !draft.enabled })} />
+          </div>
+        </div>
+
+        <div style={{ padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)", display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          {draft.id && (
+            <button onClick={() => onDelete(draft.id)}
+              style={{ height: 40, padding: "0 var(--kls-space-small)", borderRadius: 8, border: "none", background: "transparent", cursor: "pointer",
+                fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-error)" }}>Delete</button>
+          )}
+          <span style={{ flex: 1 }} />
+          <button onClick={onClose}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", width: full ? "100%" : undefined, border: "1px solid var(--kls-outline-variant)",
+              background: "transparent", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>Cancel</button>
+          <button disabled={!canSave} onClick={() => onSave({ ...draft, url })}
+            style={{ ...ctPrimaryBtn, opacity: canSave ? 1 : 0.4, cursor: canSave ? "pointer" : "not-allowed" }}>Save pairing</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Validation feedback for the endpoint: format gate → probe → result.
+function IntCheckStatus({ url, formatOk, check, onRecheck }) {
+  const wrap = { display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginTop: "var(--kls-space-tiny)",
+    fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 };
+  if (!url) return <div style={{ ...wrap, color: "var(--kls-on-surface-variant)" }}>Must be an HTTPS endpoint that accepts POST.</div>;
+  if (!formatOk) return <div style={{ ...wrap, color: "var(--kls-error)" }}>Enter a full https:// URL, e.g. https://hooks.acme.io/kilsar.</div>;
+  if (check.state === "checking") return (
+    <div style={{ ...wrap, color: "var(--kls-on-surface-variant)" }}>
+      <IntSpinner />
+      <span>Checking endpoint…</span>
+    </div>
+  );
+  if (check.state === "verified") return (
+    <div style={{ ...wrap, color: "var(--kls-success)" }}>
+      <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "currentColor", fill: "none", strokeWidth: 2.2 }}><path d="M5 13l4 4 10-10" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <span>Endpoint verified · {check.detail}</span>
+    </div>
+  );
+  if (check.state === "failed") return (
+    <div style={{ ...wrap, color: "var(--kls-error)", alignItems: "flex-start" }}>
+      <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, flex: "none", marginTop: 2, stroke: "currentColor", fill: "none", strokeWidth: 2 }}><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 16.5v.5" strokeLinecap="round" /></svg>
+      <span style={{ flex: 1, lineHeight: 1.45 }}>{check.detail}</span>
+      <button onClick={onRecheck} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0,
+        fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 700, color: "var(--kls-primary)" }}>Retry</button>
+    </div>
+  );
+  return null;
+}
+
+function IntSpinner() {
+  return (
+    <span style={{ width: 14, height: 14, borderRadius: 999, border: "2px solid var(--kls-outline-variant)", borderTopColor: "var(--kls-primary)",
+      display: "inline-block", animation: "int-spin 900ms linear infinite" }} />
+  );
+}
+
+// DS switch spec: track 44x26 · knob 22 · on `primary` / off `outline-variant`
+function IntSwitch({ on, label, onClick }) {
+  return (
+    <button role="switch" aria-checked={on} aria-label={label} onClick={onClick}
+      style={{ width: 44, height: 26, borderRadius: 999, border: "none", padding: 0, cursor: "pointer", position: "relative",
+        background: on ? "var(--kls-primary)" : "var(--kls-outline-variant)", transition: "background 250ms var(--kls-ease-standard)" }}>
+      <span style={{ position: "absolute", top: 2, left: on ? 20 : 2, width: 22, height: 22, borderRadius: 999,
+        background: "var(--kls-surface)", transition: "left 250ms var(--kls-ease-standard)" }} />
+    </button>
+  );
+}
+
+// Multi-select row — DS checkbox: 22x22 · radius 6 · 1.5px border
+function IntMenuItem({ label, selected, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: "100%", height: 52, padding: "0 var(--kls-space-small)", border: "none", cursor: "pointer", textAlign: "left",
+        display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        background: hover ? "var(--kls-tertiary)" : "transparent",
+        fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+      <span style={{ width: 22, height: 22, borderRadius: 6, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        border: "1.5px solid " + (selected ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"),
+        background: selected ? "var(--kls-primary)" : "transparent" }}>
+        {selected && <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-primary)", fill: "none", strokeWidth: 3 }}><path d="M5 13l4 4 10-10" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+      </span>
+      <span style={{ flex: 1 }}>{label}</span>
+    </button>
+  );
+}
+
+window.WebApp = WebApp;
+
+// ── Help & Feedback dialog + Profile drawer (folded in from 88549d6b web app.jsx) ──
+const FEEDBACK_FORM_URL = "https://forms.kilsar.io/aim-feedback";
+
+function HelpGlyph({ size = 24, color = "currentColor", strokeWidth = 1.8 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flex: "none", display: "block" }} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth={strokeWidth} />
+      <path d="M9.3 9.2a2.7 2.7 0 1 1 3.6 2.55c-.62.25-1.05.82-1.05 1.5v.55" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" fill="none" />
+      <circle cx="11.85" cy="16.5" r="1.05" fill={color} />
+    </svg>
+  );
+}
+
+const helpSectionLabel = {
+  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+  letterSpacing: ".08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)",
+};
+
+function FeedbackDialog({ open, onClose, onBrowseFaqs }) {
+  const [closeHover, setCloseHover] = useState(false);
+  const [btnHover, setBtnHover] = useState(false);
+  const [faqHover, setFaqHover] = useState(false);
+  const cardRef = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  const openForm = () => { window.open(FEEDBACK_FORM_URL, "_blank", "noopener,noreferrer"); };
+  return (
+    <div onMouseDown={(e) => { if (cardRef.current && !cardRef.current.contains(e.target)) onClose(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+        backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+        background: "color-mix(in oklab, var(--kls-surface) 80%, transparent)", animation: "kls-fade 180ms var(--kls-ease-standard)" }}>
+      <div ref={cardRef} role="dialog" aria-modal="true" aria-label="Help & Feedback"
+        style={{ width: 460, maxWidth: "calc(100vw - 48px)", background: "var(--kls-surface)", borderRadius: 12,
+          boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden", animation: "kls-pop 200ms var(--kls-ease-standard)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-med) var(--kls-space-med) 14px" }}>
+          <span style={{ width: 24, height: 24, display: "inline-flex", color: "var(--kls-primary)" }}><HelpGlyph size={24} color="var(--kls-primary)" /></span>
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Help &amp; Feedback</span>
+          <button aria-label="Close" onClick={onClose} onMouseEnter={() => setCloseHover(true)} onMouseLeave={() => setCloseHover(false)}
+            style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+              background: closeHover ? "color-mix(in oklab, var(--kls-on-surface) 9%, transparent)" : "transparent" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="var(--kls-on-surface)" strokeWidth="1.9" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+        <div style={{ height: 1, background: "var(--kls-outline-variant)" }} />
+        <div style={{ padding: "var(--kls-space-med) var(--kls-space-med) 8px", display: "flex", flexDirection: "column", gap: 18 }}>
+          <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 15, lineHeight: "22px", color: "var(--kls-on-surface)" }}>
+            We're building this platform with you in mind, and your input shapes what comes next. This is your direct line to the team behind it.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={helpSectionLabel}>You can use it to</div>
+            {["Suggest a new feature you'd like to see", "Report a bug or something that isn't working", "Ask a general question about the platform"].map((t) => (
+              <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--kls-on-surface)", marginTop: 7, flex: "none" }} />
+                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, lineHeight: "22px", color: "var(--kls-on-surface)" }}>{t}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 14, lineHeight: "21px", color: "var(--kls-on-surface-variant)" }}>
+            A real person reads every submission — we typically follow up within two business days.
+          </p>
+        </div>
+        <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <button onClick={() => { if (onBrowseFaqs) onBrowseFaqs(); }} onMouseEnter={() => setFaqHover(true)} onMouseLeave={() => setFaqHover(false)}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+              background: faqHover ? "color-mix(in oklab, var(--kls-on-surface) 6%, transparent)" : "transparent", color: "var(--kls-on-surface)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+              cursor: "pointer", transition: "background 120ms var(--kls-ease-standard)" }}>
+            Browse FAQs
+          </button>
+          <button onClick={openForm} onMouseEnter={() => setBtnHover(true)} onMouseLeave={() => setBtnHover(false)}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer",
+              filter: btnHover ? "brightness(1.06)" : "none", transition: "filter 120ms var(--kls-ease-standard)" }}>
+            Open form
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 5h5v5M19 5l-8 8M11 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── FAQ screen (reached from the Help & Feedback dialog) ──────────────
+const FAQ_SECTIONS = [
+  { id: "start", title: "Getting started", items: [
+    { q: "How do I find my courses?", a: "Open Workspace → Courses. Every course you're enrolled in or teaching appears there, grouped by term. Archived terms are hidden until you switch the term filter." },
+    { q: "Why can't I see a module a student mentioned?", a: "Modules are visible once the course they belong to is published and the module itself is Available. Draft and Building modules stay hidden from students until they're released." },
+    { q: "Can I use the platform on a tablet or phone?", a: "Yes. The mobile app carries Home, Workspace, and Written Exams. Authoring tools — module editing and integrations — are web only." },
+  ]},
+  { id: "assignments", title: "Assignments & grading", items: [
+    { q: "How do I assign a module to a group?", a: "In Control Tower, choose Assign, pick the module, then select students or a group. Assigning to a group keeps it as a single assignment — adding a student to that group later gives them the assignment automatically." },
+    { q: "What does Needs Assistance mean?", a: "A student flagged themselves as stuck, or an attempt failed twice on the same step. The row stays flagged until an instructor clears it or the student completes the step." },
+    { q: "Can I change a due date after assigning?", a: "Yes. Open the assignment from Control Tower and edit the due date. Students see the new date immediately; past submissions are not re-graded." },
+  ]},
+  { id: "exams", title: "Written exams", items: [
+    { q: "What's the difference between Practice and Exam mode?", a: "Practice shows the correct answer and rationale after each question and isn't recorded. Exam mode records a single scored attempt and reveals results only at the end." },
+    { q: "Can a student retake an exam?", a: "Instructors can grant one retake per attempt. The most recent attempt becomes the score of record; earlier attempts stay in History." },
+    { q: "How is the passing score set?", a: "The default is 70%. Program admins can override it per exam in the exam setup screen." },
+  ]},
+  { id: "team", title: "Team & access", items: [
+    { q: "Who can add or remove students?", a: "Admins and instructors with roster permission. Removing a student keeps their completed work in reporting but revokes access to open assignments." },
+    { q: "How do groups work?", a: "A group is a named set of students you can assign to as a single entity. A student can belong to more than one group." },
+    { q: "How do I change someone's role?", a: "Team Workspace → open the member → Role. Role changes take effect the next time they load the app." },
+  ]},
+  { id: "account", title: "Account & notifications", items: [
+    { q: "How do I turn on dark mode?", a: "Profile → Enable dark mode. The setting follows your account across web and mobile." },
+    { q: "Why am I not getting notifications?", a: "Push notifications are still rolling out. In the meantime, notifications appear in the bell menu in the header." },
+    { q: "How do I reset my password?", a: "Use Forgot password on the sign-in screen. If your workspace uses single sign-on, reset through your school's identity provider instead." },
+  ]},
+];
+
+function FaqChevron({ open }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      style={{ flex: "none", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+      <path d="M6 9.5l6 6 6-6" stroke="var(--kls-on-surface-variant)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FaqRow({ item, open, onToggle }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div style={{ borderBottom: "1px solid var(--kls-outline-variant)" }}>
+      <button onClick={onToggle} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        aria-expanded={open}
+        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+          padding: "var(--kls-space-small) var(--kls-space-med)", border: "none", cursor: "pointer",
+          background: hover ? "color-mix(in oklab, var(--kls-on-surface) 4%, transparent)" : "transparent",
+          fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
+          transition: "background 120ms var(--kls-ease-standard)" }}>
+        <span style={{ flex: 1, minWidth: 0 }}>{item.q}</span>
+        <FaqChevron open={open} />
+      </button>
+      {open && (
+        <div style={{ padding: "0 56px var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)",
+          fontSize: 14, fontWeight: 500, lineHeight: 1.6, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+          {item.a}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FaqScreen({ onFeedback, query = "" }) {
+  const term = query;
+  const [openIds, setOpenIds] = useState([]);
+  const [ctaHover, setCtaHover] = useState(false);
+  const [topHover, setTopHover] = useState(false);
+  const q = term.trim().toLowerCase();
+  const sections = FAQ_SECTIONS
+    .map((s) => ({ ...s, items: s.items.filter((i) => !q || i.q.toLowerCase().includes(q) || i.a.toLowerCase().includes(q)) }))
+    .filter((s) => s.items.length > 0);
+  const toggle = (id) => setOpenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev.concat([id])));
+  const total = sections.reduce((n, s) => n + s.items.length, 0);
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>FAQs</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Answers to the questions we get most often. Can't find yours? Send it to the team.</p>
+          </div>
+          <button onClick={onFeedback} onMouseEnter={() => setTopHover(true)} onMouseLeave={() => setTopHover(false)}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", flex: "none",
+              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", fontFamily: "var(--kls-font-sans)",
+              fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer",
+              filter: topHover ? "brightness(1.06)" : "none", transition: "filter 120ms var(--kls-ease-standard)" }}>
+            Send feedback
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M11 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        </div>
+
+        {total === 0 ? (
+          <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+            padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)" }}>No matching questions</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try a different word, or send the question to the team.</div>
+          </div>
+        ) : sections.map((s) => (
+          <div key={s.id} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+              textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{s.title}</div>
+            <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+              {s.items.map((item, i) => {
+                const id = s.id + ":" + i;
+                return <FaqRow key={id} item={item} open={openIds.includes(id) || (!!q && true)} onToggle={() => toggle(id)} />;
+              })}
+            </div>
+          </div>
+        ))}
+
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+          padding: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 15, fontWeight: 600, color: "var(--kls-on-surface)" }}>Still need help?</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>A real person reads every submission — we typically follow up within two business days.</div>
+          </div>
+          <button onClick={onFeedback} onMouseEnter={() => setCtaHover(true)} onMouseLeave={() => setCtaHover(false)}
+            style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent",
+              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", fontFamily: "var(--kls-font-sans)",
+              fontSize: 14, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer", flex: "none",
+              filter: ctaHover ? "brightness(1.06)" : "none", transition: "filter 120ms var(--kls-ease-standard)" }}>
+            Send feedback
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M11 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const PROFILE_AVATAR = "assets/images/placeholderImage.jpg";
+
+function DrawerToggle({ on }) {
+  return (
+    <span style={{ width: 44, height: 26, borderRadius: 999, flex: "none", background: on ? "var(--kls-primary)" : "var(--kls-surface-container-low)", position: "relative", transition: "background 200ms" }}>
+      <span style={{ position: "absolute", top: 2, left: on ? 20 : 2, width: 22, height: 22, borderRadius: "50%", background: on ? "var(--kls-surface)" : "var(--kls-on-surface-variant)", transition: "left 200ms" }} />
+    </span>
+  );
+}
+
+function ProfileDrawer({ open, onClose, onHelp }) {
+  const [helpHover, setHelpHover] = useState(false);
+  const [logoutHover, setLogoutHover] = useState(false);
+  const [closeHover, setCloseHover] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  return (
+    <div aria-hidden={!open} style={{ position: "fixed", inset: 0, zIndex: 90, pointerEvents: open ? "auto" : "none" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: open ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div role="dialog" aria-modal="true" aria-label="Profile" style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: 426, maxWidth: "calc(100vw - 24px)",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: open ? "translateX(0)" : "translateX(calc(100% + 16px))", transition: "transform 300ms var(--kls-ease-standard)" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "22px 24px" }}>
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 22, fontWeight: 700, color: "var(--kls-on-surface)" }}>Profile</span>
+          <button aria-label="Close" onClick={onClose} style={{ width: 32, height: 32, border: "none", background: "transparent", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="var(--kls-on-surface)" strokeWidth="1.9" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+        <div style={{ flex: 1, overflow: "auto", padding: "var(--kls-space-tiny) 24px 0" }}>
+          <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 22px" }}>
+            <div style={{ position: "relative", width: 168, height: 168 }}>
+              <img src={PROFILE_AVATAR} alt="Joel Frank" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} />
+              <span style={{ position: "absolute", right: 10, bottom: 10, width: 40, height: 40, borderRadius: 10, background: "var(--kls-surface-variant)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <KlsIcon name="pencil" size={18} color="var(--kls-on-surface)" />
+              </span>
+            </div>
+          </div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 700, color: "var(--kls-on-surface)" }}>Joel Frank</div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)", marginTop: 4 }}>Admin</div>
+          <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "var(--kls-space-med) 0" }} />
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, color: "var(--kls-on-surface)", marginBottom: 20 }}>
+            <b style={{ fontWeight: 700 }}>Email:</b> joel@kilsar.com
+          </div>
+          {[["Allow Push notifications", false, "Coming Soon"], ["Enable dark mode", true, null], ["Student Mode", false, null]].map(([label, on, tag]) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "var(--kls-space-small) 0" }}>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>{label}</span>
+              <span style={{ flex: 1 }} />
+              {tag ? <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{tag}</span> : <DrawerToggle on={on} />}
+            </div>
+          ))}
+          <div style={{ height: 1, background: "var(--kls-outline-variant)", margin: "16px 0" }} />
+          <button onClick={onHelp} onMouseEnter={() => setHelpHover(true)} onMouseLeave={() => setHelpHover(false)}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px var(--kls-space-small)", margin: "0 -12px", border: "none", borderRadius: 10, cursor: "pointer", textAlign: "left",
+              background: helpHover ? "color-mix(in oklab, var(--kls-on-surface) 7%, transparent)" : "transparent" }}>
+            <HelpGlyph size={20} color="var(--kls-on-surface)" />
+            <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>Help &amp; Feedback</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="var(--kls-on-surface-variant)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <button onMouseEnter={() => setLogoutHover(true)} onMouseLeave={() => setLogoutHover(false)}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px var(--kls-space-small)", margin: "0 -12px", border: "none", borderRadius: 10, cursor: "pointer", textAlign: "left",
+              background: logoutHover ? "color-mix(in oklab, var(--kls-on-surface) 7%, transparent)" : "transparent" }}>
+            <KlsIcon name="tabs/logout" size={20} color="var(--kls-on-surface)" />
+            <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>Logout</span>
+          </button>
+        </div>
+        <div style={{ padding: "16px 24px", display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={onClose} onMouseEnter={() => setCloseHover(true)} onMouseLeave={() => setCloseHover(false)}
+            style={{ height: 40, padding: "0 24px", borderRadius: 8, cursor: "pointer", border: "1px solid var(--kls-outline-variant)",
+              background: closeHover ? "color-mix(in oklab, var(--kls-on-surface) 6%, transparent)" : "transparent",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)" }}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// WRITTEN EXAMS (folded in from project 019df76f, re-themed via written-exams.css)
+// ════════════════════════════════════════════════════════════════════
+// Realistic A&P (Powerplant + Airframe + General) content
+// Tagged with ACS codes per FAA Airman Certification Standards.
+
+window.KILSAR_DATA = (() => {
+  const blocks = [
+    {
+      id: 'pp-recip',
+      title: 'Reciprocating Engines',
+      subject: 'Powerplant',
+      acs: 'PA.I',
+      modules: [
+        { id: 'm-intro', title: 'Introduction', acs: 'PA.I.A', count: 18, mastery: 0.74 },
+        { id: 'm-valves', title: 'Valves', acs: 'PA.I.B', count: 22, mastery: 0.81 },
+        { id: 'm-cyl', title: 'Cylinders', acs: 'PA.I.C', count: 26, mastery: 0.62 },
+        { id: 'm-pist', title: 'Pistons', acs: 'PA.I.D', count: 24, mastery: 0.55 },
+        { id: 'm-comp', title: 'Components', acs: 'PA.I.E', count: 31, mastery: 0.68 },
+        { id: 'm-theory', title: 'Theory of Operation', acs: 'PA.I.F', count: 19, mastery: 0.49 },
+      ],
+    },
+    {
+      id: 'pp-induct',
+      title: 'Induction & Exhaust',
+      subject: 'Powerplant',
+      acs: 'PA.II',
+      modules: [
+        { id: 'm-carb', title: 'Carburetion', acs: 'PA.II.A', count: 28, mastery: 0.71 },
+        { id: 'm-fi', title: 'Fuel Injection', acs: 'PA.II.B', count: 21, mastery: 0.66 },
+        { id: 'm-turbo', title: 'Turbochargers', acs: 'PA.II.C', count: 17, mastery: 0.58 },
+        { id: 'm-exh', title: 'Exhaust Systems', acs: 'PA.II.D', count: 14, mastery: 0.77 },
+      ],
+    },
+    {
+      id: 'pp-ignit',
+      title: 'Ignition & Starting',
+      subject: 'Powerplant',
+      acs: 'PA.III',
+      modules: [
+        { id: 'm-mag', title: 'Magnetos', acs: 'PA.III.A', count: 26, mastery: 0.84 },
+        { id: 'm-wiring', title: 'Wiring Harness', acs: 'PA.III.B', count: 12, mastery: 0.70 },
+        { id: 'm-plugs', title: 'Spark Plugs', acs: 'PA.III.C', count: 15, mastery: 0.78 },
+        { id: 'm-start', title: 'Starting Systems', acs: 'PA.III.D', count: 18, mastery: 0.65 },
+      ],
+    },
+    {
+      id: 'af-struct',
+      title: 'Airframe Structures',
+      subject: 'Airframe',
+      acs: 'AF.I',
+      modules: [
+        { id: 'm-metal', title: 'Sheet Metal', acs: 'AF.I.A', count: 34, mastery: 0.72 },
+        { id: 'm-wood', title: 'Wood & Fabric', acs: 'AF.I.B', count: 16, mastery: 0.59 },
+        { id: 'm-comp-mat', title: 'Composites', acs: 'AF.I.C', count: 22, mastery: 0.51 },
+        { id: 'm-corr', title: 'Corrosion', acs: 'AF.I.D', count: 19, mastery: 0.83 },
+        { id: 'm-paint', title: 'Finishes', acs: 'AF.I.E', count: 13, mastery: 0.69 },
+      ],
+    },
+    {
+      id: 'af-sys',
+      title: 'Airframe Systems',
+      subject: 'Airframe',
+      acs: 'AF.II',
+      modules: [
+        { id: 'm-hyd', title: 'Hydraulics & Pneumatics', acs: 'AF.II.A', count: 28, mastery: 0.64 },
+        { id: 'm-lg', title: 'Landing Gear', acs: 'AF.II.B', count: 24, mastery: 0.71 },
+        { id: 'm-fuel', title: 'Fuel Systems', acs: 'AF.II.C', count: 19, mastery: 0.60 },
+        { id: 'm-ice', title: 'Ice & Rain Control', acs: 'AF.II.D', count: 11, mastery: 0.74 },
+        { id: 'm-fire', title: 'Fire Protection', acs: 'AF.II.E', count: 14, mastery: 0.79 },
+      ],
+    },
+    {
+      id: 'gen-reg',
+      title: 'Regulations & Forms',
+      subject: 'General',
+      acs: 'GE.I',
+      modules: [
+        { id: 'm-far', title: 'FAR Part 43', acs: 'GE.I.A', count: 22, mastery: 0.86 },
+        { id: 'm-far65', title: 'FAR Part 65', acs: 'GE.I.B', count: 18, mastery: 0.81 },
+        { id: 'm-forms', title: 'Maintenance Records', acs: 'GE.I.C', count: 20, mastery: 0.77 },
+      ],
+    },
+    {
+      id: 'gen-physics',
+      title: 'Physics & Math',
+      subject: 'General',
+      acs: 'GE.II',
+      modules: [
+        { id: 'm-math', title: 'Math for Aviation', acs: 'GE.II.A', count: 16, mastery: 0.72 },
+        { id: 'm-phys', title: 'Physics Principles', acs: 'GE.II.B', count: 19, mastery: 0.68 },
+        { id: 'm-weight', title: 'Weight & Balance', acs: 'GE.II.C', count: 14, mastery: 0.83 },
+      ],
+    },
+  ];
+
+  // Detailed Reciprocating Engines question pool (used during exam)
+  const sampleQuestions = [
+    {
+      id: 'q-1',
+      block: 'Reciprocating Engines',
+      module: 'Theory of Operation',
+      acs: 'PA.I.F',
+      stem: 'On a four-stroke-cycle reciprocating engine, the valve overlap period occurs at the end of which two strokes?',
+      figure: null,
+      choices: [
+        { id: 'A', text: 'Compression and power.' },
+        { id: 'B', text: 'Exhaust and intake.' },
+        { id: 'C', text: 'Power and exhaust.' },
+      ],
+      correct: 'B',
+      explanation: 'Valve overlap is the brief period at the end of the exhaust stroke and the beginning of the intake stroke when both valves are open simultaneously. It improves volumetric efficiency by using the inertia of the exiting exhaust gas to help draw the fresh charge into the cylinder.',
+      reference: 'FAA-H-8083-32B, Ch. 1 — Reciprocating Engine Theory',
+    },
+    {
+      id: 'q-2',
+      block: 'Reciprocating Engines',
+      module: 'Cylinders',
+      acs: 'PA.I.C',
+      stem: 'A reciprocating engine cylinder bore that has been ground oversize requires which of the following?',
+      figure: null,
+      choices: [
+        { id: 'A', text: 'A new piston of the corresponding oversize.' },
+        { id: 'B', text: 'A standard piston with oversize rings.' },
+        { id: 'C', text: 'No piston change — only ring replacement.' },
+      ],
+      correct: 'A',
+      explanation: 'When a cylinder is ground oversize, the manufacturer specifies a matching oversize piston so clearances remain within tolerance. Standard pistons would have excessive clearance and cause blow-by, oil consumption, and scuffing.',
+      reference: 'AC 43.13-1B, Ch. 8',
+    },
+    {
+      id: 'q-3',
+      block: 'Reciprocating Engines',
+      module: 'Pistons',
+      acs: 'PA.I.D',
+      stem: 'The function of the oil control ring on a reciprocating engine piston is to:',
+      figure: null,
+      choices: [
+        { id: 'A', text: 'Seal combustion pressure into the cylinder.' },
+        { id: 'B', text: 'Maintain piston-to-cylinder wall lubrication and meter oil to the cylinder wall.' },
+        { id: 'C', text: 'Conduct heat from the piston to the cylinder wall.' },
+      ],
+      correct: 'B',
+      explanation: 'The oil control ring (typically the lowest ring on the piston) regulates the film of oil on the cylinder wall — wiping excess oil and returning it to the sump while leaving enough for lubrication. Compression rings handle pressure sealing; the top ring assists with heat transfer.',
+      reference: 'FAA-H-8083-32B, Ch. 1',
+    },
+    {
+      id: 'q-4',
+      block: 'Reciprocating Engines',
+      module: 'Valves',
+      acs: 'PA.I.B',
+      stem: 'Sodium-cooled exhaust valves transfer heat from the valve head to the stem by:',
+      figure: null,
+      choices: [
+        { id: 'A', text: 'Conduction through the solid steel valve material only.' },
+        { id: 'B', text: 'Liquid sodium that melts in operation and sloshes inside the hollow stem.' },
+        { id: 'C', text: 'Pressurized coolant circulated from the engine cooling system.' },
+      ],
+      correct: 'B',
+      explanation: 'The valve stem is partially filled with metallic sodium, which melts at operating temperature (~208°F) and is thrown back and forth by valve motion. This carries heat from the hot valve head up to the cooler stem and guide.',
+      reference: 'FAA-H-8083-32B',
+    },
+    {
+      id: 'q-5',
+      block: 'Reciprocating Engines',
+      module: 'Components',
+      acs: 'PA.I.E',
+      stem: 'Crankshaft dynamic dampers are designed to reduce:',
+      figure: null,
+      choices: [
+        { id: 'A', text: 'Torsional vibration at specific engine RPM ranges.' },
+        { id: 'B', text: 'Oil pressure pulsations in the lubrication system.' },
+        { id: 'C', text: 'Bearing loads during the power stroke.' },
+      ],
+      correct: 'A',
+      explanation: 'Dynamic dampers (pendulum weights mounted on crankshaft cheeks) counteract torsional vibrations that would otherwise resonate with crankshaft natural frequencies, particularly in radial and inline engines.',
+      reference: 'FAA-H-8083-32B, Ch. 1',
+    },
+    {
+      id: 'q-6',
+      block: 'Reciprocating Engines',
+      module: 'Theory of Operation',
+      acs: 'PA.I.F',
+      stem: 'Detonation in a reciprocating engine is best described as:',
+      figure: null,
+      choices: [
+        { id: 'A', text: 'Ignition occurring before the spark plug fires due to a hot spot.' },
+        { id: 'B', text: 'A controlled, progressive burn of the fuel-air mixture across the cylinder.' },
+        { id: 'C', text: 'An uncontrolled, explosive combustion of the unburned charge after normal ignition.' },
+      ],
+      correct: 'C',
+      explanation: 'Detonation is the spontaneous, near-instantaneous explosion of the end-gas (unburned mixture) after the spark has fired. It produces sharp pressure spikes that can damage pistons, valves, and bearings. Pre-ignition (A) is a related but distinct phenomenon.',
+      reference: 'FAA-H-8083-32B, Ch. 1',
+    },
+    {
+      id: 'q-7',
+      block: 'Reciprocating Engines',
+      module: 'Introduction',
+      acs: 'PA.I.A',
+      stem: 'In a typical horizontally-opposed aircraft engine, the firing order is designed primarily to:',
+      figure: null,
+      choices: [
+        { id: 'A', text: 'Maximize power output per stroke.' },
+        { id: 'B', text: 'Distribute power impulses evenly and minimize vibration.' },
+        { id: 'C', text: 'Allow each cylinder to cool fully between firings.' },
+      ],
+      correct: 'B',
+      explanation: 'Firing orders (e.g. 1-3-2-4 on a four-cylinder opposed engine) are chosen to balance loads on the crankshaft and distribute power impulses smoothly, minimizing vibration and bearing stress.',
+      reference: 'FAA-H-8083-32B, Ch. 1',
+    },
+    {
+      id: 'q-8',
+      block: 'Reciprocating Engines',
+      module: 'Cylinders',
+      acs: 'PA.I.C',
+      stem: 'The purpose of cylinder choke (taper) at the upper end of the cylinder barrel is to:',
+      figure: null,
+      choices: [
+        { id: 'A', text: 'Provide easier piston installation during overhaul.' },
+        { id: 'B', text: 'Compensate for thermal expansion so the bore is uniform at operating temperature.' },
+        { id: 'C', text: 'Reduce friction during the compression stroke.' },
+      ],
+      correct: 'B',
+      explanation: 'The upper cylinder runs hotter than the lower portion. Manufacturers grind the upper bore slightly smaller (choked) so that thermal expansion brings it to a uniform diameter at operating temperature, maintaining proper ring-to-wall contact.',
+      reference: 'FAA-H-8083-32B, Ch. 1',
+    },
+  ];
+
+  // Historical exam attempts
+  const history = [
+    { id: 'h-1', date: '2026-04-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.83, duration: '52:14', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 9, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 10, total: 11 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 8, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 7, total: 9 }, { acs: 'PA.I.E', module: 'Components', correct: 9, total: 11 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 9 }] },
+    { id: 'h-2', date: '2026-04-28', mode: 'Study', title: 'Pistons + Cylinders mix', count: 25, score: 0.68, duration: '34:02', acs: ['PA.I.C', 'PA.I.D'], breakdown: [{ acs: 'PA.I.C', module: 'Cylinders', correct: 9, total: 13 }, { acs: 'PA.I.D', module: 'Pistons', correct: 8, total: 12 }] },
+    { id: 'h-3', date: '2026-04-25', mode: 'Exam', title: 'Powerplant — Random across all', count: 60, score: 0.71, duration: '58:41', acs: ['PA.I', 'PA.II', 'PA.III'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 5, total: 7 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 4, total: 7 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 4, total: 7 }, { acs: 'PA.II.A', module: 'Carburetion', correct: 6, total: 8 }, { acs: 'PA.II.B', module: 'Fuel Injection', correct: 5, total: 7 }, { acs: 'PA.II.D', module: 'Exhaust Systems', correct: 5, total: 7 }, { acs: 'PA.III.A', module: 'Magnetos', correct: 8, total: 9 }, { acs: 'PA.III.C', module: 'Spark Plugs', correct: 6, total: 8 }] },
+    { id: 'h-4', date: '2026-04-22', mode: 'Study', title: 'Valves deep dive', count: 22, score: 0.91, duration: '21:08', acs: ['PA.I.B'], breakdown: [{ acs: 'PA.I.B', module: 'Valves', correct: 20, total: 22 }] },
+    { id: 'h-5', date: '2026-04-19', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.78, duration: '54:33', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 8, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 9, total: 10 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 8, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 6, total: 9 }, { acs: 'PA.I.E', module: 'Components', correct: 9, total: 11 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 10 }] },
+    { id: 'h-6', date: '2026-04-16', mode: 'Exam', title: 'Custom: Theory + Components', count: 40, score: 0.65, duration: '38:55', acs: ['PA.I.E', 'PA.I.F'], breakdown: [{ acs: 'PA.I.E', module: 'Components', correct: 14, total: 21 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 12, total: 19 }] },
+    { id: 'h-7', date: '2026-04-12', mode: 'Study', title: 'Magnetos refresher', count: 18, score: 0.88, duration: '15:21', acs: ['PA.III.A'], breakdown: [{ acs: 'PA.III.A', module: 'Magnetos', correct: 16, total: 18 }] },
+    { id: 'h-8', date: '2026-04-08', mode: 'Exam', title: 'Powerplant — Random', count: 60, score: 0.66, duration: '59:02', acs: ['PA.I', 'PA.II', 'PA.III'], breakdown: [{ acs: 'PA.I.B', module: 'Valves', correct: 6, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 5, total: 9 }, { acs: 'PA.II.A', module: 'Carburetion', correct: 7, total: 10 }, { acs: 'PA.II.C', module: 'Turbochargers', correct: 5, total: 8 }, { acs: 'PA.III.A', module: 'Magnetos', correct: 8, total: 11 }, { acs: 'PA.III.D', module: 'Starting Systems', correct: 9, total: 12 }] },
+    { id: 'h-9', date: '2026-04-04', mode: 'Study', title: 'Pistons — focused', count: 15, score: 0.53, duration: '18:44', acs: ['PA.I.D'], breakdown: [{ acs: 'PA.I.D', module: 'Pistons', correct: 8, total: 15 }] },
+    { id: 'h-10', date: '2026-03-30', mode: 'Exam', title: 'Reciprocating Engines — Full Section', count: 60, score: 0.72, duration: '56:18', acs: ['PA.I'], breakdown: [{ acs: 'PA.I.A', module: 'Introduction', correct: 7, total: 10 }, { acs: 'PA.I.B', module: 'Valves', correct: 8, total: 10 }, { acs: 'PA.I.C', module: 'Cylinders', correct: 7, total: 10 }, { acs: 'PA.I.D', module: 'Pistons', correct: 6, total: 10 }, { acs: 'PA.I.E', module: 'Components', correct: 8, total: 10 }, { acs: 'PA.I.F', module: 'Theory of Operation', correct: 7, total: 10 }] },
+  ];
+
+  // Student roster (instructor view)
+  const students = [
+    { id: 'u-1',  name: 'Marcus Reyes',     avatar: 'MR', lastActive: '2 hours ago',   avg: 0.78, attempts: 23, trend: 5,  status: 'on-track' },
+    { id: 'u-2',  name: 'Jordan Pak',       avatar: 'JP', lastActive: '5 minutes ago', avg: 0.84, attempts: 31, trend: 8,  status: 'on-track' },
+    { id: 'u-3',  name: 'Avery Chen',       avatar: 'AC', lastActive: 'yesterday',     avg: 0.62, attempts: 18, trend: -2, status: 'at-risk' },
+    { id: 'u-4',  name: 'Sasha Bell',       avatar: 'SB', lastActive: '3 days ago',    avg: 0.71, attempts: 14, trend: 3,  status: 'on-track' },
+    { id: 'u-5',  name: 'Diego Castillo',   avatar: 'DC', lastActive: '1 hour ago',    avg: 0.89, attempts: 27, trend: 6,  status: 'excellent' },
+    { id: 'u-6',  name: 'Riley Tomlinson',  avatar: 'RT', lastActive: '6 hours ago',   avg: 0.74, attempts: 19, trend: 4,  status: 'on-track' },
+    { id: 'u-7',  name: 'Priya Kapoor',     avatar: 'PK', lastActive: '20 minutes ago',avg: 0.81, attempts: 22, trend: 7,  status: 'on-track' },
+    { id: 'u-8',  name: 'Tomas Lindberg',   avatar: 'TL', lastActive: '4 hours ago',   avg: 0.58, attempts: 12, trend: -4, status: 'at-risk' },
+    { id: 'u-9',  name: 'Naomi Okafor',     avatar: 'NO', lastActive: '11 minutes ago',avg: 0.86, attempts: 29, trend: 5,  status: 'excellent' },
+    { id: 'u-10', name: 'Wes Holloway',     avatar: 'WH', lastActive: '2 days ago',    avg: 0.66, attempts: 15, trend: 1,  status: 'on-track' },
+    { id: 'u-11', name: 'Mei Tanaka',       avatar: 'MT', lastActive: 'yesterday',     avg: 0.79, attempts: 24, trend: 6,  status: 'on-track' },
+    { id: 'u-12', name: 'Caleb Ortiz',      avatar: 'CO', lastActive: '5 hours ago',   avg: 0.52, attempts: 9,  trend: -6, status: 'at-risk' },
+    { id: 'u-13', name: 'Hana Saito',       avatar: 'HS', lastActive: '30 minutes ago',avg: 0.83, attempts: 26, trend: 4,  status: 'on-track' },
+    { id: 'u-14', name: 'Bryce Lockwood',   avatar: 'BL', lastActive: '4 days ago',    avg: 0.69, attempts: 17, trend: 2,  status: 'on-track' },
+    { id: 'u-15', name: 'Emiliano Vargas',  avatar: 'EV', lastActive: '1 hour ago',    avg: 0.77, attempts: 21, trend: 5,  status: 'on-track' },
+    { id: 'u-16', name: 'Zara Hassan',      avatar: 'ZH', lastActive: '3 hours ago',   avg: 0.91, attempts: 33, trend: 9,  status: 'excellent' },
+    { id: 'u-17', name: 'Owen Petrosky',    avatar: 'OP', lastActive: '6 days ago',    avg: 0.49, attempts: 7,  trend: -8, status: 'at-risk' },
+    { id: 'u-18', name: 'Lila Aronson',     avatar: 'LA', lastActive: '45 minutes ago',avg: 0.74, attempts: 20, trend: 3,  status: 'on-track' },
+    { id: 'u-19', name: 'Kenji Park',       avatar: 'KP', lastActive: '2 hours ago',   avg: 0.80, attempts: 25, trend: 5,  status: 'on-track' },
+    { id: 'u-20', name: 'Imani Brooks',     avatar: 'IB', lastActive: '12 hours ago',  avg: 0.68, attempts: 16, trend: 1,  status: 'on-track' },
+    { id: 'u-21', name: 'Rafael Moreno',    avatar: 'RM', lastActive: '8 days ago',    avg: 0.55, attempts: 11, trend: -3, status: 'at-risk' },
+    { id: 'u-22', name: 'Aoife Sullivan',   avatar: 'AS', lastActive: '15 minutes ago',avg: 0.85, attempts: 28, trend: 7,  status: 'excellent' },
+    { id: 'u-23', name: 'Hudson Brae',      avatar: 'HB', lastActive: 'yesterday',     avg: 0.72, attempts: 19, trend: 3,  status: 'on-track' },
+    { id: 'u-24', name: 'Yuki Watanabe',    avatar: 'YW', lastActive: '7 hours ago',   avg: 0.76, attempts: 22, trend: 4,  status: 'on-track' },
+    { id: 'u-25', name: 'Nadia Petrov',     avatar: 'NP', lastActive: '3 hours ago',   avg: 0.63, attempts: 13, trend: 0,  status: 'on-track' },
+  ];
+
+  // Recent score series (10 attempts) per ACS for trend graph
+  const acsTrends = {
+    'PA.I.A': [0.62, 0.68, 0.71, 0.74, 0.69, 0.78, 0.81, 0.76, 0.83, 0.79],
+    'PA.I.B': [0.71, 0.74, 0.79, 0.81, 0.83, 0.78, 0.86, 0.84, 0.87, 0.91],
+    'PA.I.C': [0.55, 0.51, 0.58, 0.61, 0.59, 0.64, 0.62, 0.66, 0.63, 0.68],
+    'PA.I.D': [0.42, 0.47, 0.45, 0.51, 0.49, 0.53, 0.55, 0.58, 0.54, 0.55],
+    'PA.I.E': [0.61, 0.64, 0.66, 0.69, 0.72, 0.68, 0.71, 0.74, 0.69, 0.73],
+    'PA.I.F': [0.39, 0.44, 0.41, 0.47, 0.49, 0.45, 0.51, 0.49, 0.52, 0.49],
+  };
+
+  const overallTrend = [0.61, 0.66, 0.64, 0.71, 0.68, 0.73, 0.78, 0.74, 0.81, 0.83];
+
+  // Per-student data shaping. We project the canonical history/trend onto each
+  // student deterministically so instructors see plausible variation.
+  const studentDataFor = (studentId) => {
+    const s = students.find(x => x.id === studentId);
+    if (!s) return null;
+    const skew = (s.avg - 0.74);              // how much to shift scores from the canonical "Marcus" baseline
+    const clamp01 = v => Math.max(0.05, Math.min(0.99, v));
+    const drift = (i) => skew + Math.sin((s.id.charCodeAt(s.id.length-1) + i) * 1.7) * 0.04;
+
+    return {
+      student: s,
+      history: history.map((h, i) => ({
+        ...h,
+        id: `${s.id}-${h.id}`,
+        score: clamp01(h.score + drift(i)),
+      })).slice(0, Math.max(4, Math.min(12, s.attempts))),
+      overallTrend: overallTrend.map((v, i) => clamp01(v + drift(i))),
+      acsTrends: Object.fromEntries(
+        Object.entries(acsTrends).map(([k, vals]) => [k, vals.map((v, i) => clamp01(v + drift(i)))])
+      ),
+    };
+  };
+
+  return { blocks, sampleQuestions, history, students, roster: students, studentDataFor, acsTrends, overallTrend };
+
+})();
+
+/* Icon set — minimal stroke icons */
+const Icon = ({ name, size = 16, ...rest }) => {
+  const s = size;
+  const common = { width: s, height: s, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round', ...rest };
+  switch (name) {
+    case 'home': return <svg {...common}><path d="M2.5 7L8 2.5L13.5 7v6.5h-4v-4h-3v4h-4z"/></svg>;
+    case 'book': return <svg {...common}><path d="M3 2.5h4.5A1.5 1.5 0 0 1 9 4v9.5"/><path d="M13 2.5H8.5A1.5 1.5 0 0 0 7 4v9.5"/><path d="M3 13.5h10"/></svg>;
+    case 'exam': return <svg {...common}><rect x="3" y="2.5" width="10" height="11" rx="1.5"/><path d="M5.5 6h5M5.5 8.5h5M5.5 11h3"/></svg>;
+    case 'history': return <svg {...common}><path d="M2 8a6 6 0 1 0 1.8-4.3"/><path d="M2 2v3.5h3.5"/><path d="M8 5v3l2 1.5"/></svg>;
+    case 'chart': return <svg {...common}><path d="M2.5 13.5V2.5"/><path d="M2.5 13.5h11"/><path d="M5 11l2.5-3 2 2L13 5"/></svg>;
+    case 'people': return <svg {...common}><circle cx="6" cy="6" r="2.2"/><path d="M2 13.5c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/><path d="M10.5 4.2A2 2 0 1 1 12 8"/><path d="M11 13.5c0-1.6 1.2-3 2.5-3"/></svg>;
+    case 'spark': return <svg {...common}><path d="M8 1.5L9.5 6l4.5 1.5L9.5 9 8 13.5 6.5 9 2 7.5 6.5 6z"/></svg>;
+    case 'lock': return <svg {...common}><rect x="3" y="7" width="10" height="6.5" rx="1.2"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>;
+    case 'unlock': return <svg {...common}><rect x="3" y="7" width="10" height="6.5" rx="1.2"/><path d="M5 7V5a3 3 0 0 1 5.5-1.6"/></svg>;
+    case 'check': return <svg {...common}><path d="M3 8.5L6.5 12L13 4"/></svg>;
+    case 'x': return <svg {...common}><path d="M4 4l8 8M12 4l-8 8"/></svg>;
+    case 'flag': return <svg {...common}><path d="M3.5 13.5V2.5"/><path d="M3.5 3h7l-1.5 2.5L11 8H3.5"/></svg>;
+    case 'chev-r': return <svg {...common}><path d="M6 3l4 5l-4 5"/></svg>;
+    case 'chev-l': return <svg {...common}><path d="M10 3l-4 5l4 5"/></svg>;
+    case 'chev-d': return <svg {...common}><path d="M3 6l5 4l5-4"/></svg>;
+    case 'plus': return <svg {...common}><path d="M8 3v10M3 8h10"/></svg>;
+    case 'search': return <svg {...common}><circle cx="7" cy="7" r="4.2"/><path d="M10.2 10.2L13.5 13.5"/></svg>;
+    case 'settings': return <svg {...common}><circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>;
+    case 'orion': return <svg width={s} height={s} viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><circle cx="3.5" cy="4" r="0.7" fill="currentColor"/><circle cx="12.5" cy="11" r="0.7" fill="currentColor"/><circle cx="13" cy="4.5" r="0.5" fill="currentColor"/></svg>;
+    case 'sparkles': return <svg {...common}><path d="M3.5 3v3M2 4.5h3"/><path d="M11 11v2.5M9.7 12.2h2.5"/><path d="M8 2L9 6l4 1L9 8l-1 4l-1-4l-4-1l4-1z"/></svg>;
+    case 'send': return <svg {...common}><path d="M2 8L13.5 2.5L9 13.5L7 9z"/></svg>;
+    case 'random': return <svg {...common}><path d="M2 4h2.5l7 8H14"/><path d="M11.5 4H14l-2.5 2.5"/><path d="M14 12l-2.5 2.5"/><path d="M2 12h2.5l1.5-1.7"/></svg>;
+    case 'image': return <svg {...common}><rect x="2" y="3" width="12" height="10" rx="1.2"/><circle cx="6" cy="6.5" r="1"/><path d="M2.5 11.5l3.5-3l3 2.5l3-2l3.5 3"/></svg>;
+    case 'arrow-r': return <svg {...common}><path d="M3 8h10M9 4l4 4l-4 4"/></svg>;
+    case 'logo': return <svg width={s} height={s} viewBox="0 0 16 16" fill="none">
+      <path d="M2 14L8 2L14 14L8 10L2 14Z" fill="currentColor"/>
+    </svg>;
+    case 'trend-up': return <svg {...common}><path d="M2 11l4-4l3 3l5-6"/><path d="M10 4h4v4"/></svg>;
+    case 'circle': return <svg {...common}><circle cx="8" cy="8" r="5.5"/></svg>;
+    case 'dot': return <svg {...common}><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>;
+    case 'filter': return <svg {...common}><path d="M2 3h12l-4.5 5.5v4l-3 1.5v-5.5z"/></svg>;
+    case 'download': return <svg {...common}><path d="M8 2v8M4.5 7L8 10.5L11.5 7"/><path d="M2.5 13.5h11"/></svg>;
+    case 'backspace': return <svg {...common}><path d="M5.5 3.5h8a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-8L1.5 8z"/><path d="M7.5 6l4 4M11.5 6l-4 4"/></svg>;
+    case 'note':
+    case 'notes': return <svg {...common}><path d="M11.5 7V3.5a1 1 0 0 0-1-1h-7a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1H7"/><path d="M4.5 1.3v2.2M7 1.3v2.2M9.5 1.3v2.2"/><path d="M2.5 5.5h9"/><path d="M4.8 8h4.4M4.8 10.2h3.6M4.8 12.4h2"/><path d="M13.1 8.9l1.3 1.3-4.3 4.3-1.8.5.5-1.8z"/><path d="M12.1 9.9l1.3 1.3"/></svg>;
+    case 'expand': return <svg {...common}><path d="M9.5 2.5h4v4M13.5 2.5L9 7M6.5 13.5h-4v-4M2.5 13.5L7 9"/></svg>;
+    case 'zoom-in': return <svg {...common}><circle cx="7" cy="7" r="4.5"/><path d="M10.3 10.3L13.5 13.5M5 7h4M7 5v4"/></svg>;
+    case 'zoom-out': return <svg {...common}><circle cx="7" cy="7" r="4.5"/><path d="M10.3 10.3L13.5 13.5M5 7h4"/></svg>;
+    case 'play': return <svg {...common}><path d="M5 3.2v9.6a.6.6 0 0 0 .9.5l7.4-4.8a.6.6 0 0 0 0-1L5.9 2.7a.6.6 0 0 0-.9.5z" fill="currentColor"/></svg>;
+    case 'exit': return <svg {...common}><path d="M9.5 2.5h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-3"/><path d="M6.5 5L3.5 8l3 3M3.5 8h7"/></svg>;
+    case 'calc': return <svg {...common}><rect x="3.5" y="1.5" width="9" height="13" rx="1.5"/><path d="M5.5 4h5v2h-5z"/><path d="M5.5 8.5h.01M8 8.5h.01M10.5 8.5h.01M5.5 11h.01M8 11h.01M10.5 11h.01" strokeWidth="1.8"/></svg>;
+    case 'help': return <svg {...common}><circle cx="8" cy="8" r="6"/><path d="M6.3 6.2a1.8 1.8 0 0 1 3.5.5c0 1.2-1.8 1.5-1.8 2.6"/><path d="M8 11.4h.01" strokeWidth="1.8"/></svg>;
+    case 'comment': return <svg {...common}><path d="M2.5 7.5a5.5 5 0 1 1 2.4 4.1L2.5 13l.8-2.6a4.8 4.8 0 0 1-.8-2.9z"/></svg>;
+    case 'chat': return <svg {...common}><path d="M2.5 7.5a5.5 5 0 1 1 2.4 4.1L2.5 13l.8-2.6a4.8 4.8 0 0 1-.8-2.9z"/><path d="M5.8 6.5h4.4M5.8 8.7h3"/></svg>;
+    case 'bookmark': return <svg {...common}><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg>;
+    case 'notes-fill': return <svg {...common}><path d="M3.5 2.5h7a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z" fill="currentColor"/><path d="M4.8 8h4.4M4.8 10.5h3" stroke="var(--kls-surface)"/><path d="M4.5 1.3v2.2M7 1.3v2.2M9.5 1.3v2.2" stroke="var(--kls-surface)"/></svg>;
+    case 'warning': return <svg {...common}><path d="M7.1 2.6a1 1 0 0 1 1.8 0l5.3 9.6a1 1 0 0 1-.9 1.5H2.7a1 1 0 0 1-.9-1.5z"/><path d="M8 6.2v3.1M8 11.4h.01"/></svg>;
+    case 'bookmark-fill': return <svg {...common} fill="currentColor"><path d="M4.5 2.5h7v11L8 11l-3.5 2.5z"/></svg>;
+    case 'grid': return <svg {...common}><rect x="2.5" y="2.5" width="4" height="4" rx="1"/><rect x="9.5" y="2.5" width="4" height="4" rx="1"/><rect x="2.5" y="9.5" width="4" height="4" rx="1"/><rect x="9.5" y="9.5" width="4" height="4" rx="1"/></svg>;
+    case 'clock': return <svg {...common}><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.2 1.5"/></svg>;
+    case 'pause': return <svg {...common}><rect x="4" y="3" width="2.5" height="10" rx="0.5" fill="currentColor"/><rect x="9.5" y="3" width="2.5" height="10" rx="0.5" fill="currentColor"/></svg>;
+    default: return null;
+  }
+};
+
+window.Icon = Icon;
+
+/* StudentPickerTrigger — sits in the topbar, shows the currently viewed student.
+   Click opens StudentPickerDialog (a centered modal with searchable list). */
+const StudentPickerTrigger = ({ student, onClick }) => (
+  <button
+    onClick={onClick}
+    style={{
+      display: 'inline-flex', alignItems: 'center', gap: 8,
+      marginLeft: 14, padding: '5px 10px 5px 6px',
+      background: 'var(--bg-inset)', border: '1px solid var(--line)',
+      borderRadius: 999, cursor: 'pointer',
+      fontFamily: 'var(--font-ui)',
+    }}
+  >
+    <span style={{fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, paddingLeft: 4}}>Viewing</span>
+    <span style={{
+      width: 22, height: 22, borderRadius: '50%',
+      background: 'linear-gradient(135deg, #1F6FEB, #6E40C9)',
+      color: 'white', display: 'grid', placeItems: 'center',
+      fontSize: 10, fontWeight: 600,
+    }}>{student.avatar}</span>
+    <span style={{fontSize: 13, fontWeight: 600, color: 'var(--ink)'}}>{student.name}</span>
+    <Icon name="chev-d" size={12} style={{color: 'var(--ink-4)'}} />
+  </button>
+);
+
+/* StudentPickerDialog — modal with searchable list. Click outside / Esc to dismiss. */
+const StudentPickerDialog = ({ open, onClose, selectedId, onSelect }) => {
+  const [query, setQuery] = React.useState('');
+  const [filter, setFilter] = React.useState('all'); // all | at-risk | excellent
+  const D = window.KILSAR_DATA;
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const list = D.students.filter(s => {
+    if (filter === 'at-risk' && s.status !== 'at-risk') return false;
+    if (filter === 'excellent' && s.status !== 'excellent') return false;
+    if (query && !s.name.toLowerCase().includes(query.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100,
+        background: 'rgba(11,15,20,0.42)',
+        display: 'grid', placeItems: 'start center',
+        paddingTop: '8vh',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 540, maxWidth: 'calc(100vw - 32px)',
+          maxHeight: '78vh',
+          background: 'var(--bg-elev)',
+          border: '1px solid var(--line)',
+          borderRadius: 14,
+          boxShadow: '0 24px 64px rgba(11,15,20,0.28)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{padding: '16px 18px 12px', borderBottom: '1px solid var(--line)'}}>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12}}>
+            <div>
+              <div style={{fontSize: 15, fontWeight: 600}}>Pick a student</div>
+              <div style={{fontSize: 12, color: 'var(--ink-3)', marginTop: 2}}>Switch the view to any student's history & progress.</div>
+            </div>
+            <button onClick={onClose} className="btn btn--ghost btn--sm" aria-label="Close"><Icon name="x" size={13} /></button>
+          </div>
+
+          {/* Search */}
+          <div style={{display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--bg-inset)', borderRadius: 8, border: '1px solid var(--line)'}}>
+            <Icon name="search" size={13} style={{color: 'var(--ink-4)'}} />
+            <input
+              autoFocus
+              placeholder="Search students by name…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{flex: 1, border: 0, background: 'transparent', outline: 'none', fontSize: 13.5, color: 'var(--ink)', fontFamily: 'var(--font-ui)'}}
+            />
+            <span className="mono" style={{fontSize: 11, color: 'var(--ink-4)'}}>{list.length}</span>
+          </div>
+
+          {/* Filters */}
+          <div className="tabs" style={{marginTop: 10}}>
+            {[
+              {v: 'all', l: `All · ${D.students.length}`},
+              {v: 'at-risk', l: `At risk · ${D.students.filter(s => s.status === 'at-risk').length}`},
+              {v: 'excellent', l: `Excellent · ${D.students.filter(s => s.status === 'excellent').length}`},
+            ].map(f => (
+              <button key={f.v} className="tab" data-active={filter === f.v} onClick={() => setFilter(f.v)}>{f.l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* List */}
+        <div style={{flex: 1, overflowY: 'auto', padding: 6}}>
+          {list.length === 0 && (
+            <div style={{padding: '40px 20px', textAlign: 'center', color: 'var(--ink-4)', fontSize: 13}}>No students match "{query}".</div>
+          )}
+          {list.map(s => {
+            const isSel = s.id === selectedId;
+            const statusColor = s.status === 'at-risk' ? 'var(--bad)' : s.status === 'excellent' ? 'var(--good)' : 'var(--ink-4)';
+            return (
+              <button
+                key={s.id}
+                onClick={() => { onSelect(s.id); onClose(); }}
+                style={{
+                  width: '100%', display: 'grid',
+                  gridTemplateColumns: 'auto 1fr 90px 80px 16px',
+                  alignItems: 'center', gap: 12,
+                  padding: '10px 12px',
+                  background: isSel ? 'var(--bg-sunken)' : 'transparent',
+                  border: 0, borderRadius: 8, textAlign: 'left', cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => { if (!isSel) e.currentTarget.style.background = 'var(--bg-inset)'; }}
+                onMouseLeave={(e) => { if (!isSel) e.currentTarget.style.background = 'transparent'; }}
+              >
+                <div style={{
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #1F6FEB, #6E40C9)',
+                  color: 'white', display: 'grid', placeItems: 'center',
+                  fontSize: 11, fontWeight: 600,
+                }}>{s.avatar}</div>
+                <div style={{minWidth: 0}}>
+                  <div style={{fontSize: 13.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6}}>
+                    {s.name}
+                    {s.status === 'at-risk' && <span style={{fontSize: 10, color: 'var(--bad)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em'}}>At risk</span>}
+                    {s.status === 'excellent' && <span style={{fontSize: 10, color: 'var(--good)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em'}}>Excellent</span>}
+                  </div>
+                  <div style={{fontSize: 11.5, color: 'var(--ink-4)', marginTop: 1}}>Last active {s.lastActive}</div>
+                </div>
+                <div className="mono" style={{fontSize: 13, fontWeight: 600, color: s.avg >= 0.7 ? 'var(--good)' : 'var(--warn)', textAlign: 'right'}}>
+                  {Math.round(s.avg*100)}%
+                </div>
+                <div className="mono" style={{fontSize: 11.5, color: 'var(--ink-4)', textAlign: 'right'}}>
+                  {s.attempts} attempts
+                </div>
+                <div style={{textAlign: 'right'}}>
+                  {isSel && <Icon name="check" size={13} style={{color: 'var(--accent)'}} />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Footer hint */}
+        <div style={{padding: '10px 18px', borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-inset)'}}>
+          <span style={{fontSize: 11, color: 'var(--ink-4)'}}>{D.students.length} students enrolled</span>
+          <span style={{fontSize: 11, color: 'var(--ink-4)', display: 'inline-flex', gap: 6}}>
+            <kbd style={{padding: '1px 5px', border: '1px solid var(--line-2)', borderRadius: 4, fontFamily: 'var(--font-mono)', fontSize: 10}}>Esc</kbd>
+            to close
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+window.StudentPickerTrigger = StudentPickerTrigger;
+window.StudentPickerDialog = StudentPickerDialog;
+
+/* Practice Setup — topic picker (Study) + subject chooser (Exam) */
+
+const FAA_EXAMS = [
+  {
+    id: 'general',
+    subject: 'General',
+    short: 'GEN',
+    count: 60,
+    duration: 7200, // 2 hours
+    acs: ['GE.I', 'GE.II'],
+    topics: ['FAR Part 43', 'FAR Part 65', 'Maintenance records', 'Weight & balance', 'Basic electricity', 'Materials & processes'],
+    blurb: 'Trade fundamentals every certificated mechanic must know — regulations, records, basic electricity, materials, and weight & balance.',
+  },
+  {
+    id: 'airframe',
+    subject: 'Airframe',
+    short: 'AF',
+    count: 100,
+    duration: 7200,
+    acs: ['AF.I', 'AF.II'],
+    topics: ['Sheet metal', 'Composites', 'Corrosion', 'Hydraulics & pneumatics', 'Landing gear', 'Fuel systems', 'Fire protection'],
+    blurb: 'The structures and systems that make up the airframe — sheet metal, composites, hydraulics, landing gear, fuel, ice, fire protection.',
+  },
+  {
+    id: 'powerplant',
+    subject: 'Powerplant',
+    short: 'PP',
+    count: 100,
+    duration: 7200,
+    acs: ['PA.I', 'PA.II', 'PA.III'],
+    topics: ['Reciprocating engines', 'Turbine engines', 'Induction & exhaust', 'Ignition', 'Fuel metering', 'Propellers', 'Engine instruments'],
+    blurb: 'Reciprocating and turbine engines, induction, exhaust, ignition, fuel metering, propellers, lubrication, and engine instruments.',
+  },
+];
+
+// In-progress STUDY sessions. Up to WE_SESSION_CAP at a time; `source` is
+// 'self' (student started it) or 'assigned' (came from a Control Tower assignment,
+// which the student can't end — Continue only). Exam mode stays single-session.
+const WE_SESSION_CAP = 3;
+const WE_SESSIONS = [
+  { id: 'ws1', source: 'assigned', mode: 'study', title: 'Practice Session', assignment: 'Magnetos & Ignition Timing', assigner: 'R. Alvarez', due: 'Nov 14', topics: 3, total: 40, answered: 8, modules: ['pp3a'] },
+  { id: 'ws2', source: 'self', mode: 'study', title: 'Practice Session', topics: 2, total: 25, answered: 12, modules: ['pp1a', 'pp1b'] },
+  { id: 'ws3', source: 'self', mode: 'study', title: 'Practice Session', topics: 1, total: 15, answered: 3, modules: ['af1a'] },
+  { id: 'ws4', source: 'assigned', mode: 'exam', title: 'General Written Exam', assignment: 'General Section Checkpoint', assigner: 'R. Alvarez', due: 'Nov 21', subject: 'General', total: 60, time: '2h', answered: 0 },
+  { id: 'ws5', source: 'assigned', mode: 'study', title: 'Practice Session', assignment: 'Landing Gear Systems', assigner: 'M. Chen', due: 'Dec 03', topics: 2, total: 30, answered: 0, modules: ['af2b'] },
+];
+
+// Sort key for "Mon DD" due labels — soonest first; sessions with no due date last.
+const WE_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function WE_dueKey(s) {
+  if (!s.due) return Infinity;
+  const p = String(s.due).trim().split(/\s+/);
+  const mi = WE_MONTHS.indexOf(p[0]);
+  if (mi < 0) return Infinity;
+  return mi * 100 + (parseInt(p[1], 10) || 0);
+}
+function WE_sortByDue(list) {
+  return (list || []).slice().sort((a, b) => WE_dueKey(a) - WE_dueKey(b));
+}
+
+/* ---------- In-progress study sessions (above the setup grid) ---------- */
+
+const InProgressSessions = ({ sessions: unsorted, onResume, onEnd }) => {
+  if (!unsorted || !unsorted.length) return null;
+  const sessions = WE_sortByDue(unsorted);
+  // Medallion = the session's MODE (study blue / exam purple). The pill = its SOURCE,
+  // in its own hues (orange = assigned, neutral tertiary = self-started) so source and
+  // mode never read as the same axis.
+  const primaryBtn = {
+    height: 40, padding: '0 var(--kls-space-med)', borderRadius: 8, border: '1px solid transparent',
+    background: 'var(--pa-bg)', color: 'var(--pa-fg)',
+    fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', flexShrink: 0,
+  };
+  const secondaryBtn = {
+    height: 40, padding: '0 var(--kls-space-med)', borderRadius: 8, border: '1px solid var(--sa-line)',
+    background: 'var(--sa-bg)', color: 'var(--sa-fg)',
+    fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', flexShrink: 0,
+  };
+  const pill = (bg, fg) => ({
+    display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 999,
+    background: bg, color: fg, fontFamily: 'var(--kls-font-sans)', fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap',
+  });
+  return (
+    <div style={{gridColumn: '1 / -1', marginBottom: 22}}>
+      <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10}}>
+        <span style={{fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)'}}>In progress ({sessions.length})</span>
+      </div>
+      <div className="card" style={{padding: 0, overflow: 'hidden'}}>
+        {sessions.map((s, i) => {
+          const assigned = s.source === 'assigned';
+          const isExam = s.mode === 'exam';
+          const tone = isExam ? 'var(--ink)' : 'var(--accent)';
+          const toneSoft = isExam ? 'var(--lock-soft)' : 'var(--accent-soft)';
+          return (
+            <div key={s.id} style={{display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: i ? '1px solid var(--line)' : 'none', flexWrap: 'wrap'}}>
+              <span style={{width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: toneSoft, color: tone, display: 'grid', placeItems: 'center'}}>
+                <Icon name={isExam ? 'exam' : 'book'} size={16} />
+              </span>
+              <div style={{flex: 1, minWidth: 160}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 'var(--kls-space-small)', minWidth: 0}}>
+                  <span style={{fontSize: 14.5, fontWeight: 600, color: 'var(--ink)', flex: 'none'}}>{s.title}</span>
+                  {s.assignment && (
+                    <span style={{display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-tiny)', fontSize: 12.5, fontWeight: 500, color: 'var(--kls-on-surface)', minWidth: 0}}>
+                      <Icon name="exam" size={12} style={{flex: 'none', color: 'var(--kls-on-surface-variant)'}} />
+                      <span style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{s.assignment}</span>
+                    </span>
+                  )}
+                </div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 3, fontSize: 12.5, color: 'var(--ink-3)'}}>
+                  <span style={assigned ? pill('var(--src-assigned-bg)', 'var(--src-assigned-fg)') : pill('var(--src-self-bg)', 'var(--src-self-fg)')}>{assigned ? 'Assigned' : 'Self-started'}</span>
+                  {assigned && <span>from {s.assigner} · Due {s.due}</span>}
+                  <span>{isExam
+                    ? `${s.subject} · ${s.total} questions · ${s.time}`
+                    : s.answered > 0
+                      ? `${s.topics} topic${s.topics === 1 ? '' : 's'} · ${s.answered} of ${s.total} answered`
+                      : `${s.topics} topic${s.topics === 1 ? '' : 's'} · ${s.total} questions · Not started`}</span>
+                </div>
+              </div>
+              {!assigned && <button style={secondaryBtn} onClick={() => onEnd && onEnd(s)}>End Exam</button>}
+              <button style={primaryBtn} onClick={() => onResume && onResume(s)}>
+                {isExam || !s.answered ? 'Start' : 'Continue'} <Icon name="arrow-r" size={14} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const PracticeSetup = ({ tweaks, onStart, sessions, onResume, onEndSession }) => {
+  const D = window.KILSAR_DATA;
+  const [expanded, setExpanded] = React.useState({ 't-f24': true, 'c-pp1': true });
+  const [selectedModules, setSelectedModules] = React.useState(new Set(['pp1a', 'pp1b']));
+  const [mode, setMode] = React.useState('study');
+  const [count, setCount] = React.useState(25);
+  const [random, setRandom] = React.useState(false);
+  const [orionEnabled, setOrionEnabled] = React.useState(true);
+  const [filterSubject, setFilterSubject] = React.useState('All');
+  const [examChoice, setExamChoice] = React.useState('airframe');
+
+  React.useEffect(() => { if (tweaks.mode) setMode(tweaks.mode); }, [tweaks.mode]);
+
+  const toggleModule = (id) => {
+    const next = new Set(selectedModules);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setSelectedModules(next);
+  };
+  const toggleCodes = (ids) => {
+    const allSelected = ids.every(id => selectedModules.has(id));
+    const next = new Set(selectedModules);
+    ids.forEach(id => allSelected ? next.delete(id) : next.add(id));
+    setSelectedModules(next);
+  };
+
+  // Stats (study mode)
+  const POOL_CODES = CT_POOL.flatMap(t => t.courses.flatMap(c => c.codes));
+  const rollupMastery = (codes) => {
+    const vals = codes.map(c => c.mastery).filter(v => v != null && v >= 0);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : -1;
+  };
+  const totalAvailable = POOL_CODES.reduce((s, c) => s + (selectedModules.has(c.id) ? c.count : 0), 0);
+  const selectedAcs = [...new Set(POOL_CODES.filter(c => selectedModules.has(c.id)).map(c => c.code))];
+
+  const activeExam = FAA_EXAMS.find(e => e.id === examChoice) || FAA_EXAMS[0];
+
+  const beginExam = () => onStart({
+    mode: 'exam',
+    subject: activeExam.subject,
+    short: activeExam.short,
+    count: activeExam.count,
+    duration: activeExam.duration,
+    acs: activeExam.acs,
+    modules: [],
+  });
+  const beginStudy = () => onStart({ mode: 'study', count, random, orionEnabled, modules: [...selectedModules] });
+
+  return (
+    <>
+      <InProgressSessions sessions={sessions} onResume={onResume} onEnd={onEndSession} />
+      {sessions && sessions.length > 0 && (
+        <div style={{fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 10}}>Start a new exam</div>
+      )}
+      <div className="setup-grid">
+      {/* LEFT: topic picker (Study) or exam chooser (Exam) */}
+      {mode === 'study' ? (
+        <div className="card" style={{padding: 0, minWidth: 0}}>
+          <div className="setup-topics-head" style={{padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap'}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0}}>
+              <h3 style={{margin: 0, whiteSpace: 'nowrap'}}>Topics</h3>
+              <div style={{display: 'flex', alignItems: 'center', gap: 10, fontSize: 11.5, color: 'var(--ink-3)', flexWrap: 'wrap'}} title="Mastery — your current accuracy on each module">
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--kls-accent-3)'}} />Expert</span>
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--kls-accent-9)'}} />Proficient</span>
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--kls-accent-4)'}} />Familiar</span>
+                <span style={{display: 'flex', alignItems: 'center', gap: 4}}><span style={{width: 7, height: 7, borderRadius: '50%', background: 'var(--kls-outline)'}} />Untested</span>
+              </div>
+            </div>
+            <div style={{flex: 1, minWidth: 8}} />
+            <div className="tabs" style={{flexWrap: 'wrap'}}>
+              {['All', 'Powerplant', 'Airframe', 'General'].map(s => (
+                <button key={s} className="tab" data-active={filterSubject === s} onClick={() => setFilterSubject(s)}>{s}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{padding: 4}}>
+            {CT_POOL.map(t => {
+              const courses = filterSubject === 'All' ? t.courses : t.courses.filter(c => c.subject === filterSubject);
+              if (!courses.length) return null;
+              const tCodes = courses.flatMap(c => c.codes);
+              const tIds = tCodes.map(c => c.id);
+              const tAll = tIds.every(id => selectedModules.has(id));
+              const tSome = tIds.some(id => selectedModules.has(id));
+              const tOpen = expanded[t.id];
+              return (
+                <div key={t.id} style={{margin: 4, borderRadius: 8, border: '1px solid var(--line)', overflow: 'hidden'}}>
+                  <div style={{display: 'flex', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-inset)', gap: 10}}>
+                    <button className="btn btn--ghost btn--sm" style={{width: 24, padding: 0, flexShrink: 0}} onClick={() => setExpanded({...expanded, [t.id]: !tOpen})}>
+                      <Icon name={tOpen ? 'chev-d' : 'chev-r'} size={12} />
+                    </button>
+                    <Checkbox checked={tAll} indeterminate={tSome && !tAll} onChange={() => toggleCodes(tIds)} />
+                    <div style={{flex: 1, minWidth: 0}}>
+                      <span style={{fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap'}}>{t.name}</span>
+                    </div>
+                    <MasteryDot m={rollupMastery(tCodes)} />
+                    <span style={{fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', flexShrink: 0}}>
+                      {tCodes.reduce((s, c) => s + c.count, 0)} Q
+                    </span>
+                  </div>
+                  {tOpen && courses.map(c => {
+                    const cIds = c.codes.map(x => x.id);
+                    const cAll = cIds.every(id => selectedModules.has(id));
+                    const cSome = cIds.some(id => selectedModules.has(id));
+                    const cOpen = expanded[c.id];
+                    return (
+                      <React.Fragment key={c.id}>
+                        <div style={{display: 'flex', alignItems: 'center', padding: '10px 14px 10px 36px', background: 'var(--bg-inset)', gap: 10, borderTop: '1px solid var(--line)'}}>
+                          <button className="btn btn--ghost btn--sm" style={{width: 24, padding: 0, flexShrink: 0}} onClick={() => setExpanded({...expanded, [c.id]: !cOpen})}>
+                            <Icon name={cOpen ? 'chev-d' : 'chev-r'} size={12} />
+                          </button>
+                          <Checkbox checked={cAll} indeterminate={cSome && !cAll} onChange={() => toggleCodes(cIds)} />
+                          <div style={{flex: 1, minWidth: 0}}>
+                            <span style={{fontWeight: 600, fontSize: 13.5, whiteSpace: 'nowrap'}}>{c.name}</span>
+                          </div>
+                          <MasteryDot m={rollupMastery(c.codes)} />
+                          <span style={{fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', flexShrink: 0}}>
+                            {c.codes.reduce((s, x) => s + x.count, 0)} Q
+                          </span>
+                        </div>
+                        {cOpen && c.codes.map(x => {
+                          const selected = selectedModules.has(x.id);
+                          return (
+                            <div key={x.id} onClick={() => toggleModule(x.id)} style={{
+                              display: 'flex', alignItems: 'center', padding: '10px 14px 10px 60px',
+                              gap: 10, cursor: 'pointer',
+                              background: selected ? 'var(--accent-soft)' : 'transparent',
+                              borderTop: '1px solid var(--line)',
+                            }}>
+                              <Checkbox checked={selected} onChange={() => toggleModule(x.id)} />
+                              <div style={{flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 8}}>
+                                <span style={{fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0}}>{x.code}</span>
+                                <span style={{fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{x.desc}</span>
+                              </div>
+                              <MasteryDot m={x.mastery} />
+                              <span style={{fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', flexShrink: 0, minWidth: 32, textAlign: 'right'}}>{x.count} Q</span>
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <ExamSubjectPicker exams={FAA_EXAMS} value={examChoice} onChange={setExamChoice} />
+      )}
+
+      {/* RIGHT: config sidebar */}
+      <div className="setup-config" style={{display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 76, minWidth: 0}}>
+        <div className="card" style={{padding: 'var(--kls-space-med)', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-med)'}}>
+          {/* Mode */}
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--kls-space-small)'}}>
+            <ModeCard active={mode === 'study'} onClick={() => setMode('study')} icon="book" name="Study" sub="AI enabled · feedback after each Q" />
+            <ModeCard active={mode === 'exam'} onClick={() => setMode('exam')} icon="lock" name="Exam" sub="FAA simulation · AI locked" />
+          </div>
+
+          {/* Config */}
+          {mode === 'study' ? (
+            <div style={{display: 'flex', flexDirection: 'column'}}>
+              <CountStepper value={count} availablePool={random ? 397 : totalAvailable} onChange={setCount} onSelectAll={() => setCount(random ? 397 : totalAvailable)} />
+              <ConfigRow label="Pool" value={`${random ? 397 : totalAvailable} question(s)`} />
+              <ConfigRow label="Drawing" value={`${count} question(s)`} />
+              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', gap: 12}}>
+                <span style={{fontSize: 12, fontWeight: 600, color: 'var(--ink-3)'}}>Orion Enabled</span>
+                <Toggle on={orionEnabled} onClick={() => setOrionEnabled(!orionEnabled)} />
+              </div>
+            </div>
+          ) : (
+            <div style={{display: 'flex', flexDirection: 'column'}}>
+              <ConfigRow label="Subject" value={activeExam.subject} />
+              <ConfigRow label="Questions" value={activeExam.count} />
+              <ConfigRow label="Time" value="2h" />
+              <ConfigRow label="Passing score" value="70%" />
+              <div style={{display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 6, fontSize: 14, color: 'var(--ink)', lineHeight: 1.45}}>
+                <span style={{flexShrink: 0, marginTop: 1, color: 'var(--ink-3)'}}><Icon name="orion" size={16} /></span>
+                <span>Orion AI assistance unavailable during exam.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Begin button — DS PrimaryActionButton, color per mode (accent10/11 are unbound in this port → info/lock) */}
+          {(() => {
+            const isExam = mode === 'exam';
+            const btnColor = isExam ? 'var(--lock)' : 'var(--exam-blue)';
+            const disabled = !isExam && !random && selectedModules.size === 0;
+            return (
+              <button
+                disabled={disabled}
+                onClick={isExam ? beginExam : beginStudy}
+                style={{
+                  width: '100%', height: 40, padding: '0 var(--kls-space-med)',
+                  border: '1px solid transparent', borderRadius: 8,
+                  background: btnColor,
+                  color: disabled ? 'var(--kls-on-surface-variant)' : 'var(--kls-color-base-white)',
+                  fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--kls-space-xsmall)',
+                  cursor: disabled ? 'default' : 'pointer',
+                }}
+              >
+                {isExam ? `Begin ${activeExam.subject} Exam` : 'Begin Practice'}
+              </button>
+            );
+          })()}
+        </div>
+      </div>
+      </div>
+    </>
+  );
+};
+
+/* ---------- Exam subject picker (Exam mode) ---------- */
+
+const ExamSubjectPicker = ({ exams, value, onChange }) => {
+  return (
+    <div className="card" style={{padding: 0, minWidth: 0}}>
+      <div style={{padding: '14px 18px', borderBottom: '1px solid var(--line)'}}>
+        <h3 style={{margin: 0}}>Topics</h3>
+        <div style={{marginTop: 6, fontSize: 13.5, color: 'var(--ink-3)'}}>Question count and time limit are fixed by the FAA.</div>
+      </div>
+      <div style={{display: 'flex', flexDirection: 'column', gap: 0}}>
+        {exams.map((e, i) => {
+          const active = value === e.id;
+          return (
+            <button
+              key={e.id}
+              onClick={() => onChange(e.id)}
+              style={{
+                appearance: 'none', textAlign: 'left', cursor: 'pointer',
+                border: 0, borderTop: i === 0 ? 'none' : '1px solid var(--line)',
+                background: active ? 'var(--lock-soft)' : 'transparent',
+                padding: '18px 18px 18px 18px',
+                display: 'grid', gridTemplateColumns: '32px 1fr auto', gap: 16,
+                alignItems: 'flex-start',
+                transition: 'background 100ms',
+              }}
+            >
+              {/* Radio */}
+              <div style={{paddingTop: 4}}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  border: `2px solid ${active ? 'var(--lock)' : 'var(--line-2)'}`,
+                  background: 'var(--bg-elev)',
+                  display: 'grid', placeItems: 'center',
+                  transition: 'border-color 100ms',
+                }}>
+                  {active && <div style={{width: 10, height: 10, borderRadius: '50%', background: 'var(--lock)'}} />}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div style={{minWidth: 0}}>
+                <div style={{display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6, flexWrap: 'wrap'}}>
+                  <span style={{fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.01em'}}>{e.subject}</span>
+                  <span style={{fontSize: 12, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', fontWeight: 500}}>{e.short}</span>
+                </div>
+                <div style={{fontSize: 13.5, color: 'var(--ink-3)', lineHeight: 1.5, marginBottom: 10, maxWidth: 560}}>
+                  {e.blurb}
+                </div>
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
+                  {e.topics.slice(0, 6).map(t => (
+                    <span key={t} className="chip" style={{fontSize: 11}}>{t}</span>
+                  ))}
+                  {e.topics.length > 6 && <span style={{fontSize: 11.5, color: 'var(--ink-4)', alignSelf: 'center'}}>+{e.topics.length - 6}</span>}
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div style={{display: 'grid', gap: 10, minWidth: 110, textAlign: 'right', alignContent: 'start'}}>
+                <ExamStat label="Questions" value={e.count} />
+                <ExamStat label="Time" value="2:00:00" mono />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const ExamStat = ({ label, value, mono }) => (
+  <div>
+    <div style={{fontSize: 10.5, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 2}}>{label}</div>
+    <div className={mono ? 'mono' : ''} style={{fontSize: 17, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums'}}>{value}</div>
+  </div>
+);
+
+const ExamConfigCard = ({ exam }) => (
+  <div className="card" style={{padding: 18, borderTop: '3px solid var(--lock)'}}>
+    <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14}}>
+      <Icon name="lock" size={14} />
+      <h3 style={{margin: 0}}>Exam configuration</h3>
+    </div>
+    <div style={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '10px 14px', fontSize: 14, alignItems: 'center'}}>
+      <span style={{color: 'var(--ink-3)'}}>Subject</span>
+      <span style={{color: 'var(--ink)', fontWeight: 600}}>{exam.subject}</span>
+
+      <span style={{color: 'var(--ink-3)'}}>Questions</span>
+      <span className="mono" style={{color: 'var(--ink)'}}>{exam.count}</span>
+
+      <span style={{color: 'var(--ink-3)'}}>Time limit</span>
+      <span className="mono" style={{color: 'var(--ink)'}}>2:00:00</span>
+
+      <span style={{color: 'var(--ink-3)'}}>Passing score</span>
+      <span className="mono" style={{color: 'var(--ink)'}}>70%</span>
+
+      <span style={{color: 'var(--ink-3)'}}>ACS coverage</span>
+      <div style={{display: 'flex', flexWrap: 'wrap', gap: 4}}>
+        {exam.acs.map(a => <span key={a} className="chip" style={{fontSize: 11}}>{a}</span>)}
+      </div>
+    </div>
+    <div style={{height: 1, background: 'var(--line)', margin: '14px 0'}} />
+    <div style={{fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5, display: 'flex', gap: 8}}>
+      <Icon name="lock" size={12} />
+      <span>Orion AI assistance is locked for the entire exam. The session must be completed in one sitting.</span>
+    </div>
+  </div>
+);
+
+/* ---------- Shared sub-components ---------- */
+
+const ModeCard = ({ active, icon, name, sub, onClick }) => {
+  const isExam = name === 'Exam';
+  // activeColor: Study → info blue, Exam → lock purple (accent-12). Label is always primary (white in dark).
+  const activeColor = isExam ? 'var(--lock)' : 'var(--exam-blue)';
+  const iconColor = isExam ? 'var(--lock)' : 'var(--exam-blue-ink)';
+  return (
+    <button onClick={onClick} style={{
+      border: active ? `2px solid ${activeColor}` : '1.5px solid var(--line)',
+      background: active ? `color-mix(in srgb, ${activeColor} 8%, transparent)` : 'var(--bg-elev)',
+      borderRadius: 8, padding: 12, textAlign: 'left',
+      transition: 'all 100ms',
+    }}>
+      <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+        <span style={{display: 'inline-flex', color: active ? iconColor : 'var(--ink)'}}><Icon name={icon} size={18} /></span>
+        <span style={{fontWeight: 600, fontSize: 14, color: 'var(--kls-primary)'}}>{name}</span>
+      </div>
+      <div style={{marginTop: 6, fontSize: 12, fontWeight: 500, color: 'var(--ink-3)', lineHeight: 1.45}}>{sub}</div>
+    </button>
+  );
+};
+
+const ConfigRow = ({ label, value, children }) => (
+  <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 0', gap: 12}}>
+    <span style={{fontSize: 12, fontWeight: 600, color: 'var(--ink-3)'}}>{label}:</span>
+    {children ? children : <span style={{fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums'}}>{value}</span>}
+  </div>
+);
+
+/* Question-count stepper — borderless −/value/+ matching _CountStepper (Flutter).
+   + disables at the pool ceiling; Select all appears only when the pool has questions. */
+const CountStepper = ({ value, availablePool, onChange, onSelectAll }) => {
+  const atCeiling = value >= availablePool;
+  const iconBtn = {
+    width: 36, height: 32, display: 'grid', placeItems: 'center',
+    border: 0, background: 'transparent', borderRadius: 8, padding: 0,
+    fontSize: 20, lineHeight: 1,
+  };
+  return (
+    <div style={{display: 'flex', alignItems: 'center', padding: '3px 0', gap: 0}}>
+      <div style={{flex: 1, display: 'flex', alignItems: 'center', gap: 12, minWidth: 0}}>
+        <span style={{fontSize: 12, fontWeight: 600, color: 'var(--ink-3)'}}>Question Count:</span>
+        {availablePool > 0 && (
+          <button onClick={onSelectAll} style={{border: 0, background: 'transparent', padding: 0, color: 'var(--exam-blue-ink)', fontSize: 12, fontWeight: 600, cursor: 'pointer'}}>(All)</button>
+        )}
+      </div>
+      <button onClick={() => onChange(Math.max(1, value - 1))} style={{...iconBtn, color: 'var(--ink-3)', cursor: 'pointer'}}>−</button>
+      <div style={{width: 40, textAlign: 'center', fontSize: 16, fontWeight: 500, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums'}}>{value}</div>
+      <button onClick={atCeiling ? undefined : () => onChange(value + 1)} disabled={atCeiling} style={{...iconBtn, color: atCeiling ? 'var(--line)' : 'var(--ink-3)', cursor: atCeiling ? 'default' : 'pointer'}}>+</button>
+    </div>
+  );
+};
+
+const Row = ({ label, sub, children }) => (
+  <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', gap: 12}}>
+    <div>
+      <div style={{fontSize: 14, fontWeight: 500, color: 'var(--ink)'}}>{label}</div>
+      {sub && <div style={{fontSize: 12.5, color: 'var(--ink-3)', marginTop: 3, lineHeight: 1.4}}>{sub}</div>}
+    </div>
+    <div>{children}</div>
+  </div>
+);
+
+const Checkbox = ({ checked, indeterminate, onChange }) => (
+  <button onClick={(e) => { e.stopPropagation(); onChange(); }} style={{
+    width: 16, height: 16, borderRadius: 4,
+    border: checked || indeterminate ? '1px solid var(--ink)' : '1px solid var(--line-2)',
+    background: checked || indeterminate ? 'var(--ink)' : 'var(--bg-elev)',
+    color: 'var(--bg-elev)',
+    display: 'grid', placeItems: 'center', padding: 0,
+    transition: 'all 80ms',
+  }}>
+    {checked && <Icon name="check" size={11} />}
+    {indeterminate && <div style={{width: 7, height: 1.6, background: 'currentColor', borderRadius: 1}} />}
+  </button>
+);
+
+/* Switch / Toggle — DS spec (preview/switch.html): track 44×26 · knob 22 · 2px inset ·
+   on = primary, off = outline-variant, knob = surface · travel 18px · fade/ease-standard. */
+const Toggle = ({ on, onClick }) => (
+  <button role="switch" aria-checked={on} onClick={onClick} style={{
+    width: 44, height: 26, borderRadius: 'var(--kls-radius-pill)',
+    background: on ? 'var(--kls-primary)' : 'var(--kls-outline-variant)',
+    border: 0, padding: 2, flex: 'none', cursor: 'pointer',
+    transition: 'background var(--kls-dur-fade-animation) var(--kls-ease-standard)',
+  }}>
+    <div style={{
+      width: 22, height: 22, borderRadius: 'var(--kls-radius-pill)',
+      background: 'var(--kls-surface)',
+      transform: on ? 'translateX(18px)' : 'translateX(0)',
+      transition: 'transform var(--kls-dur-fade-animation) var(--kls-ease-standard)',
+    }} />
+  </button>
+);
+
+const Stepper = ({ value, onChange, min = 1, max = 100, step = 1 }) => (
+  <div className="stepper">
+    <button onClick={() => onChange(Math.max(min, value - step))}>−</button>
+    <input type="number" value={value} onChange={(e) => onChange(Math.max(min, Math.min(max, +e.target.value || min)))} />
+    <button onClick={() => onChange(Math.min(max, value + step))}>+</button>
+  </div>
+);
+
+const MasteryDot = ({ m }) => {
+  const tested = m != null && m >= 0;
+  let color = 'var(--kls-outline)';
+  let label = 'Untested';
+  if (tested) {
+    color = 'var(--kls-accent-4)'; label = 'Familiar';
+    if (m >= 0.85) { color = 'var(--kls-accent-3)'; label = 'Expert'; }
+    else if (m >= 0.7) { color = 'var(--kls-accent-9)'; label = 'Proficient'; }
+  }
+  return (
+    <span title={tested ? `${label} — ${Math.round(m * 100)}% mastery` : 'Untested'} style={{
+      width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0,
+    }} />
+  );
+};
+
+window.PracticeSetup = PracticeSetup;
+window.Stepper = Stepper;
+window.Toggle = Toggle;
+window.Checkbox = Checkbox;
+window.MasteryDot = MasteryDot;
+
+/* Question-taking UI — Study + Exam modes, pre-exam warning, results */
+
+const PreExamWarning = ({ count, subject, duration, onProceed, onCancel }) => (
+  <div style={{
+    position: 'fixed', inset: 0, background: 'rgba(11,15,20,0.55)',
+    display: 'grid', placeItems: 'center', zIndex: 100, padding: 20,
+    backdropFilter: 'blur(4px)',
+  }}>
+    <div className="card fade-in" style={{maxWidth: 520, width: '100%', padding: 32}}>
+      <div style={{display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: 'var(--lock-soft)', color: 'var(--lock)', fontSize: 12, fontWeight: 600, marginBottom: 18}}>
+        <Icon name="lock" size={13} />
+        EXAM MODE — FAA SIMULATION
+      </div>
+      <h2 style={{fontSize: 22, marginBottom: 10}}>{subject ? `${subject} written exam — FAA conditions.` : 'This exam simulates FAA testing conditions.'}</h2>
+      <p style={{color: 'var(--ink-3)', fontSize: 14, lineHeight: 1.55, marginBottom: 20}}>
+        AI assistance is disabled for the duration of the test. You will not see whether questions are correct until you submit. The full exam must be completed in one sitting.
+      </p>
+      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24}}>
+        <Stat label="Questions" value={count} />
+        <Stat label="Time limit" value={duration ? `${Math.floor(duration/3600)}:${String(Math.floor((duration%3600)/60)).padStart(2,'0')}:00` : `${Math.ceil(count * 2)}:00`} mono />
+        <Stat label="Orion" value="Locked" icon="lock" />
+        <Stat label="Per-question feedback" value="Disabled" icon="x" />
+      </div>
+      <div style={{display: 'flex', gap: 8, justifyContent: 'flex-end'}}>
+        <button className="btn" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary btn--lg" onClick={onProceed}>
+          Begin · I understand
+          <Icon name="arrow-r" size={14} />
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const Stat = ({ label, value, mono, icon }) => (
+  <div style={{padding: '10px 12px', background: 'var(--bg-inset)', borderRadius: 6, border: '1px solid var(--line)'}}>
+    <div style={{fontSize: 11.5, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, fontWeight: 600}}>{label}</div>
+    <div className={mono ? 'mono' : ''} style={{fontSize: 15, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6}}>
+      {icon && <Icon name={icon} size={13} />}
+      {value}
+    </div>
+  </div>
+);
+
+/* Question runner */
+const WE_ACS_MAX = 2;
+const WE_attemptTitle = (a) => {
+  if (a.mode !== 'Exam') return 'Practice Session';
+  if (a.subject) return `${a.subject} Written Exam`;
+  const p = String((a.acs && a.acs[0]) || '').split('.')[0];
+  const topic = p === 'AF' ? 'Airframe' : p === 'GE' ? 'General' : 'Powerplant';
+  return `${topic} Written Exam`;
+};
+const WE_SAMPLE_NOTES = [
+  { stem: 'On a four-stroke-cycle', text: 'Overlap = end of exhaust, start of intake. Both valves open briefly to scavenge.' },
+  { stem: 'The function of the oil control ring', text: "Oil control ring regulates oil film thickness on the cylinder wall. Don't confuse with the compression ring." },
+  { stem: 'Detonation in a reciprocating', text: 'Detonation is explosive burning after normal ignition. Pre-ignition happens before the spark. Review both before the real exam.' },
+  { stem: 'The purpose of cylinder choke', text: 'Choke: barrel is narrower at the top so it becomes straight at operating temperature.' },
+];
+const WE_resultToAttempt = (r) => {
+  const qs = r.questions || [];
+  const correct = qs.filter(q => q.isCorrect).length;
+  const areas = [...new Set(qs.map(q => String(q.acs || '').split('.').slice(0, 2).join('.')).filter(Boolean))];
+  return { id: 'result', mode: r.session.mode === 'exam' ? 'Exam' : 'Study', subject: r.session.mode === 'exam' ? r.session.subject : undefined,
+    date: new Date().toISOString(), duration: r.duration, count: qs.length, score: qs.length ? correct / qs.length : 0, acs: areas };
+};
+const HistoryDetail = ({ attempt: attemptProp, result, onBack, onQuiz, onDelete, backLabel = 'Historical Exams', summaryMode = 'From attempt' }) => {
+  const D = window.KILSAR_DATA;
+  const attempt = React.useMemo(() => result ? WE_resultToAttempt(result) : attemptProp, [result, attemptProp]);
+  // Per-question results come from the live result, or the attempt's own per-ACS breakdown.
+  const questions = React.useMemo(() => {
+    if (result) return result.questions.map((q, i) => ({ ...q, id: q.id || 'r-q-' + i }));
+    const bank = D.sampleQuestions;
+    const out = [];
+    const totalSecs = String(attempt.duration || '').split(':').reduce((t, n) => t * 60 + (parseInt(n, 10) || 0), 0);
+    const avgSecs = totalSecs && attempt.count ? totalSecs / attempt.count : 45;
+    (attempt.breakdown || []).forEach(row => {
+      const pool = bank.filter(q => q.module === row.module);
+      for (let j = 0; j < row.total; j++) {
+        const q = pool.length ? pool[j % pool.length] : bank[out.length % bank.length];
+        const isCorrect = j < row.correct;
+        out.push({
+          ...q,
+          acs: row.acs, module: row.module,
+          id: attempt.id + '-q-' + out.length,
+          chosen: isCorrect ? q.correct : (q.choices.find(c => c.id !== q.correct) || {}).id,
+          isCorrect,
+          timeSpent: Math.max(8, Math.round(avgSecs * (0.6 + ((out.length * 37) % 80) / 100))),
+        });
+      }
+    });
+    return out;
+  }, [attempt.id]);
+
+  const correct = questions.filter(q => q.isCorrect).length;
+  const wrong = questions.length - correct;
+  const [notes, setNotes] = React.useState(() => {
+    if (result) return result.notes || {};
+    const seed = {};
+    const used = new Set();
+    questions.forEach(q => {
+      const hit = WE_SAMPLE_NOTES.find(n => String(q.stem || '').startsWith(n.stem));
+      if (hit && !used.has(hit.stem)) { used.add(hit.stem); seed[q.id] = hit.text; }
+    });
+    return seed;
+  });
+  const [notesOpen, setNotesOpen] = React.useState(false);
+  const noteCount = Object.keys(notes).length;
+  const [openRows, setOpenRows] = React.useState({});
+  const rowRefs = React.useRef({});
+  const [pendingScroll, setPendingScroll] = React.useState(null);
+  const revealQuestion = (id) => {
+    setOpenRows(o => ({ ...o, [id]: true }));
+    const q = questions.find(x => x.id === id);
+    if (q && q.isCorrect && filter === 'wrong') setFilter('all');
+    setPendingScroll(id);
+  };
+  React.useEffect(() => {
+    if (!pendingScroll) return;
+    const el = rowRefs.current[pendingScroll];
+    setPendingScroll(null);
+    if (!el) return;
+    requestAnimationFrame(() => {
+      let p = el.parentElement;
+      while (p && !(/(auto|scroll)/.test(getComputedStyle(p).overflowY) && p.scrollHeight > p.clientHeight)) p = p.parentElement;
+      if (!p) return;
+      const from = p.scrollTop;
+      const to = Math.max(0, from + el.getBoundingClientRect().top - p.getBoundingClientRect().top - 80);
+      const t0 = performance.now(), dur = 250;
+      const step = (t) => { const k = Math.min(1, (t - t0) / dur); const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; p.scrollTop = from + (to - from) * e; if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }, [pendingScroll, openRows]);
+
+  // Per-module breakdown
+  const byModule = {};
+  questions.forEach(q => {
+    if (!byModule[q.module]) byModule[q.module] = { correct: 0, total: 0, acs: q.acs };
+    byModule[q.module].total++;
+    if (q.isCorrect) byModule[q.module].correct++;
+  });
+
+  // Mode drives which breakdown shows: Exam → by ACS code, Study → by module.
+  const mode = summaryMode === 'From attempt' ? attempt.mode : summaryMode;
+
+  // Roll questions up to ACS area (PA.I, PA.II…) for Exam mode
+  const areaMap = {};
+  questions.forEach(q => {
+    const area = String(q.acs || '').split('.').slice(0, 2).join('.');
+    if (!areaMap[area]) areaMap[area] = { correct: 0, total: 0, leaves: {} };
+    areaMap[area].total++;
+    if (q.isCorrect) areaMap[area].correct++;
+    const leaves = areaMap[area].leaves;
+    if (!leaves[q.acs]) leaves[q.acs] = { correct: 0, total: 0, module: q.module };
+    leaves[q.acs].total++;
+    if (q.isCorrect) leaves[q.acs].correct++;
+  });
+  const byArea = Object.entries(areaMap);
+  const areaTitle = (code) => ((D.blocks || []).find(b => b.acs === code) || {}).title || '';
+  const pctColor = (p) => p >= 0.8 ? 'var(--good)' : p >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+  const [openAreas, setOpenAreas] = React.useState({});
+  const toggleArea = (code) => setOpenAreas(o => ({ ...o, [code]: !o[code] }));
+
+  const [filter, setFilter] = React.useState('all'); // all | wrong
+  const [notesOnly, setNotesOnly] = React.useState(false);
+  const [bookmarkedOnly, setBookmarkedOnly] = React.useState(false);
+  const bookmarks = React.useMemo(() => {
+    const b = {}; questions.forEach((q, i) => { if (i % 5 === 1 || i === 3) b[q.id] = true; }); return b;
+  }, [questions]);
+  const visible = questions.filter(q => {
+    if (filter === 'wrong' && q.isCorrect) return false;
+    if (notesOnly && !notes[q.id]) return false;
+    if (bookmarkedOnly && !bookmarks[q.id]) return false;
+    return true;
+  });
+
+  return (
+    <div className="page" data-screen-label="History Detail" style={{maxWidth: 1080, margin: '0 auto'}}>
+      {/* Breadcrumb */}
+      <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontSize: 13}}>
+        <button onClick={onBack} className="btn btn--ghost btn--sm" style={{padding: '0 6px'}}>
+          <Icon name="chev-l" size={12} />
+          {backLabel}
+        </button>
+        <span style={{color: 'var(--ink-4)'}}>/</span>
+        <span style={{fontWeight: 600}}>{WE_attemptTitle(attempt)}</span>
+        {onDelete && (
+          <button onClick={onDelete} style={{ marginLeft: 'auto', height: 40, padding: '0 var(--kls-space-med) 0 var(--kls-space-small)', borderRadius: 8, cursor: 'pointer',
+            background: 'var(--kls-surface)', color: 'var(--kls-on-surface-variant)', border: '1px solid var(--kls-outline-variant)',
+            display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700 }}>
+            <KlsIcon name="trash" size={18} color="var(--kls-on-surface-variant)" />Delete
+          </button>
+        )}
+      </div>
+
+      {/* Hero summary */}
+      <div className="card" style={{padding: 24, marginBottom: 18}}>
+        <div style={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap'}}>
+          <div style={{flex: '1 1 320px', minWidth: 0}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8}}>
+              <span className={attempt.mode === 'Exam' ? 'chip chip--lock' : 'chip chip--accent'}>
+                {attempt.mode === 'Exam' ? <Icon name="lock" size={10} /> : <Icon name="book" size={10} />}
+                {attempt.mode} Mode
+              </span>
+              <span className="chip">{attempt.acs.join(' · ')}</span>
+            </div>
+            <h2 style={{fontSize: 22, marginBottom: 6}}>{WE_attemptTitle(attempt)}</h2>
+            <div style={{fontSize: 13, color: 'var(--ink-3)'}}>
+              Taken on <span style={{color: 'var(--ink)', fontWeight: 500}}>{new Date(attempt.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+              {' · '}{attempt.duration}
+              {' · '}{attempt.count} questions
+            </div>
+          </div>
+          <div style={{display: 'flex', gap: 'var(--kls-space-large)'}}>
+            <SummaryStat label="Score" value={`${Math.round(attempt.score*100)}%`} tone={attempt.score >= 0.8 ? 'var(--kls-success)' : attempt.score >= 0.7 ? 'var(--kls-accent-4)' : 'var(--kls-error)'} />
+            <SummaryStat label="Correct" value={`${correct} / ${questions.length}`} />
+            <SummaryStat label="Missed" value={wrong} tone={wrong ? 'var(--kls-error)' : null} />
+          </div>
+        </div>
+
+        <div style={{display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap'}}>
+          {wrong > 0 && <button onClick={onQuiz} style={{ height: 40, padding: '0 var(--kls-space-med)', borderRadius: 8, border: '1px solid transparent', cursor: 'pointer',
+            background: 'var(--kls-tertiary-container)', color: 'var(--kls-on-tertiary-container)', display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)',
+            fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700 }}><Icon name="sparkles" size={16} />Quiz from these {wrong} misses</button>}
+          <button style={erSecondaryBtn}>Retake same setup</button>
+          <button style={{ ...erSecondaryBtn, paddingLeft: 'var(--kls-space-small)' }}><Icon name="orion" size={16} />Review with Orion</button>
+          <div style={{flex: 1}} />
+          <button onClick={() => setNotesOpen(true)} aria-label={noteCount ? `Notes (${noteCount})` : 'Notes'} style={erCircleBtn}>
+            <Icon name="notes" size={20} />
+            {noteCount > 0 && <span style={{ position: 'absolute', top: -5, right: -5, minWidth: 10, height: 18, padding: '0 var(--kls-space-tiny)', borderRadius: 999,
+              background: 'var(--kls-info)', color: 'var(--kls-on-info)', border: '2px solid var(--kls-surface)', boxSizing: 'content-box',
+              fontFamily: 'var(--kls-font-sans)', fontSize: 10, fontWeight: 700, lineHeight: '18px', textAlign: 'center' }}>{noteCount}</span>}
+          </button>
+        </div>
+        <ExamSideDrawer open={notesOpen} onClose={() => setNotesOpen(false)} notes={notes} questions={questions} currentIdx={-1} onSelectNote={revealQuestion}
+          onSaveNote={(id, t) => setNotes(n => ({ ...n, [id]: t }))}
+          onDeleteNote={(id) => setNotes(n => { const c = { ...n }; delete c[id]; return c; })} />
+      </div>
+
+      {/* Two-column: breakdown + question list */}
+      <div style={{display: 'grid', gridTemplateColumns: '1fr', gap: 18}}>
+        {/* Breakdown — by ACS code in Exam mode, by module in Study mode */}
+        {/* ACS-code breakdown retired in favor of module cards for both modes */}
+        {false ? (
+        <div className="card" style={{padding: 18}}>
+          <h3 style={{marginBottom: 12}}>Performance by ACS code</h3>
+          <div>
+            {byArea.map(([code, v], ai) => {
+              const pct = v.correct / v.total;
+              const color = pctColor(pct);
+              const open = !!openAreas[code];
+              const leaves = Object.entries(v.leaves);
+              return (
+                <div key={code}>
+                  <button onClick={() => toggleArea(code)} style={{
+                    width: '100%', padding: 'var(--kls-space-small) 0', background: 'transparent',
+                    borderWidth: 0, borderBottom: ai === byArea.length - 1 && !open ? 0 : '1px solid var(--line)', borderStyle: 'solid', borderColor: 'var(--line)',
+                    textAlign: 'left', cursor: 'pointer',
+                    display: 'grid', gridTemplateColumns: '14px 1fr auto 60px 46px', gap: 'var(--kls-space-small)', alignItems: 'center',
+                  }}>
+                    <Icon name={open ? 'chev-d' : 'chev-r'} size={13} />
+                    <div style={{minWidth: 0}}>
+                      <div className="mono" style={{fontSize: 13.5, fontWeight: 600}}>{code}</div>
+                      <div style={{fontSize: 11.5, color: 'var(--ink-4)'}}>{areaTitle(code)} · {leaves.length} code{leaves.length === 1 ? '' : 's'}</div>
+                    </div>
+                    <span style={{fontSize: 11.5, color: 'var(--ink-3)', whiteSpace: 'nowrap'}}>{v.correct} of {v.total} correct</span>
+                    <div className="bar" style={{height: 4}}>
+                      <span style={{width: `${pct*100}%`, background: color}} />
+                    </div>
+                    <span className="mono" style={{fontSize: 14, fontWeight: 600, color, textAlign: 'right'}}>{Math.round(pct*100)}%</span>
+                  </button>
+                  {open && leaves.map(([leaf, lv]) => {
+                    const lp = lv.correct / lv.total;
+                    const lc = pctColor(lp);
+                    return (
+                      <div key={leaf} style={{
+                        padding: '10px 0 10px 28px', borderBottom: '1px solid var(--line)',
+                        display: 'grid', gridTemplateColumns: '1fr auto 60px 46px', gap: 'var(--kls-space-small)', alignItems: 'center',
+                      }}>
+                        <div style={{minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 'var(--kls-space-xsmall)'}}>
+                          <span className="mono" style={{fontSize: 12, color: 'var(--ink-2)'}}>{leaf}</span>
+                          <span style={{fontSize: 12.5, color: 'var(--ink-3)'}}>{lv.module}</span>
+                        </div>
+                        <span style={{fontSize: 11.5, color: 'var(--ink-4)', whiteSpace: 'nowrap'}}>{lv.correct} of {lv.total}</span>
+                        <div className="bar" style={{height: 3}}>
+                          <span style={{width: `${lp*100}%`, background: lc}} />
+                        </div>
+                        <span className="mono" style={{fontSize: 12.5, fontWeight: 600, color: lc, textAlign: 'right'}}>{Math.round(lp*100)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        ) : (
+        <div className="card" style={{padding: 'var(--kls-space-med)', borderRadius: 'var(--kls-radius-med)'}}>
+          <div style={{fontFamily: 'var(--kls-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--kls-on-surface)', marginBottom: 'var(--kls-space-small)'}}>Performance by module</div>
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--kls-space-small)'}}>
+            {Object.entries(byModule).map(([mod, v]) => {
+              const pct = v.correct / v.total;
+              const color = pct >= 0.8 ? 'var(--kls-success)' : pct >= 0.6 ? 'var(--kls-accent-4)' : 'var(--kls-error)';
+              return (
+                <div key={mod} style={{padding: 'var(--kls-space-small)', background: 'var(--kls-surface)', border: '1px solid var(--kls-outline-variant)', borderRadius: 'var(--kls-radius-med)',
+                  display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)', fontFamily: 'var(--kls-font-sans)'}}>
+                  <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--kls-space-small)'}}>
+                    <div style={{fontSize: 14, fontWeight: 600, color: 'var(--kls-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{mod}</div>
+                    <div style={{fontSize: 16, fontWeight: 600, color, fontVariantNumeric: 'tabular-nums', flex: 'none'}}>{Math.round(pct*100)}%</div>
+                  </div>
+                  <div style={{height: 4, borderRadius: 999, background: 'var(--kls-tertiary)', overflow: 'hidden'}}>
+                    <div style={{width: `${pct*100}%`, height: '100%', borderRadius: 999, background: color}} />
+                  </div>
+                  <div style={{fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)'}}>{v.correct} of {v.total} correct</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        )}
+
+        {/* All questions list */}
+        <div className="card" style={{padding: 0}}>
+          <div style={{padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap'}}>
+            <h3 style={{margin: 0}}>All questions</h3>
+            <span style={{fontSize: 12, color: 'var(--ink-4)'}}>{visible.length} shown</span>
+            <div style={{flex: 1}} />
+            <div style={{display: 'flex', gap: 'var(--kls-space-tiny)'}}>
+              <WEFilterToggle on={notesOnly} label="Show questions with notes only" onClick={() => setNotesOnly(v => !v)}
+                icon={<Icon name={notesOnly ? 'notes-fill' : 'notes'} size={20} style={{color: notesOnly ? 'var(--kls-accent-4)' : 'var(--kls-on-surface-variant)'}} />} />
+              <WEFilterToggle on={bookmarkedOnly} label="Show bookmarked questions only" onClick={() => setBookmarkedOnly(v => !v)}
+                icon={<Icon name={bookmarkedOnly ? 'bookmark-fill' : 'bookmark'} size={20} style={{color: bookmarkedOnly ? 'var(--kls-accent-4)' : 'var(--kls-on-surface-variant)'}} />} />
+            </div>
+            <div className="tabs">
+              <button className="tab" data-active={filter === 'all'} onClick={() => setFilter('all')}>All ({questions.length})</button>
+              <button className="tab" data-active={filter === 'wrong'} onClick={() => setFilter('wrong')}>Missed ({wrong})</button>
+            </div>
+          </div>
+          {visible.length === 0 && (
+            <div style={{padding: 'var(--kls-space-large) var(--kls-space-med)', textAlign: 'center', fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)', fontFamily: 'var(--kls-font-sans)'}}>No questions match these filters.</div>
+          )}
+          {visible.map((q, i) => (
+            <HistoryQuestionRow key={q.id} q={q} idx={questions.indexOf(q)} isFirst={i === 0} note={notes[q.id]} bookmarked={!!bookmarks[q.id]}
+              open={!!openRows[q.id]} onToggle={(v) => setOpenRows(o => ({ ...o, [q.id]: v }))} rowRef={(el) => { rowRefs.current[q.id] = el; }} />
+          ))}
+          {questions.length < attempt.count && (
+            <div style={{padding: 14, textAlign: 'center', borderTop: '1px solid var(--line)', fontSize: 12, color: 'var(--ink-4)'}}>
+              Showing {questions.length} of {attempt.count} — full review available in expanded view
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Filter toggle — same treatment as the Library favorites star (CatalogStarBtn): 40×40 · r8 ·
+// transparent, tertiary on hover; "on" = filled icon (outline when off).
+const WEFilterToggle = ({ on, label, icon, onClick }) => {
+  const [hover, setHover] = React.useState(false);
+  return (
+    <button aria-label={label} title={label} aria-pressed={on} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 40, height: 40, flex: 'none', boxSizing: 'border-box', borderRadius: 8, border: 'none', cursor: 'pointer', padding: 0,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        background: hover ? 'var(--kls-tertiary)' : 'transparent', transition: 'background 125ms var(--kls-ease-standard)' }}>
+      {icon}
+    </button>
+  );
+};
+
+const SummaryStat = ({ label, value, tone }) => (
+  <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 'var(--kls-space-tiny)', fontFamily: 'var(--kls-font-sans)'}}>
+    <div style={{fontSize: 12, fontWeight: 600, color: 'var(--kls-on-surface-variant)'}}>{label}</div>
+    <div style={{fontSize: 22, fontWeight: 500, lineHeight: 1.2, color: tone || 'var(--kls-on-surface)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap'}}>{value}</div>
+  </div>
+);
+const ResultStat = ({ label, value, tone }) => (
+  <div>
+    <div style={{fontSize: 10.5, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 3}}>{label}</div>
+    <div className="mono" style={{fontSize: 26, fontWeight: 600, lineHeight: 1, color: tone || 'var(--ink)'}}>{value}</div>
+  </div>
+);
+
+const Sparkline = ({ values, width = 260, height = 44, color = 'var(--accent)' }) => {
+  if (!values || !values.length) return null;
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = (max - min) || 1;
+  const pts = values.map((v, i) => [
+    (i / (values.length - 1)) * (width - 2) + 1,
+    height - 3 - ((v - min) / span) * (height - 8),
+  ]);
+  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+  return (
+    <svg className="sparkline" width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none">
+      <path d={`${d} L${width - 1} ${height} L1 ${height} Z`} fill={color} opacity="0.10" />
+      <path d={d} stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.6" fill={color} />
+    </svg>
+  );
+};
+
+/* ── Exam-mode runner layout (web) ─────────────────────────────── */
+const erSecondaryBtn = {
+  height: 40, padding: "0 var(--kls-space-med)", borderRadius: "var(--kls-radius-small)", cursor: "pointer",
+  background: "var(--kls-surface)", color: "var(--kls-on-surface)", border: "1px solid var(--kls-outline-variant)",
+  display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flex: "none",
+  fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+};
+const erCircleBtn = {
+  width: 40, height: 40, borderRadius: 999, flex: "none", position: "relative", cursor: "pointer",
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  background: "var(--kls-surface)", border: "1px solid var(--kls-outline)", color: "var(--kls-on-surface)",
+};
+const erPill = {
+  display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flex: "none",
+  padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: "var(--kls-radius-small)",
+  background: "var(--kls-tertiary)", color: "var(--kls-on-tertiary)",
+  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
+};
+const CalculatorDialog = ({ onClose }) => {
+  const [pos, setPos] = React.useState(() => ({ x: Math.max(16, window.innerWidth - 380), y: Math.max(16, Math.min(150, window.innerHeight - 480)) }));
+  const [s, setS] = React.useState({ acc: null, op: null, cur: "0", expr: "", done: false });
+  const SYM = { "/": "÷", "*": "×", "-": "−", "+": "+" };
+  const fmt = (n) => { if (!isFinite(n)) return "Error"; const r = Math.round(n * 1e10) / 1e10; return String(r); };
+  const calc = (a, op, b) => op === "+" ? a + b : op === "-" ? a - b : op === "*" ? a * b : b === 0 ? NaN : a / b;
+  const press = React.useCallback((k) => setS(p => {
+    const cur = p.done ? "0" : p.cur;
+    if (/^[0-9]$/.test(k)) return { ...p, done: false, expr: p.done ? "" : p.expr, cur: cur === "0" ? k : cur.length >= 14 ? cur : cur + k };
+    if (k === ".") return { ...p, done: false, expr: p.done ? "" : p.expr, cur: cur.includes(".") ? cur : cur + "." };
+    if (k === "C") return { acc: null, op: null, cur: "0", expr: "", done: false };
+    if (k === "back") return { ...p, done: false, cur: cur.length > 1 ? cur.slice(0, -1) : "0" };
+    if (k === "%") return { ...p, done: false, cur: fmt(parseFloat(p.cur) / 100) };
+    if (k === "neg") return { ...p, done: false, cur: p.cur.startsWith("-") ? p.cur.slice(1) : p.cur === "0" ? "0" : "-" + p.cur };
+    if (SYM[k]) {
+      const v = p.op && p.cur !== "" ? calc(p.acc, p.op, parseFloat(p.cur)) : p.cur !== "" ? parseFloat(p.cur) : p.acc;
+      return { acc: v, op: k, cur: "", expr: `${fmt(v)} ${SYM[k]}`, done: false };
+    }
+    if (k === "=") {
+      if (!p.op || p.cur === "") return p;
+      const v = calc(p.acc, p.op, parseFloat(p.cur));
+      return { acc: null, op: null, cur: fmt(v), expr: `${fmt(p.acc)} ${SYM[p.op]} ${p.cur}`, done: true };
+    }
+    return p;
+  }), []);
+  React.useEffect(() => {
+    const onKey = (e) => {
+      const map = { Enter: "=", "=": "=", Backspace: "back", Escape: "C", Delete: "C" };
+      const k = map[e.key] || (/^[0-9.+\-*/%]$/.test(e.key) ? e.key : null);
+      if (k) { e.preventDefault(); press(k); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [press]);
+  const startDrag = (e) => {
+    if (e.target.closest("button")) return;
+    const ox = e.clientX - pos.x, oy = e.clientY - pos.y;
+    const move = (ev) => setPos({ x: Math.min(Math.max(0, ev.clientX - ox), window.innerWidth - 120), y: Math.min(Math.max(0, ev.clientY - oy), window.innerHeight - 60) });
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+  };
+  const main = s.cur !== "" ? s.cur : s.acc != null ? fmt(s.acc) : "0";
+  const keyBase = { height: 48, borderRadius: "var(--kls-radius-small)", border: "none", cursor: "pointer", display: "grid", placeItems: "center",
+    fontFamily: "var(--kls-font-sans)", fontSize: 18, fontWeight: 600, color: "var(--kls-on-surface)" };
+  const K = { num: { ...keyBase, background: "var(--kls-surface-container-low)" }, op: { ...keyBase, background: "var(--kls-tertiary)" },
+    eq: { ...keyBase, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", fontWeight: 700 } };
+  const keys = [
+    ["C", "C", "op"], ["÷", "/", "op"], ["×", "*", "op"], ["back", "back", "op"],
+    ["7", "7", "num"], ["8", "8", "num"], ["9", "9", "num"], ["−", "-", "op"],
+    ["4", "4", "num"], ["5", "5", "num"], ["6", "6", "num"], ["+", "+", "op"],
+    ["1", "1", "num"], ["2", "2", "num"], ["3", "3", "num"], ["=", "=", "eq"],
+    ["0", "0", "num"], [".", ".", "num"], ["%", "%", "op"], ["±", "neg", "op"],
+  ];
+  return (
+    <div role="dialog" aria-label="Calculator" style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 1600, width: 340,
+      background: "var(--kls-surface)", borderRadius: "var(--kls-radius-small)", boxShadow: "var(--kls-drop-shadow)",
+      padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)" }}>
+      <div onPointerDown={startDrag} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "grab", userSelect: "none", touchAction: "none" }}>
+        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Calculator</div>
+        <button onClick={onClose} aria-label="Close calculator" style={erCircleBtn}><Icon name="x" size={20} /></button>
+      </div>
+      <div style={{ background: "var(--kls-surface-variant)", borderRadius: "var(--kls-radius-small)", padding: "var(--kls-space-small) var(--kls-space-med)",
+        display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--kls-space-tiny)", minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", minHeight: 20, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{s.expr}</div>
+        <div style={{ fontSize: 32, fontWeight: 700, color: "var(--kls-on-surface)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{main}</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "var(--kls-space-xsmall)" }}>
+        {keys.map(([label, k, kind]) => (
+          <button key={k} onClick={() => press(k)} aria-label={k === "back" ? "Backspace" : k === "neg" ? "Toggle sign" : label} style={K[kind]}>
+            {k === "back" ? <Icon name="backspace" size={20} /> : label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+const NoteEntry = ({ n, q, text, isCurrent, onSave, onDelete, onSelect }) => {
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState(text);
+  const ok = draft.trim().length > 0;
+  return (
+    <div onClick={(e) => { if (onSelect && !editing && !e.target.closest("button, textarea")) onSelect(); }} role={onSelect ? "button" : undefined}
+      style={{ cursor: onSelect && !editing ? "pointer" : "default", background: "var(--kls-surface)", border: "1px solid " + (isCurrent ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"), borderRadius: "var(--kls-radius-small)",
+      padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>Question {n}</span>
+        {isCurrent && <span style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>· Current</span>}
+        <div style={{ flex: 1 }} />
+        {!editing && <MeIconBtn icon="pencil" label={`Edit note on question ${n}`} onClick={() => { setDraft(text); setEditing(true); }} />}
+        {!editing && <MeIconBtn icon="trash" color="var(--kls-error)" label={`Delete note on question ${n}`} onClick={onDelete} />}
+      </div>
+      <div style={{ display: "flex", gap: "var(--kls-space-tiny)", flexWrap: "wrap" }}>
+        <span style={erPill}>{q.module}</span>
+        <span style={erPill}>{q.acs}</span>
+      </div>
+      {editing ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", paddingRight: "var(--kls-space-tiny)", marginTop: "var(--kls-space-tiny)" }}>
+          <textarea autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} rows={4}
+            style={{ width: "100%", boxSizing: "border-box", resize: "vertical", padding: "var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+              background: "var(--kls-surface)", color: "var(--kls-on-surface)", outline: "none", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5 }} />
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-xsmall)" }}>
+            <button onClick={() => setEditing(false)} style={erSecondaryBtn}>Cancel</button>
+            <button disabled={!ok} onClick={() => { if (ok) { onSave(draft.trim()); setEditing(false); } }} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8,
+              border: "1px solid transparent", cursor: ok ? "pointer" : "default", opacity: ok ? 1 : 0.5, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+              display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Save</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.55, color: "var(--kls-on-surface)", whiteSpace: "pre-wrap", textWrap: "pretty", paddingRight: "var(--kls-space-small)", marginTop: "var(--kls-space-tiny)" }}>{text}</div>
+      )}
+    </div>
+  );
+};
+const ExamSideDrawer = ({ open, onClose, notes = {}, questions = [], currentIdx, onSaveNote, onDeleteNote, onSelectNote, onAddNote }) => {
+  const entries = questions.map((q, i) => ({ q, n: i + 1 })).filter(e => notes[e.q.id]);
+  return (
+  <div aria-hidden={!open} style={{ position: "fixed", inset: 0, zIndex: 1700, pointerEvents: open ? "auto" : "none" }}>
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", opacity: open ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+    <div role="dialog" aria-modal="true" aria-label="Notes" style={{ position: "absolute", top: "var(--kls-space-small)", bottom: "var(--kls-space-small)", right: "var(--kls-space-small)", width: 426, maxWidth: "calc(100vw - 24px)",
+      background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: "var(--kls-font-sans)",
+      transform: open ? "translateX(0)" : "translateX(calc(100% + 16px))", transition: "transform 250ms var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>Notes</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{entries.length} {entries.length === 1 ? "note" : "notes"} on this exam</div>
+        </div>
+        <button onClick={onClose} aria-label="Close" style={erCircleBtn}><Icon name="x" size={20} /></button>
+      </div>
+      <div style={{ flex: 1, overflow: "auto", padding: "var(--kls-space-med)", background: "var(--kls-scaffold-bg)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        {onAddNote && currentIdx >= 0 && (
+          <button onClick={onAddNote} style={{ width: "100%", height: 40, flex: "none", padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>
+            {questions[currentIdx] && notes[questions[currentIdx].id]
+              ? <><KlsIcon name="pencil" size={16} color="var(--kls-on-tertiary-container)" />Edit note for Question {currentIdx + 1}</>
+              : <><Icon name="plus" size={16} />Add note to Question {currentIdx + 1}</>}
+          </button>
+        )}
+        {entries.length === 0 ? (
+          <div style={{ margin: "auto 0", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "var(--kls-space-small)" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: "var(--kls-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--kls-on-surface-variant)" }}>
+              <Icon name="notes" size={28} />
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--kls-on-surface)" }}>No notes yet</div>
+            <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4, maxWidth: 320, color: "var(--kls-on-surface-variant)" }}>Notes you add to a question appear here, in question order.</div>
+          </div>
+        ) : entries.map(({ q, n }) => (
+          <NoteEntry key={q.id + notes[q.id]} n={n} q={q} text={notes[q.id]} isCurrent={n - 1 === currentIdx}
+            onSave={(t) => onSaveNote(q.id, t)} onDelete={() => onDeleteNote(q.id)} onSelect={onSelectNote ? () => onSelectNote(q.id) : undefined} />
+        ))}
+      </div>
+    </div>
+  </div>
+  );
+};
+const QuestionNoteDialog = ({ number, q, initial, onSave, onClose }) => {
+  const [text, setText] = React.useState(initial);
+  const ok = text.trim().length > 0;
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
+      <div role="dialog" aria-modal="true" aria-label={`Note on question ${number}`} style={{ position: "relative", width: "min(520px, 100%)",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-large)",
+        display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <span style={{ flex: 1, fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>Note on question {number}</span>
+          <button onClick={onClose} aria-label="Close" style={erCircleBtn}><Icon name="x" size={20} /></button>
+        </div>
+        <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a note" rows={5}
+          style={{ width: "100%", boxSizing: "border-box", resize: "vertical", minHeight: 140, padding: "var(--kls-space-small)", borderRadius: 8,
+            border: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface)", color: "var(--kls-on-surface)", outline: "none",
+            fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, lineHeight: 1.5 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+          <span style={erPill}>{q.module}</span>
+          <span style={erPill}>{q.acs}</span>
+          <div style={{ flex: 1 }} />
+          <button disabled={!ok} onClick={() => ok && onSave(text.trim())} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent",
+            cursor: ok ? "pointer" : "default", opacity: ok ? 1 : 0.5, background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+            display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Save note</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const JumpToQuestionDialog = ({ questions, idx, answers, flagged, initialFilter, onPick, onClose }) => {
+  const [filter, setFilter] = React.useState(initialFilter || "all");
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const total = questions.length;
+  const unanswered = questions.filter(q => !answers[q.id]).length;
+  const marked = questions.filter(q => flagged[q.id]).length;
+  const items = questions.map((q, i) => ({ q, i })).filter(({ q }) =>
+    filter === "unanswered" ? !answers[q.id] : filter === "bookmarked" ? !!flagged[q.id] : true);
+  const chip = (key, label, count) => {
+    const on = filter === key;
+    return (
+      <button key={key} onClick={() => setFilter(key)} aria-pressed={on} style={{ padding: "var(--kls-space-xsmall) var(--kls-space-med)", borderRadius: 24, border: "none", cursor: "pointer",
+        background: on ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)", color: on ? "var(--kls-primary)" : "var(--kls-on-tertiary)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>{label} {count}</button>
+    );
+  };
+  const tile = (state) => state === "current"
+    ? { background: "var(--kls-on-surface)", color: "var(--kls-surface)", border: "1px solid var(--kls-on-surface)" }
+    : state === "marked" ? { background: "var(--kls-accent-5)", color: "var(--kls-on-surface)", border: "1px solid var(--kls-accent-4)" }
+    : state === "answered" ? { background: "var(--kls-tertiary)", color: "var(--kls-on-surface)", border: "1px solid var(--kls-tertiary)" }
+    : { background: "var(--kls-surface)", color: "var(--kls-on-surface-variant)", border: "1px solid var(--kls-outline-variant)" };
+  const legend = [["current", "Current"], ["answered", "Answered"], ["open", "Unanswered"], ["marked", "Bookmarked"]];
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
+      <div role="dialog" aria-modal="true" aria-label="Jump to question" style={{ position: "relative", width: "min(680px, 100%)", maxHeight: "calc(100vh - 40px)",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-large)",
+        display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>Jump to question</span>
+          <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+            {chip("all", "All", total)}{chip("unanswered", "Unanswered", unanswered)}{chip("bookmarked", "Bookmarked", marked)}
+          </div>
+        </div>
+        <div style={{ overflowY: "auto", minHeight: 0, margin: "0 calc(-1 * var(--kls-space-tiny))", padding: "0 var(--kls-space-tiny)" }}>
+          {items.length === 0 ? (
+            <div style={{ padding: "var(--kls-space-large) 0", textAlign: "center", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+              {filter === "bookmarked" ? "No bookmarked questions." : "All questions answered."}
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 48px)", gap: "var(--kls-space-small)", justifyContent: "start" }}>
+              {items.map(({ q, i }) => {
+                const st = i === idx ? "current" : flagged[q.id] ? "marked" : answers[q.id] ? "answered" : "open";
+                return (
+                  <button key={q.id} onClick={() => onPick(i)} aria-label={`Question ${i + 1}`} aria-current={i === idx ? "true" : undefined}
+                    style={{ ...tile(st), width: 48, height: 48, padding: 0, borderRadius: "var(--kls-radius-small)", cursor: "pointer", display: "grid", placeItems: "center",
+                      fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: st === "open" ? 600 : 700, fontVariantNumeric: "tabular-nums" }}>{i + 1}</button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)", flexWrap: "wrap", paddingTop: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          {legend.map(([st, label]) => (
+            <span key={st} style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+              <span style={{ ...tile(st), width: 18, height: 18, borderRadius: "var(--kls-radius-xsmall)", boxSizing: "border-box" }} />{label}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+const WE_MOCK_FIGURES = {
+  1: [
+    { fig: "12", title: "Cylinder bore dimensions" },
+    { fig: "13", title: "Oversize piston & ring chart" },
+    { fig: "14", title: "Service limits table" },
+  ],
+  4: [{ fig: "21", title: "Crankshaft damper assembly" }],
+};
+const QuestionFigures = ({ figures }) => {
+  const [tab, setTab] = React.useState(0);
+  const [zoom, setZoom] = React.useState(1);
+  const [open, setOpen] = React.useState(false);
+  const [dZoom, setDZoom] = React.useState(1);
+  React.useEffect(() => { if (open) setDZoom(1); }, [open]);
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+  const f = figures[tab] || figures[0];
+  const pick = (i) => { setTab(i); setZoom(1); };
+  const sq = { ...erSecondaryBtn, width: 40, padding: 0, justifyContent: "center" };
+  const figLabel = { fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+        {figures.length > 1 && (
+          <div role="tablist" style={{ display: "flex", gap: "var(--kls-space-tiny)", padding: 2, height: 40, boxSizing: "border-box", borderRadius: 8,
+            background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)", minWidth: 0, overflowX: "auto" }}>
+            {figures.map((x, i) => {
+              const on = i === tab;
+              return (
+                <button key={x.fig} role="tab" aria-selected={on} onClick={() => pick(i)} style={{ height: 34, padding: "0 18px", borderRadius: 8, border: "none", cursor: "pointer", flex: "none",
+                  display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", whiteSpace: "nowrap",
+                  background: on ? "var(--kls-surface)" : "transparent", color: on ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)",
+                  boxShadow: on ? "0 1px 2px rgba(0,0,0,.04)" : "none", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>
+                  <span style={figLabel}>Fig {x.fig}</span>{x.title}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", marginLeft: "auto", flex: "none" }}>
+          <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))} disabled={zoom <= 0.5} aria-label="Zoom out" style={{ ...sq, color: zoom <= 0.5 ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}><Icon name="zoom-out" size={18} /></button>
+          <button onClick={() => setOpen(true)} aria-label="Open image" style={{ ...sq, color: "var(--kls-on-surface)" }}><Icon name="expand" size={18} /></button>
+          <button onClick={() => setZoom(z => Math.min(3, +(z + 0.25).toFixed(2)))} disabled={zoom >= 3} aria-label="Zoom in" style={{ ...sq, color: zoom >= 3 ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}><Icon name="zoom-in" size={18} /></button>
+        </div>
+      </div>
+      <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: "var(--kls-radius-small)", overflow: "hidden", background: "var(--kls-surface)" }}>
+        <div style={{ height: 360, overflow: "auto", background: "var(--kls-surface-container-low)" }}>
+          <div role="img" aria-label={`Figure ${f.fig}: ${f.title}`} style={{ width: `${zoom * 100}%`, aspectRatio: "16 / 9", margin: zoom < 1 ? "0 auto" : 0,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)", color: "var(--kls-on-surface-variant)",
+            background: "var(--kls-surface-container-high)", transition: "width 125ms var(--kls-ease-standard)" }}>
+            <Icon name="image" size={40} />
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Figure image</span>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", padding: "var(--kls-space-small) var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ ...figLabel, color: "var(--kls-on-surface)" }}>Fig {f.fig}</span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{f.title}</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)", fontVariantNumeric: "tabular-nums" }}>{Math.round(zoom * 100)}% · {tab + 1} of {figures.length}</span>
+        </div>
+      </div>
+      {open && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-large)", fontFamily: "var(--kls-font-sans)" }}>
+          <div onClick={() => setOpen(false)} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
+          <div role="dialog" aria-modal="true" aria-label={`Figure ${f.fig}: ${f.title}`} style={{ position: "relative", width: "min(1200px, 100%)", height: "min(860px, 100%)",
+            background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-small) var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+              <span style={{ ...figLabel, color: "var(--kls-on-surface)" }}>Fig {f.fig}</span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{f.title}</span>
+              <button onClick={() => setOpen(false)} aria-label="Close" style={erCircleBtn}><Icon name="x" size={20} /></button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex" }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: "auto", background: "var(--kls-surface-container-low)", display: "flex" }}>
+            <div role="img" aria-label={`Figure ${f.fig}: ${f.title}`} style={{ flex: "none", width: `${dZoom * 100}%`, minHeight: `${dZoom * 100}%`, margin: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: "var(--kls-space-xsmall)", color: "var(--kls-on-surface-variant)", background: "var(--kls-surface-container-high)", transition: "width 125ms var(--kls-ease-standard), min-height 125ms var(--kls-ease-standard)" }}>
+              <Icon name="image" size={56} />
+              <span style={{ fontSize: 14, fontWeight: 600 }}>Figure image</span>
+            </div>
+            </div>
+            <div style={{ position: "absolute", top: "var(--kls-space-small)", right: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+              padding: "var(--kls-space-tiny)", borderRadius: 999, background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)" }}>
+              <button onClick={() => setDZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))} disabled={dZoom <= 0.5} aria-label="Zoom out"
+                style={{ ...erCircleBtn, color: dZoom <= 0.5 ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}><Icon name="zoom-out" size={18} /></button>
+              <span style={{ minWidth: 44, textAlign: "center", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)", fontVariantNumeric: "tabular-nums" }}>{Math.round(dZoom * 100)}%</span>
+              <button onClick={() => setDZoom(z => Math.min(3, +(z + 0.25).toFixed(2)))} disabled={dZoom >= 3} aria-label="Zoom in"
+                style={{ ...erCircleBtn, color: dZoom >= 3 ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}><Icon name="zoom-in" size={18} /></button>
+            </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+const SubmitExamDialog = ({ questions, answers, flagged, isStudy, onJump, onSubmit, onDiscard, onClose }) => {
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const total = questions.length;
+  const open = questions.map((q, i) => ({ q, i })).filter(({ q }) => !answers[q.id]);
+  const marked = questions.filter(q => flagged[q.id]).length;
+  const label = { fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" };
+  const stat = (title, value, bg, fg, labelFg) => (
+    <div style={{ flex: "1 1 0", minWidth: 0, padding: "var(--kls-space-med)", borderRadius: "var(--kls-radius-small)", background: bg, display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+      <span style={{ ...label, color: labelFg }}>{title}</span>
+      <span style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, color: fg, fontVariantNumeric: "tabular-nums" }}>{value}</span>
+    </div>
+  );
+  const hasOpen = open.length > 0;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
+      <div role="dialog" aria-modal="true" aria-label={isStudy ? "End study session" : "Review and submit exam"} style={{ position: "relative", width: "min(950px, 100%)", maxHeight: "calc(100vh - 40px)",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-med) var(--kls-space-med) var(--kls-space-large)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>{isStudy ? "End study session" : <>Review {"&"} submit exam</>}</span>
+          <button onClick={onClose} aria-label="Close" style={erCircleBtn}><Icon name="x" size={20} /></button>
+        </div>
+        <div style={{ padding: "var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)", overflowY: "auto", minHeight: 0 }}>
+          <div style={{ display: "flex", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+            {stat("Answered", `${total - open.length} / ${total}`, "var(--kls-surface-variant)", "var(--kls-on-surface)", "var(--kls-on-surface-variant)")}
+            {stat("Unanswered", open.length, hasOpen ? "var(--kls-error-container)" : "var(--kls-surface-variant)", hasOpen ? "var(--kls-error)" : "var(--kls-on-surface)", hasOpen ? "var(--kls-error)" : "var(--kls-on-surface-variant)")}
+            {stat("Bookmarked", marked, "var(--kls-accent-5)", "var(--kls-on-surface)", "var(--kls-on-surface-variant)")}
+          </div>
+          {hasOpen && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+              <span style={{ ...label, color: "var(--kls-on-surface-variant)" }}>Still unanswered — tap to jump</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-small)" }}>
+                {open.map(({ q, i }) => (
+                  <button key={q.id} onClick={() => onJump(i)} aria-label={`Go to question ${i + 1}`} style={{ width: 52, height: 44, borderRadius: "var(--kls-radius-small)", cursor: "pointer",
+                    background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", color: "var(--kls-on-surface-variant)",
+                    fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{i + 1}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "var(--kls-space-small)", padding: "0 var(--kls-space-large) var(--kls-space-large)" }}>
+          {isStudy && <button onClick={onDiscard} style={{ marginRight: "auto", padding: 0, border: "none", background: "transparent", cursor: "pointer",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-error)", textDecoration: "underline", textUnderlineOffset: 3 }}>Discard this attempt instead</button>}
+          <button onClick={onClose} style={erSecondaryBtn}>Cancel</button>
+          <button onClick={onSubmit} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>{isStudy ? "End study session" : "Submit exam"}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const LeaveSessionDialog = ({ answered, total, timeLabel, onKeep, onSave, onDiscard }) => {
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onKeep(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onKeep]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)" }}>
+      <div onClick={onKeep} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
+      <div role="dialog" aria-modal="true" aria-label="Leave the exam?" style={{ position: "relative", width: "min(520px, 100%)",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med) var(--kls-space-large)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <Icon name="clock" size={24} style={{ flex: "none", color: "var(--kls-on-surface)" }} />
+          <span style={{ flex: 1, fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>Leave the exam?</span>
+        </div>
+        <div style={{ padding: "var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div style={{ padding: "var(--kls-space-med)", borderRadius: "var(--kls-radius-small)", background: "var(--kls-surface-variant)", display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Progress is saved automatically</span>
+            <span style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+              {answered} of {total} answered · timer paused at {timeLabel}, and can be resumed.
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "var(--kls-space-small)" }}>
+            <button onClick={onKeep} style={{ ...erSecondaryBtn, justifyContent: "center" }}>Keep taking exam</button>
+            <button onClick={onSave} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Save {"&"} exit</button>
+          </div>
+          <button onClick={onDiscard} style={{ alignSelf: "center", padding: 0, border: "none", background: "transparent", cursor: "pointer",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-error)", textDecoration: "underline", textUnderlineOffset: 3 }}>Discard this attempt instead</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const LeaveExamDialog = ({ answered, total, remainingLabel, onKeep, onSubmit }) => {
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onKeep(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onKeep]);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", placeItems: "center", padding: "var(--kls-space-med)", fontFamily: "var(--kls-font-sans)" }}>
+      <div onClick={onKeep} style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--kls-surface) 80%, transparent)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }} />
+      <div role="alertdialog" aria-modal="true" aria-label="Leave the exam?" style={{ position: "relative", width: "min(520px, 100%)", padding: "var(--kls-space-large)",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <Icon name="warning" size={24} style={{ flex: "none", color: "var(--kls-accent-4)" }} />
+          <span style={{ fontSize: 22, fontWeight: 600, color: "var(--kls-on-surface)" }}>Leave the exam?</span>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>
+          You've answered {answered} of {total} questions with {remainingLabel} remaining. Leaving submits the exam for grading, and it can't be resumed.
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)", marginTop: "var(--kls-space-small)" }}>
+          <button onClick={onKeep} style={erSecondaryBtn}>Keep taking exam</button>
+          <button onClick={onSubmit} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Submit {"&"} Exit</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const ExamRunnerView = ({ session, isStudy, revealed = {}, setRevealed, questions, idx, setIdx, answers, setAnswers, flagged, setFlagged, elapsed, onSubmitExam, onExit }) => {
+  const q = questions[idx];
+  const total = questions.length;
+  const chosen = answers[q.id] || null;
+  const answered = Object.keys(answers).length;
+  const bookmarked = Object.values(flagged).filter(Boolean).length;
+  const isMarked = !!flagged[q.id];
+  const showFeedback = isStudy && !!revealed[q.id];
+  const left = Math.max(0, (session.duration || 7200) - elapsed);
+  const hms = `${Math.floor(left / 3600)}:${String(Math.floor((left % 3600) / 60)).padStart(2, "0")}:${String(left % 60).padStart(2, "0")}`;
+  const elapsedLabel = elapsed >= 3600
+    ? `${Math.floor(elapsed / 3600)}:${String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`
+    : `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`;
+  const title = isStudy ? (session.subject || session.title || "Practice session") : `${session.subject} Written Exam`;
+  const placeholder = () => {};
+  const [calcOpen, setCalcOpen] = React.useState(false);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [notes, setNotes] = React.useState(() => ({
+    "s-q-0": "Overlap = end of exhaust, start of intake. Both valves open briefly to scavenge.",
+    "s-q-2": "Oil control ring regulates oil film thickness on the cylinder wall. Don't confuse with the compression ring.",
+    "s-q-5": "Detonation is explosive burning after normal ignition. Pre-ignition happens before the spark. Review both before the real exam.",
+    "s-q-7": "Choke: barrel is narrower at the top so it becomes straight at operating temperature.",
+  }));
+  const [noteOpen, setNoteOpen] = React.useState(false);
+  const [jumpFilter, setJumpFilter] = React.useState(null);
+  const [submitOpen, setSubmitOpen] = React.useState(false);
+  const [leaveOpen, setLeaveOpen] = React.useState(false);
+  const pillBtn = { border: "none", cursor: "pointer" };
+  return (
+    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--kls-scaffold-bg)", fontFamily: "var(--kls-font-sans)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(max-content, 1fr)", alignItems: "center", gap: "var(--kls-space-med)", padding: "var(--kls-space-small) var(--kls-space-large)",
+        background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <button onClick={() => setLeaveOpen(true)} aria-label="Exit exam" style={erCircleBtn}><Icon name="exit" size={20} /></button>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--kls-on-surface)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{title}</div>
+              {isStudy && <span style={{ ...erPill, background: "var(--kls-info-container)", color: "var(--kls-info)", fontSize: 14, fontWeight: 600 }}>Study mode</span>}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{total} questions</div>
+          </div>
+        </div>
+        {isStudy ? (
+          <div style={{ ...erPill, padding: "var(--kls-space-xsmall) var(--kls-space-med)", borderRadius: 999, color: "var(--kls-on-surface-variant)", fontSize: 16, fontWeight: 500, fontVariantNumeric: "tabular-nums", gap: "var(--kls-space-small)" }}>
+            <Icon name="clock" size={18} />{elapsedLabel} elapsed
+          </div>
+        ) : (
+        <div style={{ ...erPill, padding: "var(--kls-space-xsmall) var(--kls-space-med)", borderRadius: 999, color: "var(--kls-on-surface)", fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums", gap: "var(--kls-space-small)" }}>
+          <Icon name="clock" size={18} />{hms}
+        </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <button onClick={() => setCalcOpen(o => !o)} aria-label="Calculator" aria-pressed={calcOpen} style={calcOpen ? { ...erCircleBtn, background: "var(--kls-tertiary)" } : erCircleBtn}><Icon name="calc" size={20} /></button>
+          <button onClick={() => setDrawerOpen(true)} aria-label="Notes" style={erCircleBtn}>
+            <Icon name="notes" size={20} />
+          </button>
+          <div style={{ width: 1, height: 32, background: "var(--kls-outline-variant)", flex: "none" }} />
+          <button onClick={() => setSubmitOpen(true)} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer", flex: "none",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>
+            <>Review {"&"} submit exam<Icon name="chev-r" size={14} /></>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)", padding: "var(--kls-space-small) var(--kls-space-large)",
+        background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" }}>Question {idx + 1} of {total}</span>
+        <div style={{ flex: 1, minWidth: 80, height: 6, borderRadius: 999, background: "var(--kls-tertiary)", overflow: "hidden" }}>
+          <div style={{ width: `${((idx + 1) / total) * 100}%`, height: "100%", borderRadius: 999, background: "var(--kls-on-surface)", transition: "width 250ms var(--kls-ease-standard)" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+          <button onClick={() => setJumpFilter("all")} style={{ ...erPill, ...pillBtn }}><Icon name="check" size={12} />{answered} answered</button>
+          <button onClick={() => setJumpFilter("unanswered")} style={{ ...erPill, ...pillBtn }}>{total - answered} remaining</button>
+          <button onClick={() => setJumpFilter("bookmarked")} aria-label={`${bookmarked} bookmarked`} style={{ ...erPill, ...pillBtn, background: "var(--kls-accent-5)", color: "var(--kls-accent-6)", fontWeight: 600 }}><Icon name="bookmark-fill" size={12} />{bookmarked}</button>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-large)" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: "var(--kls-radius-med)",
+          padding: "var(--kls-space-large)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+            <div style={{ fontSize: 25, fontWeight: 600, color: "var(--kls-on-surface)" }}>Question {idx + 1}</div>
+            <span style={{ ...erPill, fontSize: 14 }}>{q.acs} · {q.module}</span>
+            <div style={{ flex: 1 }} />
+            <button onClick={() => setNoteOpen(true)} aria-label="Note on question" style={erCircleBtn}><Icon name="note" size={20} /></button>
+            <button onClick={() => setFlagged(f => ({ ...f, [q.id]: !f[q.id] }))} aria-pressed={isMarked} aria-label={isMarked ? "Remove bookmark" : "Bookmark question"} style={isMarked ? { ...erCircleBtn, background: "var(--kls-accent-5)", color: "var(--kls-accent-6)", border: "1px solid var(--kls-accent-4)" } : erCircleBtn}>
+              <Icon name={isMarked ? "bookmark-fill" : "bookmark"} size={20} />
+            </button>
+          </div>
+          <h2 style={{ fontSize: 21, lineHeight: 1.4, fontWeight: 500, margin: 0, textWrap: "pretty" }}>{q.stem}</h2>
+          {q.figures && q.figures.length > 0 && <QuestionFigures key={q.id} figures={q.figures} />}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {q.choices.map(c => {
+              const picked = chosen === c.id;
+              const right = showFeedback && c.id === q.correct;
+              const wrongPick = showFeedback && picked && c.id !== q.correct;
+              return (
+                <button key={c.id} onClick={() => { if (!showFeedback) setAnswers(a => ({ ...a, [q.id]: c.id })); }} aria-pressed={picked} style={{
+                  display: "flex", gap: 14, alignItems: "flex-start", textAlign: "left",
+                  padding: "14px 16px", borderRadius: 8, cursor: showFeedback ? "default" : "pointer",
+                  background: right ? "var(--good-soft)" : wrongPick ? "var(--bad-soft)" : picked ? "var(--bg-sunken)" : "var(--bg-elev)",
+                  border: "1px solid " + (right ? "var(--good)" : wrongPick ? "var(--bad)" : picked ? "var(--ink-4)" : "var(--line)"),
+                  fontSize: 15, lineHeight: 1.5, color: "var(--ink)",
+                }}>
+                  <span className="mono" style={{
+                    width: 22, height: 22, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center",
+                    fontSize: 11.5, fontWeight: 600,
+                    background: right ? "var(--good)" : wrongPick ? "var(--bad)" : picked ? "var(--ink)" : "var(--bg-sunken)",
+                    color: (right || wrongPick || picked) ? "var(--bg-elev)" : "var(--ink-3)",
+                  }}>{c.id}</span>
+                  <span style={{ flex: 1 }}>{c.text}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {isStudy && chosen && !showFeedback && (
+          <div style={{ maxWidth: 960, margin: "var(--kls-space-med) auto 0", display: "flex", justifyContent: "flex-end" }}>
+            <button onClick={() => setRevealed(r => ({ ...r, [q.id]: true }))} style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, border: "1px solid transparent", cursor: "pointer",
+              background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700 }}>Submit answer<Icon name="check" size={14} /></button>
+          </div>
+        )}
+        {showFeedback && (() => {
+          const ok = chosen === q.correct;
+          const tone = ok ? "var(--kls-success)" : "var(--kls-error)";
+          return (
+          <div className="fade-in" style={{ maxWidth: 960, margin: "var(--kls-space-med) auto 0", padding: "var(--kls-space-med)", borderRadius: "var(--kls-radius-med)",
+            background: ok ? "var(--kls-success-container)" : "var(--kls-error-container)", border: "1px solid " + tone,
+            display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flexWrap: "wrap" }}>
+              <span style={{ width: 24, height: 24, borderRadius: 999, background: tone, color: "var(--kls-color-base-white)", display: "grid", placeItems: "center", flex: "none" }}>
+                <Icon name={ok ? "check" : "x"} size={14} strokeWidth={2} />
+              </span>
+              <span style={{ fontSize: 20, fontWeight: 600, color: tone }}>{ok ? "Correct" : "Incorrect"}</span>
+              {!ok && <span style={{ fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>Correct answer: {q.correct}</span>}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, color: "var(--kls-on-surface)", textWrap: "pretty" }}>{q.explanation}</div>
+            <button style={{ ...erSecondaryBtn, width: "100%", justifyContent: "center", marginTop: "var(--kls-space-tiny)" }}>
+              <Icon name="orion" size={18} />Ask Orion to elaborate
+            </button>
+          </div>
+          );
+        })()}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-small) var(--kls-space-large)",
+        background: "var(--kls-surface)", borderTop: "1px solid var(--kls-outline-variant)" }}>
+        <div style={{ flex: 1, display: "flex" }}>
+          <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0}
+            style={{ ...erSecondaryBtn, paddingLeft: "var(--kls-space-small)", color: idx === 0 ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)", cursor: idx === 0 ? "default" : "pointer" }}>
+            <Icon name="chev-l" size={14} />Back
+          </button>
+        </div>
+        <button onClick={() => setJumpFilter("all")} style={{ ...erSecondaryBtn, paddingLeft: "var(--kls-space-small)", gap: "var(--kls-space-small)" }}>
+          <Icon name="grid" size={18} />Jump to question
+          <span style={{ fontWeight: 500, color: "var(--kls-on-surface-variant)", fontVariantNumeric: "tabular-nums" }}>{idx + 1} / {total}</span>
+          <Icon name="chev-d" size={14} />
+        </button>
+        <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={() => setIdx(i => Math.min(total - 1, i + 1))} disabled={idx === total - 1}
+            style={{ ...erSecondaryBtn, color: idx === total - 1 ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)", cursor: idx === total - 1 ? "default" : "pointer" }}>
+            Next<Icon name="chev-r" size={14} />
+          </button>
+        </div>
+      </div>
+      {submitOpen && <SubmitExamDialog questions={questions} answers={answers} flagged={flagged} isStudy={isStudy}
+        onJump={(i) => { setIdx(i); setSubmitOpen(false); }} onSubmit={() => { setSubmitOpen(false); onSubmitExam(notes); }} onDiscard={() => { setSubmitOpen(false); onExit(); }} onClose={() => setSubmitOpen(false)} />}
+      {jumpFilter && <JumpToQuestionDialog questions={questions} idx={idx} answers={answers} flagged={flagged} initialFilter={jumpFilter}
+        onPick={(i) => { setIdx(i); setJumpFilter(null); }} onClose={() => setJumpFilter(null)} />}
+      {calcOpen && <CalculatorDialog onClose={() => setCalcOpen(false)} />}
+      {leaveOpen && !isStudy && <LeaveExamDialog answered={answered} total={total} remainingLabel={`${Math.floor(left / 3600)}:${String(Math.floor((left % 3600) / 60)).padStart(2, "0")}`}
+        onKeep={() => setLeaveOpen(false)} onSubmit={() => { setLeaveOpen(false); onSubmitExam(notes); }} />}
+      {leaveOpen && isStudy && <LeaveSessionDialog answered={answered} total={total} timeLabel={elapsedLabel}
+        onKeep={() => setLeaveOpen(false)} onSave={() => { setLeaveOpen(false); onExit(); }} onDiscard={() => { setLeaveOpen(false); onExit(); }} />}
+      <ExamSideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} notes={notes} questions={questions} currentIdx={idx} onAddNote={() => setNoteOpen(true)}
+        onSaveNote={(id, t) => setNotes(n => ({ ...n, [id]: t }))}
+        onDeleteNote={(id) => setNotes(n => { const c = { ...n }; delete c[id]; return c; })} />
+      {noteOpen && <QuestionNoteDialog number={idx + 1} q={q} initial={notes[q.id] || ""}
+        onSave={(t) => { setNotes(n => ({ ...n, [q.id]: t })); setNoteOpen(false); }} onClose={() => setNoteOpen(false)} />}
+    </div>
+  );
+};
+
+/* ── Question runner ───────────────────────────────────────────── */
+const QuestionRunner = ({ session, tweaks, onFinish, onExit }) => {
+  const D = window.KILSAR_DATA;
+  const isExam = session.mode === 'exam';
+  const questions = React.useMemo(() => {
+    const bank = D.sampleQuestions;
+    return Array.from({ length: session.count }, (_, i) => ({
+      ...bank[i % bank.length],
+      id: `s-q-${i}`,
+      figures: WE_MOCK_FIGURES[i % bank.length],
+    }));
+  }, [session]);
+
+  const [idx, setIdx] = React.useState(0);
+  const [answers, setAnswers] = React.useState({});
+  const [flagged, setFlagged] = React.useState({});
+  const [revealed, setRevealed] = React.useState({});
+  const [elapsed, setElapsed] = React.useState(0);
+  React.useEffect(() => {
+    const t = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const q = questions[idx];
+  const chosen = answers[q.id] || null;
+  const showFeedback = !isExam && !!revealed[q.id];
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const answeredCount = Object.keys(answers).length;
+
+  const choose = (cid) => {
+    if (showFeedback) return;
+    setAnswers(a => ({ ...a, [q.id]: cid }));
+    if (!isExam) setRevealed(r => ({ ...r, [q.id]: true }));
+  };
+
+  const finish = (finishNotes) => {
+    const results = questions.map(qq => ({
+      ...qq,
+      chosen: answers[qq.id] || null,
+      isCorrect: answers[qq.id] === qq.correct,
+      timeSpent: Math.max(8, Math.round(elapsed / questions.length)),
+    }));
+    onFinish({ session, questions: results, duration: fmt(elapsed), notes: (finishNotes && typeof finishNotes === 'object' && !finishNotes.nativeEvent) ? finishNotes : {} });
+  };
+
+  // Both modes use the new runner layout; the legacy study layout below is kept for reference (unreachable).
+  if (true) return (
+    <ExamRunnerView session={session} isStudy={!isExam} revealed={revealed} setRevealed={setRevealed} questions={questions} idx={idx} setIdx={setIdx}
+      answers={answers} setAnswers={setAnswers} flagged={flagged} setFlagged={setFlagged}
+      elapsed={elapsed} onSubmitExam={finish} onExit={onExit} />
+  );
+
+  return (
+    <div style={{flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--kls-scaffold-bg)'}}>
+      <div className="runner-topbar" style={{padding: '14px 18px', borderBottom: '1px solid var(--line)', background: 'var(--bg-elev)'}}>
+        <div className="runner-topbar__title">
+          <button className="btn btn--ghost btn--sm" onClick={onExit}><Icon name="chev-l" size={12} />Exit</button>
+          <span className={isExam ? 'chip chip--lock' : 'chip chip--accent'}>
+            <Icon name={isExam ? 'lock' : 'book'} size={10} />{isExam ? 'Exam' : 'Study'}
+          </span>
+          <span className="runner-topbar__title-extra" style={{fontSize: 13, color: 'var(--ink-3)'}}>{session.subject || q.block}</span>
+        </div>
+        <div className="runner-progress">
+          <span className="mono" style={{fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap'}}>{idx + 1} / {questions.length}</span>
+          <div className="bar runner-progress__bar" style={{height: 4}}>
+            <span style={{width: `${((idx + 1) / questions.length) * 100}%`}} />
+          </div>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
+          <span className="mono" style={{fontSize: 13, fontWeight: 600, color: isExam ? 'var(--lock)' : 'var(--ink-2)'}}>{fmt(elapsed)}</span>
+          <button className="btn btn--sm" onClick={() => setFlagged(f => ({ ...f, [q.id]: !f[q.id] }))} data-on={!!flagged[q.id]}>
+            <Icon name="flag" size={12} />{flagged[q.id] ? 'Flagged' : 'Flag'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{flex: 1, overflowY: 'auto'}}>
+        <div style={{maxWidth: 780, margin: '0 auto', padding: '26px 18px 90px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontSize: 11.5, color: 'var(--ink-4)'}}>
+            <span className="mono">{q.acs}</span>
+            <span>·</span>
+            <span>{q.module}</span>
+          </div>
+          <h2 style={{fontSize: 21, lineHeight: 1.4, fontWeight: 500, marginBottom: 22, textWrap: 'pretty'}}>{q.stem}</h2>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+            {q.choices.map(c => {
+              const picked = chosen === c.id;
+              const right = showFeedback && c.id === q.correct;
+              const wrongPick = showFeedback && picked && c.id !== q.correct;
+              return (
+                <button key={c.id} onClick={() => choose(c.id)} style={{
+                  display: 'flex', gap: 14, alignItems: 'flex-start', textAlign: 'left',
+                  padding: '14px 16px', borderRadius: 8, cursor: showFeedback ? 'default' : 'pointer',
+                  background: right ? 'var(--good-soft)' : wrongPick ? 'var(--bad-soft)' : picked ? 'var(--bg-sunken)' : 'var(--bg-elev)',
+                  border: '1px solid ' + (right ? 'var(--good)' : wrongPick ? 'var(--bad)' : picked ? 'var(--ink-4)' : 'var(--line)'),
+                  fontSize: 15, lineHeight: 1.5, color: 'var(--ink)',
+                }}>
+                  <span className="mono" style={{
+                    width: 22, height: 22, flexShrink: 0, borderRadius: '50%', display: 'grid', placeItems: 'center',
+                    fontSize: 11.5, fontWeight: 600,
+                    background: right ? 'var(--good)' : wrongPick ? 'var(--bad)' : picked ? 'var(--ink)' : 'var(--bg-sunken)',
+                    color: (right || wrongPick || picked) ? 'var(--bg-elev)' : 'var(--ink-3)',
+                  }}>{c.id}</span>
+                  <span style={{flex: 1}}>{c.text}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {showFeedback && (
+            <div className="fade-in" style={{marginTop: 18, padding: 16, background: 'var(--bg-inset)', border: '1px solid var(--line)', borderRadius: 8}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10}}>
+                <span className={chosen === q.correct ? 'chip chip--good' : 'chip chip--bad'}>
+                  <Icon name={chosen === q.correct ? 'check' : 'x'} size={10} />
+                  {chosen === q.correct ? 'Correct' : 'Incorrect'}
+                </span>
+                <span className="mono" style={{fontSize: 11.5, color: 'var(--ink-4)'}}>Answer {q.correct}</span>
+              </div>
+              <div style={{fontSize: 14, lineHeight: 1.6, color: 'var(--ink-2)'}}>{q.explanation}</div>
+              <div className="mono" style={{fontSize: 11, color: 'var(--ink-4)', marginTop: 10}}>{q.reference}</div>
+              <div style={{display: 'flex', gap: 6, marginTop: 14}}>
+                <button className="btn btn--sm"><Icon name="orion" size={12} />Ask Orion</button>
+                <button className="btn btn--sm"><Icon name="book" size={12} />Open reference</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{
+        borderTop: '1px solid var(--line)', background: 'var(--bg-elev)', padding: '14px 18px',
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <button className="btn" onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0}>
+          <Icon name="chev-l" size={12} />Previous
+        </button>
+        <div style={{flex: 1, fontSize: 12, color: 'var(--ink-4)'}}>{answeredCount} of {questions.length} answered</div>
+        {idx === questions.length - 1 ? (
+          <button className="btn btn--primary btn--lg" onClick={finish}>
+            {isExam ? 'Submit exam' : 'Finish session'}
+          </button>
+        ) : (
+          <button className="btn btn--primary btn--lg" onClick={() => setIdx(i => Math.min(questions.length - 1, i + 1))}>
+            Next<Icon name="chev-r" size={12} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Post-session results ──────────────────────────────────────── */
+const ResultsScreen = ({ result, onStartFollowUp, onDone }) => {
+  const { session, questions, duration } = result;
+  const correct = questions.filter(q => q.isCorrect).length;
+  const wrong = questions.length - correct;
+  const score = correct / questions.length;
+  const isExam = session.mode === 'exam';
+  const passed = score >= 0.7;
+  const tone = score >= 0.8 ? 'var(--good)' : score >= 0.7 ? 'var(--warn)' : 'var(--bad)';
+
+  const byModule = {};
+  questions.forEach(q => {
+    if (!byModule[q.module]) byModule[q.module] = { correct: 0, total: 0, acs: q.acs };
+    byModule[q.module].total++;
+    if (q.isCorrect) byModule[q.module].correct++;
+  });
+  const missed = questions.filter(q => !q.isCorrect);
+
+  return (
+    <div className="page" data-screen-label="Results" style={{maxWidth: 1080, margin: '0 auto'}}>
+      <div className="card" style={{padding: 24, marginBottom: 18}}>
+        <div style={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap'}}>
+          <div style={{flex: '1 1 300px', minWidth: 0}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10}}>
+              <span className={isExam ? 'chip chip--lock' : 'chip chip--accent'}>
+                <Icon name={isExam ? 'lock' : 'book'} size={10} />{isExam ? 'Exam' : 'Study'}
+              </span>
+              {isExam && <span className={passed ? 'chip chip--good' : 'chip chip--bad'}>{passed ? 'Pass' : 'Below 70%'}</span>}
+            </div>
+            <h2 style={{fontSize: 22, marginBottom: 6}}>{isExam ? 'Exam complete' : 'Session complete'}</h2>
+            <div style={{fontSize: 13, color: 'var(--ink-3)'}}>
+              {questions.length} questions · {duration}{session.subject ? ' · ' + session.subject : ''}
+            </div>
+          </div>
+          <div style={{display: 'flex', gap: 'var(--kls-space-large)'}}>
+            <SummaryStat label="Score" value={`${Math.round(score * 100)}%`} tone={tone} />
+            <SummaryStat label="Correct" value={`${correct} / ${questions.length}`} />
+            <SummaryStat label="Missed" value={wrong} tone={wrong ? 'var(--kls-error)' : null} />
+          </div>
+        </div>
+        <div style={{display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap'}}>
+          {wrong > 0 && (
+            <button className="btn btn--primary" onClick={onStartFollowUp}>
+              <Icon name="sparkles" size={13} />Quiz from these {wrong} misses
+            </button>
+          )}
+          <button className="btn" onClick={onDone}>Back to setup</button>
+          <button className="btn"><Icon name="orion" size={13} />Review with Orion</button>
+        </div>
+      </div>
+
+      <div className="card" style={{padding: 'var(--kls-space-med)', marginBottom: 18, borderRadius: 'var(--kls-radius-med)'}}>
+        <div style={{fontFamily: 'var(--kls-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--kls-on-surface)', marginBottom: 'var(--kls-space-small)'}}>Performance by module</div>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--kls-space-small)'}}>
+          {Object.entries(byModule).map(([mod, v]) => {
+            const pct = v.correct / v.total;
+            const color = pct >= 0.8 ? 'var(--kls-success)' : pct >= 0.6 ? 'var(--kls-accent-4)' : 'var(--kls-error)';
+            return (
+              <div key={mod} style={{padding: 'var(--kls-space-small)', background: 'var(--kls-surface)', border: '1px solid var(--kls-outline-variant)', borderRadius: 'var(--kls-radius-med)',
+                display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)', fontFamily: 'var(--kls-font-sans)'}}>
+                <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--kls-space-small)'}}>
+                  <div style={{fontSize: 14, fontWeight: 600, color: 'var(--kls-on-surface)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{mod}</div>
+                  <div style={{fontSize: 16, fontWeight: 600, color, fontVariantNumeric: 'tabular-nums', flex: 'none'}}>{Math.round(pct * 100)}%</div>
+                </div>
+                <div style={{height: 4, borderRadius: 999, background: 'var(--kls-tertiary)', overflow: 'hidden'}}>
+                  <div style={{width: `${pct * 100}%`, height: '100%', borderRadius: 999, background: color}} />
+                </div>
+                <div style={{fontSize: 12, fontWeight: 500, color: 'var(--kls-on-surface-variant)'}}>{v.correct} of {v.total} correct</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="card" style={{padding: 0}}>
+        <div style={{padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 10}}>
+          <h3 style={{margin: 0}}>Missed questions</h3>
+          <span style={{fontSize: 12, color: 'var(--ink-4)'}}>{missed.length}</span>
+        </div>
+        {missed.length === 0 ? (
+          <div style={{padding: 28, textAlign: 'center', fontSize: 13.5, color: 'var(--ink-3)'}}>
+            Nothing missed in this session.
+          </div>
+        ) : missed.map((q, i) => (
+          <HistoryQuestionRow key={q.id} q={q} idx={questions.indexOf(q)} isFirst={i === 0} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ── Exam history list ─────────────────────────────────────────── */
+const HIST_COLS = '100px minmax(180px, 1.2fr) minmax(140px, 1fr) 84px 96px 72px 64px 70px 48px 14px';
+const WE_MOCK_ASSIGNMENTS = { 'h-1': 'Powerplant Midterm', 'h-4': 'Valve Train Review', 'h-7': 'Magnetos & Ignition Timing', 'h-10': 'Powerplant Midterm' };
+const WE_attemptAssignment = (a) => a.assignment || WE_MOCK_ASSIGNMENTS[String(a.id).replace(/^u-\d+-/, '')] || '';
+const HIST_HEAD = [['date', 'Date'], ['title', 'Title'], ['assignment', 'Assignment'], ['mode', 'Mode'], ['type', 'Type'], ['count', 'Questions', 'right'], ['time', 'Time', 'right'], ['score', 'Score', 'right'], [null, '']];
+const WE_attemptType = (a) => {
+  const set = new Set((a.acs || []).map(c => String(c).split('.')[0]));
+  if (set.size !== 1) return 'Mixed';
+  const p = [...set][0];
+  return p === 'AF' ? 'Airframe' : p === 'GE' ? 'General' : 'Powerplant';
+};
+const HistoryTab = ({ tweaks, student, onOpenAttempt, deletedIds, onDeleteAttempt }) => {
+  const D = window.KILSAR_DATA;
+  const sd = student ? D.studentDataFor(student.id) : null;
+  const attempts = sd ? sd.history : D.history;
+  const [modeFilter, setModeFilter] = React.useState('all');
+  const [rangeFilter, setRangeFilter] = React.useState('all');
+  // Mock data is historical, so date ranges are measured back from the most recent attempt.
+  const refTime = Math.max(...attempts.map(a => new Date(a.date).getTime()));
+  const rows = attempts.filter(a => (modeFilter === 'all' || a.mode.toLowerCase() === modeFilter)
+    && (rangeFilter === 'all' || refTime - new Date(a.date).getTime() < Number(rangeFilter) * 86400000));
+  const avg = attempts.reduce((s, a) => s + a.score, 0) / attempts.length;
+  const best = Math.max(...attempts.map(a => a.score));
+  const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const [sort, setSort] = React.useState({ key: 'date', dir: 'desc' });
+  const [localDeleted, setLocalDeleted] = React.useState({});
+  const deleted = deletedIds || localDeleted;
+  const setDeleted = onDeleteAttempt ? (fn) => { const next = fn(deleted); Object.keys(next).forEach(id => { if (next[id] && !deleted[id]) onDeleteAttempt(id); }); } : setLocalDeleted;
+  const [ctx, setCtx] = React.useState(null);
+  const toggleSort = (k) => setSort(p => p.key === k ? { key: k, dir: p.dir === 'asc' ? 'desc' : 'asc' } : { key: k, dir: k === 'title' || k === 'assignment' || k === 'mode' || k === 'type' ? 'asc' : 'desc' });
+  const secs = (d) => String(d || '').split(':').reduce((t, n) => t * 60 + (parseInt(n, 10) || 0), 0);
+  const val = (a) => sort.key === 'date' ? new Date(a.date).getTime() : sort.key === 'title' ? WE_attemptTitle(a) : sort.key === 'assignment' ? (WE_attemptAssignment(a) || '\uffff') : sort.key === 'mode' ? a.mode
+    : sort.key === 'type' ? WE_attemptType(a) : sort.key === 'count' ? a.count : sort.key === 'time' ? secs(a.duration) : a.score;
+  const sorted = rows.filter(a => !deleted[a.id]).slice().sort((x, y) => { const p = val(x), q = val(y); const c = typeof p === 'string' ? p.localeCompare(q) : p - q; return sort.dir === 'asc' ? c : -c; });
+
+  return (
+    <div>
+      <div style={{display: 'flex', gap: 'var(--kls-space-med)', flexWrap: 'wrap', marginBottom: 'var(--kls-space-med)'}}>
+        {[[[['all', 'All'], ['exam', 'Exam'], ['study', 'Study']], modeFilter, setModeFilter, 'Filter by mode'],
+          [[['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']], rangeFilter, setRangeFilter, 'Filter by date']].map(([opts, val, set, label]) => (
+          <div key={label} role="tablist" aria-label={label} style={{display: 'flex', gap: 'var(--kls-space-tiny)', padding: 2, height: 40, boxSizing: 'border-box', borderRadius: 8,
+            background: 'var(--kls-tertiary)', border: '1px solid var(--kls-outline-variant)'}}>
+            {opts.map(([v, l]) => {
+              const on = val === v;
+              return (
+                <button key={v} role="tab" aria-selected={on} onClick={() => set(v)} style={{height: 34, padding: '0 18px', borderRadius: 8, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                  background: on ? 'var(--kls-surface)' : 'transparent', color: on ? 'var(--kls-on-surface)' : 'var(--kls-on-tertiary)',
+                  boxShadow: on ? '0 1px 2px rgba(0,0,0,.04)' : 'none', fontFamily: 'var(--kls-font-sans)', fontSize: 12, fontWeight: 600}}>{l}</button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div className="card" style={{padding: 0}}>
+        <div style={{overflowX: 'auto'}}>
+          <div style={{minWidth: 1060}}>
+            <div style={{display: 'grid', gridTemplateColumns: HIST_COLS, gap: 14, alignItems: 'center', padding: '10px 18px', borderBottom: '1px solid var(--line)'}}>
+              {HIST_HEAD.map(([k, l, align]) => k ? (
+                <button key={k} onClick={() => toggleSort(k)} aria-label={`Sort by ${l}`} style={{display: 'inline-flex', alignItems: 'center', gap: 4, justifyContent: align === 'right' ? 'flex-end' : 'flex-start',
+                  padding: 0, border: 0, background: 'transparent', cursor: 'pointer', gridColumn: k === 'score' ? 'span 2' : undefined,
+                  fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: sort.key === k ? 'var(--ink)' : 'var(--ink-4)'}}>
+                  {l}{sort.key === k && <Icon name="chev-d" size={10} style={{transform: sort.dir === 'asc' ? 'rotate(180deg)' : 'none'}} />}
+                </button>
+              ) : <span key={l} />)}
+            </div>
+            {sorted.map((a, i) => {
+              const tone = a.score >= 0.8 ? 'var(--good)' : a.score >= 0.7 ? 'var(--warn)' : 'var(--bad)';
+              return (
+                <button key={a.id} onClick={() => onOpenAttempt(a)} onContextMenu={(e) => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY, id: a.id }); }} style={{
+                  background: ctx && ctx.id === a.id ? 'var(--kls-surface-container-low)' : 'transparent',
+                  width: '100%', padding: '14px 18px', textAlign: 'left', cursor: 'pointer',
+                  borderWidth: 0, borderTop: i === 0 ? 0 : '1px solid var(--line)', borderStyle: 'solid', borderColor: 'var(--line)',
+                  display: 'grid', gridTemplateColumns: HIST_COLS, gap: 14, alignItems: 'center',
+                }}>
+                  <span style={{fontSize: 13, color: 'var(--ink-3)', whiteSpace: 'nowrap'}}>{fmtDate(a.date)}</span>
+                  <div style={{minWidth: 0}}>
+                    <div style={{fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{WE_attemptTitle(a)}</div>
+                    <div style={{fontSize: 11.5, color: 'var(--ink-4)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 8}}>
+                      <span className="mono" style={{minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{a.acs.slice(0, WE_ACS_MAX).join(' · ')}</span>
+                      {a.acs.length > WE_ACS_MAX && <span style={{whiteSpace: 'nowrap', flex: 'none'}}>+{a.acs.length - WE_ACS_MAX} more</span>}
+                    </div>
+                  </div>
+                  {WE_attemptAssignment(a)
+                    ? <span style={{fontSize: 13, color: 'var(--ink-2)', minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{WE_attemptAssignment(a)}</span>
+                    : <span style={{fontSize: 13, color: 'var(--ink-4)'}}>—</span>}
+                  <span><span className={a.mode === 'Exam' ? 'chip chip--lock' : 'chip chip--accent'}>
+                    <Icon name={a.mode === 'Exam' ? 'lock' : 'book'} size={10} />{a.mode}
+                  </span></span>
+                  <span style={{fontSize: 13, color: 'var(--ink-2)', whiteSpace: 'nowrap'}}>{WE_attemptType(a)}</span>
+                  <span className="mono" style={{fontSize: 12.5, color: 'var(--ink-3)', textAlign: 'right'}}>{a.count}</span>
+                  <span className="mono" style={{fontSize: 12.5, color: 'var(--ink-3)', textAlign: 'right'}}>{a.duration}</span>
+                  <div className="bar" style={{height: 4}}>
+                    <span style={{width: `${a.score * 100}%`, background: tone}} />
+                  </div>
+                  <span className="mono" style={{fontSize: 15, fontWeight: 600, color: tone, textAlign: 'right'}}>{Math.round(a.score * 100)}%</span>
+                  <Icon name="chev-r" size={13} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {ctx && (
+        <CursorMenu x={ctx.x} y={ctx.y} onClose={() => setCtx(null)}>
+          <MenuItem danger onClick={() => { setDeleted(d => ({ ...d, [ctx.id]: true })); setCtx(null); }}><KlsIcon name="trash" size={16} color="var(--kls-error)" />Delete</MenuItem>
+        </CursorMenu>
+      )}
+    </div>
+  );
+};
+
+/* ── Progress dashboard ────────────────────────────────────────── */
+const Dashboard = ({ tweaks, student, onJumpToWeak }) => {
+  const D = window.KILSAR_DATA;
+  const sd = student ? D.studentDataFor(student.id) : null;
+  const trend = sd ? sd.overallTrend : D.overallTrend;
+  const acsTrends = sd ? sd.acsTrends : D.acsTrends;
+  const attempts = sd ? sd.history : D.history;
+  const latest = trend[trend.length - 1];
+  const delta = Math.round((latest - trend[0]) * 100);
+
+  const modules = D.blocks.flatMap(b => b.modules.map(m => ({ ...m, block: b.title })));
+  const weakest = [...modules].sort((a, b) => a.mastery - b.mastery).slice(0, 6);
+  const strongest = [...modules].sort((a, b) => b.mastery - a.mastery).slice(0, 4);
+  const readiness = modules.reduce((s, m) => s + m.mastery, 0) / modules.length;
+
+  return (
+    <div>
+      <div className="dashboard-stats">
+        <Stat label="Latest score" value={`${Math.round(latest * 100)}%`} mono />
+        <Stat label="Trend" value={`${delta >= 0 ? '+' : ''}${delta} pts`} mono />
+        <Stat label="Readiness" value={`${Math.round(readiness * 100)}%`} mono />
+        <Stat label="Attempts" value={attempts.length} mono />
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="card" style={{padding: 18}}>
+          <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 14}}>
+            <h3 style={{margin: 0}}>Score trend</h3>
+            <span style={{fontSize: 11.5, color: 'var(--ink-4)'}}>Last {trend.length} attempts</span>
+          </div>
+          <Sparkline values={trend} width={560} height={110} color={delta >= 0 ? 'var(--good)' : 'var(--bad)'} />
+          <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--ink-4)'}}>
+            <span className="mono">{Math.round(trend[0] * 100)}%</span>
+            <span className="mono">{Math.round(latest * 100)}%</span>
+          </div>
+
+          <div className="divider" style={{margin: '18px 0'}} />
+          <h3 style={{marginBottom: 12, fontSize: 14}}>By ACS code</h3>
+          <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+            {Object.entries(acsTrends).map(([code, vals]) => {
+              const v = vals[vals.length - 1];
+              const tone = v >= 0.8 ? 'var(--good)' : v >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+              return (
+                <div key={code} style={{display: 'grid', gridTemplateColumns: '72px 1fr 90px 44px', gap: 'var(--kls-space-small)', alignItems: 'center'}}>
+                  <span className="mono" style={{fontSize: 12, color: 'var(--ink-2)'}}>{code}</span>
+                  <div className="bar" style={{height: 4}}>
+                    <span style={{width: `${v * 100}%`, background: tone}} />
+                  </div>
+                  <Sparkline values={vals} width={90} height={22} color={tone} />
+                  <span className="mono" style={{fontSize: 12.5, fontWeight: 600, color: tone, textAlign: 'right'}}>{Math.round(v * 100)}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{display: 'flex', flexDirection: 'column', gap: 18}}>
+          <div className="card" style={{padding: 18}}>
+            <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 12}}>
+              <h3 style={{margin: 0}}>Weakest modules</h3>
+              <button className="btn btn--sm" onClick={onJumpToWeak}>Practice these</button>
+            </div>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+              {weakest.map(m => {
+                const tone = m.mastery >= 0.8 ? 'var(--good)' : m.mastery >= 0.6 ? 'var(--warn)' : 'var(--bad)';
+                return (
+                  <div key={m.id} style={{display: 'grid', gridTemplateColumns: '10px 1fr 44px', gap: 10, alignItems: 'center'}}>
+                    <MasteryDot m={m.mastery} />
+                    <div style={{minWidth: 0}}>
+                      <div style={{fontSize: 13.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{m.title}</div>
+                      <div style={{fontSize: 11, color: 'var(--ink-4)', display: 'flex', gap: 6}}>
+                        <span className="mono">{m.acs}</span>
+                        <span>{m.block}</span>
+                      </div>
+                    </div>
+                    <span className="mono" style={{fontSize: 12.5, fontWeight: 600, color: tone, textAlign: 'right'}}>{Math.round(m.mastery * 100)}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="card" style={{padding: 18}}>
+            <h3 style={{marginBottom: 12}}>Strongest modules</h3>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+              {strongest.map(m => (
+                <div key={m.id} style={{display: 'grid', gridTemplateColumns: '10px 1fr 44px', gap: 10, alignItems: 'center'}}>
+                  <MasteryDot m={m.mastery} />
+                  <div style={{minWidth: 0}}>
+                    <div style={{fontSize: 13.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{m.title}</div>
+                    <div className="mono" style={{fontSize: 11, color: 'var(--ink-4)'}}>{m.acs}</div>
+                  </div>
+                  <span className="mono" style={{fontSize: 12.5, fontWeight: 600, color: 'var(--good)', textAlign: 'right'}}>{Math.round(m.mastery * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const HistoryQuestionRow = ({ q, idx, isFirst, note, bookmarked, open: openProp, onToggle, rowRef }) => {
+  const [openLocal, setOpenLocal] = React.useState(false);
+  const open = openProp !== undefined ? openProp : openLocal;
+  const setOpen = onToggle || setOpenLocal;
+  return (
+    <div ref={rowRef} data-qid={q.id} style={{borderTop: isFirst ? 0 : '1px solid var(--line)'}}>
+      <button onClick={() => setOpen(!open)} style={{
+        width: '100%', padding: '12px 18px',
+        display: 'grid', gridTemplateColumns: '24px 28px 1fr auto auto auto', gap: 12,
+        background: 'transparent', border: 0, textAlign: 'left', alignItems: 'center', cursor: 'pointer',
+      }}>
+        <span className="mono" style={{fontSize: 11.5, color: 'var(--ink-4)', textAlign: 'left'}}>{idx + 1}</span>
+        <div style={{
+          width: 22, height: 22, borderRadius: '50%',
+          background: q.isCorrect ? 'var(--good-soft)' : 'var(--bad-soft)',
+          color: q.isCorrect ? 'var(--good)' : 'var(--bad)',
+          display: 'grid', placeItems: 'center',
+        }}>
+          <Icon name={q.isCorrect ? 'check' : 'x'} size={12} />
+        </div>
+        <div style={{minWidth: 0}}>
+          <div style={open ? {fontSize: 13.5, fontWeight: 500, textWrap: 'pretty'} : {fontSize: 13.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{q.stem}</div>
+          <div style={{fontSize: 11.5, color: 'var(--ink-3)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 2}}>
+            <span className="mono">{q.acs}</span>
+            <span>{q.module}</span>
+          </div>
+        </div>
+        <span aria-label={note ? 'Has a note' : undefined} title={note ? 'Has a note' : undefined} style={{width: 18, height: 18, display: 'inline-flex', color: 'var(--kls-info)'}}>{note && <Icon name="notes" size={18} strokeWidth={1.7} />}</span>
+        <span aria-label={bookmarked ? 'Bookmarked' : undefined} title={bookmarked ? 'Bookmarked' : undefined} style={{width: 18, height: 18, display: 'inline-flex', color: 'var(--kls-accent-4)'}}>{bookmarked && <Icon name="bookmark-fill" size={18} />}</span>
+        <Icon name={open ? 'chev-d' : 'chev-r'} size={13} />
+      </button>
+      {open && (
+        <div className="fade-in" style={{padding: '0 18px 18px 94px', display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-small)', fontFamily: 'var(--kls-font-sans)'}}>
+          {q.choices.map(c => {
+            const right = c.id === q.correct;
+            const wrongPick = c.id === q.chosen && !q.isCorrect;
+            return (
+              <div key={c.id} style={{
+                display: 'flex', gap: 'var(--kls-space-med)', alignItems: 'center', padding: 'var(--kls-space-small) var(--kls-space-med)', borderRadius: 8,
+                background: right ? 'var(--kls-success-container)' : wrongPick ? 'var(--kls-error-container)' : 'var(--kls-surface)',
+                border: '1px solid ' + (right ? 'var(--kls-success)' : wrongPick ? 'var(--kls-error)' : 'var(--kls-outline-variant)'),
+              }}>
+                <span style={{fontSize: 14, fontWeight: 600, color: 'var(--kls-on-surface-variant)', flex: 'none'}}>{c.id}</span>
+                <span style={{flex: 1, minWidth: 0, fontSize: 15, fontWeight: 500, lineHeight: 1.5, color: 'var(--kls-on-surface)'}}>{c.text}</span>
+                {right && <span style={{fontSize: 14, fontWeight: 500, color: 'var(--kls-success)', flex: 'none'}}>Correct</span>}
+                {wrongPick && <span style={{fontSize: 14, fontWeight: 500, color: 'var(--kls-error)', flex: 'none'}}>Your answer</span>}
+              </div>
+            );
+          })}
+          <div style={{display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-xsmall)', marginTop: 'var(--kls-space-small)'}}>
+            <span style={{fontSize: 14, fontWeight: 500, color: 'var(--kls-on-surface-variant)'}}>Explanation</span>
+            <div style={{fontSize: 15, fontWeight: 500, lineHeight: 1.55, color: 'var(--kls-on-surface)', textWrap: 'pretty'}}>{q.explanation}</div>
+          </div>
+          <button style={{ height: 40, width: 'min(300px, 100%)', alignSelf: 'center', padding: '0 var(--kls-space-med)', borderRadius: 8, border: '1px solid transparent', cursor: 'pointer',
+            background: 'var(--kls-tertiary)', color: 'var(--kls-on-surface)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--kls-space-xsmall)',
+            fontFamily: 'var(--kls-font-sans)', fontSize: 14, fontWeight: 700, marginTop: 'var(--kls-space-tiny)' }}>
+            <Icon name="orion" size={18} />Ask Orion to elaborate
+          </button>
+          {note && (
+            <div style={{padding: 'var(--kls-space-small)', borderRadius: 'var(--kls-radius-small)', border: '1px solid var(--kls-outline-variant)', background: 'var(--kls-surface)',
+              display: 'flex', flexDirection: 'column', gap: 'var(--kls-space-tiny)', fontFamily: 'var(--kls-font-sans)'}}>
+              <span style={{display: 'inline-flex', alignItems: 'center', gap: 'var(--kls-space-xsmall)', fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--kls-on-surface-variant)'}}>
+                <Icon name="notes" size={14} />Your note
+              </span>
+              <div style={{fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: 'var(--kls-on-surface)', whiteSpace: 'pre-wrap'}}>{note}</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+window.HistoryDetail = HistoryDetail;
+
+
+// ── Written Exams orchestrator (folded into the Web App as the writtenExams route) ──
+function WrittenExams({ role = "instructor", summaryMode = "From attempt" }) {
+  const D = window.KILSAR_DATA;
+  const tw = { role, mode: "study", questionState: "fresh" };
+  const [internalTab, setInternalTab] = React.useState("practice");
+  const [screen, setScreen] = React.useState("main");
+  const [pendingSession, setPendingSession] = React.useState(null);
+  const [activeSession, setActiveSession] = React.useState(null);
+  const [result, setResult] = React.useState(null);
+  const [historyAttempt, setHistoryAttempt] = React.useState(null);
+  const [deletedAttempts, setDeletedAttempts] = React.useState({});
+  const deleteAttempt = (id) => setDeletedAttempts(d => ({ ...d, [id]: true }));
+  const [viewingStudentId, setViewingStudentId] = React.useState("u-1");
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [sessions, setSessions] = React.useState(WE_SESSIONS);
+  const viewingStudent = D.students.find((s) => s.id === viewingStudentId);
+
+  const handleStart = (session) => {
+    if (session.mode === "exam") { setPendingSession(session); setScreen("warning"); }
+    else { setActiveSession(session); setScreen("running"); }
+  };
+  const proceedExam = () => { setActiveSession(pendingSession); setScreen("running"); };
+  const resumeSession = (s) => {
+    if (s.mode === "exam") {
+      const e = FAA_EXAMS.find((x) => x.subject === s.subject) || FAA_EXAMS[0];
+      handleStart({ mode: "exam", subject: e.subject, short: e.short, count: e.count, duration: e.duration, acs: e.acs, modules: [] });
+      return;
+    }
+    setActiveSession({ mode: "study", count: s.total, modules: s.modules || [], orionEnabled: true, resuming: s.id });
+    setScreen("running");
+  };
+  const endSession = (s) => setSessions((cur) => cur.filter((x) => x.id !== s.id));
+  const finish = (r) => { setResult(r); setActiveSession(null); setScreen("results"); };
+  const exitRunning = () => { setActiveSession(null); setScreen("main"); };
+  const startMissedDrill = () => { setActiveSession({ mode: "study", count: (result.questions.filter((q) => !q.isCorrect).length) || 5, modules: [] }); setScreen("running"); };
+
+  if (screen === "running" && activeSession) return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500, display: "flex", background: "var(--kls-scaffold-bg)" }}>
+      <QuestionRunner session={activeSession} tweaks={tw} onFinish={finish} onExit={exitRunning} />
+    </div>
+  );
+  if (screen === "warning" && pendingSession) return <PreExamWarning count={pendingSession.count} subject={pendingSession.subject} duration={pendingSession.duration} onProceed={proceedExam} onCancel={() => setScreen("main")} />;
+  if (screen === "results" && result) {
+    return (
+      <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+        <HistoryDetail result={result} summaryMode={summaryMode} backLabel="Written Exams" onQuiz={startMissedDrill} onBack={() => setScreen("main")} onDelete={() => { setResult(null); setScreen("main"); }} />
+      </div>
+    );
+  }
+  const showPicker = role === "instructor" && (internalTab === "history" || internalTab === "progress");
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div className="page" data-screen-label="Written Exams">
+        <div className="page__head">
+          <div>
+            <div className="page__title">Written Exams</div>
+            <div className="page__sub">Practice for your FAA written test. Build mastery, then simulate the real thing.</div>
+          </div>
+          {showPicker && <StudentPickerTrigger student={viewingStudent} onClick={() => setPickerOpen(true)} />}
+        </div>
+        <div className="compound-switch" role="tablist">
+          <button className="compound-switch__option" role="tab" data-active={internalTab === "practice"} onClick={() => setInternalTab("practice")}><Icon name="exam" size={14} />Practice Setup</button>
+          <button className="compound-switch__option" role="tab" data-active={internalTab === "history"} onClick={() => setInternalTab("history")}><Icon name="history" size={14} />Exam History<span className="count">{D.history.length}</span></button>
+          <button className="compound-switch__option" role="tab" data-active={internalTab === "progress"} onClick={() => setInternalTab("progress")}><Icon name="chart" size={14} />Progress</button>
+        </div>
+        {internalTab === "practice" && <PracticeSetup tweaks={tw} onStart={handleStart} sessions={sessions} onResume={resumeSession} onEndSession={endSession} />}
+        {internalTab === "history" && !historyAttempt && <HistoryTab tweaks={tw} student={role === "instructor" ? viewingStudent : null} onOpenAttempt={(a) => setHistoryAttempt(a)} deletedIds={deletedAttempts} onDeleteAttempt={deleteAttempt} />}
+        {internalTab === "history" && historyAttempt && <HistoryDetail attempt={historyAttempt} summaryMode={summaryMode} onBack={() => setHistoryAttempt(null)} onDelete={() => { deleteAttempt(historyAttempt.id); setHistoryAttempt(null); }} />}
+        {internalTab === "progress" && <Dashboard tweaks={tw} student={role === "instructor" ? viewingStudent : null} onJumpToWeak={() => setInternalTab("practice")} />}
+      </div>
+      <StudentPickerDialog open={pickerOpen} onClose={() => setPickerOpen(false)} selectedId={viewingStudentId} onSelect={(id) => { setViewingStudentId(id); setPickerOpen(false); setHistoryAttempt(null); }} />
+    </div>
+  );
+}
+window.WrittenExams = WrittenExams;
+
+// ════════════════════════════════════════════════════════════════════
+// LIBRARY (web) — workspace files + folders. Part 1: index / browse.
+// ════════════════════════════════════════════════════════════════════
+const LIB_ITEMS = [
+  { id: "f1", kind: "folder", name: "domjan",                      bytes: 0,         type: "",    added: "2025-07-25",
+    children: [
+      { id: "f1a", kind: "pdf", name: "Torque Sequence Worksheet.pdf", bytes: 486400, type: "PDF", added: "2025-07-25" },
+      { id: "f1b", kind: "pdf", name: "Shop Safety Briefing.pdf",      bytes: 1258291, type: "PDF", added: "2025-07-26" },
+    ] },
+  { id: "f2", kind: "folder", name: "joel",                        bytes: 0,         type: "",    added: "2025-06-23",
+    children: [
+      { id: "f2a", kind: "pdf", name: "Rivet Inspection Log.pdf",      bytes: 204800, type: "PDF", added: "2025-06-23" },
+    ] },
+  { id: "f3", kind: "folder", name: "test_pagination",             bytes: 0,         type: "",    added: "2025-09-12",
+    children: [
+      { id: "f3a", kind: "pdf", name: "Page Set 001.pdf",              bytes: 1048576, type: "PDF", added: "2025-09-12" },
+      { id: "f3b", kind: "pdf", name: "Page Set 002.pdf",              bytes: 1153434, type: "PDF", added: "2025-09-12" },
+      { id: "f3c", kind: "pdf", name: "Page Set 003.pdf",              bytes: 999424,  type: "PDF", added: "2025-09-13" },
+    ] },
+  { id: "f4", kind: "folder", name: "testfolder",                  bytes: 0,         type: "",    added: "2026-05-11",
+    children: [
+      { id: "f4a", kind: "doc", name: "Module Outline.docx",           bytes: 65536,   type: "DOCX", added: "2026-05-11" },
+      { id: "f4b", kind: "txt", name: "notes.txt",                     bytes: 2048,    type: "TXT",  added: "2026-05-12" },
+    ] },
+  { id: "d1", kind: "pdf",    name: "8083-30A-AIM (General).pdf",  bytes: 128278528, type: "PDF", added: "2026-04-08" },
+  { id: "d2", kind: "pdf",    name: "ACS_Code_Descriptions_Mapped.pdf", bytes: 22538, type: "PDF", added: "2026-04-08" },
+  { id: "d3", kind: "pdf",    name: "AMA-23-EKIT Airframe.pdf",    bytes: 11053384,  type: "PDF", added: "2026-04-08" },
+  { id: "d4", kind: "pdf",    name: "AMG-23-EKIT General.pdf",     bytes: 10370416,  type: "PDF", added: "2026-04-08" },
+  { id: "d5", kind: "pdf",    name: "AMP-23-EKIT Powerplant.pdf",  bytes: 12897484,  type: "PDF", added: "2026-04-08" },
+  { id: "d6", kind: "pdf",    name: "FAA-H-8083-31B Vol 2.pdf",    bytes: 74973184,  type: "PDF", added: "2026-03-19" },
+];
+
+const LIB_MEDIA = [
+  { id: "m0", kind: "folder", name: "walkthroughs",                bytes: 0,        type: "",     added: "2026-02-02",
+    children: [
+      { id: "m0a", kind: "video", name: "Engine Start Walkthrough.mp4", bytes: 157286400, type: "MP4", added: "2026-02-02" },
+      { id: "m0b", kind: "video", name: "Pitot Static Check.mp4",       bytes: 73400320,  type: "MP4", added: "2026-02-04" },
+    ] },
+  { id: "m1", kind: "video",  name: "Turbine Teardown Walkthrough.mp4", bytes: 486539264, type: "MP4",  added: "2026-04-02" },
+  { id: "m2", kind: "video",  name: "Rivet Inspection Demo.mp4",   bytes: 214748364, type: "MP4",  added: "2026-03-27" },
+  { id: "m3", kind: "image",  name: "Airframe Panel Reference.jpg", bytes: 3355443,  type: "JPG",  added: "2026-03-11" },
+  { id: "m4", kind: "image",  name: "Torque Wrench Callouts.png",  bytes: 1258291,  type: "PNG",  added: "2026-02-19" },
+  { id: "m5", kind: "video",  name: "Bus Architecture Overview.mp4", bytes: 98566144, type: "MP4",  added: "2026-01-30" },
+];
+
+// Some models ship scenes / animations authored inside the file; those rows expand.
+// A model with none is a plain row (no disclosure control).
+const LIB_MODEL_CFM56 = { id: "t1", kind: "model", name: "CFM56 Compressor Section.glb", bytes: 62914560, type: "GLB", added: "2026-05-04",
+    children: [
+      { id: "t1s1", kind: "scene",     name: "Full Assembly",        added: "2026-05-04" },
+      { id: "t1s2", kind: "scene",     name: "Stage 3 Cutaway",      added: "2026-05-04" },
+      { id: "t1a1", kind: "animation", name: "Exploded View",        added: "2026-05-06", duration: "0:12", steps: 6 },
+      { id: "t1a2", kind: "animation", name: "Rotor Spin Cycle",     added: "2026-05-06", duration: "0:08", steps: 3 },
+    ] };
+const LIB_MODEL_CESSNA = { id: "t2", kind: "model", name: "Cessna 172 Landing Gear.glb",  bytes: 18874368, type: "GLB", added: "2026-04-21",
+    children: [
+      { id: "t2s1", kind: "scene",     name: "Gear Down",            added: "2026-04-21" },
+      { id: "t2s2", kind: "scene",     name: "Gear Retracted",       added: "2026-04-21" },
+      { id: "t2a1", kind: "animation", name: "Retraction Sequence",  added: "2026-04-22", duration: "0:06", steps: 4 },
+    ] };
+
+const LIB_MODELS = [
+  { id: "tf1", kind: "folder", name: "engines", bytes: 0, type: "", added: "2026-05-04",
+    children: [
+      LIB_MODEL_CFM56,
+      { id: "t5", kind: "model", name: "PT6A Turboprop.glb", bytes: 41943040, type: "GLB", added: "2026-04-30" },
+    ] },
+  { id: "tf2", kind: "folder", name: "airframe", bytes: 0, type: "", added: "2026-04-21",
+    children: [LIB_MODEL_CESSNA] },
+  { id: "t3", kind: "model", name: "Hydraulic Actuator.obj",       bytes: 8912896,  type: "OBJ", added: "2026-03-15" },
+  { id: "t4", kind: "model", name: "Fuel Pump Assembly.glb",       bytes: 24117248, type: "GLB", added: "2026-02-08",
+    children: [
+      { id: "t4a1", kind: "animation", name: "Flow Cycle",           added: "2026-02-10", duration: "0:15", steps: 8 },
+    ] },
+];
+
+const LIB_SECTIONS = [
+  { key: "files",  label: "Files",     icon: "itemList", items: LIB_ITEMS,  empty: "No files yet",     hint: "Upload documents to make them available across the workspace." },
+  { key: "media",  label: "Media",     icon: "image",    items: LIB_MEDIA,  empty: "No media yet",     hint: "Upload video and imagery students can reference." },
+  { key: "models", label: "3D Models", icon: "cube",     items: LIB_MODELS, empty: "No 3D models yet", hint: "Upload GLB or OBJ models to use in modules." },
+];
+
+const LIB_KINDS = {
+  folder: { icon: "filetypes/folder", color: "var(--kls-accent-7)" },
+  pdf:    { icon: "filetypes/pdf",    color: "var(--kls-error)" },
+  doc:    { icon: "filetypes/doc",    color: "var(--kls-accent-7)" },
+  video:  { icon: "filetypes/playMovie", color: "var(--kls-accent-12)" },
+  image:  { icon: "image",            color: "var(--kls-success)" },
+  model:  { icon: "cube",             color: "var(--kls-accent-4)" },
+  scene:      { icon: "scene",     color: "var(--kls-accent-7)",  label: "Scene" },
+  animation:  { icon: "animation", color: "var(--kls-accent-12)", label: "Animation" },
+  txt:    { icon: "filetypes/txt",    color: "var(--kls-on-surface-variant)" },
+};
+
+// Folders report the rolled-up size of everything inside them (scenes/animations
+// carry no bytes of their own — they live inside the parent model's file).
+function libBytes(item) {
+  const kids = item.children || [];
+  if (item.kind === "folder") return kids.reduce((n, c) => n + libBytes(c), 0);
+  return item.bytes || 0;
+}
+function libSize(b) {
+  if (b === 0) return "0 B";
+  if (b < 1024) return b + " B";
+  if (b < 1024 * 1024) return (b / 1024).toFixed(2) + " KB";
+  if (b < 1024 * 1024 * 1024) return (b / 1048576).toFixed(2) + " MB";
+  return (b / 1073741824).toFixed(2) + " GB";
+}
+const LIB_DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const LIB_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function libDate(iso) {
+  const p = iso.split("-").map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  return LIB_DOW[d.getDay()] + ". " + String(p[2]).padStart(2, "0") + " " + LIB_MON[p[1] - 1] + " " + p[0];
+}
+
+const LIB_TH_BASE = { textAlign: "left", padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)",
+  fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--kls-on-surface-variant)",
+  borderBottom: "1px solid var(--kls-outline-variant)", whiteSpace: "nowrap", background: "var(--kls-surface)" };
+const LIB_TD = { padding: "var(--kls-space-small) var(--kls-space-med)", fontFamily: "var(--kls-font-sans)", fontSize: 14,
+  fontWeight: 500, color: "var(--kls-on-surface)", borderBottom: "1px solid var(--kls-outline-variant)", verticalAlign: "middle" };
+
+function LibSortHeader({ label, col, sort, onSort, style }) {
+  const [hover, setHover] = useState(false);
+  const on = sort.col === col;
+  return (
+    <th style={{ ...LIB_TH_BASE, ...(style || {}) }}>
+      <button onClick={() => onSort(col)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", border: "none", background: "transparent",
+          padding: 0, cursor: "pointer", font: "inherit", letterSpacing: "inherit", textTransform: "inherit",
+          color: hover ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)", transition: "color 125ms var(--kls-ease-standard)" }}>
+        {label}
+        <KlsIcon name="chevronDown" size={14} rotate={on && sort.dir === "asc" ? 180 : 0}
+          color="var(--kls-on-surface-variant)"
+          style={{ opacity: on || hover ? 1 : 0.35 }} />
+      </button>
+    </th>
+  );
+}
+
+// 2×2 ring grid — the DS ships no four-circles glyph (circles.png is a single ring).
+function LibGridGlyph({ size = 18, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flex: "none" }}>
+      <circle cx="6.5" cy="6.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="13.5" cy="6.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="6.5" cy="13.5" r="3.4" stroke={color} strokeWidth="1.6" />
+      <circle cx="13.5" cy="13.5" r="3.4" stroke={color} strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function LibToggleBtn({ icon, glyph, label, active, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 36, width: 44, borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: active ? "var(--kls-surface)" : "transparent",
+        boxShadow: active ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      {glyph
+        ? <LibGridGlyph size={18} color={active || hover ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />
+        : <KlsIcon name={icon} size={18} color={active ? "var(--kls-on-surface)" : hover ? "var(--kls-on-surface)" : "var(--kls-on-tertiary)"} />}
+    </button>
+  );
+}
+
+function LibIconBtn({ icon, label, onClick, spin }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 40, height: 40, flex: "none", boxSizing: "border-box", borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={24} color="var(--kls-on-surface-variant)"
+        style={spin ? { animation: "int-spin 900ms linear infinite" } : undefined} />
+    </button>
+  );
+}
+
+function LibOpenBtn({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label}
+      onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary-container)" : "var(--kls-tertiary)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name="chevronRight" size={15} color={hover ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)"} />
+    </button>
+  );
+}
+
+function LibRow({ item, depth = 0, indent, onOpen }) {
+  const [hover, setHover] = useState(false);
+  const [open, setOpen] = useState(false);
+  const k = LIB_KINDS[item.kind] || LIB_KINDS.txt;
+  const kids = item.children || [];
+  // Models no longer expand in the library — their scenes/animations are only
+  // reachable inside the model editor.
+  const expandable = kids.length > 0 && item.kind !== "model";
+  const leafMeta = k.label ? (item.duration || "—") : libSize(libBytes(item));
+  const nested = depth > 0;
+  const openable = item.kind === "model" || item.kind === "scene" || item.kind === "animation";
+  const bottom = open ? "none" : LIB_TD.borderBottom;
+  const td = { ...LIB_TD, borderBottom: bottom, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" };
+  return (
+    <>
+      <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        onClick={expandable ? () => setOpen((o) => !o) : (openable && onOpen ? () => onOpen(item) : undefined)}
+        style={{ background: hover || open ? "var(--kls-surface-container-low)" : nested ? "var(--kls-surface-container-lowest)" : "transparent",
+          cursor: "pointer", transition: "background 125ms var(--kls-ease-standard)" }}>
+        <td style={{ ...LIB_TD, borderBottom: bottom }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0, paddingLeft: depth * 32 }}>
+            {expandable ? (
+              <span aria-hidden="true" style={{ width: 20, height: 20, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                <KlsIcon name="chevronRight" size={14} rotate={open ? 90 : 0} color="var(--kls-on-surface-variant)" />
+              </span>
+            ) : indent ? <span style={{ width: 20, flex: "none" }} /> : null}
+            <KlsIcon name={k.icon} size={k.label ? 16 : 20} color={k.color} />
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+            {expandable && (
+              <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 8, background: "var(--kls-tertiary)",
+                fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary)", whiteSpace: "nowrap", flex: "none" }}>{kids.length}</span>
+            )}
+          </div>
+        </td>
+        <td style={td}>{leafMeta}</td>
+        <td style={{ ...td, whiteSpace: "normal" }}>{k.label || item.type || ""}</td>
+        <td style={td}>{libDate(item.added)}</td>
+        <td style={{ ...td, padding: "var(--kls-space-small) var(--kls-space-small)", textAlign: "right" }}>
+        </td>
+      </tr>
+      {open && kids.map((c) => (
+        <LibRow key={c.id} item={c} depth={depth + 1} indent onOpen={onOpen} />
+      ))}
+    </>
+  );
+}
+
+function LibTile({ item }) {
+  const [hover, setHover] = useState(false);
+  const k = LIB_KINDS[item.kind] || LIB_KINDS.txt;
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ padding: "var(--kls-space-med)", borderRadius: 12, cursor: "pointer",
+        border: "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-surface-container-low)" : "var(--kls-surface)",
+        display: "flex", flexDirection: "column", gap: "var(--kls-space-small)", minWidth: 0,
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={k.icon} size={28} color={k.color} />
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+        {item.kind === "folder" ? "Folder · " + libSize(libBytes(item)) : libSize(libBytes(item))} · {libDate(item.added)}
+      </div>
+      {(item.children || []).length > 0 && (
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+          {item.children.filter((c) => c.kind === "scene").length} scenes · {item.children.filter((c) => c.kind === "animation").length} animations
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════
+// BLOCKS (web) — content-pane paradigm: page header + segmented tabs + table card
+// ═════════════════════════════════════════════════════════════════
+const BLOCKS_TABS = [
+  { key: "blocks",    label: "Blocks" },
+  { key: "templates", label: "Block Templates" },
+  { key: "modules",   label: "Modules" },
+  { key: "tasks",     label: "Tasks" },
+];
+
+const blocksPeople = (...names) => names.map((n, i) => ({ id: "bp" + i + "-" + n, name: n }));
+
+const BLOCKS_ROWS = [
+  { id: "b1", name: "124498.3938",    people: blocksPeople("Joel Frank", "Amara Diaz", "Ken Ito"), start: "07/18/2025", end: "11/28/2025" },
+  { id: "b2", name: "edit test",      people: [],                                    start: "08/01/2025", end: "08/05/2025" },
+  { id: "b3", name: "sfsef",          people: blocksPeople("Joel Frank"),                          start: "N/A",        end: "08/07/2025" },
+  { id: "b4", name: "Summer ThreeD",  people: blocksPeople("Amara Diaz", "Ken Ito"),               start: "N/A",        end: "N/A" },
+  { id: "b5", name: "test block 010826", people: blocksPeople("Joel Frank", "Priya Rao", "Ken Ito"), start: "01/08/2026", end: "03/31/2026" },
+  { id: "b6", name: "Three D Block Fall", people: blocksPeople("Joel Frank", "Marcus Webb"),       start: "N/A",        end: "N/A" },
+];
+
+const BLOCKS_EMPTY = {
+  templates: { icon: "stack",    title: "No block templates yet",  hint: "Save a block as a template to reuse its modules and schedule." },
+  modules:   { icon: "itemList", title: "No modules yet",          hint: "Modules group the tasks students work through inside a block." },
+  tasks:     { icon: "worklog",  title: "No tasks yet",            hint: "Tasks are the individual items students complete in a module." },
+};
+
+const CATALOG_TASKS = [
+  { id: "k1", name: "0129 Test Task", kind: "Task", desc: null, acs: [], status: "Published", steps: 4, category: "Uncategorized", fav: false },
+  { id: "k2", name: "0330 Task", kind: "Task", desc: null, acs: [], status: "Published", steps: 3, category: "Uncategorized", fav: false },
+  { id: "k3", name: "0331 Task -  with a long title with a long title with a long title with a long title with a long title",
+    kind: "Task",
+    desc: "and a long description and a long description and a long description and a long description and a long description and a long description and a long description and a long description and a long description",
+    acs: ["AM.I.A.K1", "AM.I.A.K10", "AM.I.A.K11", "AM.I.A.K11a", "AM.I.A.K11b", "AM.I.A.K11c", "AM.I.A.K11d", "AM.I.A.K12", "AM.I.A.K13", "AM.I.A.K14", "AM.I.A.K15", "AM.I.A.K16", "AM.I.A.K17", "AM.I.A.K18", "AM.I.A.K19", "AM.I.A.K2"],
+    status: "Published", steps: 4, category: "Uncategorized", fav: false },
+  { id: "k4", name: "0409 Task", kind: "Task", desc: null, acs: [], status: "Published", steps: 5, category: "Uncategorized", fav: false },
+  { id: "k5", name: "0717 Task", kind: "Task", desc: null, acs: [], status: "Published", steps: 2, category: "Uncategorized", fav: false },
+  { id: "k6", name: "Compressor wash — line procedure", kind: "Scenario", desc: "Run a full motoring wash on a CFM56 and record the rinse cycle.", acs: ["PA.I.A", "PA.I.B"], status: "Draft", steps: 7, category: "Powerplant", fav: true },
+  { id: "k7", name: "Torque check — nose gear actuator", kind: "Subtask", desc: null, acs: ["AM.II.C.K4"], status: "Published", steps: 3, category: "Airframe", fav: false },
+];
+
+const CATALOG_BLOCK_OPTIONS = ["Any block", "124498.3938", "edit test", "sfsef", "Summer ThreeD", "test block 010826", "Three D Block Fall"];
+
+// Star: outline when off, filled when on — favorites marker on the task rows + toolbar filter.
+function CatalogStar({ on, size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none", display: "block" }}>
+      <path d="M12 3.6l2.6 5.3 5.8.85-4.2 4.1 1 5.75L12 16.9l-5.2 2.7 1-5.75-4.2-4.1 5.8-.85z"
+        fill={on ? "var(--kls-accent-4)" : "none"} stroke={on ? "var(--kls-accent-4)" : "var(--kls-on-surface-variant)"} strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CatalogStarBtn({ on, label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} aria-pressed={on}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 40, height: 40, flex: "none", boxSizing: "border-box", borderRadius: 8, border: "none", cursor: "pointer", padding: 0,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <CatalogStar on={on} />
+    </button>
+  );
+}
+
+// DS checkbox — canonical M3 green-check (standalone form) variant, preview/checkbox.html:
+// 22×22 · radius 6 · 1.5px border on-surface-variant (checked: on-surface) · transparent fill ·
+// check stroked in --kls-checkbox-check · svg 16 · stroke 3 · bg transition 80ms.
+function DsCheckbox({ checked, label }) {
+  return (
+    <span aria-hidden="true" style={{ width: 18, height: 18, flex: "none", boxSizing: "border-box", borderRadius: 6,
+      border: "1.5px solid var(--kls-checkbox-side)",
+      background: "var(--kls-checkbox-fill)", display: "inline-flex", alignItems: "center", justifyContent: "center",
+      transition: "background-color var(--kls-dur-fast-animation) var(--kls-ease-standard)" }} title={label}>
+      {checked && (
+        <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, fill: "none", stroke: "var(--kls-checkbox-check)",
+          strokeWidth: 3, strokeLinecap: "round", strokeLinejoin: "round" }}>
+          <path d="M5 12l4.5 4.5L20 6" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+// Filter checkbox with label — DS checkbox in a ≥40px inline hit target.
+function CatalogFilterCheck({ label, checked, onClick }) {
+  return (
+    <button onClick={onClick} aria-pressed={checked}
+      style={{ height: 40, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+        border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
+      <DsCheckbox checked={checked} label={label} />
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{label}</span>
+    </button>
+  );
+}
+
+const CATALOG_KIND_PILL = { Task: "var(--kls-accent-1)", Scenario: "var(--kls-accent-7)", Subtask: "var(--kls-accent-12)" };
+
+function CatalogTaskRow({ row, onFav, onOpen }) {
+  const [hover, setHover] = useState(false);
+  const td = { ...LIB_TD, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap", verticalAlign: "middle" };
+  const pillFg = CATALOG_KIND_PILL[row.kind] || "var(--kls-on-tertiary)";
+  return (
+    <tr onClick={onOpen} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <td style={{ ...LIB_TD, verticalAlign: "middle" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+            <span style={{ flex: "none", padding: "var(--kls-space-tiny) var(--kls-space-xsmall)", borderRadius: 4,
+              background: "var(--kls-tertiary)", border: "1px solid " + pillFg, color: pillFg,
+              fontSize: 12, fontWeight: 500, whiteSpace: "nowrap" }}>{row.kind}</span>
+          </div>
+          <div style={{ display: "flex", gap: "var(--kls-space-xsmall)", color: "var(--kls-on-surface-variant)", minWidth: 0 }}>
+            <span style={{ flex: "none", opacity: 0.7 }}>↳</span>
+            <span style={{ fontSize: 14, fontWeight: 500, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+              {row.desc || "No description"}
+            </span>
+          </div>
+          <div style={{ paddingLeft: "var(--kls-space-med)", fontSize: 13, fontWeight: 500, color: "var(--kls-outline)",
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {row.acs.length ? row.acs.join(", ") : "No associated ACS codes"}
+          </div>
+        </div>
+      </td>
+      <td style={{ ...td, width: 140, color: row.status === "Published" ? "var(--kls-success)" : "var(--kls-on-surface-variant)", fontWeight: 600 }}>{row.status}</td>
+      <td style={{ ...td, width: 88 }}>{row.steps}</td>
+      <td style={{ ...td, width: 168, whiteSpace: "normal" }}>{row.category}</td>
+      <td style={{ ...LIB_TD, width: 56, textAlign: "right", verticalAlign: "middle" }}>
+        <CatalogStarBtn on={row.fav} label={(row.fav ? "Unfavorite " : "Favorite ") + row.name} onClick={(e) => { if (e && e.stopPropagation) e.stopPropagation(); onFav(); }} />
+      </td>
+    </tr>
+  );
+}
+
+function CatalogTasks({ term, favOnly, onFavOnly, onOpenTask }) {
+  const [sort, setSort] = useState({ col: "name", dir: "asc" });
+  const [kinds, setKinds] = useState({ Task: true, Scenario: true, Subtask: true });
+  const [block, setBlock] = useState("Any block");
+  const [favs, setFavs] = useState(() => CATALOG_TASKS.filter((t) => t.fav).map((t) => t.id));
+  const onSort = (col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  const toggleFav = (id) => setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : f.concat([id])));
+
+  const rows = CATALOG_TASKS
+    .map((t) => ({ ...t, fav: favs.includes(t.id) }))
+    .filter((t) => kinds[t.kind])
+    .filter((t) => !favOnly || t.fav)
+    .filter((t) => !term || t.name.toLowerCase().includes(term))
+    .slice()
+    .sort((a, b) => {
+      let d = 0;
+      if (sort.col === "name") d = a.name.localeCompare(b.name, undefined, { numeric: true });
+      else if (sort.col === "steps") d = a.steps - b.steps;
+      else if (sort.col === "status") d = a.status.localeCompare(b.status);
+      else d = a.category.localeCompare(b.category);
+      return sort.dir === "asc" ? d : -d;
+    });
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)", flexWrap: "wrap",
+        padding: "var(--kls-space-small) var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+          textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>Filters</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          {["Task", "Scenario", "Subtask"].map((k) => (
+            <CatalogFilterCheck key={k} label={k} checked={kinds[k]} onClick={() => setKinds((v) => ({ ...v, [k]: !v[k] }))} />
+          ))}
+        </div>
+        <div style={{ flex: 1 }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>Block</span>
+          <div style={{ width: 220 }}>
+            <CTSelect value={block} options={CATALOG_BLOCK_OPTIONS} placeholder="Any block" onChange={setBlock} />
+          </div>
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Adjust the filters or clear the search.</div>
+        </div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <thead>
+            <tr>
+              <LibSortHeader label="Task" col="name" sort={sort} onSort={onSort} />
+              <LibSortHeader label="Status" col="status" sort={sort} onSort={onSort} style={{ width: 140 }} />
+              <LibSortHeader label="Steps" col="steps" sort={sort} onSort={onSort} style={{ width: 88 }} />
+              <LibSortHeader label="Category" col="category" sort={sort} onSort={onSort} style={{ width: 168 }} />
+              <th style={{ ...LIB_TH_BASE, width: 56 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Favorite</span></th>
+            </tr>
+          </thead>
+          <tbody>{rows.map((r) => <CatalogTaskRow key={r.id} row={r} onFav={() => toggleFav(r.id)} onOpen={() => onOpenTask && onOpenTask(r)} />)}</tbody>
+        </table>
+      )}
+    </>
+  );
+}
+
+function BlocksRow({ row }) {
+  const [hover, setHover] = useState(false);
+  const td = { ...LIB_TD, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" };
+  return (
+    <tr onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ cursor: "pointer", background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <td style={LIB_TD}>{row.name}</td>
+      <td style={{ ...LIB_TD, width: 140 }}><CTAvatarStack students={row.people} max={3} /></td>
+      <td style={{ ...td, width: 140 }}>{row.start}</td>
+      <td style={{ ...td, width: 140 }}>{row.end}</td>
+      <td style={{ ...LIB_TD, width: 56, textAlign: "right" }}>
+        <LibIconBtn icon="chevronDown" label={"Actions for " + row.name} onClick={() => {}} />
+      </td>
+    </tr>
+  );
+}
+
+// Catalog-flavored Orion suggestions — same list on every tab.
+const CATALOG_ORION_SUGGESTIONS = [
+  { icon: "orionLogo", tint: "var(--kls-accent-7)", label: "Where do I start?",
+    hint: "Get some ideas of what you can do here", prompt: "Where do I start?" },
+  { icon: "itemList", tint: "var(--kls-accent-1)", label: "Can you explain this for me?",
+    hint: "Detailed answers and their sources at your fingertips", prompt: "Can you explain this for me?" },
+  { icon: "chatBubbles", tint: "var(--kls-accent-12)", label: "Where can I get help?",
+    hint: "Find guides, or reach a person", prompt: "Where can I get help?" },
+];
+
+function Blocks({ query = "", onOpenTask }) {
+  const [tab, setTab] = useState("blocks");
+  const [orion, setOrion] = useState(false);
+  const [sort, setSort] = useState({ col: "name", dir: "asc" });
+  const [refreshing, setRefreshing] = useState(false);
+  const [favOnly, setFavOnly] = useState(false);
+  const [expanded, setExpanded] = useState([]);
+  const term = query.trim().toLowerCase();
+  const onSort = (col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
+
+  const rows = BLOCKS_ROWS
+    .filter((r) => !term || r.name.toLowerCase().includes(term))
+    .slice()
+    .sort((a, b) => {
+      let d = 0;
+      if (sort.col === "name") d = a.name.localeCompare(b.name, undefined, { numeric: true });
+      else if (sort.col === "people") d = a.people.length - b.people.length;
+      else d = String(a[sort.col === "start" ? "start" : "end"]).localeCompare(String(b[sort.col === "start" ? "start" : "end"]));
+      return sort.dir === "asc" ? d : -d;
+    });
+
+  const empty = BLOCKS_EMPTY[tab];
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Catalog</h1>
+          <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Browse and manage your Blocks, Modules, and Tasks</p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ minWidth: 0, overflowX: "auto" }}><SegmentedTabs tabs={BLOCKS_TABS} value={tab} onChange={setTab} /></div>
+          <LibIconBtn icon="refresh" label="Refresh" onClick={refresh} spin={refreshing} />
+          <div style={{ flex: 1 }} />
+          {tab === "tasks" && <CatalogStarBtn on={favOnly} label="Show favorites only" onClick={() => setFavOnly((v) => !v)} />}
+          <button style={{ ...ctPrimaryBtn, flex: "none", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            <PlusGlyph />{tab === "tasks" ? "Add task" : "Add block"}
+          </button>
+        </div>
+
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+          {tab === "tasks" ? (
+            <CatalogTasks term={term} favOnly={favOnly} onFavOnly={setFavOnly} onOpenTask={onOpenTask} />
+          ) : tab !== "blocks" ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+                <KlsIcon name={empty.icon} size={26} color="var(--kls-on-surface-variant)" />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{empty.title}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>{empty.hint}</div>
+            </div>
+          ) : rows.length === 0 ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try a different search.</div>
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <LibSortHeader label="Block" col="name" sort={sort} onSort={onSort} />
+                  <LibSortHeader label="Participants" col="people" sort={sort} onSort={onSort} style={{ width: 140 }} />
+                  <LibSortHeader label="Start date" col="start" sort={sort} onSort={onSort} style={{ width: 140 }} />
+                  <LibSortHeader label="End date" col="end" sort={sort} onSort={onSort} style={{ width: 140 }} />
+                  <th style={{ ...LIB_TH_BASE, width: 56 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>{rows.map((r) => <BlocksRow key={r.id} row={r} />)}</tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+
+      <TeOrionFab label="Orion" onClick={() => setOrion(true)} />
+      {orion && (
+        <TeOrionDrawer onClose={() => setOrion(false)} title="Orion"
+          greeting="Hi, what can I help you with today?  Ask me to create Blocks, Modules, or Tasks, or find something in the Catalog"
+          suggestions={CATALOG_ORION_SUGGESTIONS} addFiles={false} />
+      )}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════
+// TICKETS (web) — job orders. Content-pane paradigm, same as Blocks:
+// page header + segmented tabs + table card.
+// ═════════════════════════════════════════════════════════════════
+const TICKETS_TABS = [
+  { key: "tickets",   label: "Tickets" },
+  { key: "templates", label: "Ticket Templates" },
+  { key: "systems",   label: "Systems" },
+  { key: "modules",   label: "Modules" },
+];
+
+// Status / priority read from an 8px semantic dot inside neutral Dropdown chrome —
+// status-badges.html "Variation C" dot bindings, not saturated fills.
+const TK_STATUS = {
+  "Pending":     { dot: "var(--kls-on-surface-variant)" },
+  "In Progress": { dot: "var(--kls-info)" },
+  "Complete":    { dot: "var(--kls-success)" },
+  "Cancelled":   { dot: "var(--kls-outline)" },
+};
+const TK_STATUS_ORDER = ["Pending", "In Progress", "Complete", "Cancelled"];
+
+const TK_PRIORITY = {
+  low:    { dot: "var(--kls-info)" },
+  medium: { dot: "var(--kls-success)" },
+  high:   { dot: "var(--kls-error)" },
+};
+const TK_PRIORITY_ORDER = ["low", "medium", "high"];
+
+const tkPeople = (...names) => names.map((n, i) => ({ id: "tp" + i + "-" + n, name: n }));
+
+const tkStep = (n, module, system, status, people) => ({ n, module, system, status, people });
+
+const TICKETS_ROWS = [
+  { id: "t1", jcn: "2461117.105448", status: "Pending",     blocked: false, people: tkPeople("Joel Frank"),                              priority: "medium", due: "03/27/2026",
+    description: null, submittedBy: "Joel Frank",
+    steps: [ tkStep(1, "Sample Prodecure", "Cessna 177", "Pending", tkPeople("Joel Frank")),
+             tkStep(2, "Sample Prodecure", "Cessna 177", "Pending", tkPeople("Joel Frank")) ] },
+  { id: "t2", jcn: "2461134.115644", status: "In Progress", blocked: false, people: tkPeople("Amara Diaz", "Ken Ito", "Priya Rao", "Marcus Webb"), priority: "medium", due: "N/A",
+    description: "This procedure defines the 50-flight-hour / 100-flight-cycle scheduled maintenance inspection.", submittedBy: "Joel Frank",
+    steps: [ tkStep(1, "Falcon V3 Pre-Flight Inspection Procedure", "Falcon V3", "Pending", tkPeople("Amara Diaz", "Ken Ito", "Priya Rao", "Marcus Webb")),
+             tkStep(2, "Cobra V2 Scheduled Maintenance Procedure", "Cobra V2", "Pending", tkPeople("Amara Diaz", "Ken Ito", "Priya Rao", "Marcus Webb")) ] },
+  { id: "t3", jcn: "2461140.093012", status: "In Progress", blocked: true,  people: tkPeople("Ken Ito", "Joel Frank"),                    priority: "high",   due: "04/02/2026",
+    description: "Hydraulic pressure drop reported on landing rollout. Parts on order.", submittedBy: "Ken Ito",
+    steps: [ tkStep(1, "Main Gear Hydraulic Leak Check", "Falcon V3", "In Progress", tkPeople("Ken Ito")),
+             tkStep(2, "Actuator Seal Replacement", "Falcon V3", "Pending", tkPeople("Joel Frank")),
+             tkStep(3, "Retraction Test", "Falcon V3", "Pending", tkPeople("Ken Ito", "Joel Frank")) ] },
+  { id: "t4", jcn: "2461142.141530", status: "Pending",     blocked: true,  people: [],                                                   priority: "high",   due: "04/06/2026",
+    description: null, submittedBy: "Marcus Webb",
+    steps: [ tkStep(1, "Engine Borescope Inspection", "Cobra V2", "Pending", []) ] },
+  { id: "t5", jcn: "2461151.083344", status: "Complete",    blocked: false, people: tkPeople("Priya Rao"),                                priority: "low",    due: "03/19/2026",
+    description: "Routine avionics bus check, no findings.", submittedBy: "Priya Rao",
+    steps: [ tkStep(1, "Avionics Bus Continuity Check", "Cessna 177", "Complete", tkPeople("Priya Rao")),
+             tkStep(2, "Transponder Function Test", "Cessna 177", "Complete", tkPeople("Priya Rao")) ] },
+  { id: "t6", jcn: "2461158.112207", status: "Pending",     blocked: false, people: tkPeople("Marcus Webb", "Amara Diaz"),                priority: "low",    due: "N/A",
+    description: null, submittedBy: "Amara Diaz",
+    steps: [ tkStep(1, "Tire Wear Measurement", "Cessna 177", "Pending", tkPeople("Marcus Webb")),
+             tkStep(2, "Brake Assembly Inspection", "Cessna 177", "Pending", tkPeople("Amara Diaz")) ] },
+  { id: "t7", jcn: "2461163.154911", status: "In Progress", blocked: false, people: tkPeople("Joel Frank", "Ken Ito", "Priya Rao"),       priority: "medium", due: "04/14/2026",
+    description: "Cabin pressurization module walkthrough for the spring block.", submittedBy: "Joel Frank",
+    steps: [ tkStep(1, "Pressurization Controller Check", "Falcon V3", "In Progress", tkPeople("Joel Frank")),
+             tkStep(2, "Outflow Valve Rigging", "Falcon V3", "Pending", tkPeople("Ken Ito")),
+             tkStep(3, "Cabin Leak Rate Test", "Falcon V3", "Pending", tkPeople("Priya Rao")) ] },
+  { id: "t8", jcn: "2461170.101825", status: "Cancelled",   blocked: false, people: tkPeople("Amara Diaz"),                               priority: "low",    due: "N/A",
+    description: "Cancelled — superseded by 2461163.154911.", submittedBy: "Amara Diaz",
+    steps: [ tkStep(1, "Static Port Cleaning", "Cobra V2", "Cancelled", tkPeople("Amara Diaz")) ] },
+];
+
+const TICKETS_EMPTY = {
+  templates: { icon: "stack",    title: "No ticket templates yet",  hint: "Save a ticket as a template to reuse its systems, modules, and checks." },
+  systems:   { icon: "itemList", title: "No systems yet",        hint: "Systems are the aircraft assemblies a ticket is written against." },
+  modules:   { icon: "worklog",  title: "No modules yet",        hint: "Modules group the steps a technician works through on a ticket." },
+};
+
+// Inline cell dropdown — Dropdown spec (h40 · radius 8 · 1px outline-variant · bg tertiary)
+// with a leading semantic dot. Neutral chrome keeps a table of these calm.
+function TkCellSelect({ value, options, tone, onChange, label, glyph, width }) {
+  return (
+    <div style={{ position: "relative", display: "inline-flex", flex: "none" }}>
+      <select value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}
+        style={{ height: 40, width, boxSizing: "border-box", appearance: "none", WebkitAppearance: "none", cursor: "pointer",
+          padding: "0 var(--kls-space-large) 0 30px", borderRadius: 8,
+          border: "1px solid var(--kls-outline-variant)", background: "var(--kls-tertiary)", color: "var(--kls-on-surface)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, outline: "none",
+          transition: "background-color var(--kls-dur-fast-animation) var(--kls-ease-standard)" }}>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+      {glyph ? (
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"
+          style={{ position: "absolute", left: "var(--kls-space-small)", top: 13, pointerEvents: "none" }}>
+          <g stroke={tone.dot} strokeWidth="1.8" strokeLinecap="round">
+            <path d="M2 4h12" /><path d="M2 8h12" /><path d="M2 12h12" />
+          </g>
+        </svg>
+      ) : (
+        <span aria-hidden="true" style={{ position: "absolute", left: "var(--kls-space-small)", top: 16,
+          width: 8, height: 8, borderRadius: 999, background: tone.dot, pointerEvents: "none" }} />
+      )}
+      <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"
+        style={{ position: "absolute", right: "var(--kls-space-small)", top: 13, pointerEvents: "none" }}>
+        <path d="M6 9l6 6 6-6" fill="none" stroke="var(--kls-on-surface-variant)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+// Steps grid — one column template shared by the header labels and each step row.
+const TK_STEP_COLS = "1fr 160px 120px 132px 96px";
+const tkStepLabel = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+  textTransform: "uppercase", color: "var(--kls-on-surface-variant)" };
+
+function TicketStepRow({ step }) {
+  const [hover, setHover] = useState(false);
+  const tone = TK_STATUS[step.status] || TK_STATUS.Pending;
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "grid", gridTemplateColumns: TK_STEP_COLS, alignItems: "center", gap: "var(--kls-space-med)",
+        padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8,
+        background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", minWidth: 0,
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>
+        <span style={{ flex: "none", color: "var(--kls-on-surface-variant)" }}>{step.n}.</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{step.module}</span>
+      </div>
+      <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{step.system}</div>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface)", whiteSpace: "nowrap" }}>
+        <span aria-hidden="true" style={{ width: 8, height: 8, flex: "none", borderRadius: 999, background: tone.dot }} />
+        {step.status}
+      </div>
+      <div><CTAvatarStack students={step.people} max={3} /></div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "var(--kls-space-tiny)" }}>
+        <LibIconBtn icon="itemList" label={"Open module for step " + step.n} onClick={() => {}} />
+        <LibIconBtn icon="play" label={"Start step " + step.n} onClick={() => {}} />
+      </div>
+    </div>
+  );
+}
+
+function TicketDetail({ row }) {
+  return (
+    <div style={{ padding: "var(--kls-space-small) var(--kls-space-med) var(--kls-space-med)",
+      display: "flex", flexDirection: "column", gap: "var(--kls-space-med)",
+      background: "var(--kls-surface-container-lowest)", animation: "kls-fade var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: TK_STEP_COLS, gap: "var(--kls-space-med)",
+          padding: "0 var(--kls-space-small)" }}>
+          <span style={tkStepLabel}>Perform module</span>
+          <span style={tkStepLabel}>On system</span>
+          <span style={tkStepLabel}>Status</span>
+          <span style={tkStepLabel}>Assigned to</span>
+          <span />
+        </div>
+        {row.steps.map((s) => <TicketStepRow key={s.n} step={s} />)}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: "var(--kls-space-med)",
+        padding: "0 var(--kls-space-small)" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)", minWidth: 0 }}>
+          <span style={tkStepLabel}>Description</span>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+            color: row.description ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
+            {row.description || "No description"}
+          </span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          <span style={tkStepLabel}>Submitted by</span>
+          <CTAvatarStack students={tkPeople(row.submittedBy)} max={1} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TicketsRow({ row, expanded, onToggle, onStatus, onPriority }) {
+  const [hover, setHover] = useState(false);
+  const td = { ...LIB_TD, color: "var(--kls-on-surface-variant)", whiteSpace: "nowrap" };
+  const tone = TK_STATUS[row.status] || TK_STATUS.Pending;
+  const pri = TK_PRIORITY[row.priority] || TK_PRIORITY.medium;
+  const cell = expanded ? { ...LIB_TD, borderBottom: "none" } : LIB_TD;
+  return (
+    <>
+      <tr onClick={onToggle} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+        style={{ cursor: "pointer", background: hover || expanded ? "var(--kls-surface-container-low)" : "transparent",
+          transition: "background 125ms var(--kls-ease-standard)" }}>
+        <td style={cell}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minWidth: 0 }}>
+            <span style={{ width: 28, height: 28, flex: "none", borderRadius: 999, background: "var(--kls-accent-13)",
+              display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <KlsIcon name="checkpoint" size={16} color="var(--kls-accent-12)" />
+            </span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.jcn}</span>
+          </div>
+        </td>
+        <td style={{ ...cell, width: 280 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+            <TkCellSelect value={row.status} options={TK_STATUS_ORDER} tone={tone} onChange={onStatus}
+              width={148} label={"Status for ticket " + row.jcn} />
+            <span style={{ display: "inline-flex", alignItems: "center", flex: "none", gap: "var(--kls-space-xsmall)",
+              fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+              color: row.blocked ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>
+              <span aria-hidden="true" style={{ width: 8, height: 8, flex: "none", borderRadius: 999,
+                background: row.blocked ? "var(--kls-error)" : "var(--kls-outline)" }} />
+              {row.blocked ? "Blocked" : "Not Blocked"}
+            </span>
+          </div>
+        </td>
+        <td style={{ ...cell, width: 148 }}><CTAvatarStack students={row.people} max={3} /></td>
+        <td style={{ ...cell, width: 168 }} onClick={(e) => e.stopPropagation()}>
+          <TkCellSelect value={row.priority} options={TK_PRIORITY_ORDER} tone={pri} onChange={onPriority} glyph
+            width={132} label={"Priority for ticket " + row.jcn} />
+        </td>
+        <td style={{ ...td, ...(expanded ? { borderBottom: "none" } : null), width: 148 }}>{row.due}</td>
+        <td style={{ ...cell, width: 56, textAlign: "right" }}>
+          <span style={{ display: "inline-block", transform: expanded ? "rotate(180deg)" : "none",
+            transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }}>
+            <LibIconBtn icon="chevronDown" label={(expanded ? "Collapse " : "Expand ") + row.jcn} onClick={(e) => { if (e && e.stopPropagation) e.stopPropagation(); onToggle(); }} />
+          </span>
+        </td>
+      </tr>
+      {expanded && (
+        <tr style={{ background: "var(--kls-surface-container-low)" }}>
+          <td colSpan={6} style={{ padding: 0, borderBottom: "1px solid var(--kls-outline-variant)" }}>
+            <TicketDetail row={row} />
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+const TICKETS_ORION_SUGGESTIONS = [
+  { icon: "orionLogo", tint: "var(--kls-accent-7)", label: "Where do I start?",
+    hint: "Get some ideas of what you can do here", prompt: "Where do I start?" },
+  { icon: "itemList", tint: "var(--kls-accent-1)", label: "What is blocking my tickets?",
+    hint: "See which tickets are held up and why", prompt: "What is blocking my tickets?" },
+  { icon: "chatBubbles", tint: "var(--kls-accent-12)", label: "Where can I get help?",
+    hint: "Find guides, or reach a person", prompt: "Where can I get help?" },
+];
+
+function Tickets({ query = "" }) {
+  const [tab, setTab] = useState("tickets");
+  const [orion, setOrion] = useState(false);
+  const [sort, setSort] = useState({ col: "jcn", dir: "asc" });
+  const [refreshing, setRefreshing] = useState(false);
+  const [edits, setEdits] = useState({});
+  const [open, setOpen] = useState([]);
+  const term = query.trim().toLowerCase();
+  const onSort = (col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
+  const patch = (id, key, value) => setEdits((e) => ({ ...e, [id]: { ...(e[id] || {}), [key]: value } }));
+  const toggle = (id) => setOpen((o) => (o.includes(id) ? o.filter((x) => x !== id) : o.concat([id])));
+
+  const rows = TICKETS_ROWS
+    .map((r) => ({ ...r, ...(edits[r.id] || {}) }))
+    .filter((r) => !term || r.jcn.toLowerCase().includes(term))
+    .slice()
+    .sort((a, b) => {
+      let d = 0;
+      if (sort.col === "jcn") d = a.jcn.localeCompare(b.jcn, undefined, { numeric: true });
+      else if (sort.col === "status") d = TK_STATUS_ORDER.indexOf(a.status) - TK_STATUS_ORDER.indexOf(b.status);
+      else if (sort.col === "people") d = a.people.length - b.people.length;
+      else if (sort.col === "priority") d = TK_PRIORITY_ORDER.indexOf(a.priority) - TK_PRIORITY_ORDER.indexOf(b.priority);
+      else d = String(a.due).localeCompare(String(b.due));
+      return sort.dir === "asc" ? d : -d;
+    });
+
+  const empty = TICKETS_EMPTY[tab];
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+        <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Tickets</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Track tickets, who is on them, and what is blocked</p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+            <div style={{ minWidth: 0, flex: "0 1 auto", overflowX: "auto" }}><SegmentedTabs tabs={TICKETS_TABS} value={tab} onChange={setTab} /></div>
+            <LibIconBtn icon="refresh" label="Refresh" onClick={refresh} spin={refreshing} />
+            <div style={{ flex: 1 }} />
+            <button style={{ ...ctPrimaryBtn, flex: "none", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+              <PlusGlyph />Create Ticket
+            </button>
+          </div>
+
+          <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+            {tab !== "tickets" ? (
+              <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+                <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+                  <KlsIcon name={empty.icon} size={26} color="var(--kls-on-surface-variant)" />
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{empty.title}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>{empty.hint}</div>
+              </div>
+            ) : rows.length === 0 ? (
+              <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Nothing matches</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>Try a different search.</div>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", minWidth: 1030, borderCollapse: "collapse", tableLayout: "fixed" }}>
+                <thead>
+                  <tr>
+                    <LibSortHeader label="JCN" col="jcn" sort={sort} onSort={onSort} />
+                    <LibSortHeader label="Status" col="status" sort={sort} onSort={onSort} style={{ width: 280 }} />
+                    <LibSortHeader label="Assigned to" col="people" sort={sort} onSort={onSort} style={{ width: 148 }} />
+                    <LibSortHeader label="Priority" col="priority" sort={sort} onSort={onSort} style={{ width: 168 }} />
+                    <LibSortHeader label="Due date" col="due" sort={sort} onSort={onSort} style={{ width: 148 }} />
+                    <th style={{ ...LIB_TH_BASE, width: 56 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody>{rows.map((r) => (
+                  <TicketsRow key={r.id} row={r}
+                    expanded={open.includes(r.id)} onToggle={() => toggle(r.id)}
+                    onStatus={(v) => patch(r.id, "status", v)}
+                    onPriority={(v) => patch(r.id, "priority", v)} />
+                ))}</tbody>
+              </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <TeOrionFab label="Orion" onClick={() => setOrion(true)} />
+      {orion && (
+        <TeOrionDrawer onClose={() => setOrion(false)} title="Orion"
+          greeting="Hi, what can I help you with today?  Ask me to create a ticket, find a ticket, or check what is blocked"
+          suggestions={TICKETS_ORION_SUGGESTIONS} addFiles={false} />
+      )}
+    </div>
+  );
+}
+
+function Library({ query = "", onOpen }) {
+  const [section, setSection] = useState("files");
+  const [view, setView] = useState("list");
+  const [sort, setSort] = useState({ col: "name", dir: "asc" });
+  const [refreshing, setRefreshing] = useState(false);
+  const term = query.trim().toLowerCase();
+
+  const onSort = (col) => setSort((s) => (s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  const refresh = () => { setRefreshing(true); setTimeout(() => setRefreshing(false), 900); };
+
+  const current = LIB_SECTIONS.find((x) => x.key === section) || LIB_SECTIONS[0];
+  const anyExpandable = current.items.some((i) => (i.children || []).length > 0);
+
+  const items = current.items
+    .filter((i) => !term || i.name.toLowerCase().includes(term))
+    .slice()
+    .sort((a, b) => {
+      if ((a.kind === "folder") !== (b.kind === "folder")) return a.kind === "folder" ? -1 : 1;
+      let d = 0;
+      if (sort.col === "name") d = a.name.localeCompare(b.name);
+      else if (sort.col === "size") d = libBytes(a) - libBytes(b);
+      else if (sort.col === "type") d = (a.type || "").localeCompare(b.type || "");
+      else d = a.added.localeCompare(b.added);
+      return sort.dir === "asc" ? d : -d;
+    });
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "var(--kls-scaffold-bg)" }}>
+      <div style={{ padding: "var(--kls-space-med) var(--kls-space-large) var(--kls-space-xlarge)", display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ margin: "0 0 var(--kls-space-tiny)", fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Library</h1>
+            <p style={{ margin: 0, fontFamily: "var(--kls-font-sans)", fontSize: 13.5, color: "var(--kls-on-surface-variant)" }}>Manage files and folders in your workspace.</p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-med)" }}>
+          <SegmentedTabs tabs={LIB_SECTIONS} value={section} onChange={setSection} />
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+            {section === "media" && (
+              <div style={{ height: 40, padding: 2, borderRadius: 8, background: "var(--kls-tertiary)", border: "1px solid var(--kls-outline-variant)",
+                display: "inline-flex", alignItems: "center", gap: "var(--kls-space-tiny)", boxSizing: "border-box" }}>
+                <LibToggleBtn icon="itemList" label="List view" active={view === "list"} onClick={() => setView("list")} />
+                <LibToggleBtn glyph label="Grid view" active={view === "grid"} onClick={() => setView("grid")} />
+              </div>
+            )}
+            <LibIconBtn icon="refresh" label="Refresh" onClick={refresh} spin={refreshing} />
+          </div>
+          <div style={{ flex: 1 }} />
+          <button style={{ ...ctPrimaryBtn, display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            <PlusGlyph />Add
+          </button>
+        </div>
+
+        <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12, overflow: "hidden" }}>
+
+          {items.length === 0 ? (
+            <div style={{ padding: "var(--kls-space-xlarge) var(--kls-space-med)", textAlign: "center", fontFamily: "var(--kls-font-sans)" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: "var(--kls-tertiary)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--kls-space-small)" }}>
+                <KlsIcon name={current.icon} size={26} color="var(--kls-on-surface-variant)" />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>{current.items.length === 0 ? current.empty : "Nothing matches"}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", marginTop: "var(--kls-space-tiny)" }}>{current.items.length === 0 ? current.hint : "Try a different search."}</div>
+            </div>
+          ) : (view === "grid" && section === "media") ? (
+            <div style={{ padding: "var(--kls-space-med)", display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "var(--kls-space-small)" }}>
+              {items.map((i) => <LibTile key={i.id} item={i} />)}
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  <LibSortHeader label="Name" col="name" sort={sort} onSort={onSort} />
+                  <LibSortHeader label="Size" col="size" sort={sort} onSort={onSort} style={{ width: 96 }} />
+                  <LibSortHeader label="Type" col="type" sort={sort} onSort={onSort} style={{ width: 84 }} />
+                  <LibSortHeader label="Date Added" col="added" sort={sort} onSort={onSort} style={{ width: 152 }} />
+                  <th style={{ ...LIB_TH_BASE, width: 48 }}><span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Open</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((i) => <LibRow key={i.id} item={i} indent={anyExpandable} onOpen={onOpen} />)}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MODEL EDITOR (web, full screen — no sidebar, no global header)
+// Opened from Library → 3D Models: the ⤢ control on a model row, or a
+// scene / animation row. Layout: top bar · left tree · viewport · inspector.
+// Part 1: scenes + annotations. Animations are entities with a
+// preview only — keyframe timeline lands in part 2.
+// ════════════════════════════════════════════════════════════════════
+
+const ME_PART_SETS = {
+  t1: [
+    { id: "p1", name: "Inlet Cone",     geom: "cone",     color: "#8A94A6", pos: [0, 0, 2.6],  dir: [0, 0, 1],  group: "Static structure" },
+    { id: "p2", name: "Housing",        geom: "shell",    color: "#5C6675", pos: [0, 0, 0],    dir: [0, 1, 0],  group: "Static structure" },
+    { id: "p3", name: "Rotor Shaft",    geom: "shaft",    color: "#C9CFD8", pos: [0, 0, 0],    dir: [0, 0, -1], group: "Rotating assembly" },
+    { id: "p4", name: "Stage 1 Blades", geom: "blades",   color: "#7FB2E5", pos: [0, 0, 1.1],  dir: [0, 0, 1],  group: "Rotating assembly" },
+    { id: "p5", name: "Stage 2 Blades", geom: "blades",   color: "#6BA0D6", pos: [0, 0, 0],    dir: [0, 0, 1],  group: "Rotating assembly" },
+    { id: "p6", name: "Stage 3 Blades", geom: "blades",   color: "#5A8FC7", pos: [0, 0, -1.1], dir: [0, 0, -1], group: "Rotating assembly" },
+  ],
+  t2: [
+    { id: "p1", name: "Strut",         geom: "shaft",  color: "#9AA3B0", pos: [0, 1.1, 0],   dir: [0, 1, 0],   group: "Strut assembly" },
+    { id: "p2", name: "Wheel Hub",     geom: "hub",    color: "#C9CFD8", pos: [0, -0.6, 0],  dir: [1, 0, 0],   group: "Wheel assembly" },
+    { id: "p3", name: "Tire",          geom: "tire",   color: "#3A3F47", pos: [0, -0.6, 0],  dir: [-1, 0, 0],  group: "Wheel assembly" },
+    { id: "p4", name: "Brake Caliper", geom: "box",    color: "#D08A4F", pos: [0.9, -0.2, 0], dir: [1, 0.4, 0], group: "Wheel assembly" },
+    { id: "p5", name: "Actuator Arm",  geom: "arm",    color: "#7FB2E5", pos: [-0.8, 0.6, 0], dir: [-1, 0.6, 0], group: "Strut assembly" },
+  ],
+  default: [
+    { id: "p1", name: "Body",         geom: "shell", color: "#5C6675", pos: [0, 0, 0],    dir: [0, 1, 0],  group: "Housing" },
+    { id: "p2", name: "Cover",        geom: "hub",   color: "#9AA3B0", pos: [0, 1.0, 0],  dir: [0, 1, 0],  group: "Housing" },
+    { id: "p3", name: "Mount",        geom: "box",   color: "#C9CFD8", pos: [0, -1.0, 0], dir: [0, -1, 0], group: "Mounting" },
+    { id: "p4", name: "Fastener Set", geom: "blades", color: "#D08A4F", pos: [0, 0, 1.0], dir: [0, 0, 1], group: "Mounting" },
+  ],
+};
+const mePartsFor = (id) => ME_PART_SETS[id] || ME_PART_SETS.default;
+
+const ME_SEED_EXTRAS = {
+  t1s1: {
+    annotations: [{ id: "a1", partId: "p4", text: "Stage 1 blades are the wear item — check leading edges." }],
+  },
+};
+
+function meSeedScene(sc, modelId) {
+  const extra = ME_SEED_EXTRAS[sc.id] || {};
+  return {
+    id: sc.id, name: sc.name,
+    hidden: [], explode: 0, cutaway: false, wireframe: false,
+    showAnnotations: true, isolate: false, isolateIds: [],
+    bg: "var(--kls-surface-container-lowest)", ambient: 0.5, directional: 0.75,
+    camera: { az: 0.9, el: 0.5, dist: 9 },
+    annotations: (extra.annotations || []).slice(),
+  };
+}
+const ME_MOTIONS = { "Exploded View": "explode", "Rotor Spin Cycle": "spin", "Retraction Sequence": "retract", "Flow Cycle": "spin" };
+
+// find the model that owns a scene/animation row
+function meOwnerModel(node) {
+  const walk = (list) => {
+    for (const it of list) {
+      const kids = it.children || [];
+      if (it.kind === "model" && kids.some((c) => c.id === node.id)) return it;
+      const found = walk(kids);
+      if (found) return found;
+    }
+    return null;
+  };
+  return node.kind === "model" ? node : walk(LIB_MODELS);
+}
+
+const ME_LABEL = { fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+  textTransform: "uppercase", color: "var(--kls-on-surface-variant)" };
+
+// ── Version history (scenes + animations) ────────────────────────────
+// Mock history seeded deterministically per entity id. One optional released
+// version pinned at the top; the rest are drafts on a timeline rail.
+const ME_VER_AUTHORS = ["Melodie Harris", "Dwayne Cobb", "Priya Raman"];
+function meHash(key) { let h = 0; const t = String(key); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; }
+function meSeedVersions(key) {
+  const h = meHash(key);
+  // v3 released · one open draft (internal name draft-4) · v2 + v1 archived
+  const spec = [
+    { n: 4, released: false, wasReleased: false, isDraft: true, draftNo: 1, desc: "Cutaway on the accessory gearbox" },
+    { n: 3, released: true,  wasReleased: false, desc: "Exploded view timing tightened; annotations reviewed" },
+    { n: 2, released: false, wasReleased: true, desc: "Added rotor spin cycle and part labels" },
+    { n: 1, released: false, wasReleased: true, desc: "Initial import from the CAD assembly" },
+  ];
+  let t = Date.UTC(2026, 6, 28, 17, 49);
+  return spec.map((s, i) => {
+    const v = { id: key + "-v" + s.n, label: s.isDraft ? "draft-" + s.draftNo : "v" + s.n, isDraft: !!s.isDraft,
+      desc: s.desc || "", ts: t, author: ME_VER_AUTHORS[(h + i) % 3],
+      released: s.released, wasReleased: s.wasReleased };
+    t -= (2 + ((h >> (i * 2)) & 7)) * 86400000 + ((h >> i) & 15) * 3600000;
+    return v;
+  });
+}
+// Drafts never surface their internal draft-N name — the description is their title.
+function meVerTitle(v) { return v.isDraft ? String(v.label).replace(/^draft-/, "Draft-") : v.label; }
+function meNextVersionLabel(list) {
+  const nums = list.filter((x) => !x.isDraft).map((x) => parseInt(String(x.label).replace(/^v/, ""), 10) || 0);
+  return "v" + ((nums.length ? Math.max.apply(null, nums) : 0) + 1);
+}
+const ME_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+function meVerTime(ts) {
+  const d = new Date(ts);
+  let hr = d.getHours(); const ap = hr >= 12 ? "PM" : "AM"; hr = hr % 12 || 12;
+  const mn = String(d.getMinutes()).padStart(2, "0");
+  return hr + ":" + mn + " " + ap + ", " + d.getDate() + " " + ME_MONTHS[d.getMonth()] + " " + d.getFullYear();
+}
+function meVerInitials(name) { return name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join(""); }
+
+function MeVerBtn({ children, onClick, tone }) {
+  const [hover, setHover] = useState(false);
+  const danger = tone === "danger";
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, cursor: "pointer",
+        border: "1px solid " + (danger && hover ? "var(--kls-error)" : "var(--kls-outline-variant)"),
+        background: hover ? (danger ? "var(--kls-error-container)" : "var(--kls-tertiary)") : "transparent",
+        color: danger && hover ? "var(--kls-error)" : "var(--kls-on-surface)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-tiny)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>{children}</button>
+  );
+}
+
+/* SecondaryActionButton — preview/buttons-variants.html: h40 · radius 8 (web) · bg surface ·
+   text on-surface labelLargeBold (14/700) · border outline-variant · pad-x med. */
+function MeVerSecondaryBtn({ children, onClick, full }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: full ? "100%" : "auto", height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+        border: "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-tertiary)" : "var(--kls-surface)", color: "var(--kls-on-surface)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>{children}</button>
+  );
+}
+
+/* PrimaryActionButton — preview/buttons-primary.html: h40 · radius 8 (web) · pad-x med ·
+   gap xSmall · bg tertiary-container · fg on-tertiary-container · labelLargeBold (14/700). */
+function MeVerPrimaryBtn({ children, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer",
+        border: "1px solid transparent", background: "var(--kls-tertiary-container)",
+        color: "var(--kls-on-tertiary-container)", opacity: hover ? 0.88 : 1,
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+        transition: "opacity 125ms var(--kls-ease-standard)" }}>{children}</button>
+  );
+}
+
+function MeVerMeta({ version }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+        <KlsIcon name="clock" size={14} color="var(--kls-on-surface-variant)" />{meVerTime(version.ts)}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+        <WSAvatar initials={meVerInitials(version.author)} size={20} />{version.author}
+      </div>
+    </div>
+  );
+}
+
+function MeVerCard({ v, previewing, pill, secondaryAction, onPreview, onPublish, onDelete, onEdit, onChanges }) {
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ position: "absolute", left: -21, top: 7, width: 7, height: 7, borderRadius: 999,
+        background: previewing ? "var(--kls-primary)" : "var(--kls-outline)" }} />
+      <div onClick={() => { if (!previewing) onPreview(v); }}
+        style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)",
+        padding: "var(--kls-space-small)", borderRadius: 12, cursor: previewing ? "default" : "pointer",
+        border: "1px solid " + (previewing ? "var(--kls-primary)" : "var(--kls-outline-variant)"),
+        background: "var(--kls-surface)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{meVerTitle(v)}</span>
+          {onChanges && (
+            <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", flex: "none" }}>
+              <MeIconBtn icon="itemList" label={"Change history for " + meVerTitle(v)} onClick={() => onChanges(v)} />
+            </span>
+          )}
+          <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+            background: pill.bg, color: pill.fg,
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{pill.label}</span>
+        </div>
+        {v.desc && (
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{v.desc}</div>
+        )}
+        <MeVerMeta version={v} />
+        <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", flexWrap: "wrap" }}>
+          {secondaryAction
+            ? <MeVerSecondaryBtn onClick={() => onPublish(v)}>Republish</MeVerSecondaryBtn>
+            : <MeVerPrimaryBtn onClick={() => onPublish(v)}>Publish</MeVerPrimaryBtn>}
+          <div style={{ flex: 1 }} />
+          {onEdit && <MeIconBtn icon="pencil" label="Edit description" onClick={() => onEdit(v)} />}          <MeIconBtn icon="trash" label={"Delete " + meVerTitle(v)} onClick={() => onDelete(v)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MeVerSection({ title, count, open, onToggle, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer", minHeight: 24 }}>
+        <KlsIcon name="chevronDown" size={16} rotate={open ? 180 : 0} color="var(--kls-on-surface-variant)" />
+        <span style={ME_LABEL}>{title}</span>
+        <span style={{ ...ME_LABEL, letterSpacing: "normal" }}>{count}</span>
+      </div>
+      {open && children}
+    </div>
+  );
+}
+
+function MeVersionDrawer({ entity, versions, previewId, onPreview, onDelete, onPublish, onUnpublish, onEditDraft, onClose, changesFor, onRollback }) {
+  const [shown, setShown] = useState(false);
+  const [note, setNote] = useState("");
+  const [draftsOpen, setDraftsOpen] = useState(true);
+  const [pastOpen, setPastOpen] = useState(false);
+  const [diffId, setDiffId] = useState(null);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  useEffect(() => { if (!note) return; const t = setTimeout(() => setNote(""), 2000); return () => clearTimeout(t); }, [note]);
+
+  const released = versions.find((v) => v.released);
+  const drafts = versions.filter((v) => !v.released && !v.wasReleased);
+  const past = versions.filter((v) => !v.released && v.wasReleased).slice().sort((a, b) => b.ts - a.ts);
+  const viewingId = previewId || (released ? released.id : null);
+  const flash = (msg, fn) => { fn(); setNote(msg); };
+
+  // Change history (tasks only — enabled by passing `changesFor`): the drawer widens to
+  // the left and shows what this version changed against the one before it in the history.
+  const chrono = versions.slice().sort((a, b) => b.ts - a.ts);
+  const diffVersion = changesFor ? chrono.find((v) => v.id === diffId) : null;
+  const diffPrev = diffVersion ? chrono[chrono.indexOf(diffVersion) + 1] || null : null;
+  const cardProps = (v) => (changesFor ? { onChanges: () => setDiffId(v.id) } : {});
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)",
+        opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12,
+        width: diffVersion ? "min(1280px, calc(100vw - 24px))" : "min(426px, calc(100vw - 24px))",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard), width 250ms var(--kls-ease-standard)" }}>
+
+        {diffVersion && (
+          <TeChangePane version={diffVersion} prev={diffPrev} entity={entity}
+            onClose={() => setDiffId(null)}
+            onRollback={onRollback && !diffVersion.released ? () => { setDiffId(null); onRollback(diffVersion); } : null}
+            changes={changesFor(diffVersion, diffPrev)} />
+        )}
+
+        <div style={{ width: diffVersion ? 426 : "100%", flex: "none", minWidth: 0,
+          display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+          padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)" }}>Version history</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entity.kindLabel} · {entity.name}</div>
+          </div>
+          <button onClick={onClose} aria-label="Close"
+            style={{ width: 32, height: 32, borderRadius: 999, border: "none", cursor: "pointer", background: "transparent",
+              color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 18, height: 18, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {note && (
+          <div style={{ margin: "var(--kls-space-small) var(--kls-space-med) 0", padding: "var(--kls-space-xsmall) var(--kls-space-small)",
+            borderRadius: 8, background: "var(--kls-tertiary-container)", fontFamily: "var(--kls-font-sans)",
+            fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary-container)" }}>{note}</div>
+        )}
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+          {released ? (
+            <div onClick={() => { if (viewingId !== released.id) onPreview(released); }}
+              style={{ border: "1px solid " + (viewingId === released.id ? "var(--kls-primary)" : "var(--kls-outline-variant)"), borderRadius: 12, padding: "var(--kls-space-small)",
+              cursor: viewingId === released.id ? "default" : "pointer",
+              background: "var(--kls-surface-container-lowest)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{released.label}</span>
+                <div style={{ flex: 1 }} />
+                {changesFor && (
+                  <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", flex: "none" }}>
+                    <MeIconBtn icon="itemList" label={"Change history for " + released.label} onClick={() => setDiffId(released.id)} />
+                  </span>
+                )}
+                <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+                  background: "var(--kls-success-container)", color: "var(--kls-on-success-container)",
+                  fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Released</span>
+              </div>
+              {released.desc && (
+                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{released.desc}</div>
+              )}
+              <MeVerMeta version={released} />
+              <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                <MeVerSecondaryBtn full onClick={() => flash("Unpublished " + released.label, () => onUnpublish(released))}>Unpublish</MeVerSecondaryBtn>
+              </div>
+            </div>
+          ) : (
+            <div style={{ borderRadius: 12, padding: "var(--kls-space-small)", border: "1px dashed var(--kls-outline-variant)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+              No released version — publish a draft to make it available to students.
+            </div>
+          )}
+
+          <MeVerSection title="Draft versions" count={drafts.length} open={draftsOpen} onToggle={() => setDraftsOpen((o) => !o)}>
+            {drafts.length === 0 ? (
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No drafts.</div>
+            ) : (
+              <div style={{ position: "relative", paddingLeft: "var(--kls-space-med)",
+                display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                <div style={{ position: "absolute", left: 3, top: 10, bottom: 10, width: 1, background: "var(--kls-outline-variant)" }} />
+                {drafts.map((v) => (
+                  <MeVerCard key={v.id} v={v} previewing={viewingId === v.id} {...cardProps(v)}
+                    pill={{ label: "Draft", bg: "var(--kls-accent-5)", fg: "var(--kls-accent-4)" }}
+                    onPreview={onPreview}
+                    onEdit={onEditDraft}
+                    onPublish={(x) => flash("Published " + meVerTitle(x), () => onPublish(x))}
+                    onDelete={(x) => flash("Deleted " + meVerTitle(x), () => onDelete(x))} />
+                ))}
+              </div>
+            )}
+          </MeVerSection>
+
+          <MeVerSection title="Previous releases" count={past.length} open={pastOpen} onToggle={() => setPastOpen((o) => !o)}>
+            {past.length === 0 ? (
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No previous releases.</div>
+            ) : (
+              <div style={{ position: "relative", paddingLeft: "var(--kls-space-med)",
+                display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                <div style={{ position: "absolute", left: 3, top: 10, bottom: 10, width: 1, background: "var(--kls-outline-variant)" }} />
+                {past.map((v) => (
+                  <MeVerCard key={v.id} v={v} previewing={viewingId === v.id} {...cardProps(v)}
+                    pill={{ label: "Archived", bg: "var(--kls-tertiary)", fg: "var(--kls-on-tertiary)" }} secondaryAction
+                    onPreview={onPreview}
+                    onPublish={(x) => flash("Published " + meVerTitle(x), () => onPublish(x))}
+                    onDelete={(x) => flash("Deleted " + meVerTitle(x), () => onDelete(x))} />
+                ))}
+              </div>
+            )}
+          </MeVerSection>
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function meStepCount(a) { return meAnimSteps(ME_MOTIONS[a.name] || "explode").length; }
+function isDefaultScene(s) { return !!s && s.name === "Default view"; }
+
+function MeSectionLabel({ children, action, collapsible, open, onToggle }) {
+  return (
+    <div onClick={collapsible ? onToggle : undefined}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", minHeight: 24,
+        cursor: collapsible ? "pointer" : "default" }}>
+      {collapsible && <KlsIcon name="chevronDown" size={16} rotate={open ? 180 : 0} color="var(--kls-on-surface-variant)" />}
+      <span style={ME_LABEL}>{children}</span>
+      <div style={{ flex: 1 }} />
+      {action}
+    </div>
+  );
+}
+
+function MeTreeRow({ icon, label, sub, active, muted, indent, onClick, trailing }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        minHeight: 36, padding: sub ? "var(--kls-space-xsmall) var(--kls-space-small)" : "0 var(--kls-space-small)",
+        borderRadius: 8, cursor: "pointer",
+        paddingLeft: indent ? "var(--kls-space-med)" : "var(--kls-space-small)",
+        background: active ? "var(--kls-surface-container-lowest)" : hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={15} color={active ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: active ? 600 : 500,
+          color: muted ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>{label}</div>
+        {sub && (
+          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{sub}</div>
+        )}
+      </div>
+      {trailing}
+    </div>
+  );
+}
+
+function MeAddBtn({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label}
+      onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 32, padding: "0 var(--kls-space-small)", borderRadius: 8, border: "none", cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, lineHeight: 1,
+        color: "var(--kls-on-surface)",
+        background: hover ? "var(--kls-tertiary)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <PlusGlyph size={16} />Add
+    </button>
+  );
+}
+
+function MeDeleteBtn({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label}
+      onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-error-container)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name="trash" size={14} color={hover ? "var(--kls-error)" : "var(--kls-on-surface-variant)"} />
+    </button>
+  );
+}
+
+// DS ships no eye/visibility glyph (logged in DS-UPDATES item 6) — drawn inline.
+function MeEyeGlyph({ on, size = 15, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flex: "none" }}>
+      <path d="M1.8 10S4.8 4.6 10 4.6 18.2 10 18.2 10 15.2 15.4 10 15.4 1.8 10 1.8 10Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="10" cy="10" r="2.5" stroke={color} strokeWidth="1.5" />
+      {!on && <path d="M3.5 3.5 16.5 16.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />}
+    </svg>
+  );
+}
+
+// DS ships no isolate/foreground glyph (see DS-UPDATES item 8) — drawn inline: two
+// overlapping rounded squares, the front one hatched.
+function MeIsolateGlyph({ size = 15, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flex: "none" }}>
+      <defs>
+        <clipPath id="me-iso-clip"><rect x="1.5" y="1.5" width="11" height="11" rx="2.5" /></clipPath>
+      </defs>
+      <g clipPath="url(#me-iso-clip)" stroke={color} strokeWidth="1.1">
+        <path d="M-2 6 6 -2M-2 11 11 -2M-2 16 16 -2M3 16 16 3M8 16 16 8" />
+      </g>
+      <rect x="1.5" y="1.5" width="11" height="11" rx="2.5" stroke={color} strokeWidth="1.5" />
+      <path d="M7.5 12.5v3.5a2.5 2.5 0 0 0 2.5 2.5h6a2.5 2.5 0 0 0 2.5-2.5v-6a2.5 2.5 0 0 0-2.5-2.5h-3.5"
+        stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// DS ships no sparkle / generate glyph (see DS-UPDATES) — drawn inline.
+function MeSparkleGlyph({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill={color} aria-hidden="true" style={{ flex: "none" }}>
+      <path d="M7.4 2.2 8.7 6 12.5 7.3 8.7 8.6 7.4 12.4 6.1 8.6 2.3 7.3 6.1 6z" />
+      <path d="M14.4 2 15 3.9 16.9 4.5 15 5.1 14.4 7 13.8 5.1 11.9 4.5 13.8 3.9z" />
+      <path d="M13.7 11.6 14.4 13.6 16.4 14.3 14.4 15 13.7 17 13 15 11 14.3 13 13.6z" />
+    </svg>
+  );
+}
+
+function MeChevronBtn({ open, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={open ? "Collapse" : "Expand"} title={open ? "Collapse" : "Expand"}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name="chevronRight" size={14} rotate={open ? 90 : 0} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+}
+
+function MeIsolateBtn({ on, onClick, scope = "part" }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={on ? "Exit " + scope + " isolation" : "Isolate " + scope} title={on ? "Exit " + scope + " isolation" : "Isolate " + scope}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: on ? "var(--kls-tertiary-container)" : hover ? "var(--kls-tertiary)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <MeIsolateGlyph color={on ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)"} />
+    </button>
+  );
+}
+
+function MeEyeBtn({ on, onClick, scope = "part" }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={on ? "Hide " + scope : "Show " + scope} title={on ? "Hide " + scope : "Show " + scope}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 24, height: 24, borderRadius: 8, border: "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "transparent", opacity: on ? 1 : 0.55 }}>
+      <MeEyeGlyph on={on} color="var(--kls-on-surface-variant)" />
+    </button>
+  );
+}
+
+function MeField({ label, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+      <span style={ME_LABEL}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function MeInput({ value, onChange, placeholder }) {
+  const [focus, setFocus] = useState(false);
+  return (
+    <input value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+      style={{ height: 48, boxSizing: "border-box", width: "100%", padding: "0 var(--kls-space-small)", borderRadius: 8,
+        border: "1px solid " + (focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
+        background: "transparent", outline: "none", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+        color: "var(--kls-on-surface)", transition: "border-color 125ms var(--kls-ease-standard)" }} />
+  );
+}
+
+function MeToggle({ label, on, onChange }) {
+  return (
+    <div onClick={() => onChange(!on)} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", cursor: "pointer" }}>
+      <span style={{ width: 44, height: 26, borderRadius: 999, flex: "none", padding: 2, boxSizing: "border-box",
+        background: on ? "var(--kls-primary)" : "var(--kls-outline-variant)",
+        transition: "background var(--kls-dur-fade-animation) var(--kls-ease-standard)", display: "inline-flex" }}>
+        <span style={{ width: 22, height: 22, borderRadius: 999, background: "var(--kls-surface)",
+          transform: on ? "translateX(18px)" : "translateX(0)",
+          transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }} />
+      </span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{label}</span>
+    </div>
+  );
+}
+
+function MePanelSection({ title, trailing, collapsible, open, onToggle, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div onClick={collapsible ? onToggle : undefined}
+        style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", cursor: collapsible ? "pointer" : "default" }}>
+        {collapsible && <KlsIcon name="chevronDown" size={16} rotate={open ? 180 : 0} color="var(--kls-on-surface-variant)" />}
+        <span style={ME_LABEL}>{title}</span>
+        <div style={{ flex: 1 }} />
+        {trailing}
+      </div>
+      {(!collapsible || open) && children}
+    </div>
+  );
+}
+
+function MeSwitch({ on, onChange, label }) {
+  return (
+    <span onClick={(e) => { e.stopPropagation(); onChange(!on); }}
+      style={{ display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)", cursor: "pointer" }}>
+      {label && <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{label}</span>}
+      <span style={{ width: 36, height: 20, borderRadius: 999, flex: "none", padding: 2, boxSizing: "border-box",
+        background: on ? "var(--kls-primary)" : "var(--kls-outline-variant)",
+        transition: "background var(--kls-dur-fade-animation) var(--kls-ease-standard)", display: "inline-flex" }}>
+        <span style={{ width: 16, height: 16, borderRadius: 999, background: "var(--kls-surface)",
+          transform: on ? "translateX(16px)" : "translateX(0)",
+          transition: "transform var(--kls-dur-fade-animation) var(--kls-ease-standard)" }} />
+      </span>
+    </span>
+  );
+}
+
+function MeMetricRow({ label, value }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: "var(--kls-space-small)" }}>
+      <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{value}</span>
+    </div>
+  );
+}
+
+function MeSlider({ label, value, onChange }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+      <span style={{ textAlign: "center", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{label}</span>
+      <input type="range" min="0" max="100" value={Math.round(value * 100)}
+        onChange={(e) => onChange(Number(e.target.value) / 100)}
+        style={{ width: "100%", accentColor: "var(--kls-primary)" }} />
+    </div>
+  );
+}
+
+const ME_BGS = [
+  { value: "var(--kls-surface-container-lowest)", label: "Studio" },
+  { value: "#0B1030", label: "Navy" },
+  { value: "#0E0F11", label: "Black" },
+  { value: "#E8EAED", label: "Paper" },
+];
+
+function MeSwatch({ value, label, active, onClick }) {
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      style={{ width: 32, height: 32, borderRadius: 8, cursor: "pointer", padding: 0, flex: "none", background: value,
+        border: "2px solid " + (active ? "var(--kls-primary)" : "var(--kls-outline-variant)") }} />
+  );
+}
+
+function MeButton({ children, onClick, tone, full }) {
+  const [hover, setHover] = useState(false);
+  const primary = tone === "primary";
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", width: full ? "100%" : undefined,
+        border: primary ? "none" : "1px solid var(--kls-outline-variant)",
+        background: primary ? "var(--kls-tertiary-container)" : hover ? "var(--kls-tertiary)" : "transparent",
+        color: primary ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface)",
+        fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700, gap: "var(--kls-space-xsmall)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap",
+        opacity: primary && hover ? 0.92 : 1, transition: "background 125ms var(--kls-ease-standard)" }}>{children}</button>
+  );
+}
+
+function MeCircleBtn({ label, onClick, children, size = 36, bordered = true }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: size, height: size, borderRadius: 9999, flex: "none", padding: 0, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-tertiary)" : "var(--kls-surface)",
+        border: bordered ? "1px solid var(--kls-outline)" : "none", color: "var(--kls-on-surface)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <svg viewBox="0 0 24 24" style={{ width: size / 2, height: size / 2, stroke: "currentColor", fill: "none", strokeWidth: 1.6 }}>{children}</svg>
+    </button>
+  );
+}
+
+function MeIconBtn({ icon, label, onClick, rotate, size, surface, color }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: (size || 16) >= 20 ? 40 : 32, height: (size || 16) >= 20 ? 40 : 32,
+        borderRadius: 8, border: surface ? "1px solid transparent" : "none", padding: 0, cursor: "pointer", flex: "none",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: surface ? "var(--kls-tertiary-container)" : (hover ? "var(--kls-tertiary)" : "transparent"),
+        opacity: surface && hover ? 0.88 : 1,
+        transition: "background 125ms var(--kls-ease-standard), opacity 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name={icon} size={size || 16} rotate={rotate || 0} color={color || (surface ? "var(--kls-on-tertiary-container)" : "var(--kls-on-surface-variant)")} />
+    </button>
+  );
+}
+
+// ── three.js viewport ────────────────────────────────────────────────
+function MeViewport({ parts, scene: sc, playing, motion, onPickPart, selectedPart, selectedIds, onCamera, onMetrics, resetKey }) {
+  const hostRef = useRef(null);
+  const stateRef = useRef({});
+  const scRef = useRef(sc);
+  const playRef = useRef({ playing, motion });
+  scRef.current = sc; playRef.current = { playing, motion };
+  const partsRef = useRef(parts); partsRef.current = parts;
+  const pickRef = useRef(onPickPart); pickRef.current = onPickPart;
+  const selRef = useRef(selectedPart); selRef.current = selectedPart;
+  const selIdsRef = useRef(selectedIds || []); selIdsRef.current = selectedIds || [];
+  const camRef = useRef(onCamera); camRef.current = onCamera;
+  const metricsRef = useRef(onMetrics); metricsRef.current = onMetrics;
+
+  useEffect(() => {
+    const THREE = window.THREE;
+    const host = hostRef.current;
+    if (!THREE || !host) return;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    host.appendChild(renderer.domElement);
+    renderer.domElement.style.display = "block";
+    renderer.domElement.style.cursor = "grab";
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x30343c, 1.05); scene.add(hemi);
+    const key = new THREE.DirectionalLight(0xffffff, 1.15); key.position.set(5, 8, 6); scene.add(key);
+    const fill = new THREE.DirectionalLight(0x9db6d8, 0.45); fill.position.set(-6, -2, -4); scene.add(fill);
+    const grid = new THREE.GridHelper(16, 16, 0x3a4048, 0x2a2f36);
+    grid.position.y = -2.4; scene.add(grid);
+
+    const group = new THREE.Group(); scene.add(group);
+    const meshes = {};
+    const geomFor = (p) => {
+      if (p.geom === "cone")   return new THREE.ConeGeometry(0.75, 1.4, 28);
+      if (p.geom === "shell")  return new THREE.CylinderGeometry(1.5, 1.5, 3.4, 40, 1, true);
+      if (p.geom === "shaft")  return new THREE.CylinderGeometry(0.28, 0.28, 4.4, 20);
+      if (p.geom === "blades") return new THREE.TorusGeometry(1.05, 0.24, 12, 28);
+      if (p.geom === "hub")    return new THREE.CylinderGeometry(0.7, 0.7, 0.5, 26);
+      if (p.geom === "tire")   return new THREE.TorusGeometry(0.95, 0.34, 14, 30);
+      if (p.geom === "arm")    return new THREE.BoxGeometry(1.6, 0.22, 0.22);
+      return new THREE.BoxGeometry(0.9, 0.6, 0.9);
+    };
+    partsRef.current.forEach((p) => {
+      const g = geomFor(p);
+      const m = new THREE.MeshStandardMaterial({ color: new THREE.Color(p.color), roughness: 0.55, metalness: 0.35, side: THREE.DoubleSide });
+      const mesh = new THREE.Mesh(g, m);
+      if (p.geom === "cone") mesh.rotation.x = Math.PI / 2;
+      if (p.geom === "shell" || p.geom === "shaft") mesh.rotation.x = Math.PI / 2;
+      if (p.geom === "arm") mesh.rotation.z = Math.PI / 5;
+      mesh.userData.part = p;
+      mesh.userData.base = new THREE.Vector3(p.pos[0], p.pos[1], p.pos[2]);
+      mesh.userData.dir = new THREE.Vector3(p.dir[0], p.dir[1], p.dir[2]).normalize();
+      mesh.position.copy(mesh.userData.base);
+      group.add(mesh); meshes[p.id] = mesh;
+    });
+
+    const pins = new THREE.Group(); scene.add(pins);
+
+    // hand-rolled orbit (no OrbitControls in the UMD build)
+    let drag = null;
+    const cam = { ...scRef.current.camera };
+    let fitDist = 9;
+    const applyCam = () => {
+      const d = cam.dist * (fitDist / 9);
+      camera.position.set(
+        d * Math.cos(cam.el) * Math.sin(cam.az),
+        d * Math.sin(cam.el),
+        d * Math.cos(cam.el) * Math.cos(cam.az));
+      camera.lookAt(0, 0, 0);
+    };
+    const onDown = (e) => { drag = { x: e.clientX, y: e.clientY, moved: false }; renderer.domElement.style.cursor = "grabbing"; };
+    const onMove = (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      drag.x = e.clientX; drag.y = e.clientY;
+      cam.az -= dx * 0.006;
+      cam.el = Math.max(-1.35, Math.min(1.35, cam.el + dy * 0.006));
+      applyCam();
+    };
+    const onUp = (e) => {
+      if (!drag) return; // only respond to gestures that began on the canvas
+      const wasDrag = drag.moved;
+      drag = null; renderer.domElement.style.cursor = "grab";
+      if (wasDrag) { camRef.current && camRef.current({ ...cam }); return; }
+      const r = renderer.domElement.getBoundingClientRect();
+      const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      const ray = new THREE.Raycaster(); ray.setFromCamera(ndc, camera);
+      const hits = ray.intersectObjects(group.children.filter((m) => m.visible), false);
+      pickRef.current && pickRef.current(hits.length ? hits[0].object.userData.part.id : null);
+    };
+    const onWheel = (e) => { e.preventDefault(); cam.dist = Math.max(4, Math.min(20, cam.dist + e.deltaY * 0.01)); applyCam(); camRef.current && camRef.current({ ...cam }); };
+    renderer.domElement.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
+
+    const resize = () => {
+      const w = host.clientWidth, h = host.clientHeight;
+      renderer.setSize(w, h); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+      fitDist = 9 * Math.max(1, 1.35 / Math.max(0.55, camera.aspect)); applyCam();
+    };
+    const ro = new ResizeObserver(resize); ro.observe(host); resize(); applyCam();
+
+    let raf = 0, t0 = performance.now(), spin = 0, anim = 0, lastMetrics = "";
+    const tick = () => {
+      const now = performance.now(), dt = (now - t0) / 1000; t0 = now;
+      const s = scRef.current, play = playRef.current;
+      if (play.playing) {
+        anim = Math.min(1, anim + dt / 3);
+        if (play.motion === "spin") spin += dt * 1.6;
+      } else { anim = 0; }
+      hemi.intensity = 0.35 + (s.ambient == null ? 0.5 : s.ambient) * 1.6;
+      key.intensity = 0.2 + (s.directional == null ? 0.75 : s.directional) * 1.8;
+      const explodeAmt = play.playing && play.motion !== "spin" ? anim : s.explode;
+      group.rotation.y = play.motion === "spin" ? spin : 0;
+      Object.keys(meshes).forEach((id) => {
+        const mesh = meshes[id];
+        const iso = s.isolate ? (s.isolateIds && s.isolateIds.length ? s.isolateIds : (selRef.current ? [selRef.current] : null)) : null;
+        const isolated = !!iso && iso.indexOf(id) < 0;
+        const hidden = s.hidden.indexOf(id) >= 0 || isolated;
+        mesh.visible = !hidden;
+        mesh.position.copy(mesh.userData.base).addScaledVector(mesh.userData.dir, explodeAmt * 2.6);
+        const isShell = mesh.userData.part.geom === "shell";
+        mesh.material.wireframe = !!s.wireframe;
+        mesh.material.transparent = s.cutaway && isShell;
+        mesh.material.opacity = s.cutaway && isShell ? 0.18 : 1;
+        const sel = selRef.current === id || selIdsRef.current.indexOf(id) >= 0;
+        mesh.material.emissive = mesh.material.emissive || new THREE.Color(0, 0, 0);
+        mesh.material.emissive.setHex(sel ? 0x2b4f77 : 0x000000);
+      });
+      // measured dimensions of the current selection (or the whole model)
+      const key2 = (selRef.current || selIdsRef.current.join("+") || "all") + "|" + s.hidden.join(",")
+        + "|" + (s.isolate ? 1 : 0) + "|" + ((s.isolateIds || []).join(","));
+      if (key2 !== lastMetrics) {
+        lastMetrics = key2;
+        const box = new THREE.Box3();
+        const selIds = selRef.current ? [selRef.current] : selIdsRef.current;
+        const picked = selIds.map((id) => meshes[id]).filter(Boolean);
+        const target = picked.length ? picked : group.children.filter((m) => m.visible);
+        target.forEach((m) => box.expandByObject(m));
+        if (!box.isEmpty()) {
+          const size = box.getSize(new THREE.Vector3());
+          metricsRef.current && metricsRef.current({ w: size.x * 100, h: size.y * 100, d: size.z * 100 });
+        }
+      }
+      // hotspot pins, anchored to their part
+      while (pins.children.length) pins.remove(pins.children[0]);
+      (s.showAnnotations === false ? [] : (s.annotations || [])).forEach((h) => {
+        const anchor = meshes[h.partId];
+        if (!anchor || !anchor.visible) return;
+        const pin = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12),
+          new THREE.MeshBasicMaterial({ color: 0xf0a13c }));
+        pin.position.copy(anchor.position).add(new THREE.Vector3(0, 1.25, 0));
+        pins.add(pin);
+      });
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+
+    stateRef.current = { setCam: (c) => { cam.az = c.az; cam.el = c.el; cam.dist = c.dist; applyCam(); } };
+
+    return () => {
+      cancelAnimationFrame(raf); ro.disconnect();
+      renderer.domElement.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      renderer.domElement.removeEventListener("wheel", onWheel);
+      renderer.dispose();
+      if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
+    };
+  }, []);
+
+  // external camera changes (loading a saved view / Reset View)
+  useEffect(() => { stateRef.current.setCam && stateRef.current.setCam(sc.camera); }, [sc.id, sc.camera.az, sc.camera.el, sc.camera.dist, resetKey]);
+
+  return <div ref={hostRef} style={{ position: "absolute", inset: 0, background: sc.bg || "var(--kls-surface-container-lowest)", transition: "background 250ms var(--kls-ease-standard)" }} />;
+}
+
+function MeDraftDialog({ draft, onChange, onCancel, onSave }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1800, display: "flex", alignItems: "center", justifyContent: "center",
+      background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+          background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>
+          {draft.mode === "create" ? "Create new draft" : "Edit draft description"}
+        </div>
+
+        {draft.mode === "create" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <span style={ME_LABEL}>Forked from</span>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{draft.base}</span>
+          </div>
+        )}
+
+        <MeField label="Description (optional)">
+          <textarea value={draft.desc || ""} rows={3} placeholder="What changes in this draft?"
+            onChange={(e) => onChange({ ...draft, desc: e.target.value })}
+            style={{ width: "100%", boxSizing: "border-box", padding: "var(--kls-space-small)", borderRadius: 8, resize: "vertical",
+              border: "1px solid var(--kls-outline-variant)", background: "transparent", outline: "none", lineHeight: 1.45,
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+        </MeField>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <MeButton tone="primary" onClick={onSave}>{draft.mode === "create" ? "Create draft" : "Save"}</MeButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MeSceneDialog({ draft, onChange, onCancel, onSave }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center",
+      background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+          background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Edit Scene</div>
+
+        <MeField label="Scene Name">
+          <MeInput value={draft.name} onChange={(v) => onChange({ ...draft, name: v })} />
+        </MeField>
+
+        <MeField label="Description (optional)">
+          <textarea value={draft.description || ""} rows={3} placeholder="Enter description"
+            onChange={(e) => onChange({ ...draft, description: e.target.value })}
+            style={{ width: "100%", boxSizing: "border-box", padding: "var(--kls-space-small)", borderRadius: 8, resize: "vertical",
+              border: "1px solid var(--kls-outline-variant)", background: "transparent", outline: "none", lineHeight: 1.45,
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+        </MeField>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <MeButton tone="primary" onClick={onSave}>Save</MeButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MeAnnotationDialog({ draft, onChange, onCancel, onAdd }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center",
+      background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+          background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Add Annotation</div>
+
+        <MeField label="Label">
+          <MeInput value={draft.label} placeholder="Enter annotation label" onChange={(v) => onChange({ ...draft, label: v })} />
+        </MeField>
+
+        <MeField label="Description (optional)">
+          <textarea value={draft.text || ""} rows={3} placeholder="Enter description"
+            onChange={(e) => onChange({ ...draft, text: e.target.value })}
+            style={{ width: "100%", boxSizing: "border-box", padding: "var(--kls-space-small)", borderRadius: 8, resize: "vertical",
+              border: "1px solid var(--kls-outline-variant)", background: "transparent", outline: "none", lineHeight: 1.45,
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+        </MeField>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+          <MeButton onClick={onCancel}>Cancel</MeButton>
+          <MeButton tone="primary" onClick={onAdd}>Add</MeButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Animation steps — an animation is a sequence of staged moments over the model.
+const ME_ANIM_STEP_SETS = {
+  explode: [
+    { name: "Hold assembled", desc: "Full assembly at rest, camera framed on the model" },
+    { name: "Separate outer housing", desc: "Covers and fairings translate clear of the core" },
+    { name: "Expand mid stage", desc: "Mid-stage assemblies fan out along their axes" },
+    { name: "Reveal core", desc: "Inner components settle at full separation" },
+    { name: "Reassemble", desc: "Every assembly returns to its seated position" },
+  ],
+  spin: [
+    { name: "Spin up", desc: "Rotating assembly accelerates to working speed" },
+    { name: "Steady state", desc: "Constant rotation — the working condition" },
+    { name: "Highlight drive path", desc: "Driven components isolate against the housing" },
+    { name: "Spin down", desc: "Rotation decays back to rest" },
+  ],
+  retract: [
+    { name: "Unlock", desc: "Downlocks release and the actuator pressurizes" },
+    { name: "Retract", desc: "Assembly travels through the full retraction arc" },
+    { name: "Stow and lock", desc: "Uplocks engage; doors close over the bay" },
+    { name: "Extend", desc: "Sequence reverses to the extended position" },
+  ],
+};
+function meAnimSteps(motion) { return ME_ANIM_STEP_SETS[motion] || ME_ANIM_STEP_SETS.explode; }
+
+function MeStepList({ steps, active }) {
+  return (
+    <div style={{ position: "absolute", left: "var(--kls-space-med)", top: "var(--kls-space-med)", width: 264,
+      background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+      boxShadow: "var(--kls-drop-shadow)", overflow: "hidden" }}>
+      <div style={{ padding: "var(--kls-space-small)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <span style={ME_LABEL}>Animation steps</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", padding: "var(--kls-space-xsmall)", gap: 2 }}>
+        {steps.map((s, i) => {
+          const on = i === active;
+          return (
+            <div key={s.name} style={{ display: "flex", gap: "var(--kls-space-xsmall)", padding: "var(--kls-space-xsmall)",
+              borderRadius: 8, background: on ? "var(--kls-surface-container-low)" : "transparent",
+              transition: "background 125ms var(--kls-ease-standard)" }}>
+              <span style={{ flex: "none", width: 20, height: 20, borderRadius: 999, marginTop: 1,
+                background: on ? "var(--kls-primary)" : "var(--kls-tertiary)",
+                color: on ? "var(--kls-on-primary)" : "var(--kls-on-surface-variant)",
+                fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+                display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 600,
+                  color: on ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)" }}>{s.name}</span>
+                <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.45,
+                  color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>{s.desc}</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ModelEditor({ node, onClose, backLabel, readOnly, onPublished }) {
+  const model = meOwnerModel(node) || node;
+  const parts = mePartsFor(model.id);
+  const kids = model.children || [];
+  const sceneDefs = kids.filter((c) => c.kind === "scene");
+  const animDefs = kids.filter((c) => c.kind === "animation");
+
+  const seed = () => (sceneDefs.length ? sceneDefs : [{ id: model.id + "-base", name: "Default view" }]).map((sc) => meSeedScene(sc, model.id));
+  const [scenes, setScenes] = useState(seed);
+  const seedAnims = () => animDefs.map((a) => ({ ...a }));
+  const [anims, setAnims] = useState(seedAnims);
+  const [scenesOpen, setScenesOpen] = useState(true);
+  const [animsOpen, setAnimsOpen] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+  const [selGroup, setSelGroup] = useState(null);
+  const [verOpen, setVerOpen] = useState(false);
+  const [verMap, setVerMap] = useState({});
+  const [verPreview, setVerPreview] = useState(null);
+  const [verDraft, setVerDraft] = useState(null);
+  const [orion, setOrion] = useState(false);
+  const versionsFor = (key) => verMap[key] || meSeedVersions(key);
+  const setVersionsFor = (key, list) => setVerMap((m) => ({ ...m, [key]: list }));
+  const addScene = () => {
+    const s = meSeedScene({ id: model.id + "-s" + Date.now(), name: "New scene" }, model.id);
+    setScenes((cur) => cur.concat([s]));
+    setDirty(true);
+    setSel({ type: "scene", id: s.id });
+    setPlaying(false);
+  };
+  const addAnim = () => {
+    if (locked) return;
+    const a = { id: model.id + "-a" + Date.now(), kind: "animation", name: "New animation", duration: "0:00", steps: 0 };
+    setAnims((cur) => cur.concat([a]));
+    setDirty(true);
+    setSel({ type: "animation", id: a.id });
+    setPlaying(false);
+  };
+  const [generating, setGenerating] = useState(false);
+  const generateAnim = () => {
+    if (locked || generating) return;
+    setGenerating(true);
+    setTimeout(() => {
+      const n = anims.length + 1;
+      const a = { id: model.id + "-gen" + Date.now(), kind: "animation", name: "Generated sequence " + n,
+        duration: "0:" + String(6 + parts.length).padStart(2, "0"), steps: parts.length };
+      setAnims((cur) => cur.concat([a]));
+      setDirty(true); setSaved(false);
+      setSel({ type: "animation", id: a.id });
+      setPlaying(false);
+      setGenerating(false);
+    }, 900);
+  };
+  const removeAnim = (id) => {
+    if (locked) return;
+    setAnims((cur) => cur.filter((a) => a.id !== id));
+    setDirty(true);
+    setSel((cur) => (cur.type === "animation" && cur.id === id ? { type: "scene", id: scenes[0].id } : cur));
+    setPlaying(false);
+  };
+  // Linked scenes are published versions: viewing is allowed, editing requires a new draft.
+  const [mode, setMode] = useState("view");
+  const locked = mode === "view";
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(false);
+  const [publishAsk, setPublishAsk] = useState(false);
+  const [leaveNote, setLeaveNote] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [stepIdx, setStepIdx] = useState(0);
+  const [selPart, setSelPart] = useState(null);
+  const liveCam = useRef(null);
+  const [metrics, setMetrics] = useState(null);
+  const [groupsOpen, setGroupsOpen] = useState(true);
+  const [viewOpen, setViewOpen] = useState(true);
+  const [annOpen, setAnnOpen] = useState(true);
+  const [dimOpen, setDimOpen] = useState(true);
+  const [resetKey, setResetKey] = useState(0);
+  const [sceneDraft, setSceneDraft] = useState(null);
+  const [annDraft, setAnnDraft] = useState(null);
+  const [sel, setSel] = useState(() => {
+    if (node.kind === "animation") return { type: "animation", id: node.id };
+    if (node.kind === "scene") return { type: "scene", id: node.id };
+    return { type: "scene", id: sceneDefs.length ? sceneDefs[0].id : model.id + "-base" };
+  });
+
+  const activeSceneId = sel.type === "scene" ? sel.id : (scenes[0] ? scenes[0].id : null);
+  const activeScene = scenes.find((s) => s.id === activeSceneId) || scenes[0] || meSeedScene({ id: "none", name: model.name }, model.id);
+  const activeAnim = sel.type === "animation" ? anims.find((a) => a.id === sel.id) : null;
+  const motion = activeAnim ? (ME_MOTIONS[activeAnim.name] || "explode") : "explode";
+  const animSteps = meAnimSteps(motion);
+  useEffect(() => { setStepIdx(0); }, [sel.id, playing]);
+  useEffect(() => {
+    if (!playing || sel.type !== "animation") return;
+    const id = setInterval(() => setStepIdx((i) => (i + 1) % animSteps.length), 1800);
+    return () => clearInterval(id);
+  }, [playing, sel.type, sel.id, animSteps.length]);
+
+  const patch = (fn) => {
+    if (locked) return;
+    setScenes((prev) => prev.map((s) => (s.id === activeScene.id ? { ...s, ...fn(s) } : s))); setDirty(true); setSaved(false);
+  };
+  // Isolation has ONE source of truth: activeScene.isolate + the selected part
+  // (the viewport already reads both). The tree button and the inspector's
+  // Isolate switch are two views of that same state.
+  const isoIds = activeScene.isolate ? (activeScene.isolateIds && activeScene.isolateIds.length
+    ? activeScene.isolateIds : (selPart ? [selPart] : [])) : [];
+  const isolatedId = isoIds.length === 1 ? isoIds[0] : null;
+  const sameSet = (a, b) => a.length === b.length && a.every((x) => b.indexOf(x) >= 0);
+  const isolateSet = (ids) => {
+    if (activeScene.isolate && sameSet(isoIds, ids)) { patch(() => ({ isolate: false, isolateIds: [] })); return; }
+    patch(() => ({ isolate: true, isolateIds: ids }));
+  };
+  const toggleIsolate = (id) => { if (!(isoIds.length === 1 && isoIds[0] === id)) setSelPart(id); isolateSet([id]); };
+  const groupIsolated = (ids) => activeScene.isolate && sameSet(isoIds, ids);
+  const save = () => {
+    if (locked) return;
+    setDirty(false); setSaved(true); setSavedOnce(true); setTimeout(() => setSaved(false), 2400);
+    if (readOnly) setDraftSaved(true);
+  };
+  // Publishing from the top bar: the draft in view becomes the released version.
+  const publishNow = () => {
+    const target = sel.type === "animation" && activeAnim ? activeAnim : activeScene;
+    const list = versionsFor(target.id);
+    const cur = list.find((x) => x.id === verPreview && x.isDraft) || list.find((x) => x.isDraft);
+    const next = meNextVersionLabel(list);
+    if (cur) {
+      setVersionsFor(target.id, list.map((x) => (x.id === cur.id
+        ? { ...x, released: true, isDraft: false, wasReleased: false, label: next, ts: Date.now() }
+        : { ...x, released: false, wasReleased: x.wasReleased || x.released })));
+      setVerPreview(cur.id);
+    } else {
+      const v = { id: target.id + "-" + next, label: next, isDraft: false, desc: "", ts: Date.now(),
+        author: "You", released: true, wasReleased: false };
+      setVersionsFor(target.id, [v].concat(list.map((x) => ({ ...x, released: false, wasReleased: x.wasReleased || x.released }))));
+      setVerPreview(v.id);
+    }
+    setSavedOnce(false); setMode("view");
+    if (onPublished) onPublished({ node: target, version: next });
+  };
+  // Leaving a saved draft: the task still points at the published version.
+  const requestClose = () => {
+    if (readOnly && mode === "draft" && (draftSaved || dirty)) { setLeaveNote(true); return; }
+    onClose();
+  };
+  const startDraft = () => {
+    const key = sel.type === "animation" && activeAnim ? activeAnim.id : activeScene.id;
+    const list = versionsFor(key);
+    const viewed = list.find((x) => x.id === verPreview) || list.find((x) => x.released) || list[0];
+    setVerDraft({ mode: "create", key, base: viewed ? meVerTitle(viewed) : "", desc: "" });
+  };
+  const saveVerDraft = () => {
+    let key = verDraft.key;
+    let list = versionsFor(key);
+    if (verDraft.mode === "edit") {
+      setVersionsFor(key, list.map((x) => (x.id === verDraft.id ? { ...x, desc: verDraft.desc } : x)));
+      setVerDraft(null);
+      return;
+    }
+    // The Default view is immutable — drafting from it spawns a new scene instead.
+    if (isDefaultScene(activeScene) && sel.type === "scene") {
+      const s = { ...activeScene, id: model.id + "-s" + Date.now(), name: verDraft.desc || "New scene" };
+      setScenes((cur) => cur.concat([s]));
+      setSel({ type: "scene", id: s.id });
+      key = s.id;
+      list = [];
+    }
+    const nums = list.filter((x) => x.isDraft).map((x) => parseInt(String(x.label).replace(/^draft-/, ""), 10) || 0);
+    const n = (nums.length ? Math.max.apply(null, nums) : 0) + 1;
+    const v = { id: key + "-draft-" + Date.now(), label: "draft-" + n, isDraft: true, desc: verDraft.desc,
+      ts: Date.now(), author: "You", released: false, wasReleased: false };
+    setVersionsFor(key, [v].concat(list));
+    setVerPreview(v.id);
+    setMode("draft");
+    setVerDraft(null);
+    setVerOpen(false);
+  };
+  // Publishing from the leave dialog: the draft becomes the released version and the
+  // task picks it up — no version-history detour.
+  const publishDraft = () => {
+    const target = sel.type === "animation" && activeAnim ? activeAnim : activeScene;
+    const list = versionsFor(target.id);
+    const next = "v" + (list.length + 1);
+    setVersionsFor(target.id, [{ id: target.id + "-" + next, label: next, ts: Date.now(),
+      author: "You", released: true }].concat(list.map((x) => ({ ...x, released: false }))));
+    setDirty(false); setLeaveNote(false);
+    if (onPublished) onPublished({ node: target, version: next });
+    onClose();
+  };
+
+
+  const selectedPartDef = parts.find((p) => p.id === selPart) || null;
+
+  const addAnnotation = () => {
+    if (!selectedPartDef) return;
+    setAnnDraft({ partId: selectedPartDef.id, label: "", text: "" });
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--kls-scaffold-bg)", display: "flex", flexDirection: "column" }}>
+
+      {/* top bar */}
+      <div style={{ height: 64, flex: "none", boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        padding: "0 var(--kls-space-med)", background: "var(--kls-surface)", borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <MeCircleBtn label={backLabel || "Back to Library"} onClick={requestClose}>
+          <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{model.name}</span>
+            {dirty && <span title="Unsaved changes" style={{ width: 8, height: 8, borderRadius: 999, background: "var(--kls-primary)", flex: "none" }} />}
+          </div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+            Library · 3D Models · {sel.type === "animation" && activeAnim ? activeAnim.name : activeScene.name}
+          </div>
+        </div>
+        {saved && (
+          <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary-container)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-tertiary-container)", flex: "none" }}>Saved</span>
+        )}
+        <div style={{ flex: 1 }} />
+        {locked && (
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-accent-4)" }}>Read only · Published</span>
+        )}
+        <MeCircleBtn size={40} label="Version history" onClick={() => setVerOpen(true)}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7.5V12l3 1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        {locked ? (
+          <MeButton tone="primary" onClick={startDraft}>Create new draft</MeButton>
+        ) : (
+          <>
+            {readOnly && (
+              <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-primary-container)",
+                fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-primary-container)" }}>Editing new draft</span>
+            )}
+            {savedOnce && !dirty
+              ? <MeButton tone="primary" onClick={() => setPublishAsk(true)}>Publish</MeButton>
+              : <MeButton tone="primary" onClick={save}>Save</MeButton>}
+          </>
+        )}
+      </div>
+
+      <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+
+        {/* left: tree */}
+        <div style={{ width: 320, flex: "none", boxSizing: "border-box", overflowY: "auto", background: "var(--kls-surface)",
+          borderRight: "1px solid var(--kls-outline-variant)", padding: "var(--kls-space-small)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <MeSectionLabel collapsible open={scenesOpen} onToggle={() => setScenesOpen((o) => !o)}
+              action={<MeAddBtn label="Add scene" onClick={addScene} />}>Scenes</MeSectionLabel>
+            {scenesOpen && scenes.map((s) => (
+              <MeTreeRow key={s.id} icon="stack" label={s.name} active={sel.type === "scene" && sel.id === s.id}
+                onClick={() => { setSel({ type: "scene", id: s.id }); setPlaying(false); }}
+                trailing={locked || isDefaultScene(s) ? null : <MeIconBtn icon="pencil" label={"Edit " + s.name}
+                  onClick={(e) => { if (e) e.stopPropagation(); setSceneDraft({ id: s.id, name: s.name, description: s.description || "" }); }} />} />
+            ))}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            <MeSectionLabel collapsible open={animsOpen} onToggle={() => setAnimsOpen((o) => !o)}
+              action={<MeAddBtn label="Add animation" onClick={() => setOrion({ prefill: "Create a new animation" })} />}>Animations</MeSectionLabel>
+            {animsOpen && anims.length === 0 && <div style={{ padding: "0 var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 13, color: "var(--kls-on-surface-variant)" }}>None defined</div>}
+            {animsOpen && anims.map((a) => (
+              <MeTreeRow key={a.id} icon="play" label={a.name} sub={meStepCount(a) + (meStepCount(a) === 1 ? " step" : " steps")}
+                active={sel.type === "animation" && sel.id === a.id}
+                onClick={() => { setSel({ type: "animation", id: a.id }); setPlaying(false); }}
+                trailing={locked ? null : <MeDeleteBtn label={"Delete " + a.name} onClick={() => removeAnim(a.id)} />} />
+            ))}
+            {animsOpen && <div style={{ marginTop: "var(--kls-space-xsmall)", paddingTop: "var(--kls-space-small)",
+              borderTop: "1px solid var(--kls-outline-variant)" }}>
+              <div style={{ padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)" }}>
+                <span style={{ float: "left", marginRight: "var(--kls-space-xsmall)", display: "inline-flex", alignItems: "center" }}>
+                  <KlsIcon name="orionLogo" size={16} color="var(--kls-on-surface)" />
+                </span>
+                <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, lineHeight: 1.5,
+                  color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+                  Tip: Orion can build these for you. Ask it for a new scene, an exploded or cutaway view, or a full animation sequence — then refine it here.
+                </span>
+              </div>
+            </div>}
+          </div>
+
+        </div>
+
+        {/* center: viewport */}
+        <div style={{ flex: 1, minWidth: 0, position: "relative", overflow: "hidden", background: "var(--kls-surface-container-lowest)" }}>
+          <MeViewport parts={parts} scene={activeScene} playing={playing} motion={motion}
+            selectedPart={selPart} selectedIds={selGroup ? parts.filter((p) => p.group === selGroup).map((p) => p.id) : []}
+            onPickPart={(id) => { setSelPart(id); setSelGroup(null); }}
+            onCamera={(c) => { liveCam.current = c; }} onMetrics={setMetrics} resetKey={resetKey} />
+
+          <div style={{ position: "absolute", left: "var(--kls-space-med)", bottom: "var(--kls-space-med)", display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+            {sel.type === "animation" && (
+              <MeButton onClick={() => setPlaying((p) => !p)}>{playing ? "Pause preview" : "Play preview"}</MeButton>
+            )}
+            <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-tertiary)" }}>
+              Drag to orbit · scroll to zoom · click a part to select
+            </span>
+          </div>
+
+          {sel.type === "animation" && activeAnim && (
+            <MeStepList steps={animSteps} active={stepIdx} />
+          )}
+
+          {selectedPartDef && (
+            <div style={{ position: "absolute", right: "var(--kls-space-med)", top: "var(--kls-space-med)",
+              padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8, background: "var(--kls-surface)",
+              border: "1px solid var(--kls-outline-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600,
+              color: "var(--kls-on-surface)" }}>{selectedPartDef.name}</div>
+          )}
+        </div>
+
+        {/* right: inspector */}
+        <div style={{ width: 320, flex: "none", boxSizing: "border-box", overflowY: "auto", background: "var(--kls-surface)",
+          borderLeft: "1px solid var(--kls-outline-variant)", padding: "var(--kls-space-med)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-med)",
+          pointerEvents: locked ? "none" : "auto", opacity: locked ? 0.72 : 1 }}>
+
+          {sel.type === "animation" && activeAnim ? (
+            <>
+              {!locked && (
+                <MeButton tone="primary" full onClick={() => setOrion({ prefill: "Make changes to " + activeAnim.name })}>
+                  <KlsIcon name="orionLogo" size={16} color="currentColor" />Edit with Orion
+                </MeButton>
+              )}
+              <MeField label="Animation name">
+                <MeInput value={activeAnim.name}
+                  onChange={(v) => { setAnims((prev) => prev.map((a) => (a.id === activeAnim.id ? { ...a, name: v } : a))); setDirty(true); setSaved(false); }} />
+              </MeField>
+              <MeField label="Duration">
+                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{activeAnim.duration || "—"}</div>
+              </MeField>
+              <MeField label="Base scene">
+                <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>{activeScene.name}</div>
+              </MeField>
+              <div style={{ padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-tertiary)",
+                fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-tertiary)", lineHeight: 1.5 }}>
+                Ask Orion to retime, reorder, or restage this sequence. Keyframe editing lands in part 2 — for now this previews the motion against the selected scene.
+              </div>
+            </>
+          ) : (
+            <>
+              <MeField label={"Explode — " + Math.round(activeScene.explode * 100) + "%"}>
+                <input type="range" min="0" max="100" value={Math.round(activeScene.explode * 100)}
+                  onChange={(e) => patch(() => ({ explode: Number(e.target.value) / 100 }))}
+                  style={{ width: "100%", accentColor: "var(--kls-primary)" }} />
+              </MeField>
+
+              <MePanelSection title="Annotations" collapsible open={annOpen} onToggle={() => setAnnOpen((o) => !o)}
+                trailing={<MeSwitch on={activeScene.showAnnotations !== false} onChange={(v) => patch(() => ({ showAnnotations: v }))} />}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+                  {activeScene.annotations.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)",
+                      fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>No Annotations Yet</div>
+                  )}
+                  {activeScene.annotations.map((a) => (
+                    <div key={a.id} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)", padding: "var(--kls-space-small)",
+                      borderRadius: 8, border: "1px solid var(--kls-outline-variant)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                        <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, letterSpacing: "0.08em",
+                          textTransform: "uppercase", color: "var(--kls-on-surface-variant)" }}>{(parts.find((p) => p.id === a.partId) || {}).name || "Model"}</span>
+                        <MeIconBtn icon="trash" label="Remove annotation" onClick={() => patch((s) => ({ annotations: s.annotations.filter((x) => x.id !== a.id) }))} />
+                      </div>
+                      {a.label && (
+                        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)" }}>{a.label}</div>
+                      )}
+                      <textarea value={a.text} rows={2} placeholder="What should the student notice?"
+                        onChange={(e) => patch((s) => ({ annotations: s.annotations.map((x) => (x.id === a.id ? { ...x, text: e.target.value } : x)) }))}
+                        style={{ border: "none", outline: "none", background: "transparent", resize: "vertical", lineHeight: 1.45,
+                          fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+                    </div>
+                  ))}
+                  <MeButton onClick={addAnnotation}>{selectedPartDef ? "Annotate " + selectedPartDef.name : "Select a part to annotate"}</MeButton>
+                </div>
+              </MePanelSection>
+
+
+              <MePanelSection title="Assemblies" collapsible open={groupsOpen} onToggle={() => setGroupsOpen((o) => !o)}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                  {[...new Set(parts.map((p) => p.group))].map((g) => {
+                    const members = parts.filter((p) => p.group === g);
+                    const ids = members.map((p) => p.id);
+                    const allHidden = ids.every((id) => activeScene.hidden.indexOf(id) >= 0);
+                    const gIsolated = groupIsolated(ids);
+                    const collapsed = !!collapsedGroups[g];
+                    const gDimmed = allHidden || (activeScene.isolate && !gIsolated && !ids.some((id) => isoIds.indexOf(id) >= 0));
+                    return (
+                      <div key={g} style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                        <MeTreeRow icon="stack" label={g} muted={gDimmed} active={selGroup === g}
+                          sub={members.length === 1 ? "1 part" : members.length + " parts"}
+                          onClick={() => { setSelGroup(selGroup === g ? null : g); setSelPart(null); }}
+                          trailing={
+                            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-tiny)", flex: "none" }}>
+                              <MeChevronBtn open={!collapsed} onClick={() => setCollapsedGroups((c) => ({ ...c, [g]: !c[g] }))} />
+                              <MeIsolateBtn scope="group" on={gIsolated} onClick={() => { setSelGroup(g); setSelPart(null); isolateSet(ids); }} />
+                              <MeEyeBtn scope="group" on={!allHidden} onClick={() => patch((sc2) => ({
+                                hidden: allHidden ? sc2.hidden.filter((x) => ids.indexOf(x) < 0) : [...new Set(sc2.hidden.concat(ids))] }))} />
+                            </div>
+                          } />
+                        {!collapsed && members.map((p) => {
+                          const hidden = activeScene.hidden.indexOf(p.id) >= 0;
+                          const dimmed = hidden || (activeScene.isolate && isoIds.indexOf(p.id) < 0);
+                          return (
+                            <MeTreeRow key={p.id} icon="cube" label={p.name} indent muted={dimmed} active={selPart === p.id}
+                              onClick={() => { setSelPart(selPart === p.id ? null : p.id); setSelGroup(null); }}
+                              trailing={
+                                <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-tiny)", flex: "none" }}>
+                                  <MeIsolateBtn on={isolatedId === p.id} onClick={() => { setSelGroup(null); toggleIsolate(p.id); }} />
+                                  <MeEyeBtn on={!hidden} onClick={() => patch((sc2) => ({
+                                    hidden: hidden ? sc2.hidden.filter((x) => x !== p.id) : sc2.hidden.concat([p.id]) }))} />
+                                </div>
+                              } />
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </MePanelSection>
+
+              <MePanelSection title="View Options" collapsible open={viewOpen} onToggle={() => setViewOpen((o) => !o)}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+                    <div style={{ display: "flex", gap: "var(--kls-space-xsmall)" }}>
+                      {ME_BGS.map((b) => (
+                        <MeSwatch key={b.value} value={b.value} label={b.label + " background"}
+                          active={(activeScene.bg || ME_BGS[0].value) === b.value} onClick={() => patch(() => ({ bg: b.value }))} />
+                      ))}
+                    </div>
+                    <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>Background Color</span>
+                  </div>
+                  <MeSlider label="Ambient Light" value={activeScene.ambient == null ? 0.5 : activeScene.ambient}
+                    onChange={(v) => patch(() => ({ ambient: v }))} />
+                  <MeSlider label="Directional Light" value={activeScene.directional == null ? 0.75 : activeScene.directional}
+                    onChange={(v) => patch(() => ({ directional: v }))} />
+                  <div style={{ display: "flex" }}>
+                    <button onClick={() => { patch(() => ({ camera: { az: 0.9, el: 0.5, dist: 9 } })); setResetKey((k) => k + 1); }}
+                      style={{ flex: 1, height: 40, borderRadius: 8, cursor: "pointer", border: "1px solid var(--kls-outline-variant)",
+                        background: "transparent", color: "var(--kls-on-surface)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 700,
+                        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "var(--kls-space-xsmall)" }}>
+                      <KlsIcon name="refresh" size={15} color="var(--kls-on-surface)" />Reset View
+                    </button>
+                  </div>
+                </div>
+              </MePanelSection>
+
+              <MePanelSection title="Dimensions" collapsible open={dimOpen} onToggle={() => setDimOpen((o) => !o)}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                  <MeMetricRow label="Width"  value={metrics ? metrics.w.toFixed(2) : "—"} />
+                  <MeMetricRow label="Height" value={metrics ? metrics.h.toFixed(2) : "—"} />
+                  <MeMetricRow label="Depth"  value={metrics ? metrics.d.toFixed(2) : "—"} />
+                </div>
+              </MePanelSection>
+            </>
+          )}
+        </div>
+      </div>
+
+      {annDraft && (
+        <MeAnnotationDialog draft={annDraft} onChange={setAnnDraft} onCancel={() => setAnnDraft(null)}
+          onAdd={() => {
+            patch((s) => ({ annotations: s.annotations.concat([{ id: "a" + Date.now(), partId: annDraft.partId, label: annDraft.label, text: annDraft.text }]) }));
+            setAnnDraft(null);
+          }} />
+      )}
+
+      {sceneDraft && (
+        <MeSceneDialog draft={sceneDraft} onChange={setSceneDraft} onCancel={() => setSceneDraft(null)}
+          onSave={() => {
+            setScenes((prev) => prev.map((s) => (s.id === sceneDraft.id ? { ...s, name: sceneDraft.name, description: sceneDraft.description } : s)));
+            setDirty(true); setSaved(false); setSceneDraft(null);
+          }} />
+      )}
+
+      <TeOrionFab label="Model Assistant" onClick={() => setOrion(true)} />
+      {orion && (
+        <TeOrionDrawer onClose={() => setOrion(false)} title="Model Assistant"
+          initialMsg={orion && orion.prefill ? orion.prefill : ""}
+          greeting="Hi, what can I help you with today?  Ask me to create scenes and animations, or change the one you're viewing"
+          suggestions={ME_ORION_SUGGESTIONS.map((s) => (s.label === "Make changes to the current scene" && sel.type === "animation"
+            ? { ...s, label: "Make changes to the current animation", hint: "Retime, reorder, or restage the sequence", prompt: "Make changes to the current animation" }
+            : s))} />
+      )}
+
+      {publishAsk && (() => {
+        const isAnim = sel.type === "animation" && activeAnim;
+        const kind = isAnim ? "animation" : "scene";
+        const name = isAnim ? activeAnim.name : activeScene.name;
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1800, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={() => setPublishAsk(false)}>
+            <div onClick={(e) => e.stopPropagation()}
+              style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+                background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+                display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Publish {kind}?</div>
+              <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5,
+                color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+                {name} will be published as the released version of this {kind}. It becomes available in the Library and can be linked to Tasks.
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+                <MeButton onClick={() => setPublishAsk(false)}>Cancel</MeButton>
+                <MeButton tone="primary" onClick={() => { setPublishAsk(false); publishNow(); }}>Publish</MeButton>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {verDraft && (
+        <MeDraftDialog draft={verDraft} onChange={setVerDraft} onCancel={() => setVerDraft(null)} onSave={saveVerDraft} />
+      )}
+
+      {leaveNote && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "var(--kls-space-med)" }}>
+          <div style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+          <div style={{ position: "relative", width: "min(460px, 100%)", background: "var(--kls-surface)", borderRadius: 8,
+            boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column",
+            gap: "var(--kls-space-small)" }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+              {dirty ? "You have unsaved draft changes" : "Draft saved"}
+            </div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.55 }}>
+              {dirty
+                ? "Save the draft before leaving. Saved draft changes won’t be available in the task until the scene is published."
+                : "Your draft changes are saved, but they won’t be available in the task until this scene is published."}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-xsmall)", paddingTop: "var(--kls-space-tiny)" }}>
+              <MeButton onClick={() => setLeaveNote(false)}>Keep editing</MeButton>
+              <MeButton onClick={publishDraft}>Publish</MeButton>
+              <MeButton tone="primary" onClick={onClose}>{backLabel || "Back to Library"}</MeButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {verOpen && (() => {
+        const isAnim = sel.type === "animation" && activeAnim;
+        const key = isAnim ? activeAnim.id : activeScene.id;
+        const entity = { kindLabel: isAnim ? "Animation" : "Scene", name: isAnim ? activeAnim.name : activeScene.name };
+        const list = versionsFor(key);
+        return (
+          <MeVersionDrawer
+            entity={entity} versions={list} previewId={verPreview}
+            onClose={() => setVerOpen(false)}
+            onPreview={(v) => { setVerPreview(v.id); setMode(v.released ? "view" : (readOnly ? "draft" : "edit")); }}
+            onDelete={(v) => { setVersionsFor(key, list.filter((x) => x.id !== v.id)); if (verPreview === v.id) setVerPreview(null); }}
+            onEditDraft={(v) => setVerDraft({ mode: "edit", id: v.id, key, desc: v.desc || "" })}
+            onPublish={(v) => setVersionsFor(key, list.map((x) => (x.id === v.id
+              ? { ...x, released: true, wasReleased: false, isDraft: false, label: x.isDraft ? meNextVersionLabel(list) : x.label }
+              : { ...x, released: false, wasReleased: x.wasReleased || x.released })))}
+            onUnpublish={() => setVersionsFor(key, list.map((x) => ({ ...x, released: false, wasReleased: x.wasReleased || x.released })))} />
+        );
+      })()}
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// TASK EDITOR (web) — full-screen editor opened from a Catalog task row.
+// Steps rail · step canvas (instructions / notes / actions) · resources rail.
+// ════════════════════════════════════════════════════════════════════
+const TE_PATHS = {
+  back:    "M15 6l-6 6 6 6",
+  gear:    "M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM19.4 15a1.7 1.7 0 00.3 1.9l.1.1a1.6 1.6 0 11-2.3 2.3l-.1-.1a1.7 1.7 0 00-2.8 1.2v.2a1.6 1.6 0 11-3.2 0v-.1a1.7 1.7 0 00-2.9-1.2l-.1.1a1.6 1.6 0 11-2.3-2.3l.1-.1A1.7 1.7 0 003.9 14H3.7a1.6 1.6 0 110-3.2h.2A1.7 1.7 0 005 8l-.1-.1a1.6 1.6 0 112.3-2.3l.1.1a1.7 1.7 0 001.9.3h.1a1.7 1.7 0 001-1.5V4.3a1.6 1.6 0 013.2 0v.2a1.7 1.7 0 001 1.5h.1a1.7 1.7 0 001.9-.3l.1-.1a1.6 1.6 0 112.3 2.3l-.1.1a1.7 1.7 0 00-.3 1.9v.1a1.7 1.7 0 001.5 1h.2a1.6 1.6 0 010 3.2h-.2a1.7 1.7 0 00-1.5 1z",
+  draft:   "M14 3H6a1 1 0 00-1 1v16a1 1 0 001 1h12a1 1 0 001-1V8zM14 3v5h5M12 12v5M9.5 14.5h5",
+  history: "M3.5 12a8.5 8.5 0 1114.6 6M3.5 12l-.5-3.5M3.5 12H7M12 8v4.5l3 1.8",
+  save:    "M5 3h11l3 3v15H5zM8 3v6h8V3M8 21v-6h8v6",
+  undo:    "M9 10H5V6M5 10a8 8 0 1114 5",
+  redo:    "M15 10h4V6M19 10a8 8 0 10-14 5",
+  copy:    "M9 9h11v11H9zM15 5H4v11h3",
+  trash:   "M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6",
+  book:    "M3 5.5h6.5a2.5 2.5 0 012.5 2.5v11a2.5 2.5 0 00-2.5-2.5H3zM21 5.5h-6.5A2.5 2.5 0 0012 8v11a2.5 2.5 0 012.5-2.5H21z",
+  chat:    "M4 5h16v11H9l-5 4z",
+  playc:   "M12 3a9 9 0 100 18 9 9 0 000-18zM10.5 8.5l5 3.5-5 3.5z",
+  checkc:  "M12 3a9 9 0 100 18 9 9 0 000-18zM8.5 12.2l2.5 2.5 4.5-5",
+  camera:  "M4 8h3l1.5-2h7L17 8h3v11H4zM12 16.5a3.2 3.2 0 100-6.5 3.2 3.2 0 000 6.5z",
+  image:   "M4 5h16v14H4zM4 15.5l4.5-4 4 3.5 3-2.5L20 16M15.5 9.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4",
+  quiz:    "M5 4h14v14l-3 3H5zM9.5 9a2.5 2.5 0 114 2c-.9.7-1.5 1.2-1.5 2.3M12 16.4v.2",
+  link:    "M10.5 13.5a3.5 3.5 0 000 5l1.5-1.5M13.5 10.5a3.5 3.5 0 000-5L12 7M8.5 15.5l7-7",
+  doc:     "M14 3H6v18h12V8zM14 3v5h5M9 13h6M9 17h4",
+  cube:    "M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5",
+  plus:    "M12 5v14M5 12h14",
+  close:   "M6 6l12 12M18 6L6 18",
+  globe:   "M12 3a9 9 0 100 18 9 9 0 000-18zM3.5 9.5h17M3.5 14.5h17M12 3c2.2 2.4 3.2 5.5 3.2 9s-1 6.6-3.2 9c-2.2-2.4-3.2-5.5-3.2-9s1-6.6 3.2-9z",
+};
+
+// Glyphs that exist as canonical DS icon assets — render them via KlsIcon (masked
+// PNG, tints from a color token). Everything else falls back to an inline path.
+const TE_ASSET_ICONS = { trash: "trash", history: "clock", cube: "cube", image: "image",
+  camera: "camera", chat: "chatBubble", playc: "play", doc: "filetypes/pdf" };
+
+function TeIcon({ name, size = 18, color = "currentColor", strokeWidth = 1.6 }) {
+  const asset = TE_ASSET_ICONS[name];
+  if (asset) return <KlsIcon name={asset} size={size} color={color} />;
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true"
+      style={{ width: size, height: size, flex: "none", display: "block", stroke: color, fill: "none",
+        strokeWidth, strokeLinecap: "round", strokeLinejoin: "round" }}>
+      <path d={TE_PATHS[name]} />
+    </svg>
+  );
+}
+
+function TeIconBtn({ name, label, onClick, size = 20, disabled, box = 40 }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick} disabled={disabled}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: box, height: box, borderRadius: 8, border: "none", padding: 0, flex: "none",
+        cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover && !disabled ? "var(--kls-tertiary)" : "transparent",
+        color: "var(--kls-on-surface-variant)", transition: "background 125ms var(--kls-ease-standard)" }}>
+      <TeIcon name={name} size={size} />
+    </button>
+  );
+}
+
+const TE_STEPS_SEED = [
+  { id: "s1", name: "New step",
+    instructions: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam mollis egestas felis at interdum. Nullam sollicitudin tellus viverra, commodo turpis sed, porta metus. Phasellus porta massa in augue varius, a sagittis enim facilisis. Proin id nisi enim. Pellentesque consectetur lorem tincidunt odio maximus dignissim. Integer",
+    notes: "In vel erat malesuada, facilisis enim ac, dignissim dolor. Suspendisse pharetra elit vitae eros egestas, id vestibulum mauris condimentum. Vivamus turpis ligula, fringilla vitae metus ac, ornare accumsan dolor. Aenean nec enim nunc. Sed placerat risus nec mattis pretium. Nam finibus tortor quis urna pellentesque convallis. Nulla",
+    actions: [{ id: "a1", type: "simple", value: "test" }] },
+  { id: "s2", name: "the 2nd step", instructions: "", notes: "", actions: [] },
+  { id: "s3", name: "simple 1", instructions: "", notes: "", actions: [] },
+  { id: "s4", name: "simple 2", instructions: "", notes: "", actions: [] },
+  { id: "s5", name: "simple 3", instructions: "", notes: "", actions: [] },
+  { id: "s6", name: "New step", instructions: "", notes: "", actions: [] },
+];
+
+const TE_ACTION_TYPES = [
+  { key: "simple", icon: "camera", title: "Step Action",      hint: "Add a custom action prompt", value: "New action" },
+  { key: "photo",  icon: "image",  title: "Photo/File",       hint: "Require photo or file submission", value: "Submit a photo of the completed step" },
+  { key: "choice", icon: "quiz",   title: "Multiple Choice",  hint: "Add a multiple choice question", value: "New question" },
+  { key: "subtask", icon: "link",  title: "Link to Subtask",  hint: "Only scenarios can link to subtask", soon: true },
+  { key: "summary", icon: "doc",   title: "Summary",          hint: "Ask for a written summary of work", soon: true },
+];
+const teActionLabel = (t) => (TE_ACTION_TYPES.find((x) => x.key === t) || TE_ACTION_TYPES[0]).title;
+
+const teReleased = (node) => {
+  if (!node) return "v1";
+  const rel = meSeedVersions(node.id).find((v) => v.released);
+  return rel ? rel.label : "v1";
+};
+const TE_MEDIA_SEED = [
+  { id: "m1", kind: "image", name: "Cessna 172 – right main gear", src: "assets/images/placeholderImage.jpg", version: "v2" },
+  { id: "m2", kind: "scene", name: "Cessna 172 Landing Gear.glb · Gear Down", node: LIB_MODEL_CESSNA.children[0],
+    version: "v1" },
+];
+const TE_DOCS_SEED = [{ id: "d1", kind: "pdf", name: "AMM 32-11-00 Rev C.pdf" }];
+const TE_LINKS_SEED = [{ id: "l1", name: "Google", url: "https://google.com" }];
+
+// Media / document glyphs match the Library exactly — same icon asset, same color.
+const teKind = (kind) => LIB_KINDS[kind] || LIB_KINDS.txt;
+const TE_MODEL_KINDS = ["model", "scene", "animation"];
+const teStale = (item) => !!(item.node && item.version && teReleased(item.node) !== item.version);
+
+const TE_CARD = { background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+  padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" };
+
+function TeCardHead({ icon, children }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", color: "var(--kls-on-surface-variant)" }}>
+      <TeIcon name={icon} size={16} />
+      <span style={ME_LABEL}>{children}</span>
+    </div>
+  );
+}
+
+function TeTextArea({ value, onChange, placeholder, rows = 4, disabled }) {
+  const [focus, setFocus] = useState(false);
+  return (
+    <textarea value={value} rows={rows} placeholder={placeholder} readOnly={disabled}
+      onChange={(e) => !disabled && onChange(e.target.value)}
+      onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+      style={{ width: "100%", boxSizing: "border-box", resize: "vertical", padding: "var(--kls-space-small)",
+        borderRadius: 8, border: "1px solid " + (focus && !disabled ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
+        background: disabled ? "var(--kls-tertiary)" : "var(--kls-surface-container-lowest)",
+        cursor: disabled ? "default" : "text",
+        outline: "none", fontFamily: "var(--kls-font-sans)",
+        fontSize: 14, fontWeight: 500, lineHeight: 1.55, color: "var(--kls-on-surface)",
+        transition: "border-color 125ms var(--kls-ease-standard)" }} />
+  );
+}
+
+function TeStepRow({ step, index, active, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 48, width: "100%", boxSizing: "border-box", textAlign: "left", cursor: "pointer",
+        padding: "0 var(--kls-space-small)", borderRadius: 8, border: "none", display: "flex", alignItems: "center",
+        gap: "var(--kls-space-small)", fontFamily: "var(--kls-font-sans)", fontSize: 16,
+        fontWeight: active ? 600 : 500,
+        color: active ? "var(--kls-on-surface)" : "var(--kls-on-surface-variant)",
+        background: active ? "var(--kls-surface-container-lowest)" : hover ? "var(--kls-tertiary)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{index + 1}. {step.name}</span>
+    </button>
+  );
+}
+
+// Right-rail resource section: uppercase label, tiles/rows, per-section Add.
+function TeResourceSection({ title, children, onAdd, addLabel }) {
+  return (
+    <div style={{ background: "var(--kls-surface)", border: "1px solid var(--kls-outline-variant)", borderRadius: 12,
+      padding: "var(--kls-space-small)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)", marginRight: "calc(-1 * var(--kls-space-tiny))" }}>
+        <span style={ME_LABEL}>{title}</span>
+        <div style={{ flex: 1 }} />
+        {onAdd && <TeIconBtn name="plus" size={16} box={24} label={addLabel} onClick={onAdd} />}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function TeRemoveBtn({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={(e) => onClick(e)}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 32, height: 32, borderRadius: 999, border: "none", padding: 0, flex: "none", cursor: "pointer",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        background: hover ? "var(--kls-error-container)" : "transparent",
+        color: hover ? "var(--kls-on-error-container)" : "var(--kls-on-surface-variant)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <TeIcon name="close" size={14} strokeWidth={1.8} />
+    </button>
+  );
+}
+
+function TeMediaTile({ item, onRemove, onOpen }) {
+  const [hover, setHover] = useState(false);
+  const openable = !!(onOpen && item.node);
+  const stale = teStale(item);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      onClick={openable ? onOpen : undefined}
+      title={openable ? "Open " + item.name + " in the 3D editor" : item.name}
+      style={{ position: "relative", width: 72, height: 72, borderRadius: 8, flex: "none", overflow: "hidden",
+        cursor: openable ? "pointer" : "default",
+        border: "1px solid " + (openable && hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"),
+        background: "var(--kls-surface-container-lowest)",
+        outline: stale ? "1px solid var(--kls-error)" : "none",
+        display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {item.kind === "image" && item.src
+        ? <img src={item.src} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        : <KlsIcon name={teKind(item.kind).icon} size={28} color={teKind(item.kind).color} />}
+      {stale && (
+        <span title="A newer released version is available"
+          style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 999,
+            background: "var(--kls-error-container)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <KlsIcon name="warning" size={12} color="var(--kls-on-error-container)" />
+        </span>
+      )}
+      <span style={{ position: "absolute", left: 3, bottom: 3, padding: "0 var(--kls-space-tiny)", borderRadius: 999,
+          background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 10, fontWeight: 600, lineHeight: "16px" }}>{item.version || "v1"}</span>
+      {hover && onRemove && (
+        <span style={{ position: "absolute", top: 3, left: 3 }}>
+          <TeRemoveBtn label={"Remove " + item.name}
+            onClick={(e) => { if (e && e.stopPropagation) e.stopPropagation(); onRemove(); }} />
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TeAddTile({ label, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={label} title={label} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: 72, height: 72, borderRadius: 8, flex: "none", cursor: "pointer", padding: 0,
+        border: "1px dashed var(--kls-outline)", background: hover ? "var(--kls-tertiary)" : "transparent",
+        color: "var(--kls-on-surface-variant)", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <TeIcon name="plus" size={20} />
+    </button>
+  );
+}
+
+function TeResourceRow({ icon, iconColor, name, meta, onRemove, removeLabel }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", minHeight: 48,
+        padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8,
+        background: hover ? "var(--kls-tertiary)" : "var(--kls-surface-container-lowest)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ color: "var(--kls-on-surface-variant)", display: "inline-flex" }}>
+        {iconColor ? <KlsIcon name={icon} size={20} color={iconColor} /> : <TeIcon name={icon} size={20} />}
+      </span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+        {meta && <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta}</div>}
+      </div>
+      {onRemove && <TeRemoveBtn label={removeLabel} onClick={onRemove} />}
+    </div>
+  );
+}
+
+const TE_EMPTY = { fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)",
+  padding: "var(--kls-space-xsmall) var(--kls-space-tiny)" };
+
+// ── Add action dialog ───────────────────────────────────────────────
+function TeAddActionDialog({ onPick, onClose }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "var(--kls-space-med)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+      <div style={{ position: "relative", width: "min(520px, 100%)", maxHeight: "80vh", background: "var(--kls-surface)",
+        borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>Add action</span>
+          <div style={{ flex: 1 }} />
+          <TeIconBtn name="close" size={18} label="Close" onClick={onClose} />
+        </div>
+        <div style={{ padding: "var(--kls-space-med)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          {TE_ACTION_TYPES.map((t) => <TeActionTypeRow key={t.key} type={t} onClick={() => !t.soon && onPick(t)} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeActionTypeRow({ type, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} disabled={type.soon}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", width: "100%", boxSizing: "border-box",
+        textAlign: "left", padding: "var(--kls-space-small)", borderRadius: 12, cursor: type.soon ? "default" : "pointer",
+        border: "1px solid var(--kls-outline-variant)",
+        background: hover && !type.soon ? "var(--kls-surface-container-low)" : "var(--kls-surface-container-lowest)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 48, height: 48, borderRadius: 8, flex: "none", background: "var(--kls-tertiary)",
+        color: "var(--kls-on-surface)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <TeIcon name={type.icon} size={22} />
+      </span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600,
+          color: type.soon ? "var(--kls-on-surface-variant)" : "var(--kls-on-surface)" }}>{type.title}</div>
+        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>{type.hint}</div>
+      </div>
+      {type.soon ? (
+        <span style={{ flex: "none", padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+          background: "var(--kls-error-container)", color: "var(--kls-on-error-container)",
+          fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>Not available</span>
+      ) : (
+        <span style={{ color: "var(--kls-on-surface-variant)", flex: "none", display: "inline-flex" }}>
+          <TeIcon name="back" size={18} strokeWidth={1.8} />
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ── Task settings drawer ────────────────────────────────────────────
+const TE_MODULES = ["ACS Code Test", "Econ 101", "Econ102", "Powerplant Basics", "Sheet Metal I"];
+
+function TeReadonlyField({ icon, children }) {
+  return (
+    <div style={{ height: 48, boxSizing: "border-box", display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+      padding: "0 var(--kls-space-small)", borderRadius: 8, border: "1px solid var(--kls-outline-variant)",
+      fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface)" }}>
+      {icon && <span style={{ color: "var(--kls-on-surface-variant)", display: "inline-flex" }}><TeIcon name={icon} size={18} /></span>}
+      {children}
+    </div>
+  );
+}
+
+function TeSettingsDrawer({ task, draft, onDraft, onClose, locked }) {
+  const [shown, setShown] = useState(false);
+  const [modules, setModules] = useState(["ACS Code Test"]);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  const toggleModule = (m) => setModules((cur) => (cur.indexOf(m) >= 0 ? cur.filter((x) => x !== m) : cur.concat([m])));
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1500 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)",
+        opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: "min(426px, calc(100vw - 24px))",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600,
+            color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{draft.title}</span>
+          <MeCircleBtn size={36} label="Close" onClick={onClose}>
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </MeCircleBtn>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column",
+          gap: "var(--kls-space-med)" }}>
+          <MeField label="Type"><TeReadonlyField icon="cube">{task.kind || "Task"}</TeReadonlyField></MeField>
+          <MeField label="Title">
+            {locked ? <TeReadonlyField>{draft.title}</TeReadonlyField>
+              : <MeInput value={draft.title} onChange={(v) => onDraft({ ...draft, title: v })} />}
+          </MeField>
+          <MeField label="Category">
+            {locked ? <TeReadonlyField>{draft.category || "none"}</TeReadonlyField>
+              : <MeInput value={draft.category} placeholder="none" onChange={(v) => onDraft({ ...draft, category: v })} />}
+          </MeField>
+          <MeField label="Description">
+            <TeTextArea value={draft.description} rows={3} disabled={locked} placeholder="Enter a description ( optional )"
+              onChange={(v) => onDraft({ ...draft, description: v })} />
+          </MeField>
+          <MeField label="Linked media">
+            <TeReadonlyField>{draft.mediaCount ? draft.mediaCount + " linked" : "None"}</TeReadonlyField>
+          </MeField>
+          <MeField label="Links">
+            <TeReadonlyField>{draft.linkCount ? draft.linkCount + " linked" : "None"}</TeReadonlyField>
+          </MeField>
+          <MeField label="ACS Codes">
+            <TeReadonlyField>{(task.acs && task.acs.length) ? task.acs.join(", ") : "None"}</TeReadonlyField>
+          </MeField>
+          <MeField label="Add to modules">
+            <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 8, overflow: "hidden" }}>
+              {TE_MODULES.map((m, i) => (
+                <TeModuleRow key={m} name={m} on={modules.indexOf(m) >= 0} first={i === 0}
+                  onClick={() => { if (!locked) toggleModule(m); }} />
+              ))}
+            </div>
+          </MeField>
+        </div>
+
+        <div style={{ padding: "var(--kls-space-med)", borderTop: "1px solid var(--kls-outline-variant)",
+          display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ ...ctPrimaryBtn, background: "var(--kls-tertiary)", color: "var(--kls-on-tertiary)" }}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeModuleRow({ name, on, first, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ width: "100%", boxSizing: "border-box", height: 48, textAlign: "left", cursor: "pointer",
+        padding: "0 var(--kls-space-small)", border: "none",
+        borderTop: first ? "none" : "1px solid var(--kls-outline-variant)",
+        background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 22, height: 22, borderRadius: 6, flex: "none", boxSizing: "border-box",
+        border: "1.5px solid " + (on ? "var(--kls-primary)" : "var(--kls-on-surface-variant)"),
+        background: on ? "var(--kls-primary)" : "transparent",
+        display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        {on && (
+          <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, stroke: "var(--kls-on-primary)", fill: "none", strokeWidth: 2.4 }}>
+            <path d="M5 12.5l4.5 4.5L19 7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </span>
+      <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+    </button>
+  );
+}
+
+// ── Task version seed ───────────────────────────────────────────────
+// Same naming scheme + shape as scenes/animations (meSeedVersions): one released
+// vN, named drafts (draft-N, surfaced by description), archived past releases.
+function teSeedVersions(key) {
+  const h = meHash(key);
+  const spec = [
+    { n: 4, isDraft: true, draftNo: 1, desc: "Photo action added to the torque check" },
+    { n: 3, released: true, desc: "Torque sequence corrected; senior mechanic notes added" },
+    { n: 2, wasReleased: true, desc: "Linked the landing gear model and the AMM reference" },
+    { n: 1, wasReleased: true, desc: "Initial task authored from the work card" },
+  ];
+  let t = Date.UTC(2026, 8, 11, 9, 41);
+  return spec.map((x, i) => {
+    const v = { id: key + "-v" + x.n, label: x.isDraft ? "draft-" + x.draftNo : "v" + x.n, isDraft: !!x.isDraft,
+      desc: x.desc, ts: t, author: x.isDraft ? "You" : ME_VER_AUTHORS[(h + i) % 3],
+      released: !!x.released, wasReleased: !!x.wasReleased };
+    t -= (2 + ((h >> (i * 2)) & 7)) * 86400000 + ((h >> i) & 15) * 3600000;
+    return v;
+  });
+}
+
+// ── Change history (task versions only) ─────────────────────────────
+// What a version changed against the one immediately before it in the history.
+// Grouped by the thing that changed (the task, a step, a step action); each field
+// row carries its label ONCE, with before → after and long values clamped.
+const TE_CHANGE_KINDS = {
+  created: { label: "Created", bg: "var(--kls-success-container)", fg: "var(--kls-on-success-container)" },
+  updated: { label: "Updated", bg: "var(--kls-info-container)",    fg: "var(--kls-on-info-container)" },
+  removed: { label: "Removed", bg: "var(--kls-error-container)",   fg: "var(--kls-on-error-container)" },
+};
+const TE_CHANGE_SCOPES = {
+  task:   { label: "task",        icon: "worklog" },
+  step:   { label: "step",        icon: "checkpoint" },
+  action: { label: "step action", icon: "play" },
+};
+const TE_CHANGE_SPECS = {
+  draft: [
+    { scope: "step", kind: "updated", entity: "Step 1 · New step", rows: [
+      { label: "Step instructions",
+        before: "Torque the axle nut to 40 ft-lb, then back off one flat.",
+        after: "Torque the axle nut to 40 ft-lb, then back off one flat and align the cotter pin slot. Re-check the reading with a calibrated wrench before staking the nut." },
+      { label: "Senior mechanic notes", before: "",
+        after: "If the slot doesn't line up, don't split the difference — step down a flat and re-torque." },
+    ] },
+    { scope: "action", kind: "created", entity: "Step 1 · Photo/File", rows: [
+      { label: "Type", before: "", after: "Photo/File" },
+      { label: "Prompt", before: "", after: "Submit a photo of the completed step" },
+      { label: "Position", before: "", after: "2 of 2" },
+    ] },
+  ],
+  v3: [
+    { scope: "task", kind: "updated", entity: "AI Test", rows: [
+      { label: "Category", before: "", after: "Airframe Structures" },
+      { label: "Description", before: "Landing gear inspection.",
+        after: "Right main gear inspection and torque check, per AMM 32-11-00." },
+    ] },
+    { scope: "step", kind: "updated", entity: "Step 2 · the 2nd step", rows: [
+      { label: "Step instructions", before: "Check the brake line.",
+        after: "Check the brake line for chafing where it passes the gear leg, and confirm the clamp torque." },
+    ] },
+    { scope: "action", kind: "removed", entity: "Step 3 · Multiple Choice", rows: [
+      { label: "Prompt", before: "Which torque value applies to the axle nut?", after: "" },
+    ] },
+  ],
+  v2: [
+    { scope: "step", kind: "updated", entity: "Step 1 · New step", rows: [
+      { label: "Linked media", before: "Cessna 172 Landing Gear.glb · Gear Down",
+        after: "Cessna 172 Landing Gear.glb · Gear Down, Cessna 172 – right main gear" },
+    ] },
+    { scope: "task", kind: "updated", entity: "AI Test", rows: [
+      { label: "Documents", before: "", after: "AMM 32-11-00 Rev C.pdf" },
+      { label: "Modules", before: "ACS Code Test", after: "ACS Code Test, Powerplant Basics" },
+    ] },
+  ],
+  v1: [
+    { scope: "task", kind: "created", entity: "AI Test", rows: [
+      { label: "Title", before: "", after: "AI Test" },
+      { label: "Type", before: "", after: "Task" },
+    ] },
+    { scope: "step", kind: "created", entity: "Step 1 · New step", rows: [
+      { label: "Title", before: "", after: "New step" },
+      { label: "Step instructions", before: "", after: "Torque the axle nut to 40 ft-lb, then back off one flat." },
+    ] },
+    { scope: "step", kind: "created", entity: "Step 2 · the 2nd step", rows: [
+      { label: "Title", before: "", after: "the 2nd step" },
+    ] },
+  ],
+};
+function teSeedChanges(version) {
+  const spec = TE_CHANGE_SPECS[version.isDraft ? "draft" : version.label] || TE_CHANGE_SPECS.v2;
+  return spec.map((e, i) => ({ ...e, id: version.id + "-c" + i, ts: version.ts - i * 240000 }));
+}
+// "2 steps updated · 1 action added" — what the version did, in one line.
+function teChangeSummary(changes) {
+  const verb = { created: "added", updated: "updated", removed: "removed" };
+  const seen = [];
+  changes.forEach((c) => {
+    const key = c.scope + "/" + c.kind;
+    const hit = seen.find((s) => s.key === key);
+    if (hit) hit.n++; else seen.push({ key, n: 1, scope: c.scope, kind: c.kind });
+  });
+  return seen.map((s) => {
+    const noun = s.scope === "task" ? "task field" : s.scope === "step" ? "step" : "action";
+    return s.n + " " + noun + (s.n === 1 ? "" : "s") + " " + verb[s.kind];
+  });
+}
+
+function TeDiffValue({ value, tone }) {
+  const [more, setMore] = useState(false);
+  const long = (value || "").length > 180;
+  const edge = tone === "after" ? "var(--kls-success)" : "var(--kls-error)";
+  return (
+    <div style={{ borderRadius: 8, padding: "var(--kls-space-small)", minWidth: 0,
+      background: "var(--kls-surface)", borderLeft: "2px solid " + edge,
+      display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+      {value ? (
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.55,
+          color: "var(--kls-on-surface)", textWrap: "pretty", overflowWrap: "anywhere",
+          display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: long && !more ? 5 : "none", overflow: "hidden" }}>{value}</span>
+      ) : (
+        <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+          color: "var(--kls-on-surface-variant)" }}>— empty</span>
+      )}
+      {long && (
+        <button onClick={() => setMore((m) => !m)}
+          style={{ alignSelf: "flex-start", background: "transparent", border: "none", padding: 0, cursor: "pointer",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-on-surface-variant)" }}>
+          {more ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function TeDiffRow({ row }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+      <span style={ME_LABEL}>{row.label}</span>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 16px minmax(0, 1fr)",
+        alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+        <TeDiffValue value={row.before} tone="before" />
+        <span style={{ display: "inline-flex", justifyContent: "center", color: "var(--kls-on-surface-variant)" }}>
+          <KlsIcon name="chevronRight" size={14} color="var(--kls-on-surface-variant)" />
+        </span>
+        <TeDiffValue value={row.after} tone="after" />
+      </div>
+    </div>
+  );
+}
+
+function TeChangeEvent({ event }) {
+  const [open, setOpen] = useState(true);
+  const kind = TE_CHANGE_KINDS[event.kind];
+  const scope = TE_CHANGE_SCOPES[event.scope];
+  return (
+    <div style={{ border: "1px solid var(--kls-outline-variant)", borderRadius: 12, background: "var(--kls-surface)", flex: "none" }}>
+      <button onClick={() => setOpen((o) => !o)}
+        style={{ width: "100%", boxSizing: "border-box", minHeight: 48, textAlign: "left", cursor: "pointer",
+          border: "none", background: "transparent", padding: "var(--kls-space-small)",
+          display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+        <KlsIcon name={scope.icon} size={20} color="var(--kls-on-surface-variant)" />
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600,
+            color: "var(--kls-on-surface)" }}>{kind.label} {scope.label}</span>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500,
+            color: "var(--kls-on-surface-variant)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {event.entity} · {meVerTime(event.ts)}
+          </span>
+        </span>
+        <span style={{ flex: "none", padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+          background: kind.bg, color: kind.fg, fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{kind.label}</span>
+        <KlsIcon name="chevronDown" size={16} rotate={open ? 180 : 0} color="var(--kls-on-surface-variant)" />
+      </button>
+      {open && (
+        <div style={{ padding: "0 var(--kls-space-small) var(--kls-space-small)",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          {event.rows.map((r) => <TeDiffRow key={r.label} row={r} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TeChangePane({ version, prev, entity, changes, onClose, onRollback }) {
+  const summary = teChangeSummary(changes);
+  return (
+    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column",
+      borderRight: "1px solid var(--kls-outline-variant)", background: "var(--kls-surface-container-lowest)" }}>
+
+      <div style={{ padding: "var(--kls-space-med)", borderBottom: "1px solid var(--kls-outline-variant)",
+        display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-small)" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={ME_LABEL}>Change history</span>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)",
+              margin: "var(--kls-space-tiny) 0 0" }}>{meVerTitle(version)}</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 13, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+              {prev ? "Compared with " + meVerTitle(prev) : "First version of this " + String(entity.kindLabel).toLowerCase() + " — everything here was created"}
+              {" · "}{version.author}
+            </div>
+          </div>
+          {onRollback && <MeVerSecondaryBtn onClick={onRollback}>
+            <KlsIcon name="refresh" size={15} color="var(--kls-on-surface)" />Rollback to this version
+          </MeVerSecondaryBtn>}
+          <MeIconBtn icon="sidebar-collapse" label="Collapse change history" onClick={onClose} />
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-xsmall)" }}>
+          {summary.map((s) => (
+            <span key={s} style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+              background: "var(--kls-tertiary)", color: "var(--kls-on-tertiary)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500 }}>{s}</span>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)",
+        display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+        {changes.length === 0 ? (
+          <div style={TE_EMPTY}>No changes recorded for this version.</div>
+        ) : changes.map((c) => <TeChangeEvent key={c.id} event={c} />)}
+      </div>
+    </div>
+  );
+}
+
+
+// ── Link picker ─────────────────────────────────────────────────────
+// One dialog, scoped to what is being linked: media (image / video),
+// 3D models, or documents. Source of truth is the Library's own index.
+const TE_PICKER_SCOPES = {
+  media:  { title: "Select media to link", items: LIB_MEDIA,  kinds: ["image", "video"], favs: ["m3", "m1"] },
+  models: { title: "Select a scene or animation to link", items: LIB_MODELS, kinds: ["model"], favs: ["t2", "t3"] },
+  modelsOnly: { title: "Select a model to animate", items: LIB_MODELS, kinds: ["model"], favs: ["t2", "t3"], flat: true },
+  docs:   { title: "Select a file to link", items: LIB_ITEMS,  kinds: ["pdf", "doc", "txt"], favs: ["d1", "d3"] },
+};
+
+function teFlatten(items) {
+  return items.reduce((out, it) => out.concat(it.kind === "folder" ? teFlatten(it.children || []) : [it]), []);
+}
+function teUpdated(iso) {
+  const p = iso.split("-").map(Number);
+  return LIB_MON[p[1] - 1] + " " + p[2] + ", " + p[0];
+}
+
+function TePickerRow({ item, fav, onFav, onPick, expandable, open, onToggle }) {
+  const [hover, setHover] = useState(false);
+  const k = teKind(item.kind);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        padding: "var(--kls-space-small)", borderRadius: 12, cursor: "pointer",
+        background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      {expandable && (
+        <button aria-label={(open ? "Collapse " : "Expand ") + item.name} onClick={onToggle}
+          style={{ width: 24, height: 24, borderRadius: 8, border: "none", background: "transparent", padding: 0,
+            cursor: "pointer", flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+          <KlsIcon name="chevronRight" size={14} rotate={open ? 90 : 0} color="var(--kls-on-surface-variant)" />
+        </button>
+      )}
+      <button onClick={expandable ? onToggle : onPick} style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center",
+        gap: "var(--kls-space-small)", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
+        <KlsIcon name={k.icon} size={36} color={k.color} />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600,
+            color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500,
+            color: "var(--kls-on-surface-variant)" }}>Last updated: {teUpdated(item.added)}</span>
+        </span>
+      </button>
+      <CatalogStarBtn on={fav} label={(fav ? "Unfavorite " : "Favorite ") + item.name} onClick={onFav} />
+    </div>
+  );
+}
+
+function TePickerChildRow({ item, fav, onFav, onPick }) {
+  const [hover, setHover] = useState(false);
+  const k = teKind(item.kind);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+        padding: "var(--kls-space-xsmall) var(--kls-space-small)", borderRadius: 8,
+        paddingLeft: "calc(var(--kls-space-small) + var(--kls-space-large))",
+        background: hover ? "var(--kls-surface-container-low)" : "transparent",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <button onClick={onPick} style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", minHeight: 40,
+        gap: "var(--kls-space-small)", background: "transparent", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
+        <span aria-hidden="true" style={{ width: 24, flex: "none" }} />
+        <KlsIcon name={k.icon} size={20} color={k.color} />
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+            color: "var(--kls-on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+          <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500,
+            color: "var(--kls-on-surface-variant)" }}>
+            {k.label}{item.duration ? " · " + item.duration : ""}{typeof item.steps === "number" ? " · " + item.steps + " steps" : ""}
+          </span>
+        </span>
+      </button>
+      <CatalogStarBtn on={fav} label={(fav ? "Unfavorite " : "Favorite ") + item.name} onClick={onFav} />
+    </div>
+  );
+}
+
+function TeLinkPicker({ scope, onPick, onClose }) {
+  const cfg = TE_PICKER_SCOPES[scope] || TE_PICKER_SCOPES.docs;
+  const [term, setTerm] = useState("");
+  const [favs, setFavs] = useState(cfg.favs || []);
+  const [favOnly, setFavOnly] = useState(false);
+  const [expanded, setExpanded] = useState([]);
+  const [focus, setFocus] = useState(false);
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  const all = teFlatten(cfg.items).filter((i) => cfg.kinds.indexOf(i.kind) >= 0);
+  const q = term.trim().toLowerCase();
+  const rows = all
+    .filter((i) => !q || i.name.toLowerCase().includes(q)
+      || (i.children || []).some((c) => c.name.toLowerCase().includes(q)))
+    .filter((i) => !favOnly || favs.indexOf(i.id) >= 0);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1600, display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "var(--kls-space-med)" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+      <div style={{ position: "relative", width: "min(620px, 100%)", maxHeight: "80vh", background: "var(--kls-surface)",
+        borderRadius: 8, boxShadow: "var(--kls-drop-shadow)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <span style={{ flex: 1, fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>{cfg.title}</span>
+          <TeIconBtn name="close" size={18} label="Close" onClick={onClose} />
+        </div>
+
+        <div style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-small)",
+          minHeight: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", flex: "none" }}>
+          <label style={{ height: 48, flex: 1, minWidth: 0, boxSizing: "border-box", display: "flex", alignItems: "center",
+            gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", borderRadius: 8,
+            border: "1px solid " + (focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
+            transition: "border-color 125ms var(--kls-ease-standard)" }}>
+            <KlsIcon name="search" size={20} color="var(--kls-on-surface-variant)" />
+            <input value={term} placeholder="Search" onChange={(e) => setTerm(e.target.value)}
+              onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+              style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+                fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+          </label>
+            <CatalogStarBtn on={favOnly} label="Show favorites only" onClick={() => setFavOnly((v) => !v)} />
+          </div>
+
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            {rows.length === 0 ? (
+              <div style={TE_EMPTY}>{favOnly && !q ? "No favorites yet — star an item to keep it here." : "Nothing matches “" + term + "”."}</div>
+            ) : rows.map((i) => {
+              const authored = cfg.flat ? [] : (i.children || []).filter((c) => c.kind === "scene" || c.kind === "animation");
+              // Every model has a Base Scene.
+              const kids = i.kind === "model" && !cfg.flat
+                ? [{ id: i.id + "-base", kind: "scene", name: "Base Scene", base: true }].concat(authored)
+                : authored;
+              const open = kids.length > 0 && (expanded.indexOf(i.id) >= 0 || !!q);
+              return (
+                <React.Fragment key={i.id}>
+                  <TePickerRow item={i} fav={favs.indexOf(i.id) >= 0}
+                    expandable={kids.length > 0} open={open}
+                    onToggle={() => setExpanded((cur) => (cur.indexOf(i.id) >= 0 ? cur.filter((x) => x !== i.id) : cur.concat([i.id])))}
+                    onFav={() => setFavs((cur) => (cur.indexOf(i.id) >= 0 ? cur.filter((x) => x !== i.id) : cur.concat([i.id])))}
+                    onPick={() => onPick(i)} />
+                  {open && kids.map((c) => (
+                    <TePickerChildRow key={c.id} item={c} fav={favs.indexOf(c.id) >= 0}
+                      onFav={() => setFavs((cur) => (cur.indexOf(c.id) >= 0 ? cur.filter((x) => x !== c.id) : cur.concat([c.id])))}
+                      onPick={() => onPick(c, i)} />
+                  ))}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Orion drawer (task assistant) ───────────────────────────────────
+const TE_ORION_SUGGESTIONS = [
+  { icon: "animation", tint: "var(--kls-accent-12)", label: "Animate a model",
+    hint: "Generate an animation based on this Task", prompt: "Animate a model", action: "pickModel" },
+  { icon: "filetypes/pdf", tint: "var(--kls-accent-15)", label: "Update this Task from a doc",
+    hint: "Pull steps out of a manual or work card", prompt: "Update this Task from a doc" },
+  { icon: "orionLogo", tint: "var(--kls-accent-7)", label: "Make changes to this Task",
+    hint: "Rewrite, reorder, or add steps", prompt: "Make changes to this Task" },
+];
+
+function TeOrionSuggestion({ item, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", width: "100%", boxSizing: "border-box",
+        textAlign: "left", padding: "var(--kls-space-small)", borderRadius: 12, cursor: "pointer",
+        border: "1px solid " + (hover ? "var(--kls-outline)" : "var(--kls-outline-variant)"),
+        background: hover ? "var(--kls-surface-container-low)" : "var(--kls-surface-container-lowest)",
+        transition: "background 125ms var(--kls-ease-standard), border-color 125ms var(--kls-ease-standard)" }}>
+      <span style={{ width: 36, height: 36, borderRadius: 8, flex: "none", background: "var(--kls-tertiary)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+        <KlsIcon name={item.icon} size={18} color={item.tint} />
+      </span>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600,
+          color: "var(--kls-on-surface)" }}>{item.label}</span>
+        <span style={{ display: "block", fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500,
+          color: "var(--kls-on-surface-variant)" }}>{item.hint}</span>
+      </span>
+      <span style={{ flex: "none", display: "inline-flex" }}>
+        <KlsIcon name="chevronRight" size={14} color="var(--kls-on-surface-variant)" />
+      </span>
+    </button>
+  );
+}
+
+const ME_ORION_SUGGESTIONS = [
+  { icon: "scene", tint: "var(--kls-accent-7)", label: "Create a new scene",
+    hint: "Set up a new view state of this model", prompt: "Create a new scene" },
+  { icon: "animation", tint: "var(--kls-accent-12)", label: "Create a new animation",
+    hint: "Generate a motion sequence from the assemblies", prompt: "Create a new animation" },
+  { icon: "orionLogo", tint: "var(--kls-accent-7)", label: "Make changes to the current scene",
+    hint: "Explode, isolate, cut away, or annotate", prompt: "Make changes to the current scene" },
+];
+
+function TeOrionDrawer({ onClose, onAction, title, greeting, suggestions, initialMsg, addFiles = true }) {
+  const [shown, setShown] = useState(false);
+  const [msg, setMsg] = useState(initialMsg || "");
+  const [focus, setFocus] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", onKey);
+    return () => { cancelAnimationFrame(id); document.removeEventListener("keydown", onKey); };
+  }, []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1550 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)",
+        opacity: shown ? 1 : 0, transition: "opacity 250ms var(--kls-ease-standard)" }} />
+      <div style={{ position: "absolute", top: 12, bottom: 12, right: 12, width: "min(426px, calc(100vw - 24px))",
+        background: "var(--kls-surface)", borderRadius: 8, boxShadow: "var(--kls-drop-shadow)",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+        transform: shown ? "translateX(0)" : "translateX(calc(100% + 24px))",
+        transition: "transform 250ms var(--kls-ease-standard)" }}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)", padding: "var(--kls-space-med)",
+          borderBottom: "1px solid var(--kls-outline-variant)" }}>
+          <KlsIcon name="orionLogo" size={22} color="var(--kls-on-surface)" />
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>{title || "Task Assistant"}</span>
+          <TeResetBtn onClick={() => setMsg("")} />
+          <div style={{ flex: 1 }} />
+          <MeCircleBtn size={36} label="Close" bordered={false} onClick={onClose}>
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </MeCircleBtn>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "var(--kls-space-med)",
+          display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: "var(--kls-space-med)" }}>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600, color: "var(--kls-on-surface)",
+            lineHeight: 1.5, textWrap: "pretty" }}>
+            {greeting || "Hi, what can I help you with today?  Ask me to create, update, or remove task steps"}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+            <span style={ME_LABEL}>Try one of these</span>
+            {(suggestions || TE_ORION_SUGGESTIONS).map((s) => (
+              <TeOrionSuggestion key={s.label} item={s}
+                onClick={() => (s.action && onAction ? onAction(s.action) : setMsg(s.prompt))} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding: "var(--kls-space-med)", display: "flex", flexDirection: "column", gap: "var(--kls-space-xsmall)" }}>
+          {addFiles && (
+            <button style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: "var(--kls-space-xsmall)",
+              background: "transparent", border: "none", padding: 0, cursor: "pointer", color: "var(--kls-on-surface)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 600 }}>
+              <PlusGlyph size={16} />Add files for context
+            </button>
+          )}
+          <label style={{ minHeight: 48, boxSizing: "border-box", display: "flex", alignItems: "center",
+            gap: "var(--kls-space-small)", padding: "0 var(--kls-space-small)", borderRadius: 8,
+            border: "1px solid " + (focus ? "var(--kls-on-surface-variant)" : "var(--kls-outline-variant)"),
+            transition: "border-color 125ms var(--kls-ease-standard)" }}>
+            <span style={{ flex: "none", fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600,
+              color: "var(--kls-on-surface-variant)" }}>?</span>
+            <input value={msg} placeholder="ex: I need help with…" onChange={(e) => setMsg(e.target.value)}
+              onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+              style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+                fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }} />
+          </label>
+          <span style={{ alignSelf: "flex-end", textAlign: "right", fontFamily: "var(--kls-font-sans)", fontSize: 10, fontWeight: 600, lineHeight: 1.4,
+            color: "var(--kls-on-surface-variant)" }}>Orion is an AI and can make mistakes.  Please double-check responses.</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeResetBtn({ onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ height: 40, padding: "0 var(--kls-space-med)", borderRadius: 8, cursor: "pointer", flex: "none",
+        border: "1px solid var(--kls-outline-variant)", background: hover ? "var(--kls-tertiary)" : "transparent",
+        color: "var(--kls-on-surface-variant)", fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500,
+        transition: "background 125ms var(--kls-ease-standard)" }}>Reset</button>
+  );
+}
+
+function TeOrionFab({ onClick, label }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button aria-label={"Open " + (label || "Task Assistant")} title={label || "Task Assistant"} onClick={onClick}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{ position: "absolute", right: "var(--kls-space-med)", bottom: "var(--kls-space-med)", zIndex: 20,
+        width: 52, height: 52, borderRadius: 999, border: "1px solid var(--kls-outline-variant)", cursor: "pointer", padding: 0,
+        background: hover ? "var(--kls-surface)" : "var(--kls-surface-container-lowest)",
+        boxShadow: "var(--kls-drop-shadow)", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        transition: "background 125ms var(--kls-ease-standard)" }}>
+      <KlsIcon name="orionLogo" size={24} color="var(--kls-on-surface)" />
+    </button>
+  );
+}
+
+// ── the screen ──────────────────────────────────────────────────────
+function TaskEditor({ task, onClose }) {
+  const [steps, setSteps] = useState(TE_STEPS_SEED);
+  const [selId, setSelId] = useState(TE_STEPS_SEED[0].id);
+  const [media, setMedia] = useState(TE_MEDIA_SEED);
+  const [docs, setDocs] = useState(TE_DOCS_SEED);
+  const [links, setLinks] = useState(TE_LINKS_SEED);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [addAction, setAddAction] = useState(false);
+  const [note, setNote] = useState("");
+  const [draft, setDraft] = useState({ title: "AI Test", category: "", description: "", mediaCount: 2, linkCount: 1 });
+
+  // ── Versioning — the scene/animation flow, applied to a task: one released vN,
+  // named drafts, publish / unpublish, read-only while a released version is in view.
+  const verKey = task.id || "task";
+  const [verMap, setVerMap] = useState({});
+  const versionsFor = (key) => verMap[key] || teSeedVersions(key);
+  const setVersionsFor = (key, l) => setVerMap((m) => ({ ...m, [key]: l }));
+  const versions = versionsFor(verKey);
+  const [verPreview, setVerPreview] = useState(null);
+  const [verOpen, setVerOpen] = useState(false);
+  const [verDraft, setVerDraft] = useState(null);
+  const [mode, setMode] = useState("view");
+  const [dirty, setDirty] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(false);
+  const [publishAsk, setPublishAsk] = useState(false);
+  const [leaveNote, setLeaveNote] = useState(false);
+  const locked = mode === "view";
+  const viewing = versions.find((v) => v.id === verPreview) || versions.find((v) => v.released) || versions[0];
+  const touch = () => { setDirty(true); setSaved(false); };
+  const save = () => { setDirty(false); setSaved(true); setSavedOnce(true); };
+  const startDraft = () => setVerDraft({ mode: "create", key: verKey, base: viewing ? meVerTitle(viewing) : "", desc: "" });
+  const saveVerDraft = () => {
+    const key = verDraft.key;
+    const l = versionsFor(key);
+    if (verDraft.mode === "edit") {
+      setVersionsFor(key, l.map((x) => (x.id === verDraft.id ? { ...x, desc: verDraft.desc } : x)));
+      setVerDraft(null);
+      return;
+    }
+    const n = l.filter((x) => x.isDraft)
+      .reduce((mx, x) => Math.max(mx, parseInt(String(x.label).replace(/^draft-/, ""), 10) || 0), 0) + 1;
+    const v = { id: key + "-draft-" + Date.now(), label: "draft-" + n, isDraft: true, desc: verDraft.desc,
+      ts: Date.now(), author: "You", released: false, wasReleased: false };
+    setVersionsFor(key, [v].concat(l));
+    setVerPreview(v.id);
+    setMode("draft");
+    setDirty(false); setSaved(false); setSavedOnce(false);
+    setVerDraft(null); setVerOpen(false);
+    setNote("Draft created");
+  };
+  const publishNow = () => {
+    const l = versionsFor(verKey);
+    const cur = l.find((x) => x.id === verPreview && x.isDraft) || l.find((x) => x.isDraft);
+    const next = meNextVersionLabel(l);
+    if (cur) {
+      setVersionsFor(verKey, l.map((x) => (x.id === cur.id
+        ? { ...x, released: true, isDraft: false, wasReleased: false, label: next, ts: Date.now() }
+        : { ...x, released: false, wasReleased: x.wasReleased || x.released })));
+      setVerPreview(cur.id);
+    }
+    setSavedOnce(false); setDirty(false); setSaved(false); setMode("view");
+    setNote("Published " + next);
+  };
+  const requestClose = () => {
+    if (!locked && (savedOnce || dirty)) { setLeaveNote(true); return; }
+    onClose();
+  };
+  // Rollback: that version's content comes back as a NEW draft — nothing published
+  // changes until the draft is published, and no history is overwritten.
+  const rollbackTo = (v) => {
+    const l = versionsFor(verKey);
+    const n = l.filter((x) => x.isDraft)
+      .reduce((mx, x) => Math.max(mx, parseInt(String(x.label).replace(/^draft-/, ""), 10) || 0), 0) + 1;
+    const nv = { id: verKey + "-draft-" + Date.now(), label: "draft-" + n, isDraft: true,
+      desc: "Rolled back to " + meVerTitle(v), ts: Date.now(), author: "You", released: false, wasReleased: false };
+    setVersionsFor(verKey, [nv].concat(l));
+    setVerPreview(nv.id);
+    setMode("draft");
+    setDirty(false); setSaved(false); setSavedOnce(true);
+    setNote("Rolled back to " + meVerTitle(v) + " as " + meVerTitle(nv));
+  };
+
+  useEffect(() => { if (!note) return; const t = setTimeout(() => setNote(""), 2000); return () => clearTimeout(t); }, [note]);
+
+  const [picker, setPicker] = useState(null);
+  const [open3D, setOpen3D] = useState(null);
+  const [orion, setOrion] = useState(false);
+  const linkItem = (item, parent) => {
+    touch();
+    if (picker === "docs") setDocs((cur) => cur.concat([{ id: "d" + Date.now(), kind: item.kind, name: item.name }]));
+    else {
+      const node = item.base ? parent : item;
+      setMedia((cur) => cur.concat([{ id: "m" + Date.now(), kind: item.kind, node, version: teReleased(node),
+        name: parent ? parent.name + " · " + item.name : item.name,
+        src: item.kind === "image" ? "assets/images/placeholderImage.jpg" : null }]));
+    }
+    setPicker(null);
+  };
+
+  const idx = Math.max(0, steps.findIndex((s) => s.id === selId));
+  const step = steps[idx];
+  const patch = (fields) => {
+    if (locked) return;
+    touch();
+    setSteps((cur) => cur.map((s) => (s.id === step.id ? { ...s, ...fields } : s)));
+  };
+
+  if (open3D) return <ModelEditor node={open3D} backLabel="Back to task" readOnly
+    onPublished={({ node, version }) => setMedia((cur) => cur.map((m) => (m.node && m.node.id === node.id
+      ? { ...m, version } : m)))}
+    onClose={() => setOpen3D(null)} />;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "var(--kls-scaffold-bg)", display: "flex", flexDirection: "column" }}>
+
+      {/* top bar — no global header / nav in this screen */}
+      <div style={{ height: 64, flex: "none", boxSizing: "border-box", display: "flex", alignItems: "center",
+        gap: "var(--kls-space-small)", padding: "0 var(--kls-space-med)", background: "var(--kls-surface)",
+        borderBottom: "1px solid var(--kls-outline-variant)" }}>
+        <MeCircleBtn label="Back to Catalog" onClick={requestClose}>
+          <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+            <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 600, color: "var(--kls-on-surface)",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{draft.title}</span>
+            {dirty && <span title="Unsaved changes" style={{ width: 8, height: 8, borderRadius: 999, background: "var(--kls-primary)", flex: "none" }} />}
+          </div>
+          <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 500, color: "var(--kls-on-surface-variant)" }}>
+            Catalog · Tasks · {viewing ? meVerTitle(viewing) : "v1"}
+          </div>
+        </div>
+        <MeCircleBtn label="Task settings" bordered={false} onClick={() => setSettingsOpen(true)}>
+          <path d={TE_PATHS.gear} strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        {saved && (
+          <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, flex: "none",
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>Saved</span>
+        )}
+        <div style={{ flex: 1 }} />
+        {note && (
+          <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8,
+            background: "var(--kls-tertiary-container)", color: "var(--kls-on-tertiary-container)",
+            fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600 }}>{note}</span>
+        )}
+        {locked && (
+          <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, color: "var(--kls-accent-4)", flex: "none" }}>Read only · Published</span>
+        )}
+        <MeCircleBtn size={40} label="Version history" onClick={() => setVerOpen(true)}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M12 7.5V12l3 1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </MeCircleBtn>
+        {locked ? (
+          <MeButton tone="primary" onClick={startDraft}>Create new draft</MeButton>
+        ) : (
+          <>
+            <span style={{ padding: "var(--kls-space-tiny) var(--kls-space-small)", borderRadius: 8, flex: "none",
+              background: "var(--kls-primary-container)", color: "var(--kls-on-primary-container)",
+              fontFamily: "var(--kls-font-sans)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+              Editing {viewing ? meVerTitle(viewing) : "draft"}
+            </span>
+            {savedOnce && !dirty
+              ? <MeButton tone="primary" onClick={() => setPublishAsk(true)}>Publish</MeButton>
+              : <MeButton tone="primary" onClick={save}>Save</MeButton>}
+          </>
+        )}
+      </div>
+
+      <div style={{ flex: 1, minHeight: 0, display: "flex", overflowX: "auto" }}>
+
+        {/* steps rail */}
+        <div style={{ width: 300, flex: "none", boxSizing: "border-box", borderRight: "1px solid var(--kls-outline-variant)",
+          padding: "var(--kls-space-med) var(--kls-space-small)", overflowY: "auto",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <div style={{ display: "flex", alignItems: "center", paddingLeft: "var(--kls-space-small)" }}>
+            <span style={ME_LABEL}>Steps ({steps.length})</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+            {steps.map((s, i) => (
+              <TeStepRow key={s.id} step={s} index={i} active={s.id === selId} onClick={() => setSelId(s.id)} />
+            ))}
+          </div>
+        </div>
+
+        {/* step canvas */}
+        <div style={{ flex: 1, minWidth: 560, overflowY: "auto" }}>
+          <div style={{ padding: "var(--kls-space-med) var(--kls-space-small) var(--kls-space-large)",
+            display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)" }}>
+              <span style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)", flex: "none" }}>
+                Step {idx + 1}:
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {locked
+                  ? <TeReadonlyField>{step.name}</TeReadonlyField>
+                  : <MeInput value={step.name} onChange={(v) => patch({ name: v })} placeholder="Step name" />}
+              </div>
+              <TeIconBtn name="undo" label="Undo" disabled />
+              <TeIconBtn name="redo" label="Redo" disabled />
+            </div>
+
+            <div style={TE_CARD}>
+              <TeCardHead icon="book">Step instructions</TeCardHead>
+              <TeTextArea value={step.instructions} rows={5} disabled={locked} placeholder="What the student should do in this step"
+                onChange={(v) => patch({ instructions: v })} />
+            </div>
+
+            <div style={TE_CARD}>
+              <TeCardHead icon="chat">Senior mechanic notes</TeCardHead>
+              <TeTextArea value={step.notes} rows={5} disabled={locked} placeholder="Context an instructor would add over the shoulder"
+                onChange={(v) => patch({ notes: v })} />
+            </div>
+
+            <div style={TE_CARD}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-xsmall)" }}>
+                <TeCardHead icon="playc">Step actions</TeCardHead>
+                <div style={{ flex: 1 }} />
+                {!locked && <TeIconBtn name="plus" size={16} box={24} label="Add action" onClick={() => setAddAction(true)} />}
+              </div>
+              {step.actions.length === 0 ? (
+                <div style={TE_EMPTY}>No actions yet — actions become the student's to-do list for this step.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+                  {step.actions.map((a) => (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: "var(--kls-space-small)",
+                      padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-surface-container-lowest)",
+                      border: "1px solid var(--kls-outline-variant)" }}>
+                      <span style={{ color: "var(--kls-on-surface)", display: "inline-flex" }}><TeIcon name="checkc" size={24} /></span>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={ME_LABEL}>{teActionLabel(a.type)}</div>
+                        <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 16, fontWeight: 500, color: "var(--kls-on-surface)" }}>{a.value}</div>
+                      </div>
+                      {!locked && <TeRemoveBtn label={"Remove " + teActionLabel(a.type)}
+                        onClick={() => patch({ actions: step.actions.filter((x) => x.id !== a.id) })} />}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-tiny)" }}>
+              <TeIconBtn name="copy" label="Duplicate step" disabled />
+              <TeIconBtn name="trash" label="Delete step" disabled />
+            </div>
+          </div>
+        </div>
+
+        {/* resources rail */}
+        <div style={{ width: 340, flex: "none", boxSizing: "border-box", borderLeft: "1px solid var(--kls-outline-variant)",
+          padding: "var(--kls-space-med) var(--kls-space-small)", overflowY: "auto",
+          display: "flex", flexDirection: "column", gap: "var(--kls-space-small)" }}>
+          <div style={{ display: "flex", alignItems: "center", paddingLeft: "var(--kls-space-small)" }}>
+            <span style={ME_LABEL}>Resources</span>
+          </div>
+
+          <TeResourceSection title="Linked media" addLabel="Add media" onAdd={locked ? null : () => setPicker("media")}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-small)" }}>
+              {media.filter((m) => !TE_MODEL_KINDS.includes(m.kind)).map((m) => (
+                <TeMediaTile key={m.id} item={m}
+                  onRemove={locked ? null : () => { touch(); setMedia((cur) => cur.filter((x) => x.id !== m.id)); }} />
+              ))}
+              {!locked && <TeAddTile label="Add media" onClick={() => setPicker("media")} />}
+            </div>
+          </TeResourceSection>
+
+          <TeResourceSection title="3D models" addLabel="Add 3D model" onAdd={locked ? null : () => setPicker("models")}>
+            {media.some(teStale) && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--kls-space-xsmall)",
+                padding: "var(--kls-space-small)", borderRadius: 8, background: "var(--kls-error-container)",
+                color: "var(--kls-on-error-container)", fontFamily: "var(--kls-font-sans)", fontSize: 13,
+                fontWeight: 500, lineHeight: 1.45 }}>
+                <span style={{ flex: "none", display: "inline-flex", paddingTop: 1 }}>
+                  <KlsIcon name="warning" size={16} color="var(--kls-on-error-container)" />
+                </span>
+                <span style={{ minWidth: 0, textWrap: "pretty" }}>One or more of your linked models has a newer released version.</span>
+              </div>
+            )}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--kls-space-small)" }}>
+              {media.filter((m) => TE_MODEL_KINDS.includes(m.kind)).map((m) => (
+                <TeMediaTile key={m.id} item={m} onOpen={() => setOpen3D(m.node)}
+                  onRemove={locked ? null : () => { touch(); setMedia((cur) => cur.filter((x) => x.id !== m.id)); }} />
+              ))}
+              {!locked && <TeAddTile label="Add 3D model" onClick={() => setPicker("models")} />}
+            </div>
+          </TeResourceSection>
+
+          <TeResourceSection title="Documents" addLabel="Add document"
+            onAdd={locked ? null : () => setPicker("docs")}>
+            {docs.length === 0 ? <div style={TE_EMPTY}>None</div> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                {docs.map((d) => (
+                  <TeResourceRow key={d.id} icon={teKind(d.kind).icon} iconColor={teKind(d.kind).color} name={d.name} meta={(d.kind || "pdf").toUpperCase()}
+                    removeLabel={"Remove " + d.name}
+                    onRemove={locked ? null : () => { touch(); setDocs((cur) => cur.filter((x) => x.id !== d.id)); }} />
+                ))}
+              </div>
+            )}
+          </TeResourceSection>
+
+          <TeResourceSection title="Links" addLabel="Add link"
+            onAdd={locked ? null : () => { touch(); setLinks((cur) => cur.concat([{ id: "l" + Date.now(), name: "Untitled link", url: "https://" }])); }}>
+            {links.length === 0 ? <div style={TE_EMPTY}>None</div> : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--kls-space-tiny)" }}>
+                {links.map((l) => (
+                  <TeResourceRow key={l.id} icon="globe" name={l.name} meta={l.url}
+                    removeLabel={"Remove " + l.name}
+                    onRemove={locked ? null : () => { touch(); setLinks((cur) => cur.filter((x) => x.id !== l.id)); }} />
+                ))}
+              </div>
+            )}
+          </TeResourceSection>
+        </div>
+      </div>
+
+      {addAction && (
+        <TeAddActionDialog onClose={() => setAddAction(false)}
+          onPick={(t) => { patch({ actions: step.actions.concat([{ id: "a" + Date.now(), type: t.key, value: t.value }]) }); setAddAction(false); }} />
+      )}
+      <TeOrionFab onClick={() => setOrion(true)} />
+      {orion && <TeOrionDrawer onClose={() => setOrion(false)}
+        onAction={(a) => { if (a === "pickModel") { setOrion(false); setPicker("modelsOnly"); } }} />}
+      {picker && <TeLinkPicker scope={picker} onPick={linkItem} onClose={() => setPicker(null)} />}
+      {settingsOpen && (
+        <TeSettingsDrawer task={task} draft={draft} locked={locked}
+          onDraft={(d) => { touch(); setDraft(d); }} onClose={() => setSettingsOpen(false)} />
+      )}
+
+      {verOpen && (
+        <MeVersionDrawer
+          entity={{ kindLabel: "Task", name: draft.title }} versions={versions} previewId={verPreview}
+          changesFor={(v) => teSeedChanges(v)} onRollback={rollbackTo}
+          onClose={() => setVerOpen(false)}
+          onPreview={(v) => { setVerPreview(v.id); setMode(v.released ? "view" : "draft"); setDirty(false); setSaved(false); setSavedOnce(false); }}
+          onDelete={(v) => { setVersionsFor(verKey, versions.filter((x) => x.id !== v.id)); if (verPreview === v.id) { setVerPreview(null); setMode("view"); } }}
+          onEditDraft={(v) => setVerDraft({ mode: "edit", id: v.id, key: verKey, desc: v.desc || "" })}
+          onPublish={(v) => { setVersionsFor(verKey, versions.map((x) => (x.id === v.id
+            ? { ...x, released: true, wasReleased: false, isDraft: false, label: x.isDraft ? meNextVersionLabel(versions) : x.label }
+            : { ...x, released: false, wasReleased: x.wasReleased || x.released }))); setVerPreview(v.id); setMode("view"); }}
+          onUnpublish={() => setVersionsFor(verKey, versions.map((x) => ({ ...x, released: false, wasReleased: x.wasReleased || x.released })))} />
+      )}
+
+      {verDraft && (
+        <MeDraftDialog draft={verDraft} onChange={setVerDraft} onCancel={() => setVerDraft(null)} onSave={saveVerDraft} />
+      )}
+
+      {publishAsk && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1800, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} onClick={() => setPublishAsk(false)}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ width: 460, maxWidth: "90vw", boxSizing: "border-box", padding: "var(--kls-space-large)", borderRadius: 8,
+              background: "var(--kls-surface)", boxShadow: "var(--kls-drop-shadow)",
+              display: "flex", flexDirection: "column", gap: "var(--kls-space-med)" }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 24, fontWeight: 600, letterSpacing: "-0.025em", color: "var(--kls-on-surface)" }}>Publish task?</div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, lineHeight: 1.5,
+              color: "var(--kls-on-surface-variant)", textWrap: "pretty" }}>
+              {draft.title} will be published as the released version of this task. It becomes available in the Catalog and can be assigned to students.
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-small)" }}>
+              <MeButton onClick={() => setPublishAsk(false)}>Cancel</MeButton>
+              <MeButton tone="primary" onClick={() => { setPublishAsk(false); publishNow(); }}>Publish</MeButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {leaveNote && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1700, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "var(--kls-space-med)" }}>
+          <div style={{ position: "absolute", inset: 0, background: "var(--kls-scrim)", backdropFilter: "blur(4px)" }} />
+          <div style={{ position: "relative", width: "min(460px, 100%)", background: "var(--kls-surface)", borderRadius: 8,
+            boxShadow: "var(--kls-drop-shadow)", padding: "var(--kls-space-med)", display: "flex", flexDirection: "column",
+            gap: "var(--kls-space-small)" }}>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 20, fontWeight: 600, color: "var(--kls-on-surface)" }}>
+              {dirty ? "You have unsaved draft changes" : "Draft saved"}
+            </div>
+            <div style={{ fontFamily: "var(--kls-font-sans)", fontSize: 14, fontWeight: 500, color: "var(--kls-on-surface-variant)", lineHeight: 1.55 }}>
+              {dirty
+                ? "Save the draft before leaving. Saved draft changes won’t be available to students until the task is published."
+                : "Your draft changes are saved, but they won’t be available to students until this task is published."}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--kls-space-xsmall)", paddingTop: "var(--kls-space-tiny)" }}>
+              <MeButton onClick={() => setLeaveNote(false)}>Keep editing</MeButton>
+              <MeButton onClick={() => { setLeaveNote(false); publishNow(); onClose(); }}>Publish</MeButton>
+              <MeButton tone="primary" onClick={onClose}>Back to Catalog</MeButton>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

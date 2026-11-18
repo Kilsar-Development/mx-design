@@ -1,0 +1,96 @@
+# Project: Mx product vision & UX overhaul
+
+## Reference: MX mocks (V1 product)
+- Project `22570fd9-2e4e-40d4-beb2-270816805784` (https://claude.ai/design/p/22570fd9-2e4e-40d4-beb2-270816805784). Pull content/features from it into V2 as needed. Key files: `Web App.dc.html` → `web-app.jsx` (all screens), `Mobile App.dc.html`, `release-notes.js` (shared `window.MX_RELEASES`), `simulators/`. Local copies for grep live in `_ref/` (read-only reference, not part of V2).
+
+## LOCKED (turn 8) — canonical shells and rails
+`Mx Web.dc.html` is the one true mock (Joel, 16 Nov 2026). The earlier canonical frames lived in `Mx IA Explorations.dc.html` (6a Student Home · 6d Student Tasks · 7a Instructor Home · 7b Admin Home · 6b/6c Milestones · 5b ⌘K); that page has been deleted.
+- Student / Operator rail: Work = Home · Jobs · Tasks; Learn = Start here · Training · Assessments; Knowledge = Library · Assistant · Milestones; Help & Feedback · version. Commercial relabels: Tasks → Procedures.
+- Instructor rail: Work = Home · Assignments · Tasks; Teach = Training · Assessments; Build = Design Studio; Knowledge = Library · Assistant · Milestones; Workspace · Help & Feedback · version.
+- Admin rail: Work = Home · Triage · Jobs · Procedures; Teach = Course Catalog · Training · Assessments; Build = Design Studio; Knowledge = Library · Assistant · Milestones; Operations = Inventory Mgr · Records · Integrations; Workspace · Help & Feedback · version. Course Catalog (Education) or Procedures (Commercial), not both.
+- Header right zone everywhere: ⌘K search · bell (review inbox) · avatar (settings, incl. Student Mode toggle).
+- Control Tower = student Home + instructor Assignments. No Messages tab. Users & access assumed under Workspace.
+- Open: definition of Triage; Start here content; Jobs for Education students.
+
+## MX DS V3 — MANDATORY for every mock (locked 16 Nov 2026)
+The design system is its own artifact: **MX DS V3**, https://claude.ai/artifact/CwiCQ424zfFMWNRieL9p3q. Read its `project/README.md` before designing or changing anything here. It replaces everything this file used to say under "DS V2": the old `--mx-<role>` names are retired, and the old `ds-v2/` and `_ds/` folders have been removed from this project.
+
+### Review rule (no exceptions)
+1. A page may use ONLY what MX DS V3 defines. If a design needs something the system does not have (a colour role, a text token, a height for a new kind of widget), STOP and ask Joel. Never invent, rename or approximate a token, and never add one to the system without his approval.
+2. Before every save of a page, run `node tools/check-ds.js "<page>.dc.html"` from `project/`. It must print `0 violations`. A page with violations is not saved.
+3. The design system is installed in this project at `ds/mx/` (`tokens.css` and `fonts/`), copied by the server straight from the MX DS V3 artifact. Pages load it with `<link rel="stylesheet" href="ds/mx/tokens.css">`. The copy does not update by itself: when the design system changes, install it again from the artifact (same paths). Never edit anything under `ds/mx/` by hand.
+4. Anything brought in from the V1 mocks (`_ref/`) is rewritten onto MX DS V3 before it lands.
+
+### What the system fixes
+- **Colour.** A widget is coloured only by a member of Flutter's `ColorScheme` (the 46-member list in the design system README) or by an accent (`accent1`–`accent4`), named exactly as in Flutter: `var(--primary)`, `var(--onPrimaryContainer)`, `var(--surfaceContainerLow)`, `var(--accent1)`. Palette steps (`teal600`…) only define hex values and are never used in a page. No hex, rgb() or named colours in a page. Keep pairs together (primary/onPrimary, accent1/accent2, accent3/accent4). No green: done = primary, in progress = inversePrimary, attention = accents, error only for real failures.
+- **Text.** 16 tokens; each fixes font, size and weight: displayBold 40/700, headingLargeBold 30/700, headingMediumBold 26/700, titleBold 18/700, subtitleSemiBold 16/600, bodyRegular 14/400, bodySemiBold 14/600, bodyBold 14/700, labelRegular 13/400, labelSemiBold 13/600, labelBold 13/700, captionRegular 12/400, captionSemiBold 12/600, overlineBold 11/700 (+0.08em), microBold 10/700, codeRegular 12/400 monospace. The three large headings carry -0.02em. Nothing is applied on top of a token except colour: a bolder version is a different token (selected states switch token). No line-height (it comes from the font). Uppercase is applied by the widget. In a page a token is written as its `font-size` + `font-weight` (and its letter spacing or `var(--font-mono)` where it has one).
+- **Spacing.** Padding, gap and margin use only the `Sizing` constants: `var(--sizingTiny)` 4, `var(--sizingXSmall)` 6, `var(--sizingSmall)` 12, `var(--sizingMed)` 20, `var(--sizingLarge)` 32, `var(--sizingXLarge)` 64 (0, 1px and 2px insets are allowed).
+- **Radius.** `var(--xSmallBorderRadius)` 4, `var(--smallBorderRadius)` 8, `var(--medBorderRadius)` 12, `var(--largeBorderRadius)` 24, `50%` for circles. Fully rounded = half the widget's fixed height, written as that number.
+- **Heights, one per kind of widget.** Main button 40; small button 32; icon button 36; small icon button and close 32; filter chip 30; segmented control track 36 / segment 30; stepper step 36; status pill and code tag 24; badge 20; switch 22; checkbox 22; text field 48; compact text field 40; avatar 26 (signed-in user 36). Text on them: buttons bodyBold / bodySemiBold (small: labelBold / labelSemiBold); chips and segments labelSemiBold, labelBold when selected; pills and badges captionSemiBold.
+- **Shadow and motion.** Only `var(--mx-drop-shadow)`. Motion is written out: `cubic-bezier(0.42, 0, 0.58, 1)`; 80, 125, 250, 500ms.
+- **Kinds of widget with no agreed height yet** (left as drawn; ask Joel before standardising): header search box, round icon buttons, large avatars, numbered and lettered circles, media thumbnails, path and step circles, small icon toggles, progress bars, menu rows, square tags.
+- Direction is unchanged: teal and amber on a warm neutral; no big colour-block hero; the main colour only on primary actions, the active rail item, the path and progress fill.
+
+### State of the pages
+- `Mx Web.dc.html` is the true web mock. It, `Mx Mobile.dc.html` and `Gap Analysis - Roles & Flows.dc.html` are on MX DS V3 and pass the check.
+- Removed on 16 Nov 2026 (Joel's decision): the pages `DS V2 Colors`, `Mx Student Home - Look and Feel` and `Mx IA Explorations`; the `ds-v2/` folder; and `_ds/` (the older Kilsar design system that came across from Claude Design).
+
+## Mx Mobile (started 16 Nov 2026)
+`Mx Mobile.dc.html` is the phone mock (390 × 844, light and dark), a sibling of Mx Web on MX DS V3 and under the same check. Joel's brief: mobile is for everything web is for; all three roles, student first; every feature except Training (web only for now); phone only, tablet later; minimum touch zone 32, up to 40 or 44 as needed. He asked for an independent design, so the current mobile product designs were deliberately not looked at.
+
+### Navigation framework (first draft, awaiting Joel's review)
+- One frame for every role: device status bar · app bar (mark, workspace and group, search, bell, avatar) · scrolling content · bottom bar.
+- Bottom bar, up to five items: Home · Work · Assessments · Orion · More. Items come and go by role and by feature: Orion drops out when the feature is off; Work shows a Tasks / Jobs switch only when Jobs is on; More lists everything else in groups (Learn, Knowledge, Account) and hides what is off.
+- Tweaks on the page: role, mode, and the feature jobs. Orion and Milestones are always on (Joel, 16 Nov 2026), so they have no option. Only the student role is drawn so far; instructor and admin show a "not designed for mobile yet" stand-in inside the student frame.
+- Student Home, in order: Continue (the one thing to do now) · Next exam (questions seen, practice average, weak area) · Your path · assigned work with To do / Overdue / Completed chips · Start here.
+- Work, Assessments, Orion and More are first-pass landing screens so the navigation works. Everything they open shows a "Not designed for mobile yet" toast.
+
+### Mobile sizes used in the draft (PROPOSED, not yet approved, not in the design system)
+App-bar icon buttons 40; main full-width action 44, other buttons 40; filter chips 32; segmented control track 40 with 32 segments; bottom-bar item 60 with a 56 × 32 selected indicator; list rows 52 to 64; text field and send button 48; path circles 26; row tiles 40. Text uses the 16 tokens at their desktop values, because mobile text values are not defined yet.
+
+## History (decisions, in order)
+
+- Turn 14: Work Summary dialog (900px, scrolling white page: brand row + rev/date, title, Block / Module / Status / Performed by, Total time / Average / Steps completed strip, numbered steps with status pill + performer + check line; footer Download PDF / Close). Task history → "Change history" half-width right drawer: Rev C vs Rev B, grouped by event, Original (error-container) → Updated (primary-container) field pairs. Rail width 176px. Media panes (guided + checklist) have an expand button → full-screen media dialog (Figures / 3D switch, tag, viewer, caption, thumb strip; shared selection state).
+
+- Turn 13: Gap Analysis re-audited (rev 2, 29 Oct) after student side landed. Checklist mode: rows expand on click with the guided step content (source, caution, Why, You should see, parts, Stuck, Flag right-aligned); checkbox alone marks done. Closed rows white, no hover; open row header surface-container-low; body white. Media pane mirrors guided: Step N + Figures / 3D models switch, caption + thumb strip; no Open guided link.
+
+- Turn 12: Master clickable mock is `Mx Web.dc.html` (Role + Mode tweaks; now on MX DS V3). Student task runtime done: breadcrumb · title · Guided / Quick checklist toggle · icon buttons for Worklog PDF (dialog) and Task history (drawer). Guided = Figures / 3D models tabs with thumbnail strip lower-right of the viewer + Evidence card left; step pane right (caution accent1/2 header + accent3/4 body, Why, You should see in primary-container, parts, Stuck link, Back / Flag / Done·Next); horizontally scrolling step strip. Checklist = step list left + sticky media viewer right. Tasks page: title "Tasks", no sort chips, sortable column headers, no Status column (button derived: Start / Resume / Review). Rail 196px; Help & Feedback icon square; version string centred, opens Release notes page (data from `release-notes.js`, copied from MX mocks; dots New=primary, Improved=primary-container, Fixed=accent1). Rejected: per-step media chip row replacing the tabs.
+- Turn 11: `uploads/mxedu-roles-flows.pdf` (AIM campus-visit roles/flows/priorities) added as a WHAT input. Gap analysis in `Gap Analysis - Roles & Flows.dc.html`; design unchanged. Open from it: student stage as a dimension; FAA exam as first-class object; Program Coordinator persona; classroom presentation mode; question coverage / missed-question review; prebuilt activities.
+- Source of truth for WHAT: `uploads/mx_product_vision_handoff-2102ba6d.md` (latest; supersedes `mx_product_vision_handoff.md`) (feature catalog with input/output edges) and `uploads/mx_product_vision.md` (overall vision, north star, boundaries). I own the HOW: IA, navigation, composition, patterns, visual language.
+- Permission levels are Viewer / Editor / Admin. "Student" / "Instructor" are Education-workspace labels for the Viewer side and Editor/Admin side; radio pilot uses operator / maintainer / supervisor. Not separate product identities.
+- Grades / class reporting are AIM's separate system, not Mx today. Show exam results, not a gradebook.
+- Not yet wireframed: source change awareness; radio-pilot field runtime (offline, evidence under working conditions).
+- Feature edges are dependencies, NOT required UI flows. Only surface cross-links where a person would want them.
+- NOT based on the older Kilsar DS (it was under `_ds/`, removed 16 Nov 2026). Carry over ONLY Plus Jakarta Sans + the type scale (`fonts/`). Colors, components, spacing, radii, motion are all new. Logo/brand marks and dark-mode support must be retained.
+- Web first; mobile later.
+- IA decision: fully separate Student experience from Instructor/Admin experience. Instructors and Admins have a "Student Mode" toggle in settings (plain toggle, no extra options) to enter the Student experience. No header-level mode switch.
+- Header right zone: search icon · notifications bell with count badge · profile avatar (opens settings). Student nav item for progress is "Milestones".
+- Wireframes: low-fi boxes. Then look-and-feel on one real screen.
+- Vocabulary: do not invent product terms. Use the handoff's capability names as working labels and flag anything I coin.
+- Student milestones (user story, added turn 3): block completion → recommended exam → "Level N" milestone. Recommended path never blocks. Levels authored per term or derived.
+- Role priorities (handoff "Current role priorities") decide what is primary per role. Assignments / tasks / procedures are one thing under workspace vocabulary.
+- Vocabulary chain (confirmed turn 5). Engineering objects: Term → Course → Assignment. Presentation labels per domain: Education = Block → Module → Task (block = term; "course" is also used for the program as a whole). Commercial = Job → (no course level) → Module/Task, plus Systems as a first-class object. Milestones hang off blocks/terms.
+- Radio pilot: learner receives a task/procedure generated at runtime from a 3D model + manuals, with 3D guidance. Reuses guided work.
+- Hierarchy inverted (turn 6): students do not drill block → module → task. Home = flat list of allocated tasks/exams/sims; block, module, ACS code are filters. "My work" removed. Milestones carries path + block structure. Admins need a milestone setup surface. Problem being solved: students (and campus admins) do not manage blocks well.
+- Staff Homes differ (turn 7): Instructor Home = their students (activity, progress, weak areas, quick allocation). Admin Home = workspace-level analytics; other admin surfaces manage content, exam content, tasks, 3D Studio, users.
+- Review is not a destination: evidence / check-in / help-request / question-draft reviews arrive as notifications in the bell drawer (turn 7).
+- Allocations surface is "Control Tower" (existing product name), a feature flag. Same surface for Instructors and Admins when enabled; absent from the rail when not.
+- Staff Content rail: "Exam content" split into "Written Exams" and "Oral Exams".
+- Admin Content rail: "Course Catalog" (was Courses & blocks). Milestone setup lives under it.
+- Staff Content rail: "Library" and "3D Studio" are separate items (was Library & 3D).
+- Student rail has no 3D item; 3D is reached through tasks and Library. Student rail: Home · Exams · Simulators · Library · Messages · Milestones.
+- Admin Content rail shows either Course Catalog (Education) or Tasks (Commercial / radio pilot), never both.
+- Viewer side is labelled "Student / Operator". Student rail has sections: Work (Home, Milestones) · Learn (Training, Simulators, Exams) · Knowledge (Library, Assistant); Messages at bottom. Commercial labels per user screenshot: Work → Home · Jobs · Procedures; Learn → Start here · Training · Assessments; Knowledge → Assistant.
+- Student rail (turn 6 revised): Work = Home · Jobs · Tasks · Milestones; Learn = Start here · Training · Simulators · Exams; Knowledge = Library · Assistant; Messages bottom. Home = path strip + today (resume/fix/due); Tasks = full filtered allocation list (6d). Jobs = Commercial container; Education may hide it.
+- Student rail (turn 6 revised again): Work = Home · Jobs · Tasks; Learn = Start here · Training · Simulators · Exams; Knowledge = Library · Assistant · Milestones; Messages marked Future.
+- Simulators are part of Training (no separate student rail item). Student rail: Work = Home · Jobs · Tasks; Learn = Start here · Training · Exams; Knowledge = Library · Assistant · Milestones; Messages (Future).
+- Student rail Learn item is "Assessments" (was Exams), both domains.
+- Instructor rail (turn 8): Work = Home · Assignments · Tasks; Content = Written Exams · Oral Exams; Knowledge = Library · 3D Studio · Assistant; Messages (Future). No Students tab, no Control Tower on instructor rail; "Assignments" is the allocation surface.
+- Control Tower = the allocation feature. For students it IS the Home page (what has been allocated to me). For instructors it IS the Assignments tab (allocate to students). Admin side: same, under a feature flag.
+- Instructor rail section "Teach": Training · Assessments (same labels as student Learn; written/oral exams live inside Assessments).
+- Instructor rail: new section "Build" = Design Studio (replaces 3D Studio). Knowledge = Library · Assistant.
+- Instructor and Admin rails: "Workspace" tab sits at the bottom, directly above Messages (Future).
+- All rails: "Help & Feedback" above Messages (Future), version string below. Staff rails: Workspace · Help & Feedback · Messages.
+- Messages tab removed from all rails (not shown, even as Future). Rails end with Help & Feedback + version; staff rails have Workspace above it.
+- Instructor rail Knowledge = Library · Assistant · Milestones (mirrors student).
+- Admin rail (turn 8): Work = Home · Triage · Jobs · Procedures (no Control Tower); Teach = Course Catalog · Training · Assessments; Build = Design Studio; Knowledge = Library · Assistant · Milestones; Operations = Inventory Mgr · Records · Integrations (Users & access moved out; likely under Workspace); Workspace · Help & Feedback. Triage = admin work queue, not yet defined.

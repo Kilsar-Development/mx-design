@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="ds/mx/tokens.css">
+<style>
+body{margin:0;font-size:14px;font-weight:400;background:var(--surfaceContainerLow);color:var(--onSurface);font-family:var(--font-sans);-webkit-font-smoothing:antialiased}
+a{color:var(--primary)}a:hover{color:var(--onPrimaryContainer)}
+</style>
+</helmet>
+<div style="max-width:1100px;margin:0 auto;padding:var(--sizingXLarge) var(--sizingLarge) var(--sizingXLarge);display:flex;flex-direction:column;gap:var(--sizingLarge)">
+  <div style="display:flex;flex-direction:column;gap:var(--sizingXSmall);max-width:760px">
+    <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--onSurfaceVariant);letter-spacing:.08em">Gap analysis · 29 Oct 2026 · rev 2</span>
+    <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em">Current design vs. "User Roles, Tasks, Flows &amp; Platform Priorities"</h1>
+    <p style="margin:0;font-size:14px;color:var(--onSurfaceVariant);text-wrap:pretty;font-weight:400">Compares the AIM campus-visit document against <code style="font-size:12px;font-weight:400;font-family:var(--font-mono)">Mx Web.dc.html</code> as of today: student Home, Tasks, Task runtime, Training, Assessments (Oral + Written with setup, history, attempt detail, progress), Library, Assistant, Milestones, instructor and admin Homes, ⌘K. Re-audit of the 28 Oct version after the student side landed. Nothing in the design was changed. Status: <b style="color:var(--onPrimaryContainer);font-size:14px;font-weight:700">Covered</b> · <b style="color:var(--accent4);font-size:14px;font-weight:700">Partial</b> · <b style="color:var(--onErrorContainer);font-size:14px;font-weight:700">Gap</b>.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sizingSmall)">
+    <sc-for list="{{ summary }}" as="k" hint-placeholder-count="3">
+      <div style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);padding:var(--sizingMed) var(--sizingMed);display:flex;flex-direction:column;gap:var(--sizingTiny)"><span style="font-size:11px;font-weight:700;text-transform:uppercase;color:{{ k.fg }};letter-spacing:.08em">{{ k.label }}</span><span style="font-size:30px;font-weight:700;letter-spacing:-0.02em">{{ k.n }}</span><span style="font-size:12px;color:var(--onSurfaceVariant);font-weight:400">{{ k.sub }}</span></div>
+    </sc-for>
+  </div>
+
+  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+    <div style="display:flex;flex-direction:column;gap:var(--sizingSmall)">
+      <div style="display:flex;flex-direction:column;gap:var(--sizingTiny)"><h2 style="margin:0;font-size:18px;font-weight:700">{{ g.title }}</h2><span style="font-size:13px;color:var(--onSurfaceVariant);font-weight:400">{{ g.flow }}</span></div>
+      <div style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);overflow:hidden">
+        <div style="display:grid;grid-template-columns:minmax(0,1.2fr) 96px minmax(0,1.6fr);gap:var(--sizingMed);padding:var(--sizingSmall) var(--sizingMed);border-bottom:1px solid var(--outline);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--onSurfaceVariant);letter-spacing:.08em"><span>Document asks for</span><span>Status</span><span>In the current design</span></div>
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:minmax(0,1.2fr) 96px minmax(0,1.6fr);gap:var(--sizingMed);align-items:start;padding:var(--sizingSmall) var(--sizingMed);border-bottom:1px solid var(--outlineVariant);font-size:13px;font-weight:400">
+            <span style="font-weight:600;font-size:13px">{{ r.ask }}</span>
+            <span><span style="font-size:12px;font-weight:600;padding:var(--sizingTiny) var(--sizingXSmall);border-radius:var(--xSmallBorderRadius);background:{{ r.bg }};color:{{ r.fg }};white-space:nowrap">{{ r.status }}</span></span>
+            <span style="color:var(--onSurfaceVariant)">{{ r.note }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+
+  <div style="display:flex;flex-direction:column;gap:var(--sizingSmall);max-width:820px">
+    <h2 style="margin:0;font-size:18px;font-weight:700">Navigation: document's proposal vs. locked rails</h2>
+    <p style="margin:0;font-size:13px;color:var(--onSurfaceVariant);font-weight:400">The document proposes six role-and-stage-specific menus. The locked IA uses three rails plus filters and a stage-aware Home. Mapping below; items with no home in the rail are flagged.</p>
+    <div style="background:var(--surface);border:1px solid var(--outline);border-radius:var(--medBorderRadius);overflow:hidden">
+      <sc-for list="{{ navMap }}" as="n" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:180px minmax(0,1fr);gap:var(--sizingMed);padding:var(--sizingSmall) var(--sizingMed);border-bottom:1px solid var(--outlineVariant);font-size:13px;font-weight:400"><span style="font-weight:600;font-size:13px">{{ n.persona }}</span><span style="color:var(--onSurfaceVariant)">{{ n.map }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:var(--sizingSmall);max-width:820px">
+    <h2 style="margin:0;font-size:18px;font-weight:700">Decisions this raises</h2>
+    <sc-for list="{{ questions }}" as="q" hint-placeholder-count="5">
+      <div style="display:flex;gap:var(--sizingSmall);padding:var(--sizingSmall) 0;border-bottom:1px solid var(--outline);font-size:14px;font-weight:400"><span style="width:24px;height:24px;border-radius:50%;background:var(--primaryContainer);color:var(--onPrimaryContainer);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">{{ q.n }}</span><span>{{ q.text }}</span></div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const S = { c: ['Covered', 'var(--primaryContainer)', 'var(--onPrimaryContainer)'], p: ['Partial', 'var(--accent3)', 'var(--accent4)'], g: ['Gap', 'var(--errorContainer)', 'var(--onErrorContainer)'] };
+    const row = (k, ask, note) => ({ ask, note, status: S[k][0], bg: S[k][1], fg: S[k][2], k });
+    const groups = [
+      { title: '1A · New students (Blocks 1–4)', flow: 'Log in → Select current block → Study written questions → Review incorrect → Explore related tasks → Track progress. P1.', rows: [
+        row('c', 'Dashboard that immediately shows what to study', 'Home: Continue card, path strip, pending/overdue counts, recommended exam. Home is the allocated list, not a tree.'),
+        row('c', 'Written exam questions organized by current block and subject', 'Assessments › Written › Practice setup: Study mode with a Term › Course › ACS code tree, subject filter (General / Airframe / Powerplant), per-node mastery dots, question counts, pool / drawing summary.'),
+        row('c', 'Review incorrect answers', 'Attempt detail: Correct / Missed counts, Missed filter, expand a question for choices, right answer and explanation; "Quiz from these N misses" and "Ask Orion to elaborate". Oral log detail has the same quiz-from-misses action.'),
+        row('c', 'Tasks with step-by-step instructions and visual examples', 'Task runtime: Guided (step pane with caution, Why, You should see; Figures / 3D tabs; evidence) and Quick checklist modes, step strip, worklog PDF, task history.'),
+        row('c', 'Track progress and see improvement', 'Milestones (levels, module bars, earned badges, ACS coverage) plus Written › Progress (latest score, trend, readiness, by ACS code, weakest modules).'),
+        row('g', 'Simple introduction to the platform', '"Start here" is still a placeholder on the student rail. The Assistant answers "Where do I start?", which is not onboarding.'),
+        row('p', 'Instructors demonstrating in class', 'Depends on the instructor presentation gap below.'),
+      ]},
+      { title: '1B · Intermediate students (Blocks 5–13)', flow: 'Log in → Select FAA exam → Study by subject or ACS → Review missed → Track question coverage → Practice oral → Related tasks. P1.', rows: [
+        row('c', 'Select an FAA exam as the organizing unit (General / Airframe / Powerplant)', 'Written › Exam mode lists the three FAA writtens with fixed count, 2h limit, 70% pass, topic chips. Study mode has the same three as a subject filter. They remain gate exams on the Milestones path; both views coexist.'),
+        row('c', 'Study by subject or ACS code', 'Study tree goes Term › Course › ACS code with a description per code; oral setup picks topics and ACS codes the same way. ⌘K still does not index ACS codes.'),
+        row('p', 'Question coverage: which questions done, which remain, whole bank seen', 'Tree shows total questions per node and a four-step mastery dot (Expert / Proficient / Familiar / Untested); Progress has "By ACS code" bars. No seen / unseen count, no "all 412 practiced" state.'),
+        row('c', 'Focus on missed questions and weak subjects', 'Progress › Weakest modules with "Practice these" → Practice setup; attempt detail → "Quiz from these N misses"; Retake same setup.'),
+        row('c', 'Written and oral practice both easy to reach', 'One Assessments page, Oral / Written toggle. Oral: Practice setup (Speak / Write, difficulty, count, topics) and Exam logs. Written: Practice setup, Exam history, Progress. The exam-taking runtime itself is not drawn.'),
+        row('c', 'Avoid navigating multiple sections to switch between written, oral, tasks', 'Flat Tasks list with Type filter; Assessments is one page; ⌘K jumps anywhere.'),
+        row('p', 'Overall exam readiness indicator', 'Progress strip has a "Readiness" percentage (mean ACS mastery). Not on Home or Milestones, no threshold or "ready to challenge" state, written only.'),
+      ]},
+      { title: '1C · Advanced / capstone students (Blocks 14–17)', flow: 'Log in → Oral or practical prep → Subject or ACS → Practice oral → Step-by-step practical tasks → Simulators → Track readiness. P1.', rows: [
+        row('c', 'Oral exam practice resembling an examiner, with review of incorrect oral answers', 'Oral › Practice setup: Speak or Write (locked once started), Easy / Medium / Hard, question count, topic + ACS pick, mic calibration. Exam logs → detail with each question, your answer, hints used, pass / fail badge, quiz from misses, retake.'),
+        row('c', 'Step-by-step practical demonstrations and simulators', 'Task runtime with 3D models tab; Training page is a simulator grid with "assigned" badges.'),
+        row('c', 'Clear links between practical tasks and ACS codes', 'ACS code on every task row and task breadcrumb; Milestones coverage; Progress by ACS code; oral and written setups organised by code. Reverse lookup (code → tasks) only via the Tasks ACS filter.'),
+        row('p', 'Find the exact practical task without unrelated material', 'Tasks has Type and ACS filters. ⌘K searches titles only; no ACS code search.'),
+        row('g', 'Do not force late-stage students off Prepware / Dauntless', 'Home still assumes the path from Level 1. Assessments covers their prep needs, but there is no stage-aware Home and no import of prior progress.'),
+      ]},
+      { title: '2A · Trained instructor', flow: 'Log in → Select class → Written questions or tasks → Present or create assignment → Review results → Weak areas → Assign follow-up. P1.', rows: [
+        row('c', 'Control Tower dashboard with scores and progress', '7a Home: roster with doing-now, next level, last exam score, weak areas, needs-me; counts strip; group filter.'),
+        row('c', 'Simple process to create and assign work', 'Select rows → Allocate sheet (what / due / note) → toast. ⌘K "Allocate to Avionics 2…".'),
+        row('p', 'Search directly by ACS code when assigning', 'Allocate sheet has a free-text task search; no ACS field. Weak-areas column shows codes but is not clickable into Allocate.'),
+        row('g', 'Present questions or tasks on a classroom TV', 'No presentation / classroom mode anywhere. Not in the handoff catalog either; this is new.'),
+        row('g', 'Prebuilt activities and simulator demos', 'No activity library. Staff Training / Assessments are placeholders ("Content comes next").'),
+        row('p', 'Class-wide weakness → guide instruction', 'Weak areas per student in the roster; no class-level roll-up for instructors (the admin Home has one). Counts strip has "failed an exam this week".'),
+        row('c', 'Avoid repetitive navigation between classes, assignments, results', 'One roster surface = Home = Assignments. Review arrives in the bell drawer, not a separate tab.'),
+      ]},
+      { title: '2B · Untrained instructor', flow: 'Log in → Current class/block → Prebuilt activity → Present or assign → View completion. P1.', rows: [
+        row('g', 'Guided introduction to the main teaching tools; short how-to videos', 'No instructor onboarding. "Start here" exists only on the student rail and is a placeholder there too.'),
+        row('g', 'Prebuilt assignments aligned to the current block', 'Nothing prebuilt; Allocate assumes the instructor knows what to pick.'),
+        row('p', 'Minimal navigation', 'Instructor rail has 9 items in 4 sections. The document proposes 5. Density may be fine, but there is no simplified or progressive mode.'),
+        row('c', 'Easy access to assistance', 'Help & Feedback dialog on every rail; Assistant under Knowledge with pinned messages and chat history.'),
+      ]},
+      { title: '3A · Program coordinators / Student Success', flow: 'Log in → Student performance → Student needing support → Weak ACS codes → Assign remediation → Track completion → Reevaluate readiness. P1.', rows: [
+        row('g', 'This role has no persona in the design', 'The design has Student / Instructor / Admin. Coordinators are cross-class, campus-level, student-facing: not an instructor (no class), not a workspace admin (no content or integrations). Closest fit is Admin rail with Triage, but Admin Home is analytics, not a student list.'),
+        row('p', 'Centralized dashboard of written exam scores', 'Admin Home has pass rate KPIs and an ACS weak-areas roll-up; the instructor roster has per-student scores but is scoped to one group. No campus-wide student list.'),
+        row('p', 'Identify students ready to challenge an FAA exam', 'A readiness number now exists per student (Written › Progress) but is student-facing only; no staff view or threshold.'),
+        row('g', 'Students who failed and need remediation; did they complete it', 'Instructor counts strip shows "2 failed an exam this week" but nothing tracks a remediation assignment to completion. Admin "Triage" is undefined and may be this.'),
+        row('p', 'Assign remediation by ACS code with minimal steps', 'Allocate sheet exists but has no ACS entry point and is only on the instructor side.'),
+        row('p', 'Compare previous and current performance over time', 'Students have a score-trend chart over their last attempts. No staff-side trend per student.'),
+        row('g', 'One place to see everything about one student', 'No student detail page. Roster rows do not open anything.'),
+        row('g', 'Records appearing under the wrong campus', 'Campus is a filter chip on Admin Home only. Multi-campus data model is not surfaced.'),
+      ]},
+      { title: '3B · Campus leadership (DOE / CED)', flow: 'Log in → Campus dashboard → Student and instructor adoption → Areas needing support → Performance trends → Coordinate training. P2.', rows: [
+        row('c', 'Campus-wide dashboard of student performance and readiness', '7b Admin Home: active students, pass rate, on pace to level, review backlog, level distribution, weakest ACS areas. Term / 30 days / Course / Campus filters.'),
+        row('g', 'Instructor adoption: which classes actively use the platform', 'No instructor-side usage metrics. "38 inactive > 7 days" is students only.'),
+        row('p', 'Identify instructors or classes needing support', 'Not possible without the above. Review backlog KPI ("4 instructors") is the only instructor signal.'),
+        row('p', 'Clear reporting', '"Records" sits in Operations as a placeholder; no report export or scheduled report concept.'),
+        row('g', 'Consistent onboarding for new instructors and students', 'Same onboarding gap as 1A and 2B; no admin view of onboarding completion.'),
+      ]},
+    ];
+    const all = [].concat(...groups.map(g => g.rows));
+    const count = k => all.filter(r => r.k === k).length;
+    const summary = [{ label: 'Covered', n: count('c'), sub: 'present in the clickable mock', fg: 'var(--onPrimaryContainer)' }, { label: 'Partial', n: count('p'), sub: 'structure exists, surface or step missing', fg: 'var(--accent4)' }, { label: 'Gap', n: count('g'), sub: 'not represented anywhere yet', fg: 'var(--onErrorContainer)' }];
+    const navMap = [
+      { persona: 'New students', map: 'My Current Block → Home path strip + Block filter · Written Exam Prep → Assessments › Written · My Tasks → Tasks · My Progress → Milestones + Written › Progress.' },
+      { persona: 'Intermediate students', map: 'Written / Oral Exam Prep → Assessments (Oral / Written toggle) · My Tasks → Tasks · Question & ACS Coverage → Written › Progress (by ACS code) + Study tree mastery dots · My Progress → Milestones.' },
+      { persona: 'Advanced students', map: 'Oral Exam Prep → Assessments › Oral · Practical Tasks & Simulators → Tasks / Training · ACS Code Search → Tasks ACS filter and setup trees; not in ⌘K · My Readiness → Written › Progress "Readiness" KPI only.' },
+      { persona: 'Instructors', map: 'My Classes → Home group filter · Classroom Study / Presentation → no home · Create Assignment → Allocate sheet · Tasks & Simulators → Tasks / Training (staff Assessments still placeholder) · Student Performance / Control Tower → Home = Assignments.' },
+      { persona: 'Program coordinators', map: 'Student Performance / Exam Readiness / ACS Weak Areas / Create Remediation / Remediation Progress → no persona. Partial overlap with Admin Home and Triage (undefined).' },
+      { persona: 'Campus leadership', map: 'Campus Overview / Exam Readiness → Admin Home · Student Engagement → active-students KPI · Instructor Adoption → no home · Campus Reports → Records (placeholder).' },
+    ];
+    const questions = [
+      'Stage as a dimension: Assessments now serves all three stages, but Home is identical for a Block 2 and a Block 16 student. Does Home adapt by block range, or is Assessments enough?',
+      'Readiness: a per-student number exists in Written › Progress. Should it appear on Home / Milestones, carry a threshold ("ready to challenge"), include oral, and be visible to staff?',
+      'ACS code in ⌘K: setup trees and the Tasks filter work by code, global search does not. Index codes in ⌘K, or keep code lookup inside Tasks and Assessments?',
+      'Question-bank coverage: mastery dots and per-code bars exist. Is a seen / unseen count per node worth adding, or is mastery the better signal?',
+      'Start here: the one remaining student-side placeholder. Onboarding content, or a guided first run of Home?',
+      'Staff side is unchanged since 28 Oct: Program coordinator persona, classroom presentation mode, prebuilt activities, staff Assessments content, student detail page, Triage definition.',
+    ].map((text, i) => ({ n: i + 1, text }));
+    return { groups, summary, navMap, questions };
+  }
+}
+</script>
+</body>
+</html>

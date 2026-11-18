@@ -1,0 +1,161 @@
+/* MX DS V3 — generated from tokens.json */
+:root, [data-theme="light"] {
+  --primary: var(--teal600);
+  --onPrimary: var(--neutral0);
+  --primaryContainer: var(--teal100);
+  --onPrimaryContainer: var(--teal700);
+  --inversePrimary: var(--teal300);
+  --surfaceTint: var(--teal600);
+  --secondary: var(--neutral100);
+  --onSecondary: var(--neutral900);
+  --secondaryContainer: var(--neutral100);
+  --onSecondaryContainer: var(--neutral900);
+  --tertiary: var(--neutral100);
+  --onTertiary: var(--neutral600);
+  --tertiaryContainer: var(--neutral200);
+  --onTertiaryContainer: var(--neutral900);
+  --error: var(--red500);
+  --onError: var(--neutral0);
+  --errorContainer: var(--red50);
+  --onErrorContainer: var(--red700);
+  --surface: var(--neutral0);
+  --onSurface: var(--neutral900);
+  --onSurfaceVariant: var(--neutral600);
+  --surfaceDim: var(--neutral200);
+  --surfaceBright: var(--neutral0);
+  --surfaceContainerLowest: var(--neutral0);
+  --surfaceContainerLow: var(--neutral50);
+  --surfaceContainer: var(--neutral100);
+  --surfaceContainerHigh: var(--neutral200);
+  --surfaceContainerHighest: var(--neutral300);
+  --outline: var(--neutral200);
+  --outlineVariant: var(--neutral100);
+  --inverseSurface: var(--neutral800);
+  --onInverseSurface: var(--neutral50);
+  --shadow: var(--neutral1000);
+  --accent1: var(--amber500);
+  --accent2: var(--neutral0);
+  --accent3: var(--amber100);
+  --accent4: var(--amber700);
+  --scrim: rgba(0,0,0,0.40);
+  --neutral0: #ffffff;
+  --neutral50: #f7f7f5;
+  --neutral100: #efefec;
+  --neutral200: #e2e2de;
+  --neutral300: #cbccc7;
+  --neutral400: #9a9ea4;
+  --neutral500: #6f747b;
+  --neutral600: #5a5f66;
+  --neutral700: #3a3d42;
+  --neutral800: #24272b;
+  --neutral900: #1b1d20;
+  --neutral950: #121315;
+  --neutral1000: #000000;
+  --teal50: #edf8f6;
+  --teal100: #ddf3f0;
+  --teal200: #a8e5dc;
+  --teal300: #5eead4;
+  --teal400: #2dbfa9;
+  --teal500: #14968a;
+  --teal600: #0f766e;
+  --teal700: #0b5a54;
+  --teal800: #123532;
+  --teal900: #0a2321;
+  --amber50: #fdf6e7;
+  --amber100: #fdf0dc;
+  --amber200: #fcd264;
+  --amber300: #fbbf24;
+  --amber400: #f59e0b;
+  --amber500: #d97706;
+  --amber600: #b45309;
+  --amber700: #9a5200;
+  --amber800: #3a2a0a;
+  --amber900: #2a1d05;
+  --red50: #fef2f2;
+  --red100: #fecaca;
+  --red200: #f87171;
+  --red300: #ef4444;
+  --red500: #dc2626;
+  --red700: #991b1b;
+  --red800: #450a0a;
+  --red900: #2c0606;
+  --mx-drop-shadow: 0 0 10px 2px rgba(27, 29, 32, 0.12);
+}
+[data-theme="dark"] {
+  --primary: var(--teal300);
+  --onPrimary: var(--teal900);
+  --primaryContainer: var(--teal800);
+  --onPrimaryContainer: var(--teal200);
+  --inversePrimary: var(--teal600);
+  --surfaceTint: var(--teal300);
+  --secondary: var(--neutral800);
+  --onSecondary: var(--neutral50);
+  --secondaryContainer: var(--neutral800);
+  --onSecondaryContainer: var(--neutral50);
+  --tertiary: var(--neutral800);
+  --onTertiary: var(--neutral400);
+  --tertiaryContainer: var(--neutral700);
+  --onTertiaryContainer: var(--neutral50);
+  --error: var(--red200);
+  --onError: var(--red900);
+  --errorContainer: var(--red800);
+  --onErrorContainer: var(--red100);
+  --surface: var(--neutral900);
+  --onSurface: var(--neutral50);
+  --onSurfaceVariant: var(--neutral400);
+  --surfaceDim: var(--neutral950);
+  --surfaceBright: var(--neutral800);
+  --surfaceContainerLowest: var(--neutral950);
+  --surfaceContainerLow: var(--neutral950);
+  --surfaceContainer: var(--neutral800);
+  --surfaceContainerHigh: var(--neutral700);
+  --surfaceContainerHighest: var(--neutral600);
+  --outline: var(--neutral700);
+  --outlineVariant: var(--neutral800);
+  --inverseSurface: var(--neutral50);
+  --onInverseSurface: var(--neutral950);
+  --shadow: var(--neutral1000);
+  --accent1: var(--amber300);
+  --accent2: var(--amber900);
+  --accent3: var(--amber800);
+  --accent4: var(--amber200);
+  --scrim: rgba(0,0,0,0.60);
+  --mx-drop-shadow: 0 0 10px 2px rgba(247, 247, 245, 0.12);
+}
+:root {
+  --sizingTiny: 4px;
+  --sizingXSmall: 6px;
+  --sizingSmall: 12px;
+  --sizingMed: 20px;
+  --sizingLarge: 32px;
+  --sizingXLarge: 64px;
+  --xSmallBorderRadius: 4px;
+  --smallBorderRadius: 8px;
+  --medBorderRadius: 12px;
+  --largeBorderRadius: 24px;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+.displayBold { font-family: var(--font-sans); font-size: 40px; font-weight: 700; letter-spacing: -0.02em; }
+.headingLargeBold { font-family: var(--font-sans); font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+.headingMediumBold { font-family: var(--font-sans); font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.titleBold { font-family: var(--font-sans); font-size: 18px; font-weight: 700; }
+.subtitleSemiBold { font-family: var(--font-sans); font-size: 16px; font-weight: 600; }
+.bodyRegular { font-family: var(--font-sans); font-size: 14px; font-weight: 400; }
+.bodySemiBold { font-family: var(--font-sans); font-size: 14px; font-weight: 600; }
+.bodyBold { font-family: var(--font-sans); font-size: 14px; font-weight: 700; }
+.labelRegular { font-family: var(--font-sans); font-size: 13px; font-weight: 400; }
+.labelSemiBold { font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+.labelBold { font-family: var(--font-sans); font-size: 13px; font-weight: 700; }
+.captionRegular { font-family: var(--font-sans); font-size: 12px; font-weight: 400; }
+.captionSemiBold { font-family: var(--font-sans); font-size: 12px; font-weight: 600; }
+.overlineBold { font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+.microBold { font-family: var(--font-sans); font-size: 10px; font-weight: 700; }
+.codeRegular { font-family: var(--font-mono); font-size: 12px; font-weight: 400; }
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/PlusJakartaSans-ExtraLight.ttf"); font-weight: 200; font-style: normal; font-display: swap; }
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/PlusJakartaSans-Light.ttf"); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/PlusJakartaSans-Regular.ttf"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/PlusJakartaSans-Medium.ttf"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/PlusJakartaSans-SemiBold.ttf"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/PlusJakartaSans-Bold.ttf"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/PlusJakartaSans-ExtraBold.ttf"); font-weight: 800; font-style: normal; font-display: swap; }
