@@ -10,6 +10,7 @@
 <helmet>
 <link rel="stylesheet" href="ds/mx/tokens.css">
 <script src="release-notes.js"></script>
+<script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
 <style>
 html,body{margin:0;height:100%}
 body{font-family:var(--font-sans);background:var(--surfaceContainerLow);color:var(--onSurface);-webkit-font-smoothing:antialiased}
@@ -2080,6 +2081,11 @@ a{color:var(--primary)}a:hover{color:var(--onPrimaryContainer)}
   </div>
   </sc-if>
 
+  <!-- Design Studio (instructor and admin): the screen lives in design-studio.jsx, brought over from the original MX mock onto MX DS V3 -->
+  <sc-if value="{{ isDesignStudio }}" hint-placeholder-val="{{ false }}">
+  <x-import component-from-global-scope="DesignStudio" from="./design-studio.jsx" theme="{{ theme }}" hint-size="100%,100%"></x-import>
+  </sc-if>
+
   <sc-if value="{{ isPlaceholder }}" hint-placeholder-val="{{ false }}">
   <div data-screen-label="Placeholder" style="display:flex;flex-direction:column;gap:var(--sizingMed);padding:var(--sizingMed) var(--sizingLarge) var(--sizingLarge);animation:mx-in 250ms cubic-bezier(0.42, 0, 0.58, 1)">
     <h1 style="margin:0;font-size:30px;font-weight:700;letter-spacing:-0.02em">{{ routeLabel }}</h1>
@@ -3107,7 +3113,8 @@ class Component extends DCLogic {
     const isAssessments = r === 'assessments';
     const isLibrary = r === 'library', isAssistant = r === 'assistant', isJobs = r === 'jobs';
     const segOn = { bg: 'var(--surface)', fg: ONS, shadow: 'var(--mx-drop-shadow)' }, segOff = { bg: 'transparent', fg: ONSV, shadow: 'none' };
-    const isPlaceholder = !(isReport || isStartHere || isStudentHome || isTasks || isInstructorTasks || (isStaff && r === 'workspace') || isMilestones || isInstructorHome || isAssignments || isAdminHome || isRelease || isTask || isInstructorTask || isTaskEdit || isTraining || isAssessments || isLibrary || isAssistant || isJobs || isWorklog || isProcedures || isSystems || isTriage || isCatalog);
+    const isDesignStudio = isStaff && r === 'designstudio';
+    const isPlaceholder = !(isDesignStudio || isReport || isStartHere || isStudentHome || isTasks || isInstructorTasks || (isStaff && r === 'workspace') || isMilestones || isInstructorHome || isAssignments || isAdminHome || isRelease || isTask || isInstructorTask || isTaskEdit || isTraining || isAssessments || isLibrary || isAssistant || isJobs || isWorklog || isProcedures || isSystems || isTriage || isCatalog);
     // Jobs (ported from MX Tickets; label = Job)
     const jp = (...names) => names;
     const JOBS0 = [
@@ -4853,7 +4860,7 @@ class Component extends DCLogic {
     return {
       ...taskVals, ...edVals, ...histVals, ...asmVals, ...otVals, ...genVals, ...rvVals, ...wbVals, ...prVals, ...wdVals, ...wgVals, ...wrVals, ...runVals, ...wmVals, ...wgVals2, ...gdVals, ...invVals, ...oralVals, ...weVals, ...libVals, ...asstVals, ...jobVals, ...catVals, ...trgVals, ...prcVals, ...sysVals, ...wlVals, ...wleVals,
       theme: s.theme, logoFilter: dark ? 'invert(1)' : 'none', contextLabel, initials, userName, userRole, personas, isStaff,
-      rail, railBottom, routeLabel, isStudentHome, isStartHere, ...shVals, isTasks, isInstructorTasks, isMilestones, isInstructorHome, isAdminHome, isPlaceholder,
+      rail, railBottom, routeLabel, isStudentHome, isStartHere, ...shVals, isTasks, isInstructorTasks, isMilestones, isInstructorHome, isAdminHome, isPlaceholder, isDesignStudio,
       path, homeRows, statusChips, taskRows, taskCols, filterChips, taskCountLabel, taskFooter, levels, instrTaskCols, instrTaskRows,
       roster, selLabel, selFg, msgLabel, allocLabel, toggleAll, counts, rosterCountLabel, kpis, acs, dist,
       isAssignments, asgChips, asgRows, asgCountLabel, asgFooter, asgCounts,
