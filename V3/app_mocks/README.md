@@ -6,6 +6,7 @@ Anything left out is listed below.
 ## Contents
 
 - `CLAUDE.md`
+- `DECISIONS.md`
 - `Gap Analysis - Roles & Flows.dc.html`
 - `Mx Mobile.dc.html`
 - `Mx Web Login.dc.html`
