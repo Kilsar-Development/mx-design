@@ -29,6 +29,7 @@ MAPPINGS=(
   "MX.zip|app_mocks"
   "MX Design System.zip|design_system"
   "MX V2.zip|V2-All"
+  "MX v3-project.zip|V3/app_mocks"
 )
 
 cd "$REPO_DIR"

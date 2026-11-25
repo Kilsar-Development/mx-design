@@ -19,6 +19,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--primary);outline-of
 input::placeholder{color:var(--onSurfaceVariant)}
 @keyframes mxl-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes mxl-spin{to{transform:rotate(360deg)}}
+@keyframes mxl-draw{0%{stroke-dashoffset:100;opacity:0}1%{stroke-dashoffset:98;opacity:1}11%{stroke-dashoffset:0}29%{stroke-dashoffset:0;opacity:1}33%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes mxl-fill{0%,13%{opacity:0;transform:translateY(4px)}20%{opacity:1;transform:translateY(0)}29%{opacity:1;transform:translateY(0)}33%,100%{opacity:0;transform:translateY(0)}}
+.mxl-draw{stroke-dasharray:100;animation:mxl-draw 6600ms cubic-bezier(0.42, 0, 0.58, 1) infinite both}
+.mxl-fill{animation:mxl-fill 6600ms cubic-bezier(0.34, 1.56, 0.64, 1) infinite both}
+@media (prefers-reduced-motion: reduce){.mxl-draw,.mxl-fill{animation-duration:13200ms}}
 </style>
 </helmet>
 <!-- Mx Web login flow. One file holds the whole flow; each screen is a step in state: enter workspace, client options, select workspace. -->
@@ -121,13 +126,38 @@ input::placeholder{color:var(--onSurfaceVariant)}
 
   </main>
 
+  <!-- Loading overlay: full screen, blurs what is underneath, one moving figure in the middle. No logo.
+       Look only. When it appears and for how long is the product's existing behaviour, not designed here.
+       The figure is a sketch becoming a solid: a thin line draws the outline of a simple 3D object, its faces fill in with teal and amber gradients (each a blend of two design-system roles, slightly see-through, with a soft ground shadow), it holds for a beat, clears, and the next object is drawn (cube, pyramid, cylinder). -->
+  <!-- IMPLEMENTATION NOTE (Flutter, web and mobile). Suggestions only; not run in Flutter.
+       Scope: the disc and the animated figure. The full-screen blur and when the overlay shows are already handled in the product.
+       - Disc: a plain circular container in ColorScheme.surface with the drop shadow.
+       - Figure: one CustomPainter driven by a single repeating AnimationController (6.6s for the three objects, 2.2s each). The same widget serves web and mobile.
+       - Line drawing: build each outline Path once; each frame draw the part from 0 to the current fraction using the path's metrics (extractPath). This replaces the stroke-dash technique used below.
+       - Faces: fill each face path with a Paint whose shader is a two-stop linear gradient of ColorScheme roles (stops are in the gradients below); fade in with the animation value, with a 4px upward settle. Faces are 92% opaque. The ground shadow is one small ellipse in ColorScheme.shadow at 16%.
+       - Performance: about a dozen small paths in a 64px square. Wrap the figure in a RepaintBoundary so only that square repaints. Build paths and gradient shaders once, or when the theme changes, never inside paint().
+       - Phases, as fractions of the 6.6s loop, per object (each object starts one third later): outline draws 0 to 0.11; inner edges start 150ms after the outline; faces fade in 0.13 to 0.20, each face 90ms after the last; hold to 0.29; fade out by 0.33; hidden for the rest.
+       - Rive is an alternative only if a designer needs to keep changing the motion without a developer; it adds a dependency and a second place to keep light and dark colours in step. -->
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Loading overlay" role="status" aria-label="Loading" style="position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:var(--scrim);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:mxl-fade 250ms cubic-bezier(0.42, 0, 0.58, 1)">
+    <div style="width:104px;height:104px;border-radius:50%;background:var(--surface);box-shadow:var(--mx-drop-shadow);display:flex;align-items:center;justify-content:center">
+      <svg aria-hidden="true" width="64" height="64" viewBox="0 0 48 48" style="flex:none;overflow:visible">
+        <defs><linearGradient id="mxlg-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--primaryContainer)"></stop><stop offset="1" style="stop-color:var(--inversePrimary)"></stop></linearGradient><linearGradient id="mxlg-cool" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--primary)"></stop><stop offset="1" style="stop-color:var(--onPrimaryContainer)"></stop></linearGradient><linearGradient id="mxlg-warm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent1)"></stop><stop offset="1" style="stop-color:var(--accent4)"></stop></linearGradient><linearGradient id="mxlg-round" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--primary)"></stop><stop offset="1" style="stop-color:var(--onPrimaryContainer)"></stop></linearGradient><linearGradient id="mxlg-lid" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--accent1)"></stop><stop offset="1" style="stop-color:var(--accent4)"></stop></linearGradient></defs>
+        <g><g opacity=".16"><ellipse class="mxl-fill" cx="24" cy="45" rx="14" ry="2.5" style="fill:var(--shadow);animation-delay:-6600ms"></ellipse></g><path class="mxl-fill" d="M24 6L40 15L24 24L8 15Z" fill-opacity="0.92" style="fill:url(#mxlg-top);animation-delay:-6600ms"></path><path class="mxl-fill" d="M8 15L24 24V42L8 33Z" fill-opacity="0.92" style="fill:url(#mxlg-cool);animation-delay:-6510ms"></path><path class="mxl-fill" d="M40 15V33L24 42V24Z" fill-opacity="0.92" style="fill:url(#mxlg-warm);animation-delay:-6420ms"></path><path class="mxl-draw" d="M24 6L40 15V33L24 42L8 33V15Z" pathLength="100" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--onSurface);animation-delay:-6600ms"></path><path class="mxl-draw" d="M8 15L24 24L40 15M24 24V42" pathLength="100" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--onSurface);animation-delay:-6450ms"></path></g>
+        <g><g opacity=".16"><ellipse class="mxl-fill" cx="24" cy="45" rx="14" ry="2.5" style="fill:var(--shadow);animation-delay:-4400ms"></ellipse></g><path class="mxl-fill" d="M24 5L7 32L24 42Z" fill-opacity="0.92" style="fill:url(#mxlg-warm);animation-delay:-4400ms"></path><path class="mxl-fill" d="M24 5L24 42L41 32Z" fill-opacity="0.92" style="fill:url(#mxlg-cool);animation-delay:-4310ms"></path><path class="mxl-draw" d="M24 5L41 32L24 42L7 32Z" pathLength="100" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--onSurface);animation-delay:-4400ms"></path><path class="mxl-draw" d="M24 5V42" pathLength="100" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--onSurface);animation-delay:-4250ms"></path></g>
+        <g><g opacity=".16"><ellipse class="mxl-fill" cx="24" cy="45" rx="14" ry="2.5" style="fill:var(--shadow);animation-delay:-2200ms"></ellipse></g><path class="mxl-fill" d="M9 13A15 6 0 0 0 39 13V35A15 6 0 0 1 9 35Z" fill-opacity="0.92" style="fill:url(#mxlg-round);animation-delay:-2200ms"></path><path class="mxl-fill" d="M9 13A15 6 0 0 1 39 13A15 6 0 0 1 9 13Z" fill-opacity="0.92" style="fill:url(#mxlg-lid);animation-delay:-2110ms"></path><path class="mxl-draw" d="M9 13A15 6 0 0 1 39 13V35A15 6 0 0 1 9 35Z" pathLength="100" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--onSurface);animation-delay:-2200ms"></path><path class="mxl-draw" d="M9 13A15 6 0 0 0 39 13" pathLength="100" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--onSurface);animation-delay:-2050ms"></path></g>
+      </svg>
+    </div>
+  </div>
+  </sc-if>
+
   <footer style="display:flex;justify-content:center;padding:var(--sizingMed);font-size:12px;font-weight:400;color:var(--onSurfaceVariant)">Version 2.3.1</footer>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"mode": {"editor": "enum", "default": "light", "options": ["light", "dark"], "tsType": "&#39;light&#39; | &#39;dark&#39;", "section": "Prototype"}, "show": {"editor": "enum", "default": "normal", "options": ["normal", "error", "checking"], "tsType": "&#39;normal&#39; | &#39;error&#39; | &#39;checking&#39;", "section": "Enter workspace"}}'>
+<script type="text/x-dc" data-dc-script data-props='{"mode": {"editor": "enum", "default": "light", "options": ["light", "dark"], "tsType": "&#39;light&#39; | &#39;dark&#39;", "section": "Prototype"}, "show": {"editor": "enum", "default": "normal", "options": ["normal", "error", "checking"], "tsType": "&#39;normal&#39; | &#39;error&#39; | &#39;checking&#39;", "section": "Enter workspace"}, "loading": {"editor": "boolean", "default": false, "tsType": "boolean", "section": "Loading overlay"}}'>
 class Component extends DCLogic {
-  state = { step: 'workspace', workspace: '', focus: false, checking: false, error: false, group: null, picked: null, filter: '' };
-  componentWillUnmount() { clearTimeout(this._t); }
+  state = { step: 'workspace', workspace: '', focus: false, checking: false, error: false, group: null, picked: null, filter: '', loading: false };
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._l); }
   renderVals() {
     const p = this.props, s = this.state;
     const show = p.show ?? 'normal';
@@ -163,7 +193,8 @@ class Component extends DCLogic {
       groups: GROUPS.map(g => ({ label: g.label, pick: () => this.setState({ step: 'pick', group: g.id, picked: null, filter: '' }) })),
       groupLabel: group ? group.label : '', hasList: !!list, noList: !list, rows, noRows: !!list && rows.length === 0,
       filter: s.filter, setFilter: e => this.setState({ filter: e.target.value }),
-      pickSubmit: e => { if (e && e.preventDefault) e.preventDefault(); if (canPick) this.setState({ step: 'next' }); },
+      pickSubmit: e => { if (e && e.preventDefault) e.preventDefault(); if (!canPick) return; this.setState({ loading: true }); clearTimeout(this._l); this._l = setTimeout(() => this.setState({ loading: false, step: 'next' }), 2800); }, // stand-in wait so the overlay can be seen
+      isLoading: s.loading || !!p.loading,
       pickDisabled: !canPick, pickCursor: canPick ? 'pointer' : 'default', pickOpacity: canPick ? '1' : '.4', pickedName: s.picked || '',
       toWorkspace: () => this.setState({ step: 'workspace' }), toGroups: () => this.setState({ step: 'groups' }), toPick: () => this.setState({ step: 'pick' }),
       theme: (p.mode ?? 'light') === 'dark' ? 'dark' : 'light',
